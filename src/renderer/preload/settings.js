@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld(
 
     // Window control
     showToast: () => ipcRenderer.send('show-toast'),
+    closeWindow: () => ipcRenderer.send('close-settings'),
 
     // Dialog
     showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),

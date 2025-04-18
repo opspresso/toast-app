@@ -132,6 +132,13 @@ function setupIpcHandlers(windows) {
     showSettingsWindow(createConfigStore());
   });
 
+  // Close settings window
+  ipcMain.on('close-settings', () => {
+    if (windows.settings && !windows.settings.isDestroyed()) {
+      windows.settings.close();
+    }
+  });
+
   // Restart application
   ipcMain.on('restart-app', () => {
     const { app } = require('electron');

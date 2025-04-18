@@ -700,6 +700,9 @@ async function resetSettings() {
  * Save settings
  */
 async function saveSettings() {
+  // 원래 버튼 텍스트 저장
+  const originalButtonText = saveButton.textContent;
+
   // Collect settings
   const settings = {
     globalHotkey: globalHotkeyInput.value,
@@ -722,6 +725,9 @@ async function saveSettings() {
 
   // Save settings
   try {
+    // 버튼 비활성화 및 "저장 중..." 텍스트로 변경
+    saveButton.disabled = true;
+
     // Save each section
     await window.settings.setConfig('globalHotkey', settings.globalHotkey);
     await window.settings.setConfig('buttons', settings.buttons);
@@ -734,13 +740,21 @@ async function saveSettings() {
     // Clear unsaved changes flag
     unsavedChanges = false;
 
-    // Show success message
-    alert('Settings saved successfully');
+    // 버튼 텍스트를 "Saved!"로 변경
+    saveButton.textContent = "Saved!";
+
+    // 3초 후에 원래 텍스트로 복원
+    setTimeout(() => {
+      saveButton.textContent = originalButtonText;
+      saveButton.disabled = false;
+    }, 1500);
 
     // Show toast window
     window.settings.showToast();
   } catch (error) {
     alert(`Error saving settings: ${error.message || 'Unknown error'}`);
+    saveButton.textContent = originalButtonText;
+    saveButton.disabled = false;
   }
 }
 
@@ -749,14 +763,8 @@ async function saveSettings() {
  */
 function confirmCancel() {
   if (!unsavedChanges || confirm('You have unsaved changes. Are you sure you want to cancel?')) {
-    // Reload config
-    window.settings.getConfig().then(loadedConfig => {
-      config = loadedConfig;
-      initializeUI();
-
-      // Clear unsaved changes flag
-      unsavedChanges = false;
-    });
+    // 설정 창을 닫습니다
+    window.settings.closeWindow();
   }
 }
 
