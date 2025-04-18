@@ -1,0 +1,453 @@
+/* Toast App - Settings Window Styles */
+
+:root {
+  /* Light theme variables */
+  --background-color: #f8f9fa;
+  --text-color: #333;
+  --border-color: #ddd;
+  --input-bg: #fff;
+  --button-primary-bg: #007bff;
+  --button-primary-text: #fff;
+  --button-secondary-bg: #f0f0f0;
+  --button-secondary-text: #333;
+  --button-danger-bg: #dc3545;
+  --button-danger-text: #fff;
+  --sidebar-bg: #f0f0f0;
+  --sidebar-active-bg: #e0e0e0;
+  --header-bg: #fff;
+  --dialog-bg: #fff;
+  --dialog-overlay: rgba(0, 0, 0, 0.5);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --hover-bg: #f0f0f0;
+  --active-bg: #e0e0e0;
+  --help-text-color: #6c757d;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #2d2d2d;
+    --text-color: #eee;
+    --border-color: #444;
+    --input-bg: #3a3a3a;
+    --button-primary-bg: #0069d9;
+    --button-primary-text: #fff;
+    --button-secondary-bg: #444;
+    --button-secondary-text: #eee;
+    --button-danger-bg: #c82333;
+    --button-danger-text: #fff;
+    --sidebar-bg: #333;
+    --sidebar-active-bg: #444;
+    --header-bg: #333;
+    --dialog-bg: #333;
+    --dialog-overlay: rgba(0, 0, 0, 0.7);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --hover-bg: #444;
+    --active-bg: #555;
+    --help-text-color: #adb5bd;
+  }
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  line-height: 1.5;
+}
+
+/* Container */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Header */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-header h1 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Content */
+.settings-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.settings-sidebar {
+  width: 200px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+}
+
+.settings-nav {
+  list-style: none;
+}
+
+.settings-nav li {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+}
+
+.settings-nav li:hover {
+  background-color: var(--hover-bg);
+}
+
+.settings-nav li.active {
+  background-color: var(--sidebar-active-bg);
+  font-weight: 600;
+}
+
+/* Main content */
+.settings-main {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.settings-tab {
+  display: none;
+}
+
+.settings-tab.active {
+  display: block;
+}
+
+.settings-tab h2 {
+  font-size: 18px;
+  margin-bottom: 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Form elements */
+.settings-group {
+  margin-bottom: 24px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--button-primary-bg);
+}
+
+input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.help-text {
+  font-size: 12px;
+  color: var(--help-text-color);
+  margin-top: 4px;
+}
+
+/* Range input */
+.range-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+input[type="range"] {
+  flex: 1;
+}
+
+/* Buttons */
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.primary-button {
+  background-color: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.primary-button:hover {
+  background-color: var(--button-primary-bg);
+  opacity: 0.9;
+}
+
+.secondary-button {
+  background-color: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+}
+
+.secondary-button:hover {
+  background-color: var(--button-secondary-bg);
+  opacity: 0.9;
+}
+
+.danger-button {
+  background-color: var(--button-danger-bg);
+  color: var(--button-danger-text);
+}
+
+.danger-button:hover {
+  background-color: var(--button-danger-bg);
+  opacity: 0.9;
+}
+
+.small-button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* Hotkey input */
+.hotkey-input-container {
+  display: flex;
+  gap: 8px;
+}
+
+.hotkey-input-container input {
+  flex: 1;
+}
+
+/* Buttons list */
+.buttons-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.buttons-list-container {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.buttons-list {
+  list-style: none;
+}
+
+.button-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+}
+
+.button-item:last-child {
+  border-bottom: none;
+}
+
+.button-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.button-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.button-icon {
+  font-size: 24px;
+  width: 32px;
+  text-align: center;
+}
+
+.button-details {
+  flex: 1;
+}
+
+.button-name {
+  font-weight: 500;
+}
+
+.button-action {
+  font-size: 12px;
+  color: var(--help-text-color);
+}
+
+.button-shortcut {
+  font-size: 12px;
+  background-color: var(--button-secondary-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.button-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button-actions button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* Dialog */
+.dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--dialog-overlay);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog.active {
+  display: flex;
+}
+
+.dialog-content {
+  background-color: var(--dialog-bg);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  width: 500px;
+  max-width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dialog-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-body {
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.dialog-footer {
+  padding: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Form groups */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 8px;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+/* Actions group */
+.actions-group {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .settings-content {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .settings-nav {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .settings-nav li {
+    border-bottom: none;
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+  }
+}

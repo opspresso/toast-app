@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toast App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="toast-container">
+    <div class="toast-header">
+      <div class="toast-title">Toast</div>
+      <div class="toast-close" id="close-button">×</div>
+    </div>
+
+    <div class="toast-search-container">
+      <input type="text" id="search-input" class="toast-search" placeholder="Search...">
+    </div>
+
+    <div class="toast-buttons" id="buttons-container">
+      <!-- Buttons will be dynamically inserted here -->
+    </div>
+
+    <div class="toast-status" id="status-container">
+      <!-- Status messages will be displayed here -->
+    </div>
+  </div>
+
+  <!-- Button template -->
+  <template id="button-template">
+    <div class="toast-button" data-action="">
+      <div class="button-icon"></div>
+      <div class="button-name"></div>
+      <div class="button-shortcut"></div>
+    </div>
+  </template>
+
+  <script src="index.js"></script>
+</body>
+</html>

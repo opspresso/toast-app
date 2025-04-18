@@ -1,0 +1,236 @@
+/**
+ * Toast App - Configuration Module
+ *
+ * This module handles the application configuration using electron-store.
+ */
+
+const Store = require('electron-store');
+const { app } = require('electron');
+
+// Default configuration schema
+const schema = {
+  globalHotkey: {
+    type: 'string',
+    default: 'Alt+Space'
+  },
+  buttons: {
+    type: 'array',
+    default: [
+      {
+        name: 'Terminal',
+        shortcut: 'T',
+        icon: '⌨️',
+        action: 'exec',
+        command: process.platform === 'darwin' ? 'open -a Terminal' : 'start cmd.exe'
+      },
+      {
+        name: 'Browser',
+        shortcut: 'B',
+        icon: '🌐',
+        action: 'open',
+        url: 'https://www.google.com'
+      },
+      {
+        name: 'File Explorer',
+        shortcut: 'F',
+        icon: '📁',
+        action: 'exec',
+        command: process.platform === 'darwin' ? 'open .' : 'explorer .'
+      },
+      {
+        name: 'Text Editor',
+        shortcut: 'E',
+        icon: '📝',
+        action: 'exec',
+        command: process.platform === 'darwin' ? 'open -a TextEdit' : 'notepad'
+      }
+    ]
+  },
+  appearance: {
+    type: 'object',
+    properties: {
+      theme: {
+        type: 'string',
+        enum: ['light', 'dark', 'system'],
+        default: 'system'
+      },
+      position: {
+        type: 'string',
+        enum: ['center', 'top', 'bottom', 'cursor'],
+        default: 'center'
+      },
+      size: {
+        type: 'string',
+        enum: ['small', 'medium', 'large'],
+        default: 'medium'
+      },
+      opacity: {
+        type: 'number',
+        minimum: 0.1,
+        maximum: 1.0,
+        default: 0.95
+      },
+      buttonLayout: {
+        type: 'string',
+        enum: ['grid', 'list'],
+        default: 'grid'
+      }
+    },
+    default: {
+      theme: 'system',
+      position: 'center',
+      size: 'medium',
+      opacity: 0.95,
+      buttonLayout: 'grid'
+    }
+  },
+  advanced: {
+    type: 'object',
+    properties: {
+      launchAtLogin: {
+        type: 'boolean',
+        default: false
+      },
+      hideAfterAction: {
+        type: 'boolean',
+        default: true
+      },
+      hideOnBlur: {
+        type: 'boolean',
+        default: true
+      },
+      hideOnEscape: {
+        type: 'boolean',
+        default: true
+      },
+      showInTaskbar: {
+        type: 'boolean',
+        default: false
+      }
+    },
+    default: {
+      launchAtLogin: false,
+      hideAfterAction: true,
+      hideOnBlur: true,
+      hideOnEscape: true,
+      showInTaskbar: false
+    }
+  },
+  firstLaunchCompleted: {
+    type: 'boolean',
+    default: false
+  }
+};
+
+/**
+ * Create a configuration store
+ * @returns {Store} Configuration store instance
+ */
+function createConfigStore() {
+  return new Store({ schema });
+}
+
+/**
+ * Reset configuration to default values
+ * @param {Store} config - Configuration store instance
+ */
+function resetToDefaults(config) {
+  // Clear all existing settings
+  config.clear();
+
+  // Set default values for each key
+  config.set('globalHotkey', schema.globalHotkey.default);
+  config.set('buttons', schema.buttons.default);
+  config.set('appearance', schema.appearance.default);
+  config.set('advanced', schema.advanced.default);
+  config.set('firstLaunchCompleted', false);
+}
+
+/**
+ * Import configuration from a file
+ * @param {Store} config - Configuration store instance
+ * @param {string} filePath - Path to the configuration file
+ * @returns {boolean} Success status
+ */
+function importConfig(config, filePath) {
+  try {
+    const fs = require('fs');
+    const importedConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    // Validate imported configuration
+    if (!importedConfig || typeof importedConfig !== 'object') {
+      throw new Error('Invalid configuration format');
+    }
+
+    // Clear existing configuration
+    config.clear();
+
+    // Import each section with validation
+    if (importedConfig.globalHotkey && typeof importedConfig.globalHotkey === 'string') {
+      config.set('globalHotkey', importedConfig.globalHotkey);
+    } else {
+      config.set('globalHotkey', schema.globalHotkey.default);
+    }
+
+    if (Array.isArray(importedConfig.buttons)) {
+      config.set('buttons', importedConfig.buttons);
+    } else {
+      config.set('buttons', schema.buttons.default);
+    }
+
+    if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
+      config.set('appearance', {
+        ...schema.appearance.default,
+        ...importedConfig.appearance
+      });
+    } else {
+      config.set('appearance', schema.appearance.default);
+    }
+
+    if (importedConfig.advanced && typeof importedConfig.advanced === 'object') {
+      config.set('advanced', {
+        ...schema.advanced.default,
+        ...importedConfig.advanced
+      });
+    } else {
+      config.set('advanced', schema.advanced.default);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error importing configuration:', error);
+    return false;
+  }
+}
+
+/**
+ * Export configuration to a file
+ * @param {Store} config - Configuration store instance
+ * @param {string} filePath - Path to save the configuration file
+ * @returns {boolean} Success status
+ */
+function exportConfig(config, filePath) {
+  try {
+    const fs = require('fs');
+    const configData = {
+      globalHotkey: config.get('globalHotkey'),
+      buttons: config.get('buttons'),
+      appearance: config.get('appearance'),
+      advanced: config.get('advanced')
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(configData, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error exporting configuration:', error);
+    return false;
+  }
+}
+
+module.exports = {
+  createConfigStore,
+  resetToDefaults,
+  importConfig,
+  exportConfig,
+  schema
+};
