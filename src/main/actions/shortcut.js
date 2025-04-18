@@ -4,7 +4,7 @@
  * This module handles sending keyboard shortcuts to the system.
  */
 
-const { keyboard, Key } = require('@nut-tree/nut-js');
+const { keyboard, Key } = require('@nut-tree-fork/nut-js');
 
 // Configure nut-js
 keyboard.config.autoDelayMs = 100;

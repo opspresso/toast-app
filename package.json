@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/opspresso/toast-app#readme",
   "dependencies": {
-    "@nut-tree-fork/shared": "^4.1.0",
+    "@nut-tree-fork/nut-js": "^4.2.6",
     "electron-store": "^8.1.0"
   },
   "devDependencies": {
