@@ -71,6 +71,8 @@ body {
   padding: 12px 16px;
   background-color: var(--header-bg);
   border-bottom: 1px solid var(--border-color);
+  -webkit-app-region: drag;
+  cursor: move;
 }
 
 .toast-title {
@@ -88,6 +90,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  -webkit-app-region: no-drag;
 }
 
 .toast-close:hover {
