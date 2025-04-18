@@ -764,26 +764,6 @@ async function saveSettings() {
 async function confirmCancel() {
   // Close the window immediately
   window.settings.closeWindow();
-
-  // // Close the window immediately if there are no changes
-  // if (!unsavedChanges) {
-  //   window.settings.closeWindow();
-  //   return;
-  // }
-
-  // // Show confirmation message using Electron dialog
-  // const result = await window.settings.showMessageBox({
-  //   type: 'question',
-  //   buttons: ['Yes', 'No'],
-  //   defaultId: 1,
-  //   title: 'Confirm',
-  //   message: 'You have unsaved changes. Are you sure you want to cancel?'
-  // });
-
-  // // Close the window if Yes(0) is selected
-  // if (result.response === 0) {
-  //   window.settings.closeWindow();
-  // }
 }
 
 /**
