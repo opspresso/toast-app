@@ -170,13 +170,13 @@ function setupEventListeners() {
   // Hotkey recording
   document.addEventListener('keydown', handleHotkeyRecording);
 
-  // Before unload
-  window.addEventListener('beforeunload', (event) => {
-    if (unsavedChanges) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
-  });
+  // 요구사항에 따라 저장하지 않아도 무조건 닫기로 변경되어 beforeunload 이벤트 리스너는 사용하지 않음
+  // window.addEventListener('beforeunload', (event) => {
+  //   if (unsavedChanges) {
+  //     event.preventDefault();
+  //     event.returnValue = '';
+  //   }
+  // });
 }
 
 /**
@@ -762,7 +762,8 @@ async function saveSettings() {
  * Confirm canceling changes
  */
 async function confirmCancel() {
-  // Close the window immediately
+  // 요구사항에 따라 저장하지 않아도 무조건 닫기로 변경
+  unsavedChanges = false;
   window.settings.closeWindow();
 }
 
