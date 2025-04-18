@@ -747,10 +747,13 @@ async function saveSettings() {
     setTimeout(() => {
       saveButton.textContent = originalButtonText;
       saveButton.disabled = false;
-    }, 1500);
+    }, 1000);
+
+    // Close window
+    window.settings.closeWindow();
 
     // Show toast window
-    window.settings.showToast();
+    // window.settings.showToast();
   } catch (error) {
     alert(`Error saving settings: ${error.message || 'Unknown error'}`);
     saveButton.textContent = originalButtonText;
@@ -762,7 +765,7 @@ async function saveSettings() {
  * Confirm canceling changes
  */
 async function confirmCancel() {
-  // 요구사항에 따라 저장하지 않아도 무조건 닫기로 변경
+  // Close window without saving changes
   unsavedChanges = false;
   window.settings.closeWindow();
 }

@@ -78,28 +78,10 @@ function updateTrayMenu(tray, windows) {
     },
     { type: 'separator' },
     {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'Documentation',
-          click: () => {
-            shell.openExternal('https://github.com/opspresso/toast-app#readme');
-          }
-        },
-        {
-          label: 'Report Issue',
-          click: () => {
-            shell.openExternal('https://github.com/opspresso/toast-app/issues');
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'About Toast App',
-          click: () => {
-            showAboutDialog();
-          }
-        }
-      ]
+      label: 'About Toast App',
+      click: () => {
+        showAboutDialog();
+      }
     },
     { type: 'separator' },
     {
