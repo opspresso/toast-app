@@ -46,7 +46,7 @@
   },
   "build": {
     "appId": "com.opspresso.toast-app",
-    "productName": "Toast App",
+    "productName": "Toast",
     "directories": {
       "output": "dist"
     },

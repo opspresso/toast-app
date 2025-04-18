@@ -1,6 +1,6 @@
 #!/bin/bash
 
-output_path=./output.iconset
+output_path=./icon.iconset
 mkdir -p $output_path
 
 # the convert command comes from imagemagick
