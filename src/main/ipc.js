@@ -135,7 +135,14 @@ function setupIpcHandlers(windows) {
   // Close settings window
   ipcMain.on('close-settings', () => {
     if (windows.settings && !windows.settings.isDestroyed()) {
-      windows.settings.close();
+      // 먼저 창을 숨기고 나서 닫아 깜빡임 방지
+      windows.settings.hide();
+      // 약간의 지연 후 실제로 창 닫기
+      setTimeout(() => {
+        if (windows.settings && !windows.settings.isDestroyed()) {
+          windows.settings.close();
+        }
+      }, 500);
     }
   });
 
