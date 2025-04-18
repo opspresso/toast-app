@@ -127,10 +127,9 @@ function setupIpcHandlers(windows) {
 
   // Show settings window
   ipcMain.on('show-settings', () => {
-    if (windows.settings) {
-      windows.settings.show();
-      windows.settings.focus();
-    }
+    const { showSettingsWindow } = require('./windows');
+    const { createConfigStore } = require('./config');
+    showSettingsWindow(createConfigStore());
   });
 
   // Restart application

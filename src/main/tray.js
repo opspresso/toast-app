@@ -72,10 +72,8 @@ function updateTrayMenu(tray, windows) {
     {
       label: 'Settings',
       click: () => {
-        if (windows.settings) {
-          windows.settings.show();
-          windows.settings.focus();
-        }
+        const { ipcMain } = require('electron');
+        ipcMain.emit('show-settings');
       }
     },
     { type: 'separator' },
