@@ -300,13 +300,20 @@ body {
   right: 8px;
 }
 
-/* Status */
-.toast-status {
-  padding: 8px 16px;
-  font-size: 12px;
+/* Footer & Status */
+.toast-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   background-color: var(--status-bg);
   border-top: 1px solid var(--border-color);
   min-height: 32px;
+  padding: 6px 12px;
+}
+
+.toast-status {
+  font-size: 12px;
+  flex: 1;
   display: flex;
   align-items: center;
 }
@@ -317,6 +324,27 @@ body {
 
 .toast-status.error {
   color: #dc3545;
+}
+
+.toast-settings {
+  display: flex;
+  align-items: center;
+}
+
+.toast-mode-toggle {
+  cursor: pointer;
+  font-size: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.toast-mode-toggle:hover {
+  background-color: var(--button-hover-bg);
 }
 
 /* Scrollbar */
