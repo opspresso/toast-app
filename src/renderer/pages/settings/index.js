@@ -700,7 +700,7 @@ async function resetSettings() {
  * Save settings
  */
 async function saveSettings() {
-  // 원래 버튼 텍스트 저장
+  // Save the original button text
   const originalButtonText = saveButton.textContent;
 
   // Collect settings
@@ -725,7 +725,7 @@ async function saveSettings() {
 
   // Save settings
   try {
-    // 버튼 비활성화 및 "저장 중..." 텍스트로 변경
+    // Disable button and change text to "Saving..."
     saveButton.disabled = true;
 
     // Save each section
@@ -740,10 +740,10 @@ async function saveSettings() {
     // Clear unsaved changes flag
     unsavedChanges = false;
 
-    // 버튼 텍스트를 "Saved!"로 변경
+    // Change button text to "Saved!"
     saveButton.textContent = "Saved!";
 
-    // 3초 후에 원래 텍스트로 복원
+    // Restore original text after 3 seconds
     setTimeout(() => {
       saveButton.textContent = originalButtonText;
       saveButton.disabled = false;
@@ -761,11 +761,29 @@ async function saveSettings() {
 /**
  * Confirm canceling changes
  */
-function confirmCancel() {
-  if (!unsavedChanges || confirm('You have unsaved changes. Are you sure you want to cancel?')) {
-    // 설정 창을 닫습니다
-    window.settings.closeWindow();
-  }
+async function confirmCancel() {
+  // Close the window immediately
+  window.settings.closeWindow();
+
+  // // Close the window immediately if there are no changes
+  // if (!unsavedChanges) {
+  //   window.settings.closeWindow();
+  //   return;
+  // }
+
+  // // Show confirmation message using Electron dialog
+  // const result = await window.settings.showMessageBox({
+  //   type: 'question',
+  //   buttons: ['Yes', 'No'],
+  //   defaultId: 1,
+  //   title: 'Confirm',
+  //   message: 'You have unsaved changes. Are you sure you want to cancel?'
+  // });
+
+  // // Close the window if Yes(0) is selected
+  // if (result.response === 0) {
+  //   window.settings.closeWindow();
+  // }
 }
 
 /**
