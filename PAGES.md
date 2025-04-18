@@ -105,7 +105,7 @@ The Settings window allows users to configure the application.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Toast App Settings                       │
+│                     Toast Settings                          │
 ├─────────────┬───────────────────────────────────────────────┤
 │             │                                               │
 │  General    │  General Settings                             │
