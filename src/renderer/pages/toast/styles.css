@@ -122,13 +122,13 @@ body {
   overflow-y: auto;
   padding: 8px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   grid-gap: 8px;
 }
 
 /* Grid layout for buttons */
 .toast-buttons.grid {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 /* List layout for buttons */
@@ -235,15 +235,15 @@ body {
 
 /* Size variations */
 .size-small .toast-buttons {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .size-medium .toast-buttons {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .size-large .toast-buttons {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 /* Responsive adjustments */

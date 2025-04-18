@@ -34,17 +34,17 @@ function createToastWindow(config) {
   let width, height;
   switch (size) {
     case 'small':
-      width = 350;
-      height = 400;
+      width = 500;
+      height = 350;
       break;
     case 'large':
-      width = 500;
-      height = 600;
+      width = 800;
+      height = 550;
       break;
     case 'medium':
     default:
-      width = 400;
-      height = 500;
+      width = 650;
+      height = 450;
       break;
   }
 
