@@ -13,36 +13,122 @@ const schema = {
     type: 'string',
     default: 'Alt+Space'
   },
-  buttons: {
+  pages: {
     type: 'array',
     default: [
       {
-        name: 'Terminal',
-        shortcut: 'T',
-        icon: '⌨️',
-        action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Terminal' : 'start cmd.exe'
-      },
-      {
-        name: 'Browser',
-        shortcut: 'B',
-        icon: '🌐',
-        action: 'open',
-        url: 'https://www.google.com'
-      },
-      {
-        name: 'File Explorer',
-        shortcut: 'F',
-        icon: '📁',
-        action: 'exec',
-        command: process.platform === 'darwin' ? 'open .' : 'explorer .'
-      },
-      {
-        name: 'Text Editor',
-        shortcut: 'E',
-        icon: '📝',
-        action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a TextEdit' : 'notepad'
+        name: '앱',
+        shortcut: '1',
+        buttons: [
+          // 첫 번째 행 - qwert
+          {
+            name: 'Music',
+            shortcut: 'Q',
+            icon: '🎵',
+            action: 'exec',
+            command: process.platform === 'darwin' ? 'open -a Music' : 'start mswindowsmusic:'
+          },
+          {
+            name: 'Chrome',
+            shortcut: 'W',
+            icon: '🌐',
+            action: 'exec',
+            command: process.platform === 'darwin' ? 'open -a "Google Chrome"' : 'start chrome'
+          },
+          {
+            name: 'Mail',
+            shortcut: 'E',
+            icon: '✉️',
+            action: 'exec',
+            command: process.platform === 'darwin' ? 'open -a Mail' : 'start outlook:'
+          },
+          {
+            name: 'Calendar',
+            shortcut: 'R',
+            icon: '📅',
+            action: 'exec',
+            command: process.platform === 'darwin' ? 'open -a Calendar' : 'start outlookcal:'
+          },
+          {
+            name: 'Terminal',
+            shortcut: 'T',
+            icon: '⌨️',
+            action: 'exec',
+            command: process.platform === 'darwin' ? 'open -a Terminal' : 'start cmd.exe'
+          },
+          // 두 번째 행 - asdfg
+          {
+            name: 'A',
+            shortcut: 'A',
+            icon: 'A',
+            action: 'shortcut',
+            keys: ['a']
+          },
+          {
+            name: 'S',
+            shortcut: 'S',
+            icon: 'S',
+            action: 'shortcut',
+            keys: ['s']
+          },
+          {
+            name: 'D',
+            shortcut: 'D',
+            icon: 'D',
+            action: 'shortcut',
+            keys: ['d']
+          },
+          {
+            name: 'F',
+            shortcut: 'F',
+            icon: 'F',
+            action: 'shortcut',
+            keys: ['f']
+          },
+          {
+            name: 'G',
+            shortcut: 'G',
+            icon: 'G',
+            action: 'shortcut',
+            keys: ['g']
+          },
+          // 세 번째 행 - zxcvb
+          {
+            name: 'Z',
+            shortcut: 'Z',
+            icon: 'Z',
+            action: 'shortcut',
+            keys: ['z']
+          },
+          {
+            name: 'X',
+            shortcut: 'X',
+            icon: 'X',
+            action: 'shortcut',
+            keys: ['x']
+          },
+          {
+            name: 'C',
+            shortcut: 'C',
+            icon: 'C',
+            action: 'shortcut',
+            keys: ['c']
+          },
+          {
+            name: 'V',
+            shortcut: 'V',
+            icon: 'V',
+            action: 'shortcut',
+            keys: ['v']
+          },
+          {
+            name: 'B',
+            shortcut: 'B',
+            icon: 'B',
+            action: 'shortcut',
+            keys: ['b']
+          }
+        ]
       }
     ]
   },
@@ -116,6 +202,28 @@ const schema = {
       showInTaskbar: false
     }
   },
+  subscription: {
+    type: 'object',
+    properties: {
+      isSubscribed: {
+        type: 'boolean',
+        default: false
+      },
+      subscribedUntil: {
+        type: 'string',
+        default: ''
+      },
+      pageGroups: {
+        type: 'number',
+        default: 1
+      }
+    },
+    default: {
+      isSubscribed: false,
+      subscribedUntil: '',
+      pageGroups: 1
+    }
+  },
   firstLaunchCompleted: {
     type: 'boolean',
     default: false
@@ -140,7 +248,7 @@ function resetToDefaults(config) {
 
   // Set default values for each key
   config.set('globalHotkey', schema.globalHotkey.default);
-  config.set('buttons', schema.buttons.default);
+  config.set('pages', schema.pages.default);
   config.set('appearance', schema.appearance.default);
   config.set('advanced', schema.advanced.default);
   config.set('firstLaunchCompleted', false);
@@ -172,10 +280,10 @@ function importConfig(config, filePath) {
       config.set('globalHotkey', schema.globalHotkey.default);
     }
 
-    if (Array.isArray(importedConfig.buttons)) {
-      config.set('buttons', importedConfig.buttons);
+    if (Array.isArray(importedConfig.pages)) {
+      config.set('pages', importedConfig.pages);
     } else {
-      config.set('buttons', schema.buttons.default);
+      config.set('pages', schema.pages.default);
     }
 
     if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
@@ -214,7 +322,7 @@ function exportConfig(config, filePath) {
     const fs = require('fs');
     const configData = {
       globalHotkey: config.get('globalHotkey'),
-      buttons: config.get('buttons'),
+      pages: config.get('pages'),
       appearance: config.get('appearance'),
       advanced: config.get('advanced')
     };

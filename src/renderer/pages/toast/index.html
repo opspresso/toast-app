@@ -10,15 +10,28 @@
   <div class="toast-container">
     <div class="toast-header">
       <div class="toast-title">Toast</div>
-      <div class="toast-close" id="close-button">×</div>
+      <div class="toast-header-buttons">
+        <div class="toast-mode-toggle" id="settings-mode-toggle" title="설정 모드">⚙️</div>
+        <div class="toast-close" id="close-button">×</div>
+      </div>
     </div>
 
     <div class="toast-search-container">
       <input type="text" id="search-input" class="toast-search" placeholder="Search...">
     </div>
 
+    <div class="toast-paging-container" id="paging-container">
+      <!-- Paging buttons will be dynamically inserted here -->
+      <div class="toast-paging-buttons" id="paging-buttons-container">
+        <!-- 페이지 버튼은 동적으로 생성됩니다 -->
+      </div>
+      <div class="toast-paging-actions">
+        <button id="add-page-button" class="add-page-button" title="페이지 추가">+</button>
+      </div>
+    </div>
+
     <div class="toast-buttons" id="buttons-container">
-      <!-- Buttons will be dynamically inserted here -->
+      <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
     </div>
 
     <div class="toast-status" id="status-container">
