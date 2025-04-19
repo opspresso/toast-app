@@ -56,6 +56,7 @@
       "assets/**/*",
       "package.json"
     ],
+    "afterSign": "scripts/notarize.js",
     "mac": {
       "category": "public.app-category.productivity",
       "hardenedRuntime": true,
@@ -66,8 +67,7 @@
         "dmg",
         "zip"
       ],
-      "icon": "assets/icons/icon.icns",
-      "afterSign": "scripts/notarize.js"
+      "icon": "assets/icons/icon.icns"
     },
     "win": {
       "target": [
