@@ -20,7 +20,6 @@ const positionSelect = document.getElementById('position');
 const sizeSelect = document.getElementById('size');
 const opacityRange = document.getElementById('opacity');
 const opacityValue = document.getElementById('opacity-value');
-const buttonLayoutSelect = document.getElementById('button-layout');
 
 // DOM Elements - Advanced Settings
 const hideAfterActionCheckbox = document.getElementById('hide-after-action');
@@ -72,7 +71,6 @@ function initializeUI() {
   sizeSelect.value = config.appearance?.size || 'medium';
   opacityRange.value = config.appearance?.opacity || 0.95;
   opacityValue.textContent = opacityRange.value;
-  buttonLayoutSelect.value = config.appearance?.buttonLayout || 'grid';
 
   // Advanced settings
   hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
@@ -104,7 +102,6 @@ function setupEventListeners() {
   themeSelect.addEventListener('change', markUnsavedChanges);
   positionSelect.addEventListener('change', markUnsavedChanges);
   sizeSelect.addEventListener('change', markUnsavedChanges);
-  buttonLayoutSelect.addEventListener('change', markUnsavedChanges);
 
   opacityRange.addEventListener('input', () => {
     opacityValue.textContent = opacityRange.value;
@@ -294,8 +291,7 @@ async function saveSettings() {
       theme: themeSelect.value,
       position: positionSelect.value,
       size: sizeSelect.value,
-      opacity: parseFloat(opacityRange.value),
-      buttonLayout: buttonLayoutSelect.value
+      opacity: parseFloat(opacityRange.value)
     },
     advanced: {
       launchAtLogin: launchAtLoginCheckbox.checked,
