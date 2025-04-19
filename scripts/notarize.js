@@ -13,19 +13,19 @@ exports.default = async function notarizing(context) {
   console.log(`Notarizing: ${appName}`);
   process.stdout.write(`Notarizing: ${appName}\n`);
 
-  console.log(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}`);
-  process.stdout.write(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}\n`);
+  // console.log(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}`);
+  // process.stdout.write(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}\n`);
 
-  if (!process.env.APPLE_TEAM_ID) {
-    throw new Error('APPLE_TEAM_ID environment variable is not set.');
-  }
+  // if (!process.env.APPLE_TEAM_ID) {
+  //   throw new Error('APPLE_TEAM_ID environment variable is not set.');
+  // }
 
   await notarize({
     appBundleId: 'com.opspresso.toast-app',
     appPath: `${appOutDir}/${appName}.app`,
-    teamId: process.env.APPLE_TEAM_ID,
     appleId: process.env.APPLE_ID,
     appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
+    teamId: '3TMN29X5ES',
   });
 
   console.log(`Notarization complete for ${appName}`);
