@@ -1,5 +1,5 @@
 /**
- * Toast App - Configuration Module
+ * Toast - Configuration Module
  *
  * This module handles the application configuration using electron-store.
  */
@@ -13,38 +13,9 @@ const schema = {
     type: 'string',
     default: 'Alt+Space'
   },
-  buttons: {
+  pages: {
     type: 'array',
-    default: [
-      {
-        name: 'Terminal',
-        shortcut: 'T',
-        icon: '⌨️',
-        action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Terminal' : 'start cmd.exe'
-      },
-      {
-        name: 'Browser',
-        shortcut: 'B',
-        icon: '🌐',
-        action: 'open',
-        url: 'https://www.google.com'
-      },
-      {
-        name: 'File Explorer',
-        shortcut: 'F',
-        icon: '📁',
-        action: 'exec',
-        command: process.platform === 'darwin' ? 'open .' : 'explorer .'
-      },
-      {
-        name: 'Text Editor',
-        shortcut: 'E',
-        icon: '📝',
-        action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a TextEdit' : 'notepad'
-      }
-    ]
+    default: []
   },
   appearance: {
     type: 'object',
@@ -116,6 +87,28 @@ const schema = {
       showInTaskbar: false
     }
   },
+  subscription: {
+    type: 'object',
+    properties: {
+      isSubscribed: {
+        type: 'boolean',
+        default: false
+      },
+      subscribedUntil: {
+        type: 'string',
+        default: ''
+      },
+      pageGroups: {
+        type: 'number',
+        default: 1
+      }
+    },
+    default: {
+      isSubscribed: false,
+      subscribedUntil: '',
+      pageGroups: 1
+    }
+  },
   firstLaunchCompleted: {
     type: 'boolean',
     default: false
@@ -140,7 +133,7 @@ function resetToDefaults(config) {
 
   // Set default values for each key
   config.set('globalHotkey', schema.globalHotkey.default);
-  config.set('buttons', schema.buttons.default);
+  config.set('pages', schema.pages.default);
   config.set('appearance', schema.appearance.default);
   config.set('advanced', schema.advanced.default);
   config.set('firstLaunchCompleted', false);
@@ -172,10 +165,10 @@ function importConfig(config, filePath) {
       config.set('globalHotkey', schema.globalHotkey.default);
     }
 
-    if (Array.isArray(importedConfig.buttons)) {
-      config.set('buttons', importedConfig.buttons);
+    if (Array.isArray(importedConfig.pages)) {
+      config.set('pages', importedConfig.pages);
     } else {
-      config.set('buttons', schema.buttons.default);
+      config.set('pages', schema.pages.default);
     }
 
     if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
@@ -214,7 +207,7 @@ function exportConfig(config, filePath) {
     const fs = require('fs');
     const configData = {
       globalHotkey: config.get('globalHotkey'),
-      buttons: config.get('buttons'),
+      pages: config.get('pages'),
       appearance: config.get('appearance'),
       advanced: config.get('advanced')
     };

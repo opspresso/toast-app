@@ -1,7 +1,7 @@
 /**
- * Toast App - Main Entry Point
+ * Toast - Main Entry Point
  *
- * This is the main entry point for the Toast App application.
+ * This is the main entry point for the Toast application.
  * It initializes the Electron app, creates windows, and sets up event listeners.
  */
 

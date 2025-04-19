@@ -15,10 +15,11 @@ Toast App uses [electron-store](https://github.com/sindresorhus/electron-store) 
 The configuration schema is defined in `src/main/config.js` and consists of the following main sections:
 
 1. **globalHotkey**: The global keyboard shortcut to trigger the Toast popup
-2. **buttons**: Array of button configurations
+2. **pages**: Array of page configurations, each containing its own set of buttons
 3. **appearance**: Visual appearance settings
 4. **advanced**: Advanced behavior settings
-5. **firstLaunchCompleted**: Flag indicating whether the first launch setup has been completed
+5. **subscription**: Subscription status and features
+6. **firstLaunchCompleted**: Flag indicating whether the first launch setup has been completed
 
 ## Schema Details
 
@@ -38,41 +39,65 @@ Examples:
 - `"CommandOrControl+Shift+T"`
 - `"F12"`
 
-### Buttons
+### Pages
 
 ```json
-"buttons": {
+"pages": {
   "type": "array",
-  "default": [
+  "default": []
+}
+```
+
+Each page object has the following structure:
+
+```json
+{
+  "name": "Page 1",
+  "shortcut": "1",
+  "buttons": [
     {
       "name": "Terminal",
-      "shortcut": "T",
+      "shortcut": "Q",
       "icon": "⌨️",
       "action": "exec",
       "command": "platform-specific-command"
     },
-    // More default buttons...
+    // More buttons...
   ]
 }
 ```
+
+#### Page Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Display name of the page |
+| `shortcut` | string | No | Single-key shortcut for page access (e.g., "1", "2") |
+| `buttons` | array | Yes | Array of button configurations for this page |
+
+#### Button Properties
 
 Each button object can have the following properties:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
 | `name` | string | Yes | Display name of the button |
-| `shortcut` | string | No | Single-key shortcut (e.g., "T", "B") |
+| `shortcut` | string | Yes | Single-key shortcut (e.g., "Q", "W") |
 | `icon` | string | No | Emoji or icon name |
-| `action` | string | Yes | Action type: "exec", "open", "shortcut", or "script" |
+| `action` | string | Yes | Action type: "exec", "open", "shortcut", "script", or "chain" |
 | `command` | string | For "exec" | Shell command to execute |
 | `workingDir` | string | No | Working directory for command execution |
 | `runInTerminal` | boolean | No | Whether to run the command in a terminal |
 | `url` | string | For "open" | URL to open |
 | `path` | string | For "open" | File or folder path to open |
 | `application` | string | No | Application to use for opening |
-| `keys` | string | For "shortcut" | Keyboard shortcut to simulate |
+| `keyShortcut` | string | For "shortcut" | Keyboard shortcut to simulate |
 | `script` | string | For "script" | Script content |
 | `scriptType` | string | For "script" | Script language: "javascript", "applescript", "powershell", or "bash" |
+| `actions` | array | For "chain" | Array of actions to execute in sequence |
+| `stopOnError` | boolean | For "chain" | Whether to stop chain execution on error |
+
+The application supports up to 9 pages, with each page containing up to 15 buttons, arranged in a 5x3 grid by default.
 
 ### Appearance
 
@@ -186,6 +211,35 @@ Each button object can have the following properties:
 - `hideOnEscape`: Hide the Toast window when the Escape key is pressed
 - `showInTaskbar`: Show the Toast window in the taskbar/dock
 
+### Subscription
+
+```json
+"subscription": {
+  "type": "object",
+  "properties": {
+    "isSubscribed": {
+      "type": "boolean",
+      "default": false
+    },
+    "subscribedUntil": {
+      "type": "string",
+      "default": ""
+    },
+    "pageGroups": {
+      "type": "number",
+      "default": 1
+    }
+  },
+  "default": {
+    "isSubscribed": false,
+    "subscribedUntil": "",
+    "pageGroups": 1
+  }
+}
+```
+
+The subscription section contains information about the user's subscription status. Free users are limited to 3 pages, while subscribed users can create up to 9 pages.
+
 ### First Launch Completed
 
 ```json
@@ -202,27 +256,70 @@ This flag is set to `true` after the first launch setup is completed. It is used
 ```json
 {
   "globalHotkey": "Alt+Space",
-  "buttons": [
+  "pages": [
     {
-      "name": "Terminal",
-      "shortcut": "T",
-      "icon": "⌨️",
-      "action": "exec",
-      "command": "open -a Terminal"
+      "name": "Applications",
+      "shortcut": "1",
+      "buttons": [
+        {
+          "name": "Terminal",
+          "shortcut": "Q",
+          "icon": "⌨️",
+          "action": "exec",
+          "command": "open -a Terminal"
+        },
+        {
+          "name": "Browser",
+          "shortcut": "W",
+          "icon": "🌐",
+          "action": "open",
+          "url": "https://www.google.com"
+        },
+        {
+          "name": "File Explorer",
+          "shortcut": "E",
+          "icon": "📁",
+          "action": "exec",
+          "command": "open ."
+        }
+      ]
     },
     {
-      "name": "Browser",
-      "shortcut": "B",
-      "icon": "🌐",
-      "action": "open",
-      "url": "https://www.google.com"
-    },
-    {
-      "name": "File Explorer",
-      "shortcut": "F",
-      "icon": "📁",
-      "action": "exec",
-      "command": "open ."
+      "name": "Development",
+      "shortcut": "2",
+      "buttons": [
+        {
+          "name": "VSCode",
+          "shortcut": "Q",
+          "icon": "💻",
+          "action": "exec",
+          "command": "open -a 'Visual Studio Code'"
+        },
+        {
+          "name": "GitHub",
+          "shortcut": "W",
+          "icon": "🐙",
+          "action": "open",
+          "url": "https://github.com"
+        },
+        {
+          "name": "Execute Chain",
+          "shortcut": "E",
+          "icon": "🔗",
+          "action": "chain",
+          "actions": [
+            {
+              "action": "exec",
+              "command": "echo 'Step 1'"
+            },
+            {
+              "action": "exec",
+              "command": "echo 'Step 2'"
+            }
+          ],
+          "stopOnError": true
+        }
+      ]
     }
   ],
   "appearance": {
@@ -238,6 +335,11 @@ This flag is set to `true` after the first launch setup is completed. It is used
     "hideOnBlur": true,
     "hideOnEscape": true,
     "showInTaskbar": false
+  },
+  "subscription": {
+    "isSubscribed": false,
+    "subscribedUntil": "",
+    "pageGroups": 1
   },
   "firstLaunchCompleted": true
 }

@@ -40,6 +40,102 @@ function importConfig(config, filePath)
 function exportConfig(config, filePath)
 ```
 
+#### Configuration Schema
+
+```javascript
+// Default configuration schema
+const schema = {
+  globalHotkey: {
+    type: 'string',
+    default: 'Alt+Space'
+  },
+  pages: {
+    type: 'array',
+    default: []
+  },
+  appearance: {
+    type: 'object',
+    properties: {
+      theme: {
+        type: 'string',
+        enum: ['light', 'dark', 'system'],
+        default: 'system'
+      },
+      position: {
+        type: 'string',
+        enum: ['center', 'top', 'bottom', 'cursor'],
+        default: 'center'
+      },
+      size: {
+        type: 'string',
+        enum: ['small', 'medium', 'large'],
+        default: 'medium'
+      },
+      opacity: {
+        type: 'number',
+        minimum: 0.1,
+        maximum: 1.0,
+        default: 0.95
+      },
+      buttonLayout: {
+        type: 'string',
+        enum: ['grid', 'list'],
+        default: 'grid'
+      }
+    },
+    default: {...}
+  },
+  advanced: {
+    type: 'object',
+    properties: {
+      launchAtLogin: {
+        type: 'boolean',
+        default: false
+      },
+      hideAfterAction: {
+        type: 'boolean',
+        default: true
+      },
+      hideOnBlur: {
+        type: 'boolean',
+        default: true
+      },
+      hideOnEscape: {
+        type: 'boolean',
+        default: true
+      },
+      showInTaskbar: {
+        type: 'boolean',
+        default: false
+      }
+    },
+    default: {...}
+  },
+  subscription: {
+    type: 'object',
+    properties: {
+      isSubscribed: {
+        type: 'boolean',
+        default: false
+      },
+      subscribedUntil: {
+        type: 'string',
+        default: ''
+      },
+      pageGroups: {
+        type: 'number',
+        default: 1
+      }
+    },
+    default: {...}
+  },
+  firstLaunchCompleted: {
+    type: 'boolean',
+    default: false
+  }
+};
+```
+
 #### Usage Example
 
 ```javascript
@@ -50,6 +146,9 @@ const config = createConfigStore();
 
 // Get a configuration value
 const globalHotkey = config.get('globalHotkey');
+
+// Get all pages
+const pages = config.get('pages');
 
 // Set a configuration value
 config.set('globalHotkey', 'Alt+Space');
@@ -73,12 +172,28 @@ The Executor module handles the execution of actions.
 async function executeAction(action)
 
 /**
+ * Execute a series of actions in sequence
+ * @param {Object} chainAction - Chain action configuration
+ * @param {Array} chainAction.actions - Array of actions to execute
+ * @returns {Promise<Object>} Result object
+ */
+async function executeChainedActions(chainAction)
+
+/**
  * Test an action without executing it
  * @param {Object} action - Action configuration
  * @returns {Promise<Object>} Validation result
  */
 async function validateAction(action)
 ```
+
+#### Supported Action Types
+
+- `exec`: Execute a shell command
+- `open`: Open a URL, file, or folder
+- `shortcut`: Execute a keyboard shortcut
+- `script`: Execute a custom script
+- `chain`: Execute a series of actions in sequence
 
 #### Usage Example
 
@@ -118,6 +233,19 @@ The Shortcuts module handles global keyboard shortcuts.
 function registerGlobalShortcuts(config, windows)
 
 /**
+ * Toggle the visibility of the Toast window
+ * @param {BrowserWindow} toastWindow - Toast window
+ */
+function toggleToastWindow(toastWindow)
+
+/**
+ * Position the Toast window based on configuration
+ * @param {BrowserWindow} toastWindow - Toast window
+ * @param {Object} [config] - Configuration store (optional)
+ */
+function positionToastWindow(toastWindow, config)
+
+/**
  * Unregister all global shortcuts
  */
 function unregisterGlobalShortcuts()
@@ -128,14 +256,14 @@ function unregisterGlobalShortcuts()
  * @returns {boolean} Whether the shortcut is registered
  */
 function isShortcutRegistered(accelerator)
-
-/**
- * Position the Toast window based on configuration
- * @param {BrowserWindow} toastWindow - Toast window
- * @param {Object} [config] - Configuration store (optional)
- */
-function positionToastWindow(toastWindow, config)
 ```
+
+#### Position Options
+
+- `center`: Center of the screen
+- `top`: Top center of the screen
+- `bottom`: Bottom center of the screen
+- `cursor`: Near the cursor position
 
 #### Usage Example
 
@@ -147,6 +275,9 @@ registerGlobalShortcuts(config, windows);
 
 // Unregister global shortcuts
 unregisterGlobalShortcuts();
+
+// Position the Toast window
+positionToastWindow(windows.toast, config);
 ```
 
 ### Tray Module (`src/main/tray.js`)
@@ -203,11 +334,29 @@ The Windows module handles window creation and management.
 function createToastWindow(config)
 
 /**
+ * Set up event handlers for the Toast window
+ * @param {BrowserWindow} toastWindow - Toast window
+ * @param {Object} config - Configuration store
+ */
+function setupToastWindowEvents(toastWindow, config)
+
+/**
  * Create the Settings window
  * @param {Object} config - Configuration store
  * @returns {BrowserWindow} Settings window
  */
 function createSettingsWindow(config)
+
+/**
+ * Set up event handlers for the Settings window
+ * @param {BrowserWindow} settingsWindow - Settings window
+ */
+function setupSettingsWindowEvents(settingsWindow)
+
+/**
+ * Activate English keyboard input source (platform-specific)
+ */
+function activateEnglishKeyboard()
 
 /**
  * Show the Toast window
@@ -232,6 +381,17 @@ function showSettingsWindow(config)
 function closeAllWindows()
 ```
 
+#### Window Properties
+
+- **Toast Window Properties**: `frame`, `transparent`, `resizable`, `skipTaskbar`, `alwaysOnTop`
+- **Settings Window Properties**: `minWidth`, `minHeight`, `contextIsolation`, `nodeIntegration`
+
+#### Window Size Options
+
+- `small`: 500x350 pixels
+- `medium`: 700x500 pixels
+- `large`: 800x550 pixels
+
 #### Usage Example
 
 ```javascript
@@ -245,6 +405,9 @@ showToastWindow(config);
 
 // Hide the Toast window
 hideToastWindow();
+
+// Activate English keyboard for input
+activateEnglishKeyboard();
 ```
 
 ### IPC Module (`src/main/ipc.js`)
@@ -269,14 +432,18 @@ function setupIpcHandlers(windows)
 | `validate-action` | handle | Validate an action |
 | `get-config` | handle | Get configuration |
 | `set-config` | handle | Set configuration |
+| `save-config` | handle | Save specific configuration changes |
 | `reset-config` | handle | Reset configuration to defaults |
 | `import-config` | handle | Import configuration from a file |
 | `export-config` | handle | Export configuration to a file |
 | `show-toast` | on | Show the Toast window |
 | `hide-toast` | on | Hide the Toast window |
 | `show-settings` | on | Show the Settings window |
+| `close-settings` | on | Close the Settings window |
 | `restart-app` | on | Restart the application |
 | `quit-app` | on | Quit the application |
+| `temporarily-disable-shortcuts` | handle | Temporarily disable global shortcuts for recording |
+| `restore-shortcuts` | handle | Restore global shortcuts after recording |
 | `show-open-dialog` | handle | Show the open file dialog |
 | `show-save-dialog` | handle | Show the save file dialog |
 | `show-message-box` | handle | Show a message box |
@@ -309,6 +476,14 @@ The Exec Action module handles executing shell commands.
  * @returns {Promise<Object>} Result object
  */
 async function executeCommand(action)
+
+/**
+ * Open a command in the terminal
+ * @param {string} command - Command to execute
+ * @param {string} [workingDir] - Working directory
+ * @returns {Promise<Object>} Result object
+ */
+async function openInTerminal(command, workingDir)
 ```
 
 ### Open Action (`src/main/actions/open.js`)
@@ -327,6 +502,29 @@ The Open Action module handles opening URLs, files, and folders.
  * @returns {Promise<Object>} Result object
  */
 async function openItem(action)
+
+/**
+ * Open a URL in the default browser
+ * @param {string} url - URL to open
+ * @returns {Promise<Object>} Result object
+ */
+async function openUrl(url)
+
+/**
+ * Open a file or folder
+ * @param {string} itemPath - Path to file or folder
+ * @param {string} [application] - Application to use for opening
+ * @returns {Promise<Object>} Result object
+ */
+async function openPath(itemPath, application)
+
+/**
+ * Open a file with a specific application
+ * @param {string} filePath - Path to file
+ * @param {string} application - Application to use
+ * @returns {Promise<Object>} Result object
+ */
+async function openWithApplication(filePath, application)
 ```
 
 ### Shortcut Action (`src/main/actions/shortcut.js`)
@@ -343,6 +541,20 @@ The Shortcut Action module handles sending keyboard shortcuts to the system.
  * @returns {Promise<Object>} Result object
  */
 async function executeShortcut(action)
+
+/**
+ * Parse a shortcut string into an array of keys
+ * @param {string} shortcutString - Shortcut string (e.g., "Ctrl+Shift+A")
+ * @returns {Array} Array of key constants
+ */
+function parseShortcut(shortcutString)
+
+/**
+ * Press a combination of keys
+ * @param {Array} keys - Array of key constants
+ * @returns {Promise<void>}
+ */
+async function pressKeys(keys)
 ```
 
 ### Script Action (`src/main/actions/script.js`)
@@ -361,6 +573,35 @@ The Script Action module handles executing custom scripts in various languages.
  * @returns {Promise<Object>} Result object
  */
 async function executeScript(action)
+
+/**
+ * Execute JavaScript code
+ * @param {string} script - JavaScript code
+ * @param {Object} [params] - Parameters to pass to the script
+ * @returns {Promise<Object>} Result object
+ */
+async function executeJavaScript(script, params)
+
+/**
+ * Execute AppleScript (macOS only)
+ * @param {string} script - AppleScript code
+ * @returns {Promise<Object>} Result object
+ */
+async function executeAppleScript(script)
+
+/**
+ * Execute PowerShell script (Windows only)
+ * @param {string} script - PowerShell script
+ * @returns {Promise<Object>} Result object
+ */
+async function executePowerShell(script)
+
+/**
+ * Execute Bash script (macOS/Linux only)
+ * @param {string} script - Bash script
+ * @returns {Promise<Object>} Result object
+ */
+async function executeBash(script)
 ```
 
 ## Renderer Process APIs
@@ -380,22 +621,47 @@ window.toast.executeAction(action) // Execute an action
 
 // Window control
 window.toast.hideWindow() // Hide the Toast window
+window.toast.showSettings() // Show the Settings window
+
+// Platform information
+window.toast.platform // The platform (darwin, win32, linux)
+
+// Save configuration
+window.toast.saveConfig(config) // Save configuration changes
 
 // Events
 window.toast.onConfigUpdated(callback) // Listen for configuration updates
+```
+
+#### Events
+
+```javascript
+// Configuration loaded event
+window.addEventListener('config-loaded', (event) => {
+  const config = event.detail;
+  // detail contains: pages, appearance, subscription
+});
+
+// Before window hide event
+window.addEventListener('before-window-hide', () => {
+  // Clean up before the window is hidden
+});
 ```
 
 #### Usage Example
 
 ```javascript
 // Get configuration
-const buttons = await window.toast.getConfig('buttons');
+const pages = await window.toast.getConfig('pages');
 
 // Execute an action
 const result = await window.toast.executeAction({
   action: 'exec',
   command: 'echo "Hello, world!"'
 });
+
+// Save configuration (e.g., updating pages)
+await window.toast.saveConfig({ pages: updatedPages });
 
 // Hide the window
 window.toast.hideWindow();
@@ -405,8 +671,12 @@ const removeListener = window.toast.onConfigUpdated((config) => {
   console.log('Configuration updated:', config);
 });
 
-// Remove the listener when no longer needed
-removeListener();
+// Check platform for platform-specific behavior
+if (window.toast.platform === 'darwin') {
+  // macOS specific code
+} else if (window.toast.platform === 'win32') {
+  // Windows specific code
+}
 ```
 
 ### Settings Window API (`src/renderer/preload/settings.js`)
@@ -429,6 +699,7 @@ window.settings.validateAction(action) // Validate an action
 
 // Window control
 window.settings.showToast() // Show the Toast window
+window.settings.closeWindow() // Close the Settings window
 
 // Dialog
 window.settings.showOpenDialog(options) // Show the open file dialog
@@ -439,9 +710,23 @@ window.settings.showMessageBox(options) // Show a message box
 window.settings.restartApp() // Restart the application
 window.settings.quitApp() // Quit the application
 
+// Shortcuts control for recording
+window.settings.temporarilyDisableShortcuts() // Temporarily disable global shortcuts
+window.settings.restoreShortcuts() // Restore global shortcuts
+
 // System information
 window.settings.getPlatform() // Get the platform (darwin, win32, linux)
 window.settings.getVersion() // Get the application version
+```
+
+#### Events
+
+```javascript
+// Configuration loaded event
+window.addEventListener('config-loaded', (event) => {
+  const config = event.detail;
+  // Contains the full configuration object
+});
 ```
 
 #### Usage Example
@@ -464,9 +749,21 @@ const result = await window.settings.showOpenDialog({
   properties: ['openFile']
 });
 
-if (!result.canceled) {
-  console.log('Selected file:', result.filePaths[0]);
-}
+// Temporarily disable shortcuts for recording
+await window.settings.temporarilyDisableShortcuts();
+
+// Record shortcut here...
+
+// Restore shortcuts
+await window.settings.restoreShortcuts();
+
+// Show a message box
+await window.settings.showMessageBox({
+  type: 'info',
+  title: 'Information',
+  message: 'This is an information message',
+  buttons: ['OK']
+});
 ```
 
 ## Result Objects
@@ -504,6 +801,40 @@ Many API functions return result objects with a consistent structure:
 }
 ```
 
+## Page and Button Structure
+
+### Page Object
+
+```javascript
+{
+  name: "Applications", // Display name of the page
+  shortcut: "1", // Keyboard shortcut to access the page (1-9)
+  buttons: [
+    // Array of button objects
+  ]
+}
+```
+
+### Button Object
+
+```javascript
+{
+  name: "Terminal", // Display name of the button
+  shortcut: "T", // Keyboard shortcut (single character)
+  icon: "⌨️", // Emoji or icon
+  action: "exec", // Action type (exec, open, shortcut, script, chain)
+
+  // Additional properties based on action type:
+  command: "open -a Terminal", // For exec action
+  url: "https://example.com", // For open action
+  keys: "Ctrl+C", // For shortcut action
+  script: "console.log('Hello');", // For script action
+  scriptType: "javascript", // For script action
+  actions: [], // For chain action (array of actions)
+  stopOnError: true // For chain action
+}
+```
+
 ## Event System
 
 The application uses several event systems:
@@ -519,9 +850,24 @@ Used for communication within renderer processes.
 #### Config Loaded Event
 
 ```javascript
+// In Toast window
 window.addEventListener('config-loaded', (event) => {
-  const config = event.detail;
+  const { pages, appearance, subscription } = event.detail;
   // Handle configuration
+});
+
+// In Settings window
+window.addEventListener('config-loaded', (event) => {
+  const config = event.detail; // Full configuration object
+  // Handle configuration
+});
+```
+
+#### Before Window Hide Event
+
+```javascript
+window.addEventListener('before-window-hide', () => {
+  // Clean up before the window is hidden (e.g., exit edit mode)
 });
 ```
 
@@ -547,10 +893,11 @@ The API implements several security measures:
 
 Some APIs have platform-specific behavior:
 
-1. **Shortcuts**: Different modifier keys on macOS and Windows.
+1. **Shortcuts**: Different modifier keys on macOS (`Command`) and Windows (`Ctrl`).
 2. **File Paths**: Different path formats on different platforms.
 3. **Script Execution**: AppleScript only on macOS, PowerShell only on Windows.
 4. **Terminal Commands**: Different terminal commands on different platforms.
+5. **Keyboard Input**: English keyboard activation differs between platforms.
 
 ## Extending the API
 

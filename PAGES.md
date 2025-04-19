@@ -9,7 +9,7 @@ Toast App consists of two main windows:
 1. **Toast Window**: The popup window that appears when the global hotkey is pressed
 2. **Settings Window**: The window for configuring the application
 
-Each window has its own layout, components, and navigation patterns.
+Each window has its own layout, components, and navigation patterns. The Toast window supports multiple pages of buttons, allowing users to organize their actions into logical groups.
 
 ## Toast Window
 
@@ -18,33 +18,33 @@ The Toast window is the main interface that users interact with to execute actio
 ### Layout
 
 ```
-┌─────────────────────────────────────┐
-│              Toast                 × │
-├─────────────────────────────────────┤
-│ ┌─────────────────────────────────┐ │
-│ │          Search...              │ │
-│ └─────────────────────────────────┘ │
-│                                     │
-│ ┌───────────┐       ┌───────────┐   │
-│ │    📁     │       │    🌐     │   │
-│ │           │       │           │   │
-│ │  Files  F │       │ Browser B │   │
-│ └───────────┘       └───────────┘   │
-│                                     │
-│ ┌───────────┐       ┌───────────┐   │
-│ │    ⌨️     │       │    📝     │   │
-│ │           │       │           │   │
-│ │ Terminal T│       │  Notes  N │   │
-│ └───────────┘       └───────────┘   │
-│                                     │
-│ ┌───────────┐       ┌───────────┐   │
-│ │    🔊     │       │    🔍     │   │
-│ │           │       │           │   │
-│ │  Music  M │       │ Search  S │   │
-│ └───────────┘       └───────────┘   │
-│                                     │
-│ Status: Ready                       │
-└─────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                       Toast                              × │
+├───────────────────────────────────────────────────────────┤
+│ ┌───────────────────────────────────────────────────────┐ │
+│ │   1   │   2   │   3   │   +   │   -                   │ │
+│ └───────────────────────────────────────────────────────┘ │
+│                                                           │
+│ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐     │
+│ │   📁    │   │   🌐    │   │   ⌨️    │   │   📝    │     │
+│ │         │   │         │   │         │   │         │     │
+│ │ Files Q │   │Browser W│   │Terminal E│   │ Notes R │     │
+│ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
+│                                                           │
+│ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐     │
+│ │   🔊    │   │   🔍    │   │   🔧    │   │   📸    │     │
+│ │         │   │         │   │         │   │         │     │
+│ │ Music A │   │Search S │   │Settings D│   │ Capture F│    │
+│ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
+│                                                           │
+│ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐     │
+│ │   🗓️    │   │   💬    │   │   📊    │   │   📡    │     │
+│ │         │   │         │   │         │   │         │     │
+│ │Calendar Z│   │ Chat X  │   │ Stats C │   │Network V│     │
+│ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
+│                                                           │
+│ Status: Ready                               Settings ⚙️   │
+└───────────────────────────────────────────────────────────┘
 ```
 
 ### Components
@@ -54,18 +54,19 @@ The Toast window is the main interface that users interact with to execute actio
 - **Title**: Displays "Toast" as the window title
 - **Close Button**: Closes the Toast window
 
-#### Search Bar
+#### Page Navigation
 
-- **Search Input**: Allows users to search for buttons by name or shortcut
-- **Search Results**: Filters the button list as the user types
+- **Page Buttons**: Numbered buttons (1-9) to switch between pages
+- **Add Page Button**: Adds a new page of buttons (+)
+- **Remove Page Button**: Removes the current page (-)
 
 #### Button Grid
 
-- **Buttons**: Displays the configured buttons in a grid or list layout
+- **Buttons**: Displays the configured buttons in a grid or list layout (up to 15 buttons per page)
 - **Button Components**:
-  - **Icon**: Visual representation of the button
+  - **Icon**: Visual representation of the button (emoji or custom icon)
   - **Name**: Display name of the button
-  - **Shortcut**: Single-key shortcut for the button
+  - **Shortcut**: Single-key shortcut for the button (Q-Z, A-M letters)
 
 #### Status Bar
 
@@ -73,8 +74,9 @@ The Toast window is the main interface that users interact with to execute actio
 - **Status Types**:
   - **Ready**: Default state
   - **Executing**: Action is being executed
-  - **Success**: Action completed successfully
+  - **Success**: Action completed successfully (auto-hides after 3 seconds)
   - **Error**: Action failed
+- **Settings Toggle**: Button to toggle settings mode (⚙️)
 
 ### Navigation
 
@@ -82,14 +84,27 @@ The Toast window is the main interface that users interact with to execute actio
 
 - **Arrow Keys**: Navigate between buttons
 - **Enter**: Execute the selected button
-- **Escape**: Close the Toast window
+- **Escape**: Close the Toast window or exit settings mode
 - **Shortcut Keys**: Execute the corresponding button
+- **Number Keys (1-9)**: Switch between pages
+- **Plus Key (+)**: Add a new page (with Shift)
+- **Minus Key (-)**: Remove current page (in settings mode)
+- **Comma Key (,)**: Toggle settings mode
 
 #### Mouse Navigation
 
-- **Click**: Execute a button
+- **Click**: Execute a button or edit in settings mode
 - **Hover**: Highlight a button
-- **Scroll**: Scroll through buttons if there are many
+- **Click Page Numbers**: Switch between pages
+- **Click + Button**: Add a new page
+- **Click - Button**: Remove the current page
+- **Click Settings Icon**: Toggle settings mode
+
+#### Settings Mode
+
+- **Toggle**: Click the gear icon (⚙️) or press comma (,) key
+- **Edit Buttons**: Click any button to edit its properties
+- **Exit**: Press Escape key or click the gear icon again
 
 #### Search Navigation
 
@@ -105,7 +120,7 @@ The Settings window allows users to configure the application.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Toast App Settings                       │
+│                     Toast Settings                          │
 ├─────────────┬───────────────────────────────────────────────┤
 │             │                                               │
 │  General    │  General Settings                             │
@@ -188,16 +203,14 @@ The main content area displays different settings based on the selected tab.
 
 #### Button Editor Dialog
 
-The button editor dialog appears when adding or editing a button.
+The button editor dialog appears when editing a button in settings mode. This dialog is displayed directly in the Toast window when a button is clicked in settings mode.
 
 ```
 ┌─────────────────────────────────────────┐
-│  Add Button                           × │
+│  Edit Button Settings                  × │
 ├─────────────────────────────────────────┤
 │                                         │
-│  Name: [                          ]     │
-│                                         │
-│  Shortcut Key: [ ]                      │
+│  Button Name: [                    ]    │
 │                                         │
 │  Icon: [                          ]     │
 │                                         │
@@ -205,11 +218,11 @@ The button editor dialog appears when adding or editing a button.
 │                                         │
 │  Command: [                        ]    │
 │                                         │
-│  Working Directory: [              ]    │
+│  URL: [                            ]    │
 │                                         │
-│  ☐ Run in Terminal                      │
+│  Script: [                         ]    │
 │                                         │
-│  [Test Action]                          │
+│  Key Combination: [                ]    │
 │                                         │
 ├─────────────────────────────────────────┤
 │  [Save]                      [Cancel]   │
@@ -217,18 +230,22 @@ The button editor dialog appears when adding or editing a button.
 ```
 
 - **Dialog Header**:
-  - **Title**: "Add Button" or "Edit Button"
+  - **Title**: "Edit Button Settings"
   - **Close Button**: Closes the dialog
 - **Button Properties**:
-  - **Name**: Display name of the button
-  - **Shortcut Key**: Single-key shortcut for the button
-  - **Icon**: Emoji or icon name
-  - **Action Type**: Type of action to execute
-- **Action Parameters**: Different parameters based on the selected action type
-- **Test Action**: Tests the action with the current parameters
+  - **Button Name**: Display name of the button
+  - **Icon**: Emoji or custom icon
+  - **Action Type**: Type of action to execute (exec, open, script, shortcut)
+- **Action Parameters**: Different parameters based on the selected action type:
+  - **Execute Command**: Command field
+  - **Open URL**: URL field
+  - **Run Script**: Script text area
+  - **Execute Shortcut**: Key Combination field
 - **Dialog Footer**:
-  - **Save Button**: Saves the button
+  - **Save Button**: Saves the button changes
   - **Cancel Button**: Cancels changes and closes the dialog
+
+Note: The shortcut key cannot be changed when editing a button as it's used as the button's identifier within a page.
 
 ### Navigation
 
@@ -259,10 +276,7 @@ The system tray menu provides quick access to Toast App functions.
 ├─────────────────┤
 │  Settings       │
 ├─────────────────┤
-│  Help           │
-│  └─ Documentation│
-│  └─ Report Issue │
-│  └─ About       │
+│  About Toast    │
 ├─────────────────┤
 │  Quit           │
 └─────────────────┘
@@ -272,10 +286,7 @@ The system tray menu provides quick access to Toast App functions.
 
 - **Open Toast**: Opens the Toast window
 - **Settings**: Opens the Settings window
-- **Help**: Submenu with help options
-  - **Documentation**: Opens the documentation
-  - **Report Issue**: Opens the issue tracker
-  - **About**: Shows information about Toast App
+- **About Toast**: Shows information about Toast
 - **Quit**: Quits the application
 
 ### Navigation
@@ -326,9 +337,9 @@ The system tray menu provides quick access to Toast App functions.
 
 ### Toast Window
 
-- **Small Screen**: Buttons arranged in a single column
-- **Medium Screen**: Buttons arranged in a 2x2 grid
-- **Large Screen**: Buttons arranged in a 3x3 grid
+- **Small Screen**: Buttons arranged in a 3x3 grid
+- **Medium Screen**: Buttons arranged in a 4x3 grid
+- **Large Screen**: Buttons arranged in a 5x3 grid
 
 ### Settings Window
 

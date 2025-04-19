@@ -1,5 +1,5 @@
 /**
- * Toast App - Toast Window Preload Script
+ * Toast - Toast Window Preload Script
  *
  * This script runs in the context of the Toast window and provides
  * a bridge between the renderer process and the main process.
@@ -19,7 +19,18 @@ contextBridge.exposeInMainWorld(
     executeAction: (action) => ipcRenderer.invoke('execute-action', action),
 
     // Window control
-    hideWindow: () => ipcRenderer.send('hide-toast'),
+    hideWindow: () => {
+      // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+      window.dispatchEvent(new Event('before-window-hide'));
+      ipcRenderer.send('hide-toast');
+    },
+    showSettings: () => ipcRenderer.send('show-settings'),
+
+    // Platform information
+    platform: process.platform,
+
+    // Save configuration
+    saveConfig: (config) => ipcRenderer.invoke('save-config', config),
 
     // Listen for events
     onConfigUpdated: (callback) => {
@@ -40,10 +51,17 @@ window.addEventListener('keydown', (event) => {
     ipcRenderer.invoke('get-config', 'advanced.hideOnEscape')
       .then(hideOnEscape => {
         if (hideOnEscape !== false) {
+          // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+          window.dispatchEvent(new Event('before-window-hide'));
           ipcRenderer.send('hide-toast');
         }
       });
   }
+});
+
+// 메인 프로세스로부터 before-hide 이벤트 수신
+ipcRenderer.on('before-hide', () => {
+  window.dispatchEvent(new Event('before-window-hide'));
 });
 
 // Notify main process that the window is ready
@@ -53,8 +71,9 @@ window.addEventListener('DOMContentLoaded', () => {
       // Dispatch a custom event with the configuration
       window.dispatchEvent(new CustomEvent('config-loaded', {
         detail: {
-          buttons: config.buttons,
-          appearance: config.appearance
+          pages: config.pages,
+          appearance: config.appearance,
+          subscription: config.subscription
         }
       }));
     });

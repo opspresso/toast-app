@@ -1,5 +1,5 @@
 /**
- * Toast App - Window Management
+ * Toast - Window Management
  *
  * This module handles the creation and management of application windows.
  */
@@ -34,16 +34,16 @@ function createToastWindow(config) {
   let width, height;
   switch (size) {
     case 'small':
-      width = 350;
-      height = 400;
+      width = 500;
+      height = 350;
       break;
     case 'large':
-      width = 500;
-      height = 600;
+      width = 800;
+      height = 550;
       break;
     case 'medium':
     default:
-      width = 400;
+      width = 700;
       height = 500;
       break;
   }
@@ -96,6 +96,8 @@ function setupToastWindowEvents(toastWindow, config) {
   toastWindow.on('blur', () => {
     const hideOnBlur = config.get('advanced.hideOnBlur');
     if (hideOnBlur !== false) {
+      // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+      toastWindow.webContents.send('before-hide');
       toastWindow.hide();
     }
   });
@@ -111,8 +113,9 @@ function setupToastWindowEvents(toastWindow, config) {
   // When the window is shown, send the configuration to the renderer
   toastWindow.on('show', () => {
     toastWindow.webContents.send('config-updated', {
-      buttons: config.get('buttons'),
-      appearance: config.get('appearance')
+      pages: config.get('pages'),
+      appearance: config.get('appearance'),
+      subscription: config.get('subscription')
     });
   });
 }
@@ -174,6 +177,29 @@ function setupSettingsWindowEvents(settingsWindow) {
 }
 
 /**
+ * 영문 키보드 입력소스 활성화 (OS별 처리)
+ */
+function activateEnglishKeyboard() {
+  const { exec } = require('child_process');
+
+  if (process.platform === 'darwin') {
+    // macOS에서 영문 키보드 활성화
+    exec('osascript -e \'tell application "System Events" to keystroke space using {control down, command down}\'', (error) => {
+      if (error) {
+        console.error('영문 키보드 전환 실패:', error);
+      }
+    });
+  } else if (process.platform === 'win32') {
+    // Windows에서 영문 키보드 활성화 (US 영문)
+    exec('powershell -command "$wshell = New-Object -ComObject WScript.Shell; $wshell.SendKeys(\'%{SHIFT}\');"', (error) => {
+      if (error) {
+        console.error('영문 키보드 전환 실패:', error);
+      }
+    });
+  }
+}
+
+/**
  * Show the Toast window
  * @param {Object} config - Configuration store
  */
@@ -185,6 +211,9 @@ function showToastWindow(config) {
 
   // Position the window
   positionToastWindow(windows.toast, config);
+
+  // 영문 키보드 입력소스 활성화
+  activateEnglishKeyboard();
 
   // Show and focus the window
   windows.toast.show();

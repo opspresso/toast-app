@@ -9,20 +9,86 @@
 <body>
   <div class="toast-container">
     <div class="toast-header">
-      <div class="toast-title">Toast</div>
-      <div class="toast-close" id="close-button">×</div>
+      <div class="toast-title-container">
+        <img src="../../assets/icon.png" class="toast-logo" alt="Toast Logo">
+        <div class="toast-title">Toast</div>
+      </div>
+      <div class="toast-header-buttons">
+        <div class="toast-close" id="close-button">×</div>
+      </div>
     </div>
 
-    <div class="toast-search-container">
-      <input type="text" id="search-input" class="toast-search" placeholder="Search...">
+    <div class="toast-paging-container" id="paging-container">
+      <!-- Paging buttons and add button will be in same line -->
+      <div class="toast-paging-wrapper">
+        <!-- Page buttons will be dynamically created -->
+        <div class="toast-paging-buttons" id="paging-buttons-container"></div>
+        <button id="add-page-button" class="add-page-button" title="Add Page">+</button>
+        <button id="remove-page-button" class="remove-page-button" title="Remove Current Page">−</button>
+      </div>
     </div>
 
     <div class="toast-buttons" id="buttons-container">
-      <!-- Buttons will be dynamically inserted here -->
+      <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
     </div>
 
-    <div class="toast-status" id="status-container">
-      <!-- Status messages will be displayed here -->
+    <div class="toast-footer">
+      <div class="toast-status" id="status-container">
+        <!-- Status messages will be displayed here -->
+      </div>
+      <div class="toast-settings">
+        <div class="toast-mode-toggle" id="settings-mode-toggle" title="Settings Mode">⚙️</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Button Edit Modal -->
+  <div id="button-edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Button Settings</h2>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-button-name">Button Name</label>
+          <input type="text" id="edit-button-name" placeholder="Button Name">
+        </div>
+        <div class="form-group">
+          <label for="edit-button-icon">Icon</label>
+          <input type="text" id="edit-button-icon" placeholder="Emoji Icon">
+        </div>
+        <!-- 단축키 필드는 숨김 처리 (변경 불가) -->
+        <input type="hidden" id="edit-button-shortcut">
+        <div class="form-group">
+          <label for="edit-button-action">Action Type</label>
+          <select id="edit-button-action">
+            <option value="exec">Execute Command</option>
+            <option value="open">Open URL</option>
+            <option value="script">Run Script</option>
+            <option value="shortcut">Execute Shortcut</option>
+          </select>
+        </div>
+        <div class="form-group" id="command-input-group">
+          <label for="edit-button-command">Command</label>
+          <input type="text" id="edit-button-command" placeholder="Command to execute">
+        </div>
+        <div class="form-group" id="url-input-group" style="display: none;">
+          <label for="edit-button-url">URL</label>
+          <input type="text" id="edit-button-url" placeholder="URL to open">
+        </div>
+        <div class="form-group" id="script-input-group" style="display: none;">
+          <label for="edit-button-script">Script</label>
+          <textarea id="edit-button-script" placeholder="Script to execute"></textarea>
+        </div>
+        <div class="form-group" id="shortcut-input-group" style="display: none;">
+          <label for="edit-button-key-shortcut">Key Combination</label>
+          <input type="text" id="edit-button-key-shortcut" placeholder="Set shortcut keys">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="save-button-edit" class="primary-button">Save</button>
+        <button id="cancel-button-edit" class="secondary-button">Cancel</button>
+      </div>
     </div>
   </div>
 

@@ -1,5 +1,5 @@
 /**
- * Toast App - Keyboard Shortcut Action
+ * Toast - Keyboard Shortcut Action
  *
  * This module handles sending keyboard shortcuts to the system.
  */

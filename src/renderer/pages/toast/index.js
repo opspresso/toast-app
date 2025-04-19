@@ -1,20 +1,173 @@
 /**
- * Toast App - Toast Window JavaScript
+ * Toast - Toast Window JavaScript
  *
  * This script handles the functionality of the Toast popup window.
  */
 
 // DOM Elements
 const buttonsContainer = document.getElementById('buttons-container');
-const searchInput = document.getElementById('search-input');
+const pagingContainer = document.getElementById('paging-container');
+const pagingButtonsContainer = document.getElementById('paging-buttons-container');
 const closeButton = document.getElementById('close-button');
 const statusContainer = document.getElementById('status-container');
 const buttonTemplate = document.getElementById('button-template');
+const settingsModeToggle = document.getElementById('settings-mode-toggle');
+const addPageButton = document.getElementById('add-page-button');
+const removePageButton = document.getElementById('remove-page-button');
+
+// Modal related DOM elements
+const buttonEditModal = document.getElementById('button-edit-modal');
+const closeModalButton = document.querySelector('.close-modal');
+const saveButtonEdit = document.getElementById('save-button-edit');
+const cancelButtonEdit = document.getElementById('cancel-button-edit');
+const editButtonNameInput = document.getElementById('edit-button-name');
+const editButtonIconInput = document.getElementById('edit-button-icon');
+const editButtonShortcutInput = document.getElementById('edit-button-shortcut');
+const editButtonActionSelect = document.getElementById('edit-button-action');
+const editButtonCommandInput = document.getElementById('edit-button-command');
+const editButtonUrlInput = document.getElementById('edit-button-url');
+const editButtonScriptInput = document.getElementById('edit-button-script');
+const editButtonKeyShortcutInput = document.getElementById('edit-button-key-shortcut');
+const commandInputGroup = document.getElementById('command-input-group');
+const urlInputGroup = document.getElementById('url-input-group');
+const scriptInputGroup = document.getElementById('script-input-group');
+const shortcutInputGroup = document.getElementById('shortcut-input-group');
+
+// Define default button set
+const defaultButtons = [
+  // qwert row
+  {
+    name: 'VSCode',
+    shortcut: 'Q',
+    icon: '💻',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
+  },
+  {
+    name: 'Photos',
+    shortcut: 'W',
+    icon: '🖼️',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Photos' : 'start ms-photos:'
+  },
+  {
+    name: 'Notes',
+    shortcut: 'E',
+    icon: '📝',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Notes' : 'start onenote:'
+  },
+  {
+    name: 'Maps',
+    shortcut: 'R',
+    icon: '🗺️',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Maps' : 'start bingmaps:'
+  },
+  {
+    name: 'Messages',
+    shortcut: 'T',
+    icon: '💬',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Messages' : 'start ms-chat:'
+  },
+  // asdfg row
+  {
+    name: 'App Store',
+    shortcut: 'A',
+    icon: '🛒',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
+  },
+  {
+    name: 'Spotify',
+    shortcut: 'S',
+    icon: '🎧',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Spotify' : 'start spotify:'
+  },
+  {
+    name: 'Dictionary',
+    shortcut: 'D',
+    icon: '📚',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:'
+  },
+  {
+    name: 'Finder',
+    shortcut: 'F',
+    icon: '🔍',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open .' : 'explorer .'
+  },
+  {
+    name: 'GitHub',
+    shortcut: 'G',
+    icon: '🐙',
+    action: 'open',
+    url: 'https://github.com'
+  },
+  // zxcvb row
+  {
+    name: 'Zoom',
+    shortcut: 'Z',
+    icon: '📹',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
+  },
+  {
+    name: 'Excel',
+    shortcut: 'X',
+    icon: '📊',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Microsoft Excel"' : 'start excel'
+  },
+  {
+    name: 'Calculator',
+    shortcut: 'C',
+    icon: '🧮',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Calculator' : 'calc'
+  },
+  {
+    name: 'Video Player',
+    shortcut: 'V',
+    icon: '🎬',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "QuickTime Player"' : 'start wmplayer'
+  },
+  {
+    name: 'Brave',
+    shortcut: 'B',
+    icon: '🦁',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Brave Browser"' : 'start brave'
+  }
+];
+
+// Define empty button set (15 buttons)
+const emptyButtons = Array(15).fill(null).map((_, index) => {
+  const row = Math.floor(index / 5);
+  const col = index % 5;
+  const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
+
+  return {
+    name: `Button ${rowLetters[index]}`,
+    shortcut: rowLetters[index],
+    icon: '➕',
+    action: 'exec',
+    command: ''
+  };
+});
 
 // State
-let buttons = [];
-let selectedButtonIndex = -1;
-let filteredButtons = [];
+let pages = []; // Array of pages (each page has an array of buttons)
+let selectedButtonIndex = -1; // Currently selected button index
+let filteredButtons = []; // Filtered buttons
+let currentPageIndex = 0; // Current page index
+let isSettingsMode = false; // Settings mode state
+let isSubscribed = true; // Subscription status (default: subscribed)
+let currentEditingButton = null; // Currently editing button
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,11 +175,20 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('config-loaded', (event) => {
     const config = event.detail;
 
-    // Set up buttons
-    if (config.buttons) {
-      buttons = config.buttons;
-      filteredButtons = [...buttons];
-      renderButtons();
+    // Page settings
+    if (config.pages) {
+      pages = config.pages;
+
+      // Initialize paging buttons
+      renderPagingButtons();
+
+      // Show first page
+      changePage(0);
+    }
+
+    // Check subscription status
+    if (config.subscription) {
+      isSubscribed = config.subscription.isSubscribed;
     }
 
     // Apply appearance settings
@@ -40,17 +202,75 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
+ * Render paging buttons
+ */
+function renderPagingButtons() {
+  // Initialize paging button container
+  pagingButtonsContainer.innerHTML = '';
+
+  // Create buttons for each page
+  pages.forEach((page, index) => {
+    const button = document.createElement('button');
+    button.className = 'paging-button';
+    button.dataset.page = index;
+    button.textContent = page.shortcut || (index + 1).toString();
+
+    // Indicate current page
+    if (index === currentPageIndex) {
+      button.classList.add('active');
+    }
+
+    // Click event
+    button.addEventListener('click', () => {
+      changePage(index);
+    });
+
+    pagingButtonsContainer.appendChild(button);
+  });
+}
+
+/**
  * Set up event listeners
  */
 function setupEventListeners() {
   // Close button
   closeButton.addEventListener('click', () => {
-    window.toast.hideWindow();
+    hideToastWindow();
   });
 
-  // Search input
-  searchInput.addEventListener('input', () => {
-    filterButtons();
+  /**
+   * Hide toast window function (including checking and exiting edit mode)
+   */
+  function hideToastWindow() {
+    // Exit edit mode first if active
+    if (isSettingsMode) {
+      toggleSettingsMode();
+    }
+    // Hide toast window
+    window.toast.hideWindow();
+  }
+
+  // Settings mode toggle button
+  settingsModeToggle.addEventListener('click', toggleSettingsMode);
+
+  // Add page button
+  addPageButton.addEventListener('click', addNewPage);
+
+  // Remove page button
+  removePageButton.addEventListener('click', removePage);
+
+  // Set up modal event listeners
+  setupModalEventListeners();
+
+  // Keyboard page switching (1-9 key events)
+  document.addEventListener('keydown', (event) => {
+    // Handle number keys 1-9
+    if (/^[1-9]$/.test(event.key) && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      const pageNum = parseInt(event.key) - 1;
+      if (pageNum >= 0 && pageNum < pages.length) {
+        changePage(pageNum);
+      }
+    }
   });
 
   // Keyboard navigation
@@ -58,15 +278,121 @@ function setupEventListeners() {
 
   // Listen for configuration updates
   window.toast.onConfigUpdated((config) => {
-    if (config.buttons) {
-      buttons = config.buttons;
-      filterButtons(); // This will also re-render
+    if (config.pages) {
+      pages = config.pages;
+      renderPagingButtons();
+      changePage(currentPageIndex < pages.length ? currentPageIndex : 0);
     }
 
     if (config.appearance) {
       applyAppearanceSettings(config.appearance);
     }
+
+    if (config.subscription) {
+      isSubscribed = config.subscription.isSubscribed;
+    }
   });
+
+  // Exit edit mode before window hides
+  window.addEventListener('before-window-hide', () => {
+    if (isSettingsMode) {
+      toggleSettingsMode();
+    }
+  });
+}
+
+/**
+ * Toggle settings mode
+ */
+function toggleSettingsMode() {
+  isSettingsMode = !isSettingsMode;
+
+  // Toggle settings mode class on document
+  document.body.classList.toggle('settings-mode', isSettingsMode);
+
+  // Show status message
+  if (isSettingsMode) {
+    showStatus('Settings mode activated. Click buttons to edit settings.', 'info');
+  } else {
+    showStatus('Settings mode deactivated.', 'info');
+  }
+
+  // Re-render current page
+  showCurrentPageButtons();
+}
+
+/**
+ * Display buttons for current page
+ */
+function showCurrentPageButtons() {
+  // If there are no pages
+  if (pages.length === 0) {
+    // Initialize button container
+    buttonsContainer.innerHTML = '';
+
+    // Show message instructing to add a page
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'no-results';
+    emptyMessage.textContent = 'No pages found. Press the + button to add a new page.';
+    buttonsContainer.appendChild(emptyMessage);
+
+    // Reset filtered buttons array
+    filteredButtons = [];
+    return;
+  }
+
+  // If pages exist, display buttons from current page
+  if (currentPageIndex >= 0 && currentPageIndex < pages.length) {
+    const currentPageButtons = pages[currentPageIndex].buttons || [];
+    renderButtons(currentPageButtons);
+  }
+}
+
+/**
+ * Add a new page
+ */
+function addNewPage() {
+  const pageNumber = pages.length + 1;
+
+  // Page limit based on subscription status
+  if (pageNumber > 3 && !isSubscribed) {
+    showStatus('Only subscribers can add more than 3 pages.', 'error');
+    return;
+  }
+
+  // Maximum 9 pages limit
+  if (pageNumber > 9) {
+    showStatus('Maximum 9 pages allowed.', 'error');
+    return;
+  }
+
+  // Default new page configuration
+  let newPage = {
+    name: `Page ${pageNumber}`,
+    shortcut: pageNumber.toString(),
+    buttons: []
+  };
+
+  // Use default app buttons for first page, empty buttons for others
+  if (pages.length === 0) {
+    newPage.buttons = [...defaultButtons]; // Use default button set
+  } else {
+    newPage.buttons = [...emptyButtons]; // Use empty button set
+  }
+
+  // Add to pages array
+  pages.push(newPage);
+
+  // Update paging buttons
+  renderPagingButtons();
+
+  // Navigate to new page
+  changePage(pages.length - 1);
+
+  // Save configuration
+  window.toast.saveConfig({ pages });
+
+  showStatus(`Page ${pageNumber} has been added.`, 'success');
 }
 
 /**
@@ -74,13 +400,6 @@ function setupEventListeners() {
  * @param {KeyboardEvent} event - Keyboard event
  */
 function handleKeyDown(event) {
-  // If search is focused, don't handle navigation keys
-  if (document.activeElement === searchInput &&
-      event.key !== 'Escape' &&
-      event.key !== 'Enter') {
-    return;
-  }
-
   switch (event.key) {
     case 'ArrowUp':
       event.preventDefault();
@@ -102,6 +421,42 @@ function handleKeyDown(event) {
       event.preventDefault();
       if (selectedButtonIndex >= 0 && selectedButtonIndex < filteredButtons.length) {
         executeButton(filteredButtons[selectedButtonIndex]);
+      }
+      break;
+    case 'Escape':
+      // Exit edit mode when ESC key is pressed in settings mode
+      // Note: Modal closing is handled separately when modal is open
+      if (isSettingsMode && !buttonEditModal.classList.contains('show')) {
+        event.preventDefault();
+        toggleSettingsMode();
+      }
+      break;
+    case ',':  // Toggle settings mode when comma key is pressed
+      event.preventDefault();
+      toggleSettingsMode();
+      break;
+    case '+': // Add page when Shift+= is pressed
+      if (event.shiftKey) {
+        event.preventDefault();
+        addNewPage();
+      }
+      break;
+    case '=': // Add page when Shift+= is pressed (supporting different keyboard layouts)
+      if (event.shiftKey) {
+        event.preventDefault();
+        addNewPage();
+      }
+      break;
+    case '-': // Delete page in settings mode
+      if (isSettingsMode) {
+        event.preventDefault();
+        removePage();
+      }
+      break;
+    case '_': // Delete page in settings mode (supporting Shift+-)
+      if (isSettingsMode && event.shiftKey) {
+        event.preventDefault();
+        removePage();
       }
       break;
     default:
@@ -214,46 +569,55 @@ function selectButton(index) {
 }
 
 /**
- * Filter buttons based on search input
+ * Switch to a different page
+ * @param {number} pageIndex - Index of the page to switch to
  */
-function filterButtons() {
-  const searchTerm = searchInput.value.toLowerCase();
+function changePage(pageIndex) {
+  // Check if page index is valid
+  if (pageIndex >= 0 && pageIndex < pages.length) {
+    // Update current page index
+    currentPageIndex = pageIndex;
 
-  if (searchTerm === '') {
-    filteredButtons = [...buttons];
-  } else {
-    filteredButtons = buttons.filter(button =>
-      button.name.toLowerCase().includes(searchTerm) ||
-      (button.shortcut && button.shortcut.toLowerCase().includes(searchTerm))
-    );
-  }
+    // Update paging buttons
+    document.querySelectorAll('.paging-button').forEach(button => {
+      const index = parseInt(button.dataset.page);
+      if (index === currentPageIndex) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
 
-  renderButtons();
+    // Display buttons for current page
+    showCurrentPageButtons();
 
-  // Reset selection
-  selectedButtonIndex = filteredButtons.length > 0 ? 0 : -1;
-  if (selectedButtonIndex >= 0) {
-    selectButton(selectedButtonIndex);
+    // Show status
+    const pageName = pages[currentPageIndex].name || `Page ${currentPageIndex + 1}`;
+    showStatus(`Navigated to ${pageName}`, 'info');
   }
 }
 
 /**
- * Render buttons in the container
+ * Render buttons to container
+ * @param {Array} buttons - Array of buttons to display
  */
-function renderButtons() {
+function renderButtons(buttons) {
+  // Store button array for keyboard navigation
+  filteredButtons = buttons || [];
+
   // Clear container
   buttonsContainer.innerHTML = '';
 
-  // Create and append button elements
+  // Create and add buttons
   filteredButtons.forEach((button, index) => {
     const buttonElement = createButtonElement(button);
 
-    // Add click event
+    // Click event
     buttonElement.addEventListener('click', () => {
       executeButton(button);
     });
 
-    // Add hover event
+    // Hover event
     buttonElement.addEventListener('mouseenter', () => {
       selectButton(index);
     });
@@ -261,11 +625,11 @@ function renderButtons() {
     buttonsContainer.appendChild(buttonElement);
   });
 
-  // Show message if no buttons
+  // Show empty state if no buttons
   if (filteredButtons.length === 0) {
     const noResults = document.createElement('div');
     noResults.className = 'no-results';
-    noResults.textContent = 'No matching buttons found';
+    noResults.textContent = 'No buttons available';
     buttonsContainer.appendChild(noResults);
   }
 }
@@ -302,11 +666,17 @@ function createButtonElement(button) {
 }
 
 /**
- * Execute a button's action
+ * Execute a button's action or edit in settings mode
  * @param {Object} button - Button configuration
  */
 function executeButton(button) {
-  // Show executing status
+  // Change button settings if in settings mode
+  if (isSettingsMode) {
+    editButtonSettings(button);
+    return;
+  }
+
+  // Execute button action in normal mode
   showStatus('Executing...', 'info');
 
   // Create action object
@@ -326,6 +696,180 @@ function executeButton(button) {
     })
     .catch(error => {
       showStatus(`Error: ${error.message || 'Unknown error'}`, 'error');
+    });
+}
+
+/**
+ * Initialize modal and set up event listeners
+ */
+function setupModalEventListeners() {
+  // Modal close button (X button)
+  if (closeModalButton) {
+    closeModalButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeButtonEditModal();
+    });
+  } else {
+    console.error('Close button not found.');
+  }
+
+  // Cancel button
+  cancelButtonEdit.addEventListener('click', () => {
+    closeButtonEditModal();
+  });
+
+  // Save button
+  saveButtonEdit.addEventListener('click', saveButtonSettings);
+
+  // Switch input fields based on action type
+  editButtonActionSelect.addEventListener('change', () => {
+    showActionFields(editButtonActionSelect.value);
+  });
+
+  // Close on click outside modal
+  buttonEditModal.addEventListener('click', (event) => {
+    if (event.target === buttonEditModal) {
+      closeButtonEditModal();
+    }
+  });
+
+  // Close modal with ESC key
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && buttonEditModal.classList.contains('show')) {
+      closeButtonEditModal();
+    }
+  });
+}
+
+/**
+ * Edit button settings (settings mode)
+ * @param {Object} button - Button settings to edit
+ */
+function editButtonSettings(button) {
+  // Display button info in status message
+  showStatus(`Editing: ${button.name}`, 'info');
+
+  // Save the button being edited (global variable)
+  currentEditingButton = button;
+
+  // Fill form fields with current button values
+  editButtonNameInput.value = button.name || '';
+  editButtonIconInput.value = button.icon || '';
+  editButtonShortcutInput.value = button.shortcut || '';
+  editButtonActionSelect.value = button.action || 'exec';
+
+  // Set field values based on action type
+  editButtonCommandInput.value = button.command || '';
+  editButtonUrlInput.value = button.url || '';
+  editButtonScriptInput.value = button.script || '';
+  editButtonKeyShortcutInput.value = button.keyShortcut || '';
+
+  // Show input fields appropriate for current action type
+  showActionFields(button.action || 'exec');
+
+  // Show modal
+  buttonEditModal.classList.add('show');
+
+  // Focus on name input field
+  editButtonNameInput.focus();
+}
+
+/**
+ * Close button edit modal
+ */
+function closeButtonEditModal() {
+  buttonEditModal.classList.remove('show');
+  currentEditingButton = null;
+}
+
+/**
+ * Show/hide input fields based on action type
+ * @param {string} actionType - Action type
+ */
+function showActionFields(actionType) {
+  // Hide all input field groups
+  commandInputGroup.style.display = 'none';
+  urlInputGroup.style.display = 'none';
+  scriptInputGroup.style.display = 'none';
+  shortcutInputGroup.style.display = 'none';
+
+  // Show corresponding input field group based on selected action type
+  switch (actionType) {
+    case 'exec':
+      commandInputGroup.style.display = 'block';
+      break;
+    case 'open':
+      urlInputGroup.style.display = 'block';
+      break;
+    case 'script':
+      scriptInputGroup.style.display = 'block';
+      break;
+    case 'shortcut':
+      shortcutInputGroup.style.display = 'block';
+      break;
+  }
+}
+
+/**
+ * Save button settings
+ */
+function saveButtonSettings() {
+  if (!currentEditingButton) return;
+
+  // Get current page and button index
+  const pageIndex = currentPageIndex;
+  const buttonIndex = pages[pageIndex].buttons.findIndex(b =>
+    b.shortcut === currentEditingButton.shortcut
+  );
+
+  if (buttonIndex < 0) {
+    showStatus('Button not found.', 'error');
+    return;
+  }
+
+  // Create new button object with input values
+  const action = editButtonActionSelect.value;
+  const updatedButton = {
+    name: editButtonNameInput.value,
+    icon: editButtonIconInput.value,
+    shortcut: currentEditingButton.shortcut, // Shortcut cannot be changed
+    action: action
+  };
+
+  // Set additional properties based on action type
+  switch (action) {
+    case 'exec':
+      updatedButton.command = editButtonCommandInput.value;
+      break;
+    case 'open':
+      updatedButton.url = editButtonUrlInput.value;
+      break;
+    case 'script':
+      updatedButton.script = editButtonScriptInput.value;
+      break;
+    case 'shortcut':
+      updatedButton.keyShortcut = editButtonKeyShortcutInput.value;
+      break;
+  }
+
+  // Update button
+  pages[pageIndex].buttons[buttonIndex] = updatedButton;
+
+  // Save configuration
+  window.toast.saveConfig({ pages })
+    .then(() => {
+      // Close modal
+      closeButtonEditModal();
+
+      // Update UI
+      showCurrentPageButtons();
+
+      // Show success message
+      showStatus(`Button "${updatedButton.name}" settings have been updated.`, 'success');
+    })
+    .catch(error => {
+      showStatus(`Error saving settings: ${error}`, 'error');
     });
 }
 
@@ -371,4 +915,80 @@ function applyAppearanceSettings(appearance) {
     container.className = 'toast-container';
     container.classList.add(`size-${appearance.size}`);
   }
+}
+
+/**
+ * Remove current page
+ */
+function removePage() {
+  // Only works in settings mode
+  if (!isSettingsMode) {
+    showStatus('Page deletion is only available in settings mode.', 'error');
+    return;
+  }
+
+  // Nothing to delete if there are no pages
+  if (pages.length === 0) {
+    return;
+  }
+
+  // Save current page info
+  const pageName = pages[currentPageIndex].name || `Page ${currentPageIndex + 1}`;
+
+  // Show deletion confirmation
+  const isConfirmed = confirm(`Are you sure you want to delete "${pageName}"?`);
+
+  if (!isConfirmed) {
+    showStatus('Page deletion canceled.', 'info');
+    return;
+  }
+
+  // Delete page
+  pages.splice(currentPageIndex, 1);
+
+  // Calculate new current page index (move to previous page, or to new last page if this was the last page)
+  const newPageIndex = Math.min(currentPageIndex, pages.length - 1);
+
+  // Readjust page numbers and shortcuts
+  pages.forEach((page, index) => {
+    if (!page.name || page.name.startsWith('Page ')) {
+      page.name = `Page ${index + 1}`;
+    }
+    if (!page.shortcut || /^\d+$/.test(page.shortcut)) {
+      page.shortcut = (index + 1).toString();
+    }
+  });
+
+  // If all pages were deleted, prompt user to add a page
+  if (pages.length === 0) {
+    // Save changes
+    window.toast.saveConfig({ pages });
+
+    // Update paging buttons
+    renderPagingButtons();
+
+    // Show empty screen (initialize button container)
+    buttonsContainer.innerHTML = '';
+    filteredButtons = [];
+
+    // Display message to add a page
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'no-results';
+    emptyMessage.textContent = 'No pages found. Press the + button to add a new page.';
+    buttonsContainer.appendChild(emptyMessage);
+
+    showStatus(`All pages have been deleted. Press the + button to add a new page.`, 'info');
+    return;
+  }
+
+  // Save changes
+  window.toast.saveConfig({ pages });
+
+  // Update paging buttons
+  renderPagingButtons();
+
+  // Switch to page
+  changePage(newPageIndex);
+
+  showStatus(`${pageName} has been deleted.`, 'success');
 }

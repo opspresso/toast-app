@@ -1,5 +1,5 @@
 /**
- * Toast App - System Tray
+ * Toast - System Tray
  *
  * This module handles the system tray icon and menu.
  */
@@ -27,7 +27,7 @@ function createTray(windows) {
   trayInstance = new Tray(iconPath);
 
   // Set tooltip
-  trayInstance.setToolTip('Toast App');
+  trayInstance.setToolTip('Toast');
 
   // Create context menu
   updateTrayMenu(trayInstance, windows);
@@ -72,36 +72,16 @@ function updateTrayMenu(tray, windows) {
     {
       label: 'Settings',
       click: () => {
-        if (windows.settings) {
-          windows.settings.show();
-          windows.settings.focus();
-        }
+        const { ipcMain } = require('electron');
+        ipcMain.emit('show-settings');
       }
     },
     { type: 'separator' },
     {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'Documentation',
-          click: () => {
-            shell.openExternal('https://github.com/opspresso/toast-app#readme');
-          }
-        },
-        {
-          label: 'Report Issue',
-          click: () => {
-            shell.openExternal('https://github.com/opspresso/toast-app/issues');
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'About Toast App',
-          click: () => {
-            showAboutDialog();
-          }
-        }
-      ]
+      label: 'About Toast',
+      click: () => {
+        showAboutDialog();
+      }
     },
     { type: 'separator' },
     {
@@ -147,8 +127,8 @@ function showAboutDialog() {
 
   dialog.showMessageBox({
     type: 'info',
-    title: 'About Toast App',
-    message: 'Toast App',
+    title: 'About Toast',
+    message: 'Toast',
     detail: `Version: ${app.getVersion()}\n\nA customizable shortcut launcher for macOS and Windows.`,
     buttons: ['OK'],
     icon: path.join(__dirname, '../../assets/icons/icon.png')

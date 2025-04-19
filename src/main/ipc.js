@@ -1,5 +1,5 @@
 /**
- * Toast App - IPC Handlers
+ * Toast - IPC Handlers
  *
  * This module sets up IPC (Inter-Process Communication) handlers for
  * communication between the main process and renderer processes.
@@ -11,6 +11,7 @@ const config = require('./config').createConfigStore();
 const path = require('path');
 const fs = require('fs');
 const { dialog } = require('electron');
+const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortcuts');
 
 /**
  * Set up IPC handlers
@@ -76,6 +77,23 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // Save configuration (specific changes)
+  ipcMain.handle('save-config', (event, changes) => {
+    try {
+      if (typeof changes === 'object') {
+        // Apply each change to config
+        Object.keys(changes).forEach(key => {
+          config.set(key, changes[key]);
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error saving config:', error);
+      return false;
+    }
+  });
+
   // Reset configuration to defaults
   ipcMain.handle('reset-config', async () => {
     try {
@@ -127,9 +145,22 @@ function setupIpcHandlers(windows) {
 
   // Show settings window
   ipcMain.on('show-settings', () => {
-    if (windows.settings) {
-      windows.settings.show();
-      windows.settings.focus();
+    const { showSettingsWindow } = require('./windows');
+    const { createConfigStore } = require('./config');
+    showSettingsWindow(createConfigStore());
+  });
+
+  // Close settings window
+  ipcMain.on('close-settings', () => {
+    if (windows.settings && !windows.settings.isDestroyed()) {
+      // 먼저 창을 숨기고 나서 닫아 깜빡임 방지
+      windows.settings.hide();
+      // 약간의 지연 후 실제로 창 닫기
+      setTimeout(() => {
+        if (windows.settings && !windows.settings.isDestroyed()) {
+          windows.settings.close();
+        }
+      }, 500);
     }
   });
 
@@ -144,6 +175,30 @@ function setupIpcHandlers(windows) {
   ipcMain.on('quit-app', () => {
     const { app } = require('electron');
     app.quit();
+  });
+
+  // 단축키 레코딩을 위한 핸들러
+  // 임시로 모든 단축키 비활성화
+  ipcMain.handle('temporarily-disable-shortcuts', () => {
+    try {
+      // 현재 설정된 모든 글로벌 단축키 비활성화
+      unregisterGlobalShortcuts();
+      return true;
+    } catch (error) {
+      console.error('Error disabling shortcuts:', error);
+      return false;
+    }
+  });
+
+  // 단축키 복원
+  ipcMain.handle('restore-shortcuts', () => {
+    try {
+      // 글로벌 단축키를 다시 등록
+      return registerGlobalShortcuts(config, windows);
+    } catch (error) {
+      console.error('Error restoring shortcuts:', error);
+      return false;
+    }
   });
 
   // Show open dialog

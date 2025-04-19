@@ -1,5 +1,5 @@
 /**
- * Toast App - Script Action
+ * Toast - Script Action
  *
  * This module handles executing custom scripts in various languages.
  */

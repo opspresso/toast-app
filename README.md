@@ -1,7 +1,7 @@
 # Toast App
 
 <p align="center">
-  <img src="assets/icons/icon.svg" alt="Toast App Logo" width="128" height="128">
+  <img src="assets/icons/icon.png" alt="Toast App Logo" width="128" height="128">
 </p>
 
 <p align="center">
@@ -19,9 +19,13 @@ Toast App is a productivity tool that allows users to define custom shortcuts an
 ## Features
 
 - Global hotkey to trigger the Toast popup
+- Multiple pages of customizable buttons for better organization
 - Customizable buttons with user-defined actions
 - Support for keyboard shortcuts to trigger specific actions
+- Multiple action types: execute commands, open URLs, trigger keyboard shortcuts, run scripts
 - Cross-platform support (macOS and Windows)
+- Theme support (light, dark, or system)
+- Customizable position and size
 - Minimal and non-intrusive UI
 - Runs in the background with system tray integration
 
@@ -67,8 +71,10 @@ npm run build:win
 
 1. After installation, Toast App will run in the background with an icon in the system tray/menu bar.
 2. Press the global hotkey (default: `Alt+Space`) to open the Toast popup.
-3. Click on a button or use the corresponding shortcut key to execute an action.
-4. Right-click on the system tray icon to access settings, add new buttons, or quit the application.
+3. Navigate between pages using the number keys (1-9) or by clicking the page tabs.
+4. Click on a button or use the corresponding shortcut key to execute an action.
+5. Right-click on the system tray icon to access settings, add new buttons, or quit the application.
+6. Toggle settings mode by clicking the gear icon (⚙️) or pressing the comma key (,) to edit buttons.
 
 ## Configuration
 
@@ -81,20 +87,62 @@ Example configuration:
 ```json
 {
   "globalHotkey": "Alt+Space",
-  "buttons": [
+  "pages": [
     {
-      "name": "Open Terminal",
-      "shortcut": "T",
-      "action": "exec",
-      "command": "open -a Terminal"
+      "name": "Applications",
+      "shortcut": "1",
+      "buttons": [
+        {
+          "name": "Terminal",
+          "shortcut": "T",
+          "icon": "⌨️",
+          "action": "exec",
+          "command": "open -a Terminal"
+        },
+        {
+          "name": "Browser",
+          "shortcut": "B",
+          "icon": "🌐",
+          "action": "open",
+          "url": "https://www.google.com"
+        }
+      ]
     },
     {
-      "name": "Open Browser",
-      "shortcut": "B",
-      "action": "exec",
-      "command": "open -a 'Google Chrome'"
+      "name": "Development",
+      "shortcut": "2",
+      "buttons": [
+        {
+          "name": "VS Code",
+          "shortcut": "C",
+          "icon": "💻",
+          "action": "exec",
+          "command": "open -a 'Visual Studio Code'"
+        },
+        {
+          "name": "GitHub",
+          "shortcut": "G",
+          "icon": "🐙",
+          "action": "open",
+          "url": "https://github.com"
+        }
+      ]
     }
-  ]
+  ],
+  "appearance": {
+    "theme": "system",
+    "position": "center",
+    "size": "medium",
+    "opacity": 0.95,
+    "buttonLayout": "grid"
+  },
+  "advanced": {
+    "launchAtLogin": true,
+    "hideAfterAction": true,
+    "hideOnBlur": true,
+    "hideOnEscape": true,
+    "showInTaskbar": false
+  }
 }
 ```
 
@@ -106,6 +154,8 @@ Comprehensive documentation is available in the repository:
 - [Architecture](ARCHITECTURE.md) - System architecture and design decisions
 - [API Documentation](API_DOCUMENTATION.md) - Internal API documentation
 - [Configuration Schema](CONFIG_SCHEMA.md) - Configuration options and schema
+- [Pages and Navigation](PAGES.md) - Page layout and navigation structure
+- [Project Structure](PROJECT_STRUCTURE.md) - Project structure and code organization
 - [Technical Requirements](TECHNICAL_REQUIREMENTS.md) - Technical specifications and requirements
 - [Development Roadmap](DEVELOPMENT_ROADMAP.md) - Future development plans
 - [Testing Strategy](TESTING_STRATEGY.md) - Testing approach and methodologies
@@ -116,6 +166,8 @@ Comprehensive documentation is available in the repository:
 toast-app/
 ├── assets/                # Application assets
 │   └── icons/             # Application icons
+├── docs/                  # Documentation assets
+│   └── images/            # Documentation images
 ├── src/                   # Source code
 │   ├── main/              # Main process code
 │   │   ├── actions/       # Action implementations
@@ -160,4 +212,5 @@ ISC License
 
 - [Electron](https://www.electronjs.org/) - Framework for building cross-platform desktop apps
 - [electron-store](https://github.com/sindresorhus/electron-store) - Simple data persistence for Electron apps
+- [@nut-tree-fork/nut-js](https://github.com/nut-tree/nut.js) - Native UI automation for keyboard shortcuts
 - [All Contributors](https://github.com/opspresso/toast-app/graphs/contributors)

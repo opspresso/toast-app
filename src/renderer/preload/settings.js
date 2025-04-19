@@ -1,5 +1,5 @@
 /**
- * Toast App - Settings Window Preload Script
+ * Toast - Settings Window Preload Script
  *
  * This script runs in the context of the Settings window and provides
  * a bridge between the renderer process and the main process.
@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld(
 
     // Window control
     showToast: () => ipcRenderer.send('show-toast'),
+    closeWindow: () => ipcRenderer.send('close-settings'),
 
     // Dialog
     showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
@@ -34,6 +35,10 @@ contextBridge.exposeInMainWorld(
     // App control
     restartApp: () => ipcRenderer.send('restart-app'),
     quitApp: () => ipcRenderer.send('quit-app'),
+
+    // Shortcuts control for recording
+    temporarilyDisableShortcuts: () => ipcRenderer.invoke('temporarily-disable-shortcuts'),
+    restoreShortcuts: () => ipcRenderer.invoke('restore-shortcuts'),
 
     // System information
     getPlatform: () => process.platform,

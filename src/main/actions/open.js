@@ -1,5 +1,5 @@
 /**
- * Toast App - Open Action
+ * Toast - Open Action
  *
  * This module handles opening URLs, files, and folders.
  */
