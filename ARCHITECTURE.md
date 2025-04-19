@@ -93,6 +93,14 @@ Handles configuration storage, validation, and migration using electron-store.
 - Handle configuration migration
 - Import/export configuration
 
+**Configuration Schema:**
+- **globalHotkey**: Global keyboard shortcut to trigger the Toast popup
+- **pages**: Array of page configurations, each containing buttons
+- **appearance**: Visual appearance settings (theme, position, size, opacity, buttonLayout)
+- **advanced**: Advanced behavior settings (launchAtLogin, hideAfterAction, etc.)
+- **subscription**: Subscription status and features
+- **firstLaunchCompleted**: Flag indicating whether the first launch setup has been completed
+
 #### Windows Manager (`src/main/windows.js`)
 
 Manages the creation, positioning, and lifecycle of application windows.
@@ -102,6 +110,8 @@ Manages the creation, positioning, and lifecycle of application windows.
 - Position windows based on configuration
 - Show and hide windows
 - Handle window events
+- Activate English keyboard input source for cross-platform compatibility
+- Send configuration to renderer processes
 
 #### Tray Manager (`src/main/tray.js`)
 
@@ -119,7 +129,8 @@ Manages global keyboard shortcuts.
 **Responsibilities:**
 - Register and unregister global shortcuts
 - Handle shortcut events
-- Position the Toast window
+- Position the Toast window based on configuration (center, top, bottom, cursor)
+- Toggle Toast window visibility
 
 #### IPC Handler (`src/main/ipc.js`)
 
@@ -130,6 +141,8 @@ Handles inter-process communication between the main process and renderer proces
 - Handle IPC messages
 - Forward actions to the Executor
 - Send configuration updates to renderers
+- Provide methods for renderer processes to manipulate configuration
+- Handle keyboard shortcut recording
 
 #### Executor (`src/main/executor.js`)
 
@@ -140,15 +153,17 @@ Executes actions based on their type.
 - Execute actions
 - Handle action results
 - Forward actions to specific action handlers
+- Execute chained actions in sequence
 
 #### Actions (`src/main/actions/*.js`)
 
 Implements specific action types.
 
 **Responsibilities:**
-- Execute specific action types (exec, open, shortcut, script)
+- Execute specific action types (exec, open, shortcut, script, chain)
 - Handle action-specific parameters
 - Return standardized results
+- Handle platform-specific behavior
 
 ### Renderer Process Components
 
@@ -160,19 +175,47 @@ Implements specific action types.
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
 │  │             │    │             │    │             │      │
-│  │    Toast    │    │   Button    │    │   Search    │      │
+│  │    Toast    │    │   Button    │    │   Paging    │      │
 │  │  Controller │    │  Component  │    │  Component  │      │
 │  │             │    │             │    │             │      │
 │  └─────────────┘    └─────────────┘    └─────────────┘      │
 │                                                             │
-│  ┌─────────────┐    ┌─────────────┐                         │
-│  │             │    │             │                         │
-│  │   Status    │    │    IPC      │                         │
-│  │  Component  │    │   Bridge    │                         │
-│  │             │    │             │                         │
-│  └─────────────┘    └─────────────┘                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │             │    │             │    │             │      │
+│  │   Status    │    │    IPC      │    │   Button    │      │
+│  │  Component  │    │   Bridge    │    │    Modal    │      │
+│  │             │    │             │    │             │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+#### Toast Window Components
+
+- **Toast Controller**: Main controller for the Toast window
+  - Handles button creation and management
+  - Manages page switching
+  - Handles keyboard navigation
+  - Executes actions
+  - Manages settings mode
+
+- **Button Component**: Represents an action button
+  - Displays button name, icon, and shortcut
+  - Handles click events
+  - Provides visual feedback
+
+- **Paging Component**: Manages multiple pages of buttons
+  - Displays page tabs
+  - Handles page switching
+  - Provides add/remove page functionality
+
+- **Status Component**: Displays status messages
+  - Shows success, error, and info messages
+  - Provides visual feedback for actions
+
+- **Button Modal**: Modal dialog for editing button settings
+  - Edits button properties
+  - Validates inputs
+  - Provides action-specific input fields
 
 #### Settings Window
 
@@ -195,6 +238,51 @@ Implements specific action types.
 │  └─────────────┘    └─────────────┘    └─────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+## Page Architecture
+
+Toast App organizes buttons into pages, allowing users to create multiple sets of buttons for different purposes.
+
+### Page Structure
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Pages                                │
+│                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │             │    │             │    │             │      │
+│  │   Page 1    │    │   Page 2    │    │   Page 3    │      │
+│  │             │    │             │    │             │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                                                     │    │
+│  │                  Current Page                       │    │
+│  │                                                     │    │
+│  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐    │    │
+│  │  │ Button │  │ Button │  │ Button │  │ Button │    │    │
+│  │  └────────┘  └────────┘  └────────┘  └────────┘    │    │
+│  │                                                     │    │
+│  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐    │    │
+│  │  │ Button │  │ Button │  │ Button │  │ Button │    │    │
+│  │  └────────┘  └────────┘  └────────┘  └────────┘    │    │
+│  │                                                     │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Each page contains:
+- **Name**: Display name of the page
+- **Shortcut**: Keyboard shortcut to access the page (1-9)
+- **Buttons**: Array of button configurations
+
+### Page Management
+
+- **Page Navigation**: Users can switch between pages using the page tabs or keyboard shortcuts
+- **Page Creation**: Users can add new pages up to a limit based on subscription status
+- **Page Deletion**: Users can delete pages they no longer need
+- **Page Configuration**: Configuration is stored in the pages array in config.js
 
 ## Data Flow
 
@@ -244,6 +332,33 @@ Implements specific action types.
 9. The IPC Handler sends the results back to the Toast window
 10. The Toast window displays the results to the user
 
+### Page Navigation Flow
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│             │     │             │     │             │
+│   User      │     │    Toast    │     │ Toast Page  │
+│  Interface  │────►│  Controller │────►│ Component   │
+│             │     │             │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘
+                          │                    │
+                          │                    │
+                          ▼                    ▼
+                    ┌─────────────┐     ┌─────────────┐
+                    │             │     │             │
+                    │   Button    │     │    IPC      │
+                    │  Container  │     │   Bridge    │
+                    │             │     │             │
+                    └─────────────┘     └─────────────┘
+```
+
+1. User clicks a page tab or presses a number key (1-9)
+2. The Toast Controller handles the page change event
+3. The current page index is updated
+4. The Page Component updates the active page indicator
+5. The Button Container is updated to show buttons from the selected page
+6. Status messages are updated to reflect the page change
+
 ### Global Shortcut Flow
 
 ```
@@ -269,6 +384,43 @@ Implements specific action types.
 4. The Shortcuts Manager handles the shortcut event
 5. The Shortcuts Manager requests the Windows Manager to show the Toast window
 6. The Windows Manager positions and shows the Toast window
+7. The Windows Manager activates the English keyboard input source for consistent behavior
+
+### Button Editing Flow
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│             │     │             │     │             │
+│  Settings   │     │   Button    │     │    IPC      │
+│    Mode     │────►│    Modal    │────►│   Bridge    │
+│             │     │             │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+                                        ┌─────────────┐
+                                        │             │
+                                        │   Config    │
+                                        │   Store     │
+                                        │             │
+                                        └─────────────┘
+                                               │
+                                               ▼
+                                        ┌─────────────┐
+                                        │             │
+                                        │   Button    │
+                                        │  Container  │
+                                        │             │
+                                        └─────────────┘
+```
+
+1. User toggles settings mode by clicking the gear icon or pressing the comma key
+2. User clicks a button to edit its settings
+3. The Button Modal is displayed with the current button settings
+4. User modifies button properties and saves
+5. The updated button configuration is sent to the main process via IPC
+6. The Config Store is updated with the new button settings
+7. The Button Container is refreshed to display the updated button
+8. Status messages are updated to reflect the button update
 
 ## Design Decisions
 
@@ -285,6 +437,17 @@ This separation provides several benefits:
 2. **Stability**: Issues in the UI don't affect the core application
 3. **Performance**: UI rendering doesn't block system operations
 4. **Maintainability**: Clear separation of concerns
+
+### Page System Design
+
+The page system is designed to provide flexibility and organization:
+
+1. **Multiple Pages**: Users can create up to 9 pages, organized by context or function
+2. **Page Navigation**: Simple navigation via tabs or number keys
+3. **Page Management**: Users can add, remove, and organize pages
+4. **Subscription Tiers**: Free users can create up to 3 pages, while subscribers can create up to 9
+
+This approach allows users to organize their shortcuts based on different contexts or workflows, making the application more versatile.
 
 ### Modular Design
 
@@ -326,8 +489,21 @@ The action system is designed to be extensible:
 2. **Common Interface**: All action types implement a common interface
 3. **Validation**: Actions are validated before execution
 4. **Standardized Results**: Action results follow a consistent format
+5. **Chained Actions**: Support for executing multiple actions in sequence
 
 This makes it easy to add new action types in the future.
+
+### Keyboard Interaction
+
+Toast App puts strong emphasis on keyboard interaction:
+
+1. **Global Hotkey**: The app can be triggered with a customizable global hotkey
+2. **Button Shortcuts**: Each button has an associated keyboard shortcut
+3. **Page Shortcuts**: Pages can be accessed via number keys
+4. **Keyboard Navigation**: Arrow keys can be used to navigate between buttons
+5. **English Keyboard Activation**: The app ensures English keyboard input for consistent behavior
+
+This approach makes the application efficient for keyboard-oriented users.
 
 ## Technology Stack
 
@@ -341,7 +517,7 @@ This makes it easy to add new action types in the future.
 ### Main Process Libraries
 
 - **electron-global-shortcut**: For global shortcut registration
-- **@nut-tree/nut-js**: For keyboard shortcut simulation
+- **@nut-tree-fork/nut-js**: For keyboard shortcut simulation
 - **child_process**: For executing shell commands
 
 ### Renderer Process Libraries
@@ -390,6 +566,7 @@ The application is optimized for runtime performance:
 1. **Asynchronous Operations**: Long-running operations are asynchronous
 2. **Efficient IPC**: IPC communication is optimized for performance
 3. **Minimal UI Updates**: UI updates are batched for efficiency
+4. **Limited Rerendering**: Only the necessary components are rerendered when data changes
 
 ## Future Architecture Considerations
 
@@ -417,8 +594,18 @@ A mobile companion app may be developed:
 2. **Secure Communication**: Encrypted communication between devices
 3. **Offline Operation**: Functionality when disconnected from the main app
 
+### Advanced Theming
+
+More advanced theming options may be implemented:
+
+1. **Custom CSS**: Allow users to customize the appearance with custom CSS
+2. **Theme Editor**: Visual editor for creating custom themes
+3. **Theme Sharing**: Ability to share themes with other users
+
 ## Conclusion
 
 Toast App's architecture is designed to be modular, maintainable, and extensible. By separating concerns and using well-defined interfaces, the application can evolve over time while maintaining stability and performance.
+
+The page system allows users to organize their shortcuts effectively, while the action system provides flexibility for various types of operations. The combination of keyboard shortcuts, global hotkey, and intuitive UI makes the application efficient for both casual and power users.
 
 The architecture balances simplicity with flexibility, allowing for future enhancements while keeping the current implementation clean and understandable.
