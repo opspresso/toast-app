@@ -10,6 +10,9 @@ exports.default = async function notarizing(context) {
 
   const appName = context.packager.appInfo.productFilename;
 
+  console.log(`Notarizing: ${appName}`);
+  console.log(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}`);
+
   process.stdout.write(`Notarizing: ${appName}\n`);
   process.stdout.write(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}\n`);
 
