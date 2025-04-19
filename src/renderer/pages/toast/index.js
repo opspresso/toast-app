@@ -15,6 +15,133 @@ const settingsModeToggle = document.getElementById('settings-mode-toggle');
 const addPageButton = document.getElementById('add-page-button');
 const removePageButton = document.getElementById('remove-page-button');
 
+// 기본 버튼 세트 정의
+const defaultButtons = [
+  // qwert 행
+  {
+    name: 'VSCode',
+    shortcut: 'Q',
+    icon: '💻',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
+  },
+  {
+    name: 'Photos',
+    shortcut: 'W',
+    icon: '🖼️',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Photos' : 'start ms-photos:'
+  },
+  {
+    name: 'Notes',
+    shortcut: 'E',
+    icon: '📝',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Notes' : 'start onenote:'
+  },
+  {
+    name: 'Maps',
+    shortcut: 'R',
+    icon: '🗺️',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Maps' : 'start bingmaps:'
+  },
+  {
+    name: 'Messages',
+    shortcut: 'T',
+    icon: '💬',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Messages' : 'start ms-chat:'
+  },
+  // asdfg 행
+  {
+    name: 'App Store',
+    shortcut: 'A',
+    icon: '🛒',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
+  },
+  {
+    name: 'Spotify',
+    shortcut: 'S',
+    icon: '🎧',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Spotify' : 'start spotify:'
+  },
+  {
+    name: 'Dictionary',
+    shortcut: 'D',
+    icon: '📚',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:'
+  },
+  {
+    name: 'Finder',
+    shortcut: 'F',
+    icon: '🔍',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open .' : 'explorer .'
+  },
+  {
+    name: 'GitHub',
+    shortcut: 'G',
+    icon: '🐙',
+    action: 'open',
+    url: 'https://github.com'
+  },
+  // zxcvb 행
+  {
+    name: 'Zoom',
+    shortcut: 'Z',
+    icon: '📹',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
+  },
+  {
+    name: 'Excel',
+    shortcut: 'X',
+    icon: '📊',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Microsoft Excel"' : 'start excel'
+  },
+  {
+    name: 'Calculator',
+    shortcut: 'C',
+    icon: '🧮',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a Calculator' : 'calc'
+  },
+  {
+    name: 'Video Player',
+    shortcut: 'V',
+    icon: '🎬',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "QuickTime Player"' : 'start wmplayer'
+  },
+  {
+    name: 'Brave',
+    shortcut: 'B',
+    icon: '🦁',
+    action: 'exec',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Brave Browser"' : 'start brave'
+  }
+];
+
+// 빈 버튼 세트 정의 (15개)
+const emptyButtons = Array(15).fill(null).map((_, index) => {
+  const row = Math.floor(index / 5);
+  const col = index % 5;
+  const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
+
+  return {
+    name: `버튼 ${rowLetters[index]}`,
+    shortcut: rowLetters[index],
+    icon: '➕',
+    action: 'exec',
+    command: ''
+  };
+});
+
 // State
 let pages = []; // 페이지 배열 (각 페이지는 버튼 배열을 가짐)
 let selectedButtonIndex = -1; // 현재 선택된 버튼 인덱스
@@ -182,120 +309,18 @@ function addNewPage() {
   }
 
   // 새 페이지 기본 구성
-  const newPage = {
+  let newPage = {
     name: `페이지 ${pageNumber}`,
     shortcut: pageNumber.toString(),
-    buttons: [
-      // qwert 행
-      {
-        name: 'VSCode',
-        shortcut: 'Q',
-        icon: '💻',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
-      },
-      {
-        name: 'Photos',
-        shortcut: 'W',
-        icon: '🖼️',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Photos' : 'start ms-photos:'
-      },
-      {
-        name: 'Notes',
-        shortcut: 'E',
-        icon: '📝',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Notes' : 'start onenote:'
-      },
-      {
-        name: 'Maps',
-        shortcut: 'R',
-        icon: '🗺️',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Maps' : 'start bingmaps:'
-      },
-      {
-        name: 'Messages',
-        shortcut: 'T',
-        icon: '💬',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Messages' : 'start ms-chat:'
-      },
-      // asdfg 행
-      {
-        name: 'App Store',
-        shortcut: 'A',
-        icon: '🛒',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
-      },
-      {
-        name: 'Spotify',
-        shortcut: 'S',
-        icon: '🎧',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Spotify' : 'start spotify:'
-      },
-      {
-        name: 'Dictionary',
-        shortcut: 'D',
-        icon: '📚',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:'
-      },
-      {
-        name: 'Finder',
-        shortcut: 'F',
-        icon: '🔍',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open .' : 'explorer .'
-      },
-      {
-        name: 'GitHub',
-        shortcut: 'G',
-        icon: '🐙',
-        action: 'open',
-        url: 'https://github.com'
-      },
-      // zxcvb 행
-      {
-        name: 'Zoom',
-        shortcut: 'Z',
-        icon: '📹',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
-      },
-      {
-        name: 'Excel',
-        shortcut: 'X',
-        icon: '📊',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a "Microsoft Excel"' : 'start excel'
-      },
-      {
-        name: 'Calculator',
-        shortcut: 'C',
-        icon: '🧮',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a Calculator' : 'calc'
-      },
-      {
-        name: 'Video Player',
-        shortcut: 'V',
-        icon: '🎬',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a "QuickTime Player"' : 'start wmplayer'
-      },
-      {
-        name: 'Brave',
-        shortcut: 'B',
-        icon: '🦁',
-        action: 'exec',
-        command: window.toast.platform === 'darwin' ? 'open -a "Brave Browser"' : 'start brave'
-      }
-    ]
+    buttons: []
   };
+
+  // 첫 페이지인 경우에만 기본 앱 설정, 그 외에는 빈 버튼
+  if (pages.length === 0) {
+    newPage.buttons = [...defaultButtons]; // 기본 버튼 세트 사용
+  } else {
+    newPage.buttons = [...emptyButtons]; // 빈 버튼 세트 사용
+  }
 
   // 페이지 배열에 추가
   pages.push(newPage);
