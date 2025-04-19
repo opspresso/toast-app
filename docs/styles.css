@@ -564,6 +564,18 @@ code {
   margin-top: 2rem;
 }
 
+.release-note {
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+  text-align: center;
+  color: var(--text-light);
+}
+
+.release-note a {
+  font-weight: 500;
+  text-decoration: underline;
+}
+
 /* Footer */
 footer {
   background: var(--header-bg);

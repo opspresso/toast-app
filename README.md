@@ -31,7 +31,16 @@ Toast App is a productivity tool that allows users to define custom shortcuts an
 
 ## Installation
 
-### Prerequisites
+### Download
+
+You can download the latest version of Toast App from the [GitHub Releases](https://github.com/opspresso/toast-app/releases) page.
+
+최신 릴리스 페이지에서 각 운영체제에 맞는 설치 파일을 다운로드할 수 있습니다:
+
+- macOS: `Toast-App-mac.dmg`
+- Windows: `Toast-App-win.exe`
+
+### Development Prerequisites
 
 - Node.js (v16 or later)
 - npm or yarn
