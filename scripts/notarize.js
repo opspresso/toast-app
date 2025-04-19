@@ -10,8 +10,8 @@ exports.default = async function notarizing(context) {
 
   const appName = context.packager.appInfo.productFilename;
 
-  console.log(`Notarizing ${appName}`);
-  console.log('Using TEAM_ID:', process.env.APPLE_TEAM_ID);
+  process.stdout.write(`Notarizing: ${appName}\n`);
+  process.stdout.write(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}\n`);
 
   if (!process.env.APPLE_TEAM_ID) {
     throw new Error('APPLE_TEAM_ID environment variable is not set.');
