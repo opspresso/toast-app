@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld(
     restartApp: () => ipcRenderer.send('restart-app'),
     quitApp: () => ipcRenderer.send('quit-app'),
 
+    // Shortcuts control for recording
+    temporarilyDisableShortcuts: () => ipcRenderer.invoke('temporarily-disable-shortcuts'),
+    restoreShortcuts: () => ipcRenderer.invoke('restore-shortcuts'),
+
     // System information
     getPlatform: () => process.platform,
     getVersion: () => ipcRenderer.invoke('get-app-version')

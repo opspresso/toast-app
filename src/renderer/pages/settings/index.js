@@ -147,10 +147,19 @@ function switchTab(tabId) {
  * Start recording a hotkey
  */
 function startRecordingHotkey() {
-  isRecordingHotkey = true;
-  globalHotkeyInput.value = 'Press a key combination...';
-  globalHotkeyInput.classList.add('recording');
-  recordHotkeyButton.disabled = true;
+  // 기존 단축키 잠시 비활성화 (레코드 중엔 다른 단축키 작동 방지)
+  window.settings.temporarilyDisableShortcuts()
+    .then(() => {
+      console.log('Shortcuts temporarily disabled for recording');
+
+      isRecordingHotkey = true;
+      globalHotkeyInput.value = 'Press a key combination...';
+      globalHotkeyInput.classList.add('recording');
+      recordHotkeyButton.disabled = true;
+    })
+    .catch(err => {
+      console.error('Failed to disable shortcuts for recording:', err);
+    });
 }
 
 /**
@@ -162,35 +171,64 @@ function handleHotkeyRecording(event) {
 
   // Prevent default behavior
   event.preventDefault();
+  event.stopPropagation();
 
-  // Get modifier keys
+  // Get modifier keys (Electron accelerator 형식으로 변환)
   const modifiers = [];
-  if (event.ctrlKey) modifiers.push('Ctrl');
+  if (event.ctrlKey) modifiers.push('CommandOrControl');
   if (event.altKey) modifiers.push('Alt');
   if (event.shiftKey) modifiers.push('Shift');
-  if (event.metaKey) modifiers.push(process.platform === 'darwin' ? 'Cmd' : 'Super');
+  if (event.metaKey) modifiers.push('Super');
 
-  // Get the key
+  // Get the key (Electron accelerator 형식으로 변환)
   let key = event.key;
+  let code = event.code;
 
   // Skip if only modifier keys are pressed
   if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
     return;
   }
 
-  // Format key name
-  if (key === ' ') key = 'Space';
-  else if (key.length === 1) key = key.toUpperCase();
-  else key = key.charAt(0).toUpperCase() + key.slice(1);
+  // Format key name for Electron accelerator
+  if (key === ' ' || code === 'Space' || key === 'Spacebar' || key === 'Space') {
+    key = 'Space';
+  } else if (key.length === 1) {
+    key = key.toUpperCase();
+  } else if (code.startsWith('Key')) {
+    // Use the code for letter keys (KeyA, KeyB, etc)
+    key = code.slice(3);
+  } else if (code.startsWith('Digit')) {
+    // Use the code for number keys (Digit0, Digit1, etc)
+    key = code.slice(5);
+  } else {
+    // Handle special keys
+    const keyMap = {
+      'Escape': 'Esc',
+      'ArrowUp': 'Up',
+      'ArrowDown': 'Down',
+      'ArrowLeft': 'Left',
+      'ArrowRight': 'Right',
+      'Enter': 'Return'
+    };
+    key = keyMap[key] || key;
+  }
 
-  // Create hotkey string
+  // Create hotkey string in Electron accelerator format
   const hotkey = [...modifiers, key].join('+');
+
+  // 디버깅 정보 (콘솔에 로깅)
+  console.log('Recorded hotkey:', hotkey, 'from key:', event.key, 'code:', event.code);
 
   // Set the hotkey
   globalHotkeyInput.value = hotkey;
   globalHotkeyInput.classList.remove('recording');
   recordHotkeyButton.disabled = false;
   isRecordingHotkey = false;
+
+  // 단축키 다시 활성화
+  window.settings.restoreShortcuts()
+    .then(() => console.log('Shortcuts restored after recording'))
+    .catch(err => console.error('Failed to restore shortcuts:', err));
 
   // Mark as unsaved
   markUnsavedChanges();

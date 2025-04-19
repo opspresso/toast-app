@@ -11,6 +11,7 @@ const config = require('./config').createConfigStore();
 const path = require('path');
 const fs = require('fs');
 const { dialog } = require('electron');
+const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortcuts');
 
 /**
  * Set up IPC handlers
@@ -174,6 +175,30 @@ function setupIpcHandlers(windows) {
   ipcMain.on('quit-app', () => {
     const { app } = require('electron');
     app.quit();
+  });
+
+  // 단축키 레코딩을 위한 핸들러
+  // 임시로 모든 단축키 비활성화
+  ipcMain.handle('temporarily-disable-shortcuts', () => {
+    try {
+      // 현재 설정된 모든 글로벌 단축키 비활성화
+      unregisterGlobalShortcuts();
+      return true;
+    } catch (error) {
+      console.error('Error disabling shortcuts:', error);
+      return false;
+    }
+  });
+
+  // 단축키 복원
+  ipcMain.handle('restore-shortcuts', () => {
+    try {
+      // 글로벌 단축키를 다시 등록
+      return registerGlobalShortcuts(config, windows);
+    } catch (error) {
+      console.error('Error restoring shortcuts:', error);
+      return false;
+    }
   });
 
   // Show open dialog
