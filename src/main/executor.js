@@ -1,5 +1,5 @@
 /**
- * Toast App - Action Executor
+ * Toast - Action Executor
  *
  * This module orchestrates the execution of different action types.
  */

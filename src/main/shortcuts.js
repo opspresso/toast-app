@@ -1,5 +1,5 @@
 /**
- * Toast App - Global Shortcuts
+ * Toast - Global Shortcuts
  *
  * This module handles the registration and management of global shortcuts.
  */

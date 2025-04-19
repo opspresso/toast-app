@@ -1,5 +1,5 @@
 /**
- * Toast App - Execute Command Action
+ * Toast - Execute Command Action
  *
  * This module handles the execution of shell commands.
  */

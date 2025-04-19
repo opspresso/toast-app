@@ -1,5 +1,5 @@
 /**
- * Toast App - Window Management
+ * Toast - Window Management
  *
  * This module handles the creation and management of application windows.
  */

@@ -1,5 +1,5 @@
 /**
- * Toast App - Toast Window JavaScript
+ * Toast - Toast Window JavaScript
  *
  * This script handles the functionality of the Toast popup window.
  */

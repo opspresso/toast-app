@@ -1,5 +1,5 @@
 /**
- * Toast App - Toast Window Preload Script
+ * Toast - Toast Window Preload Script
  *
  * This script runs in the context of the Toast window and provides
  * a bridge between the renderer process and the main process.

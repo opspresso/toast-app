@@ -1,5 +1,5 @@
 /**
- * Toast App - IPC Handlers
+ * Toast - IPC Handlers
  *
  * This module sets up IPC (Inter-Process Communication) handlers for
  * communication between the main process and renderer processes.

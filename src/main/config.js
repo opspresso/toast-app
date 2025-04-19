@@ -1,5 +1,5 @@
 /**
- * Toast App - Configuration Module
+ * Toast - Configuration Module
  *
  * This module handles the application configuration using electron-store.
  */

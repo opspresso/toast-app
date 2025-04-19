@@ -1,5 +1,5 @@
 /**
- * Toast App - Settings Window JavaScript
+ * Toast - Settings Window JavaScript
  *
  * This script handles the functionality of the Settings window.
  */

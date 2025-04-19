@@ -1,5 +1,5 @@
 /**
- * Toast App - Settings Window Preload Script
+ * Toast - Settings Window Preload Script
  *
  * This script runs in the context of the Settings window and provides
  * a bridge between the renderer process and the main process.
