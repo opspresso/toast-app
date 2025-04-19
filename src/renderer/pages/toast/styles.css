@@ -215,14 +215,14 @@ body {
 
 .add-page-button {
   background-color: var(--button-bg);
-  border: 1.5px dashed var(--add-button-color);
+  border: 1px dashed var(--add-button-color);
   color: var(--add-button-color);
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,14 +232,14 @@ body {
 
 .remove-page-button {
   background-color: var(--button-bg);
-  border: 1.5px dashed var(--remove-button-color);
+  border: 1px dashed var(--remove-button-color);
   color: var(--remove-button-color);
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
