@@ -11,6 +11,11 @@ exports.default = async function notarizing(context) {
   const appName = context.packager.appInfo.productFilename;
 
   console.log(`Notarizing ${appName}`);
+  console.log('Using TEAM_ID:', process.env.APPLE_TEAM_ID);
+
+  if (!process.env.APPLE_TEAM_ID) {
+    throw new Error('APPLE_TEAM_ID environment variable is not set.');
+  }
 
   await notarize({
     appBundleId: 'com.opspresso.toast-app',
