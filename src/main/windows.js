@@ -96,6 +96,8 @@ function setupToastWindowEvents(toastWindow, config) {
   toastWindow.on('blur', () => {
     const hideOnBlur = config.get('advanced.hideOnBlur');
     if (hideOnBlur !== false) {
+      // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+      toastWindow.webContents.send('before-hide');
       toastWindow.hide();
     }
   });

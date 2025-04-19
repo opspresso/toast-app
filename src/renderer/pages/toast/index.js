@@ -235,8 +235,20 @@ function renderPagingButtons() {
 function setupEventListeners() {
   // Close button
   closeButton.addEventListener('click', () => {
-    window.toast.hideWindow();
+    hideToastWindow();
   });
+
+  /**
+   * 토스트 창 숨기기 함수 (편집 모드 확인 및 종료 처리 포함)
+   */
+  function hideToastWindow() {
+    // 편집 모드인 경우 먼저 종료
+    if (isSettingsMode) {
+      toggleSettingsMode();
+    }
+    // 토스트 창 숨기기
+    window.toast.hideWindow();
+  }
 
   // 설정 모드 토글 버튼
   settingsModeToggle.addEventListener('click', toggleSettingsMode);
@@ -278,6 +290,13 @@ function setupEventListeners() {
 
     if (config.subscription) {
       isSubscribed = config.subscription.isSubscribed;
+    }
+  });
+
+  // 창이 숨겨지기 전에 편집 모드 종료
+  window.addEventListener('before-window-hide', () => {
+    if (isSettingsMode) {
+      toggleSettingsMode();
     }
   });
 }
@@ -402,6 +421,14 @@ function handleKeyDown(event) {
       event.preventDefault();
       if (selectedButtonIndex >= 0 && selectedButtonIndex < filteredButtons.length) {
         executeButton(filteredButtons[selectedButtonIndex]);
+      }
+      break;
+    case 'Escape':
+      // 편집 모드에서 ESC 키를 누르면 편집 모드 종료
+      // 단, 편집 모달이 열려있을 때는 모달 닫기 이벤트가 별도로 처리됨
+      if (isSettingsMode && !buttonEditModal.classList.contains('show')) {
+        event.preventDefault();
+        toggleSettingsMode();
       }
       break;
     case ',':  // 콤마 키를 눌렀을 때 설정 모드 토글
@@ -676,10 +703,16 @@ function executeButton(button) {
  * 모달 초기화 및 이벤트 리스너 설정
  */
 function setupModalEventListeners() {
-  // 모달 닫기 버튼
-  closeModalButton.addEventListener('click', () => {
-    closeButtonEditModal();
-  });
+  // 모달 닫기 버튼 (X 버튼)
+  if (closeModalButton) {
+    closeModalButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeButtonEditModal();
+    });
+  } else {
+    console.error('닫기 버튼을 찾을 수 없습니다.');
+  }
 
   // 취소 버튼
   cancelButtonEdit.addEventListener('click', () => {

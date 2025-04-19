@@ -19,7 +19,11 @@ contextBridge.exposeInMainWorld(
     executeAction: (action) => ipcRenderer.invoke('execute-action', action),
 
     // Window control
-    hideWindow: () => ipcRenderer.send('hide-toast'),
+    hideWindow: () => {
+      // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+      window.dispatchEvent(new Event('before-window-hide'));
+      ipcRenderer.send('hide-toast');
+    },
     showSettings: () => ipcRenderer.send('show-settings'),
 
     // Platform information
@@ -47,10 +51,17 @@ window.addEventListener('keydown', (event) => {
     ipcRenderer.invoke('get-config', 'advanced.hideOnEscape')
       .then(hideOnEscape => {
         if (hideOnEscape !== false) {
+          // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+          window.dispatchEvent(new Event('before-window-hide'));
           ipcRenderer.send('hide-toast');
         }
       });
   }
+});
+
+// 메인 프로세스로부터 before-hide 이벤트 수신
+ipcRenderer.on('before-hide', () => {
+  window.dispatchEvent(new Event('before-window-hide'));
 });
 
 // Notify main process that the window is ready
