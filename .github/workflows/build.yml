@@ -14,26 +14,26 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-latest]
 
     steps:
-      - name: Checkout code
+      - name: Checkout code 🛎️
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 📦
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install dependencies 📦
         run: npm ci
 
       # macOS에서만 인증서 설정
-      - name: Setup macOS certificates
+      - name: Setup macOS certificates 🔑
         if: matrix.os == 'macos-latest'
         run: |
           mkdir -p ~/private_keys/
           echo '${{ secrets.API_KEY_SECRET }}' > ~/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8
 
-      - name: Build/release Electron app
+      - name: Build/release Electron app 📦
         uses: samuelmeuli/action-electron-builder@v1
         with:
           github_token: ${{ secrets.GHP_TOKEN }}
@@ -45,7 +45,7 @@ jobs:
           API_KEY_ID: ${{ secrets.API_KEY_ID }}
           API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}
 
-      - name: Upload artifacts
+      - name: Upload artifacts 📥
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-artifacts
