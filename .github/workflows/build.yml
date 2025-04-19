@@ -37,8 +37,8 @@ jobs:
         uses: samuelmeuli/action-electron-builder@v1
         with:
           github_token: ${{ secrets.GHP_TOKEN }}
-          mac_certs: ${{ secrets.MAC_CERTS }}
-          mac_certs_password: ${{ secrets.MAC_CERTS_PASSWORD }}
+          mac_certs: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          mac_certs_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
         env:
           # macOS notarization API key
