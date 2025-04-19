@@ -13,6 +13,7 @@ const statusContainer = document.getElementById('status-container');
 const buttonTemplate = document.getElementById('button-template');
 const settingsModeToggle = document.getElementById('settings-mode-toggle');
 const addPageButton = document.getElementById('add-page-button');
+const removePageButton = document.getElementById('remove-page-button');
 
 // State
 let pages = []; // 페이지 배열 (각 페이지는 버튼 배열을 가짐)
@@ -96,6 +97,9 @@ function setupEventListeners() {
 
   // 페이지 추가 버튼
   addPageButton.addEventListener('click', addNewPage);
+
+  // 페이지 삭제 버튼
+  removePageButton.addEventListener('click', removePage);
 
   // 키보드 페이지 전환 (1-9 키 이벤트)
   document.addEventListener('keydown', (event) => {
@@ -334,6 +338,34 @@ function handleKeyDown(event) {
       event.preventDefault();
       if (selectedButtonIndex >= 0 && selectedButtonIndex < filteredButtons.length) {
         executeButton(filteredButtons[selectedButtonIndex]);
+      }
+      break;
+    case ',':  // 콤마 키를 눌렀을 때 설정 모드 토글
+      event.preventDefault();
+      toggleSettingsMode();
+      break;
+    case '+': // Shift+= 키를 눌렀을 때 페이지 추가
+      if (event.shiftKey) {
+        event.preventDefault();
+        addNewPage();
+      }
+      break;
+    case '=': // Shift+= 키를 눌렀을 때 페이지 추가 (다른 키보드 레이아웃 지원)
+      if (event.shiftKey) {
+        event.preventDefault();
+        addNewPage();
+      }
+      break;
+    case '-': // 설정 모드에서 페이지 삭제
+      if (isSettingsMode) {
+        event.preventDefault();
+        removePage();
+      }
+      break;
+    case '_': // 설정 모드에서 페이지 삭제 (Shift+- 지원)
+      if (isSettingsMode && event.shiftKey) {
+        event.preventDefault();
+        removePage();
       }
       break;
     default:
@@ -683,4 +715,59 @@ function applyAppearanceSettings(appearance) {
     container.className = 'toast-container';
     container.classList.add(`size-${appearance.size}`);
   }
+}
+
+/**
+ * 현재 페이지 삭제
+ */
+function removePage() {
+  // 설정 모드에서만 동작
+  if (!isSettingsMode) {
+    showStatus('페이지 삭제는 설정 모드에서만 가능합니다.', 'error');
+    return;
+  }
+
+  // 페이지가 하나뿐이면 삭제 불가
+  if (pages.length <= 1) {
+    showStatus('마지막 페이지는 삭제할 수 없습니다.', 'error');
+    return;
+  }
+
+  // 현재 페이지 정보 저장
+  const pageName = pages[currentPageIndex].name || `페이지 ${currentPageIndex + 1}`;
+
+  // 삭제 확인을 표시
+  const isConfirmed = confirm(`정말 "${pageName}"을(를) 삭제하시겠습니까?`);
+
+  if (!isConfirmed) {
+    showStatus('페이지 삭제가 취소되었습니다.', 'info');
+    return;
+  }
+
+  // 페이지 삭제
+  pages.splice(currentPageIndex, 1);
+
+  // 새로운 현재 페이지 인덱스 계산 (이전 페이지로 이동, 또는 마지막 페이지였다면 새로운 마지막 페이지로 이동)
+  const newPageIndex = Math.min(currentPageIndex, pages.length - 1);
+
+  // 페이지 번호와 단축키 재조정
+  pages.forEach((page, index) => {
+    if (!page.name || page.name.startsWith('페이지 ')) {
+      page.name = `페이지 ${index + 1}`;
+    }
+    if (!page.shortcut || /^\d+$/.test(page.shortcut)) {
+      page.shortcut = (index + 1).toString();
+    }
+  });
+
+  // 변경사항 저장
+  window.toast.saveConfig({ pages });
+
+  // 페이징 버튼 업데이트
+  renderPagingButtons();
+
+  // 페이지 전환
+  changePage(newPageIndex);
+
+  showStatus(`${pageName}이(가) 삭제되었습니다.`, 'success');
 }

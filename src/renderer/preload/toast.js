@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld(
 
     // Window control
     hideWindow: () => ipcRenderer.send('hide-toast'),
+    showSettings: () => ipcRenderer.send('show-settings'),
 
     // Platform information
     platform: process.platform,
