@@ -42,6 +42,59 @@
     </div>
   </div>
 
+  <!-- 버튼 편집 모달 -->
+  <div id="button-edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>버튼 설정 편집</h2>
+        <span class="close-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-button-name">버튼 이름</label>
+          <input type="text" id="edit-button-name" placeholder="버튼 이름">
+        </div>
+        <div class="form-group">
+          <label for="edit-button-icon">아이콘</label>
+          <input type="text" id="edit-button-icon" placeholder="이모지 아이콘">
+        </div>
+        <div class="form-group">
+          <label for="edit-button-shortcut">단축키</label>
+          <input type="text" id="edit-button-shortcut" placeholder="단축키" readonly>
+        </div>
+        <div class="form-group">
+          <label for="edit-button-action">동작 유형</label>
+          <select id="edit-button-action">
+            <option value="exec">명령어 실행</option>
+            <option value="open">URL 열기</option>
+            <option value="script">스크립트 실행</option>
+            <option value="shortcut">단축키 실행</option>
+          </select>
+        </div>
+        <div class="form-group" id="command-input-group">
+          <label for="edit-button-command">명령어</label>
+          <input type="text" id="edit-button-command" placeholder="실행할 명령어">
+        </div>
+        <div class="form-group" id="url-input-group" style="display: none;">
+          <label for="edit-button-url">URL</label>
+          <input type="text" id="edit-button-url" placeholder="열 URL">
+        </div>
+        <div class="form-group" id="script-input-group" style="display: none;">
+          <label for="edit-button-script">스크립트</label>
+          <textarea id="edit-button-script" placeholder="실행할 스크립트"></textarea>
+        </div>
+        <div class="form-group" id="shortcut-input-group" style="display: none;">
+          <label for="edit-button-key-shortcut">키 조합</label>
+          <input type="text" id="edit-button-key-shortcut" placeholder="단축키 설정">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="save-button-edit" class="primary-button">저장</button>
+        <button id="cancel-button-edit" class="secondary-button">취소</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Button template -->
   <template id="button-template">
     <div class="toast-button" data-action="">

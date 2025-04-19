@@ -15,6 +15,24 @@ const settingsModeToggle = document.getElementById('settings-mode-toggle');
 const addPageButton = document.getElementById('add-page-button');
 const removePageButton = document.getElementById('remove-page-button');
 
+// 모달 관련 DOM 요소
+const buttonEditModal = document.getElementById('button-edit-modal');
+const closeModalButton = document.querySelector('.close-modal');
+const saveButtonEdit = document.getElementById('save-button-edit');
+const cancelButtonEdit = document.getElementById('cancel-button-edit');
+const editButtonNameInput = document.getElementById('edit-button-name');
+const editButtonIconInput = document.getElementById('edit-button-icon');
+const editButtonShortcutInput = document.getElementById('edit-button-shortcut');
+const editButtonActionSelect = document.getElementById('edit-button-action');
+const editButtonCommandInput = document.getElementById('edit-button-command');
+const editButtonUrlInput = document.getElementById('edit-button-url');
+const editButtonScriptInput = document.getElementById('edit-button-script');
+const editButtonKeyShortcutInput = document.getElementById('edit-button-key-shortcut');
+const commandInputGroup = document.getElementById('command-input-group');
+const urlInputGroup = document.getElementById('url-input-group');
+const scriptInputGroup = document.getElementById('script-input-group');
+const shortcutInputGroup = document.getElementById('shortcut-input-group');
+
 // 기본 버튼 세트 정의
 const defaultButtons = [
   // qwert 행
@@ -149,6 +167,7 @@ let filteredButtons = []; // 필터링된 버튼들
 let currentPageIndex = 0; // 현재 페이지 인덱스
 let isSettingsMode = false; // 설정 모드 상태
 let isSubscribed = true; // 구독 상태 (기본값: 구독 중)
+let currentEditingButton = null; // 현재 편집 중인 버튼
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -227,6 +246,9 @@ function setupEventListeners() {
 
   // 페이지 삭제 버튼
   removePageButton.addEventListener('click', removePage);
+
+  // 모달 이벤트 리스너 설정
+  setupModalEventListeners();
 
   // 키보드 페이지 전환 (1-9 키 이벤트)
   document.addEventListener('keydown', (event) => {
@@ -651,6 +673,43 @@ function executeButton(button) {
 }
 
 /**
+ * 모달 초기화 및 이벤트 리스너 설정
+ */
+function setupModalEventListeners() {
+  // 모달 닫기 버튼
+  closeModalButton.addEventListener('click', () => {
+    closeButtonEditModal();
+  });
+
+  // 취소 버튼
+  cancelButtonEdit.addEventListener('click', () => {
+    closeButtonEditModal();
+  });
+
+  // 저장 버튼
+  saveButtonEdit.addEventListener('click', saveButtonSettings);
+
+  // 동작 유형에 따른 입력 필드 전환
+  editButtonActionSelect.addEventListener('change', () => {
+    showActionFields(editButtonActionSelect.value);
+  });
+
+  // 모달 외부 클릭 시 닫기
+  buttonEditModal.addEventListener('click', (event) => {
+    if (event.target === buttonEditModal) {
+      closeButtonEditModal();
+    }
+  });
+
+  // ESC 키로 모달 닫기
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && buttonEditModal.classList.contains('show')) {
+      closeButtonEditModal();
+    }
+  });
+}
+
+/**
  * 버튼 설정 편집 (설정 모드)
  * @param {Object} button - 편집할 버튼 설정
  */
@@ -658,61 +717,127 @@ function editButtonSettings(button) {
   // 편집할 버튼 정보를 상태 메시지로 표시
   showStatus(`편집 중: ${button.name}`, 'info');
 
-  // 버튼 이름 및 아이콘 변경 안내
-  showStatus(`'${button.shortcut}' 키 버튼 설정 중. 다시 클릭하면 설정이 저장됩니다.`, 'info');
+  // 편집 중인 버튼 저장 (전역 변수)
+  currentEditingButton = button;
 
-  // 편집중인 버튼 표시를 위한 클래스 추가
-  const buttonElements = document.querySelectorAll('.toast-button');
-  buttonElements.forEach(element => {
-    const buttonData = JSON.parse(element.dataset.action || '{}');
-    if (buttonData.name === button.name && buttonData.shortcut === button.shortcut) {
-      element.classList.add('editing');
-    }
-  });
+  // 폼 필드에 현재 버튼 값 채우기
+  editButtonNameInput.value = button.name || '';
+  editButtonIconInput.value = button.icon || '';
+  editButtonShortcutInput.value = button.shortcut || '';
+  editButtonActionSelect.value = button.action || 'exec';
 
-  // 편집 완료 후, 다음 클릭 시 저장하도록 플래그 설정
-  // 현재 버튼 정보 저장
-  const currentButton = button;
+  // 동작 유형에 따른 필드 값 설정
+  editButtonCommandInput.value = button.command || '';
+  editButtonUrlInput.value = button.url || '';
+  editButtonScriptInput.value = button.script || '';
+  editButtonKeyShortcutInput.value = button.keyShortcut || '';
 
-  // 임시 이벤트 리스너 함수
-  const completeEditing = function(event) {
-    // 버튼 업데이트 (간단한 예시, 실제로는 더 많은 설정이 필요할 수 있음)
-    const updatedButton = {
-      ...currentButton,
-      name: '수정된 ' + currentButton.name,
-      icon: '✅'
-    };
+  // 현재 동작 유형에 맞는 입력 필드 표시
+  showActionFields(button.action || 'exec');
 
-    // 페이지 내 버튼 업데이트
-    const pageIndex = currentPageIndex;
-    const buttonIndex = pages[pageIndex].buttons.findIndex(b =>
-      b.name === currentButton.name && b.shortcut === currentButton.shortcut
-    );
+  // 모달 표시
+  buttonEditModal.classList.add('show');
 
-    if (buttonIndex >= 0) {
-      pages[pageIndex].buttons[buttonIndex] = updatedButton;
+  // 이름 입력 필드에 포커스
+  editButtonNameInput.focus();
+}
 
-      // 변경사항 저장
-      window.toast.saveConfig({ pages });
+/**
+ * 버튼 편집 모달 닫기
+ */
+function closeButtonEditModal() {
+  buttonEditModal.classList.remove('show');
+  currentEditingButton = null;
+}
+
+/**
+ * 동작 유형에 따른 입력 필드 표시/숨김
+ * @param {string} actionType - 동작 유형
+ */
+function showActionFields(actionType) {
+  // 모든 입력 필드 그룹 숨기기
+  commandInputGroup.style.display = 'none';
+  urlInputGroup.style.display = 'none';
+  scriptInputGroup.style.display = 'none';
+  shortcutInputGroup.style.display = 'none';
+
+  // 선택된 동작 유형에 따라 해당 입력 필드 그룹 표시
+  switch (actionType) {
+    case 'exec':
+      commandInputGroup.style.display = 'block';
+      break;
+    case 'open':
+      urlInputGroup.style.display = 'block';
+      break;
+    case 'script':
+      scriptInputGroup.style.display = 'block';
+      break;
+    case 'shortcut':
+      shortcutInputGroup.style.display = 'block';
+      break;
+  }
+}
+
+/**
+ * 버튼 설정 저장
+ */
+function saveButtonSettings() {
+  if (!currentEditingButton) return;
+
+  // 현재 페이지와 버튼 인덱스 가져오기
+  const pageIndex = currentPageIndex;
+  const buttonIndex = pages[pageIndex].buttons.findIndex(b =>
+    b.shortcut === currentEditingButton.shortcut
+  );
+
+  if (buttonIndex < 0) {
+    showStatus('버튼을 찾을 수 없습니다.', 'error');
+    return;
+  }
+
+  // 입력된 값으로 새 버튼 객체 생성
+  const action = editButtonActionSelect.value;
+  const updatedButton = {
+    name: editButtonNameInput.value,
+    icon: editButtonIconInput.value,
+    shortcut: currentEditingButton.shortcut, // 단축키는 변경 불가
+    action: action
+  };
+
+  // 동작 유형에 따른 추가 속성 설정
+  switch (action) {
+    case 'exec':
+      updatedButton.command = editButtonCommandInput.value;
+      break;
+    case 'open':
+      updatedButton.url = editButtonUrlInput.value;
+      break;
+    case 'script':
+      updatedButton.script = editButtonScriptInput.value;
+      break;
+    case 'shortcut':
+      updatedButton.keyShortcut = editButtonKeyShortcutInput.value;
+      break;
+  }
+
+  // 버튼 업데이트
+  pages[pageIndex].buttons[buttonIndex] = updatedButton;
+
+  // 설정 저장
+  window.toast.saveConfig({ pages })
+    .then(() => {
+      // 모달 닫기
+      closeButtonEditModal();
 
       // UI 업데이트
       showCurrentPageButtons();
 
-      showStatus(`버튼 ${updatedButton.name} 설정이 변경되었습니다.`, 'success');
-    }
-
-    // 이벤트 리스너 제거
-    document.removeEventListener('click', completeEditing);
-
-    // 편집 모드에서 기본 모드로 전환
-    toggleSettingsMode();
-
-    // 이벤트 전파 방지
-    event.stopPropagation();
-  };
-
-  // 문서에 임시 이벤트 리스너 추가 (다음 클릭에서 편집 완료)
-  document.addEventListener('click', completeEditing);
+      // 성공 메시지 표시
+      showStatus(`버튼 "${updatedButton.name}" 설정이 변경되었습니다.`, 'success');
+    })
+    .catch(error => {
+      showStatus(`설정 저장 중 오류 발생: ${error}`, 'error');
+    });
 }
 
 /**
