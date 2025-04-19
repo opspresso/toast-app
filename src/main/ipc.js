@@ -70,12 +70,66 @@ function setupIpcHandlers(windows) {
         // Set specific key
         config.set(key, value);
       }
+
+      // 설정이 변경되면 토스트 창에 즉시 알림
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        // 전체 설정 또는 특정 섹션이 업데이트된 경우
+        if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages') {
+          windows.toast.webContents.send('config-updated', {
+            pages: config.get('pages'),
+            appearance: config.get('appearance'),
+            subscription: config.get('subscription')
+          });
+        }
+
+        // 윈도우 설정에 영향을 미치는 경우 윈도우 속성 업데이트
+        if (key === 'appearance' || key === 'appearance.opacity' || key === 'appearance.size') {
+          const opacity = config.get('appearance.opacity') || 0.95;
+          windows.toast.setOpacity(opacity);
+
+          // 윈도우 크기 변경 (필요한 경우)
+          const size = config.get('appearance.size') || 'medium';
+          updateToastWindowSize(windows.toast, size);
+        }
+
+        // 윈도우 위치에 영향을 미치는 경우 위치 업데이트
+        if (key === 'appearance' || key === 'appearance.position') {
+          const { positionToastWindow } = require('./shortcuts');
+          positionToastWindow(windows.toast, config);
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('Error setting config:', error);
       return false;
     }
   });
+
+  /**
+   * 토스트 창 크기 업데이트
+   */
+  function updateToastWindowSize(window, size) {
+    let width, height;
+
+    switch (size) {
+      case 'small':
+        width = 500;
+        height = 350;
+        break;
+      case 'large':
+        width = 800;
+        height = 550;
+        break;
+      case 'medium':
+      default:
+        width = 700;
+        height = 500;
+        break;
+    }
+
+    window.setSize(width, height);
+  }
 
   // Save configuration (specific changes)
   ipcMain.handle('save-config', (event, changes) => {
@@ -85,6 +139,32 @@ function setupIpcHandlers(windows) {
         Object.keys(changes).forEach(key => {
           config.set(key, changes[key]);
         });
+
+        // 설정이 변경되면 토스트 창에 즉시 알림
+        if (windows.toast && !windows.toast.isDestroyed()) {
+          windows.toast.webContents.send('config-updated', {
+            pages: config.get('pages'),
+            appearance: config.get('appearance'),
+            subscription: config.get('subscription')
+          });
+
+          // 외관 설정이 변경된 경우 토스트 창의 외관 업데이트
+          if (changes.appearance) {
+            if (changes.appearance.opacity) {
+              windows.toast.setOpacity(changes.appearance.opacity);
+            }
+
+            if (changes.appearance.size) {
+              updateToastWindowSize(windows.toast, changes.appearance.size);
+            }
+
+            if (changes.appearance.position) {
+              const { positionToastWindow } = require('./shortcuts');
+              positionToastWindow(windows.toast, config);
+            }
+          }
+        }
+
         return true;
       }
       return false;

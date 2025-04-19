@@ -310,8 +310,9 @@ async function saveSettings() {
   try {
     // Disable button and change text to "Saving..."
     saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
 
-    // Save each section
+    // Save changes first
     await window.settings.setConfig('globalHotkey', settings.globalHotkey);
     await window.settings.setConfig('appearance', settings.appearance);
     await window.settings.setConfig('advanced', settings.advanced);
@@ -322,17 +323,21 @@ async function saveSettings() {
     // Clear unsaved changes flag
     unsavedChanges = false;
 
-    // Change button text to "Saved!"
+    // Change to saved message
     saveButton.textContent = "Saved!";
 
-    // Restore original text after 3 seconds
+    // Show toast window to demonstrate the setting changes
+    window.settings.showToast();
+
+    // Close window after a delay to let user see the changes
     setTimeout(() => {
+      // Restore original button text
       saveButton.textContent = originalButtonText;
       saveButton.disabled = false;
-    }, 1000);
 
-    // Close window
-    window.settings.closeWindow();
+      // Close settings window
+      window.settings.closeWindow();
+    }, 1500);
   } catch (error) {
     alert(`Error saving settings: ${error.message || 'Unknown error'}`);
     saveButton.textContent = originalButtonText;
