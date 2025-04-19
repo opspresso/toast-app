@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.0.5",
+  "version": "v0.0.6",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -66,7 +66,13 @@
         "dmg",
         "zip"
       ],
-      "icon": "assets/icons/icon.icns"
+      "icon": "assets/icons/icon.icns",
+      "notarize": {
+        "appBundleId": "com.opspresso.toast-app",
+        "appleId": "me@nalbam.com",
+        "appleIdPassword": "@keychain:APP_SPECIFIC_PASSWORD",
+        "teamId": "3TMN29X5ES"
+      }
     },
     "win": {
       "target": [
