@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast App - API Documentation</title>
+    <link rel="icon" href="assets/icons/icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <meta name="description" content="Toast App internal API documentation - Interface definitions, methods, and usage examples.">
+    <style>
+        .documentation-container {
+            max-width: 900px;
+            margin: 7rem auto 0;
+            padding: 2rem;
+        }
+
+        .api-section {
+            margin-bottom: 4rem;
+            padding-top: 1rem;
+        }
+
+        .api-section h2 {
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 2rem;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .api-section h3 {
+            margin-top: 1.8rem;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            color: var(--text-color);
+        }
+
+        .api-section h4 {
+            margin-top: 1.2rem;
+            margin-bottom: 0.8rem;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+
+        .api-section p {
+            margin-bottom: 1.2rem;
+            color: var(--text-light);
+        }
+
+        .api-section ul,
+        .api-section ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-light);
+        }
+
+        .api-section li {
+            margin-bottom: 0.8rem;
+        }
+
+        .api-section code {
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            border: 1px solid var(--code-border);
+        }
+
+        .api-section pre {
+            background-color: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin-bottom: 2rem;
+            border: 1px solid var(--code-border);
+            position: relative;
+        }
+
+        .api-section pre::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+        }
+
+        .return-home {
+            display: inline-block;
+            margin-bottom: 2rem;
+        }
+
+        .api-method {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .api-method:hover {
+            box-shadow: var(--card-hover-shadow);
+        }
+
+        .api-method-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .api-method-name {
+            flex-grow: 1;
+            margin-top: 0;
+            margin-bottom: 0;
+            font-family: var(--font-code);
+            font-size: 1.3rem;
+        }
+
+        .api-method-module {
+            padding: 0.3rem 0.6rem;
+            background-color: rgba(var(--primary-color-rgb), 0.1);
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 1rem;
+            margin-left: 1rem;
+            text-transform: uppercase;
+        }
+
+        .api-param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        .api-param-table th {
+            text-align: left;
+            background-color: var(--bg-alt);
+            padding: 0.7rem 1rem;
+            font-weight: 600;
+        }
+
+        .api-param-table td {
+            padding: 0.7rem 1rem;
+            border-top: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .param-name {
+            font-family: var(--font-code);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .param-type {
+            font-family: var(--font-code);
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .param-description {
+            color: var(--text-light);
+        }
+
+        .param-required {
+            background-color: rgba(var(--secondary-color-rgb), 0.1);
+            color: var(--secondary-color);
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .param-optional {
+            background-color: rgba(var(--text-light-rgb), 0.1);
+            color: var(--text-light);
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .return-section {
+            margin-top: 1.5rem;
+        }
+
+        .example-section {
+            margin-top: 1.5rem;
+        }
+
+        .table-of-contents {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .table-of-contents:hover {
+            box-shadow: var(--card-hover-shadow);
+        }
+
+        .table-of-contents h2 {
+            margin-top: 0;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .table-of-contents h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 50px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+
+        .table-of-contents ol {
+            margin-bottom: 0;
+            padding-left: 1.5rem;
+        }
+
+        .table-of-contents li {
+            margin-bottom: 0.7rem;
+        }
+
+        .table-of-contents a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .table-of-contents a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        html {
+            scroll-padding-top: 80px; /* Offset for fixed header */
+        }
+
+        /* Add custom CSS variables for colors that need RGB version for opacity */
+        :root {
+            --primary-color-rgb: 52, 152, 219;
+            --secondary-color-rgb: 46, 204, 113;
+            --text-light-rgb: 119, 119, 119;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-light-rgb: 176, 176, 176;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav">
+        <div class="nav-container container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/icons/icon.png" alt="Toast App Logo">
+                <span>Toast App</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Open Menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <ul class="nav-links">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#installation">Installation</a></li>
+                <li><a href="index.html#usage">Usage</a></li>
+                <li><a href="index.html#documentation">Documentation</a></li>
+                <li><a href="index.html#download">Download</a></li>
+                <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="documentation-container">
+        <a href="index.html" class="return-home btn btn-outline">← Back to Home</a>
+
+        <h1 class="fadeIn">Toast App API Documentation</h1>
+
+        <p class="fadeIn delay-1">This document provides comprehensive information about the internal APIs of Toast App. These APIs are used by the application itself and can be useful for developers who want to extend or modify Toast App's functionality.</p>
+
+        <div class="table-of-contents">
+            <h2>Table of Contents</h2>
+            <ol>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#config-manager-api">Config Manager API</a></li>
+                <li><a href="#window-manager-api">Window Manager API</a></li>
+                <li><a href="#shortcut-manager-api">Shortcut Manager API</a></li>
+                <li><a href="#executor-api">Executor API</a></li>
+                <li><a href="#tray-manager-api">Tray Manager API</a></li>
+                <li><a href="#ipc-api">IPC API</a></li>
+                <li><a href="#theme-engine-api">Theme Engine API</a></li>
+                <li><a href="#platform-api">Platform API</a></li>
+                <li><a href="#error-handling">Error Handling</a></li>
+            </ol>
+        </div>
+
+        <div class="api-section" id="introduction">
+            <h2>Introduction</h2>
+            <p>Toast App's internal architecture follows a modular design with well-defined APIs between components. This approach allows for flexibility, maintainability, and extensibility.</p>
+
+            <p>The APIs are divided into several modules, each responsible for a specific aspect of the application:</p>
+            <ul>
+                <li><strong>Config Manager:</strong> Handles application configuration loading, validation, and persistence.</li>
+                <li><strong>Window Manager:</strong> Controls the application windows (Toast popup, settings, etc.).</li>
+                <li><strong>Shortcut Manager:</strong> Registers and handles global keyboard shortcuts.</li>
+                <li><strong>Executor:</strong> Executes actions triggered by buttons (commands, URLs, shortcuts, scripts).</li>
+                <li><strong>Tray Manager:</strong> Manages the system tray/menu bar icon and context menu.</li>
+                <li><strong>IPC:</strong> Facilitates communication between main and renderer processes.</li>
+                <li><strong>Theme Engine:</strong> Applies visual themes to the UI based on user preferences.</li>
+                <li><strong>Platform:</strong> Provides platform-specific functionality abstraction.</li>
+            </ul>
+        </div>
+
+        <div class="api-section" id="config-manager-api">
+            <h2>Config Manager API</h2>
+            <p>The Config Manager module handles the loading, validation, and saving of Toast App's configuration.</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">getConfig(key, defaultValue)</h3>
+                    <span class="api-method-module">ConfigManager</span>
+                </div>
+                <p>Retrieves a specific configuration value by key.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">key</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">String</span></td>
+                            <td class="param-description">The configuration key to retrieve. Can be a nested path using dot notation (e.g., 'appearance.theme').</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="param-name">defaultValue</span>
+                                <span class="param-optional">Optional</span>
+                            </td>
+                            <td><span class="param-type">Any</span></td>
+                            <td class="param-description">The default value to return if the key doesn't exist in the configuration.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">Any</span> - The configuration value for the specified key, or the default value if the key doesn't exist.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Get the global hotkey
+const hotkey = ConfigManager.getConfig('globalHotkey', 'Alt+Space');
+
+// Get a nested configuration value
+const theme = ConfigManager.getConfig('appearance.theme', 'system');</code></pre>
+                </div>
+            </div>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">setConfig(key, value)</h3>
+                    <span class="api-method-module">ConfigManager</span>
+                </div>
+                <p>Sets a specific configuration value by key.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">key</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">String</span></td>
+                            <td class="param-description">The configuration key to set. Can be a nested path using dot notation.</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="param-name">value</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">Any</span></td>
+                            <td class="param-description">The value to assign to the specified key.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">void</span></p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Set the global hotkey
+ConfigManager.setConfig('globalHotkey', 'Ctrl+Space');
+
+// Set a nested configuration value
+ConfigManager.setConfig('appearance.theme', 'dark');</code></pre>
+                </div>
+            </div>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">saveConfig()</h3>
+                    <span class="api-method-module">ConfigManager</span>
+                </div>
+                <p>Saves the current configuration to disk.</p>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">Boolean</span> - True if the save was successful, false otherwise.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Save changes to the configuration
+const saved = ConfigManager.saveConfig();
+if (saved) {
+    console.log('Configuration saved successfully.');
+} else {
+    console.error('Failed to save configuration.');
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="window-manager-api">
+            <h2>Window Manager API</h2>
+            <p>The Window Manager module handles the creation, display, and management of application windows.</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">showToast()</h3>
+                    <span class="api-method-module">WindowManager</span>
+                </div>
+                <p>Shows the Toast popup window at the configured position.</p>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">BrowserWindow</span> - The Electron BrowserWindow instance for the Toast popup.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Show the Toast popup
+const toastWindow = WindowManager.showToast();</code></pre>
+                </div>
+            </div>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">hideToast()</h3>
+                    <span class="api-method-module">WindowManager</span>
+                </div>
+                <p>Hides the Toast popup window.</p>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">void</span></p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Hide the Toast popup
+WindowManager.hideToast();</code></pre>
+                </div>
+            </div>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">showSettings()</h3>
+                    <span class="api-method-module">WindowManager</span>
+                </div>
+                <p>Shows the Settings window.</p>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">BrowserWindow</span> - The Electron BrowserWindow instance for the Settings window.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Show the Settings window
+const settingsWindow = WindowManager.showSettings();</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="shortcut-manager-api">
+            <h2>Shortcut Manager API</h2>
+            <p>The Shortcut Manager module handles global keyboard shortcuts and their registration.</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">registerGlobalShortcut(accelerator, callback)</h3>
+                    <span class="api-method-module">ShortcutManager</span>
+                </div>
+                <p>Registers a global keyboard shortcut.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">accelerator</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">String</span></td>
+                            <td class="param-description">The keyboard shortcut to register (e.g., 'Alt+Space', 'Ctrl+Shift+P').</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="param-name">callback</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">Function</span></td>
+                            <td class="param-description">The function to call when the shortcut is triggered.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">Boolean</span> - True if the shortcut was registered successfully, false otherwise.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Register a global shortcut to show the Toast popup
+const registered = ShortcutManager.registerGlobalShortcut('Alt+Space', () => {
+    WindowManager.showToast();
+});
+
+if (!registered) {
+    console.error('Failed to register global shortcut.');
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">unregisterGlobalShortcut(accelerator)</h3>
+                    <span class="api-method-module">ShortcutManager</span>
+                </div>
+                <p>Unregisters a global keyboard shortcut.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">accelerator</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">String</span></td>
+                            <td class="param-description">The keyboard shortcut to unregister.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">void</span></p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Unregister the global shortcut
+ShortcutManager.unregisterGlobalShortcut('Alt+Space');</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="executor-api">
+            <h2>Executor API</h2>
+            <p>The Executor module handles the execution of actions triggered by buttons.</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">executeAction(action)</h3>
+                    <span class="api-method-module">Executor</span>
+                </div>
+                <p>Executes a specified action.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">action</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">Object</span></td>
+                            <td class="param-description">
+                                The action to execute, containing:
+                                <ul>
+                                    <li><code>type</code>: The action type ('exec', 'open', 'shortcut', 'script').</li>
+                                    <li>Additional parameters specific to the action type.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">Promise&lt;Object&gt;</span> - A promise that resolves with the result of the action or rejects with an error.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Execute a command action
+Executor.executeAction({
+    type: 'exec',
+    command: 'echo "Hello, world!"',
+    workingDirectory: process.cwd(),
+    runInTerminal: false
+}).then(result => {
+    console.log('Command output:', result.output);
+}).catch(error => {
+    console.error('Command execution failed:', error.message);
+});
+
+// Open a URL action
+Executor.executeAction({
+    type: 'open',
+    url: 'https://www.google.com'
+});
+
+// Execute a keyboard shortcut action
+Executor.executeAction({
+    type: 'shortcut',
+    keys: 'Ctrl+C'
+});</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="tray-manager-api">
+            <h2>Tray Manager API</h2>
+            <p>The Tray Manager module handles the system tray/menu bar icon and context menu.</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">createTray()</h3>
+                    <span class="api-method-module">TrayManager</span>
+                </div>
+                <p>Creates and shows the system tray/menu bar icon with a context menu.</p>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">Tray</span> - The Electron Tray instance.</p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Create the system tray icon
+const tray = TrayManager.createTray();</code></pre>
+                </div>
+            </div>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">updateContextMenu(template)</h3>
+                    <span class="api-method-module">TrayManager</span>
+                </div>
+                <p>Updates the context menu of the system tray/menu bar icon.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">template</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">Array&lt;Object&gt;</span></td>
+                            <td class="param-description">The template for the context menu items.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="return-section">
+                    <h4>Returns</h4>
+                    <p><span class="param-type">void</span></p>
+                </div>
+
+                <div class="example-section">
+                    <h4>Example</h4>
+<pre><code>// Update the context menu
+TrayManager.updateContextMenu([
+    { label: 'Show Toast', click: () => WindowManager.showToast() },
+    { label: 'Settings', click: () => WindowManager.showSettings() },
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() }
+]);</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="ipc-api">
+            <h2>IPC API</h2>
+            <p>The IPC module facilitates communication between the main and renderer processes.</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">on(channel, listener)</h3>
+                    <span class="api-method-module">IPC</span>
+                </div>
+                <p>Registers a listener for IPC messages on a specific channel.</p>
+
+                <h4>Parameters</h4>
+                <table class="api-param-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="param-name">channel</span>
+                                <span class="param-required">Required</span>
+                            </td>
+                            <td><span class="param-type">

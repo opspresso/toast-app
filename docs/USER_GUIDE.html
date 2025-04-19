@@ -4,90 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Toast App - User Guide</title>
-    <link rel="icon" href="../assets/icons/icon.png">
+    <link rel="icon" href="assets/icons/icon.png">
     <link rel="stylesheet" href="styles.css">
+    <meta name="description" content="Complete user guide and documentation for Toast App - a customizable shortcut launcher for macOS and Windows.">
     <style>
         .documentation-container {
             max-width: 900px;
-            margin: 0 auto;
+            margin: 7rem auto 0;
             padding: 2rem;
         }
 
         .table-of-contents {
             background-color: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 3rem;
             box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .table-of-contents:hover {
+            box-shadow: var(--card-hover-shadow);
         }
 
         .table-of-contents h2 {
             margin-top: 0;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .table-of-contents h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 50px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
         }
 
         .table-of-contents ol {
             margin-bottom: 0;
+            padding-left: 1.5rem;
+        }
+
+        .table-of-contents li {
+            margin-bottom: 0.7rem;
+        }
+
+        .table-of-contents a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .table-of-contents a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
         }
 
         .documentation-section {
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
+            padding-top: 1rem;
         }
 
         .documentation-section h2 {
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--secondary-color);
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
             margin-top: 2rem;
+            font-size: 1.8rem;
+            color: var(--primary-color);
         }
 
         .documentation-section h3 {
-            margin-top: 1.5rem;
+            margin-top: 1.8rem;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            color: var(--text-color);
+        }
+
+        .documentation-section h4 {
+            margin-top: 1.2rem;
+            margin-bottom: 0.8rem;
+            font-size: 1.2rem;
+            color: var(--text-color);
         }
 
         .documentation-section ul,
         .documentation-section ol {
             margin-left: 1.5rem;
             margin-bottom: 1.5rem;
+            color: var(--text-light);
         }
 
         .documentation-section li {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
         }
 
         .documentation-section p {
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
+            color: var(--text-light);
+        }
+
+        .documentation-section code {
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            border: 1px solid var(--code-border);
         }
 
         .return-home {
             display: inline-block;
             margin-bottom: 2rem;
         }
+
+        /* Smooth scroll anchor links */
+        html {
+            scroll-padding-top: 80px; /* Offset for fixed header */
+        }
     </style>
 </head>
 <body>
-    <nav>
+    <nav id="main-nav">
         <div class="nav-container container">
             <a href="index.html" class="nav-logo">
-                <img src="../assets/icons/icon.png" alt="Toast App Logo">
+                <img src="assets/icons/icon.png" alt="Toast App Logo">
                 <span>Toast App</span>
             </a>
-            <button class="mobile-menu-btn">☰</button>
+            <button class="mobile-menu-btn" aria-label="Open Menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
             <ul class="nav-links">
                 <li><a href="index.html#features">Features</a></li>
                 <li><a href="index.html#installation">Installation</a></li>
                 <li><a href="index.html#usage">Usage</a></li>
                 <li><a href="index.html#documentation">Documentation</a></li>
                 <li><a href="index.html#download">Download</a></li>
-                <li><a href="https://github.com/opspresso/toast-app">GitHub</a></li>
+                <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="documentation-container">
-        <a href="index.html" class="return-home btn btn-secondary">← Back to Home</a>
+        <a href="index.html" class="return-home btn btn-outline">← Back to Home</a>
 
-        <h1>Toast App User Guide</h1>
+        <h1 class="fadeIn">Toast App User Guide</h1>
 
-        <p>Welcome to Toast App, a customizable shortcut launcher for macOS and Windows. This guide will help you get started and make the most of Toast App's features.</p>
+        <p class="fadeIn delay-1">Welcome to Toast App, a customizable shortcut launcher for macOS and Windows. This guide will help you get started and make the most of Toast App's features.</p>
 
         <div class="table-of-contents">
             <h2>Table of Contents</h2>
@@ -500,11 +571,52 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
             const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
             const navLinks = document.querySelector('.nav-links');
 
             mobileMenuBtn.addEventListener('click', function() {
                 navLinks.classList.toggle('active');
+            });
+
+            // Navigation scroll effect
+            const nav = document.getElementById('main-nav');
+
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    nav.classList.add('nav-scrolled');
+                } else {
+                    nav.classList.remove('nav-scrolled');
+                }
+            });
+
+            // Smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+
+                        // Close mobile menu if it's open
+                        if (navLinks.classList.contains('active')) {
+                            navLinks.classList.remove('active');
+                        }
+                    }
+                });
+            });
+
+            // Simple animation for the content
+            document.querySelectorAll('.table-of-contents, .documentation-section').forEach((element, index) => {
+                element.classList.add('fadeIn');
+                element.style.animationDelay = `${index * 0.1}s`;
             });
         });
     </script>
