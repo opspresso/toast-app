@@ -58,10 +58,8 @@
           <label for="edit-button-icon">아이콘</label>
           <input type="text" id="edit-button-icon" placeholder="이모지 아이콘">
         </div>
-        <div class="form-group">
-          <label for="edit-button-shortcut">단축키</label>
-          <input type="text" id="edit-button-shortcut" placeholder="단축키" readonly>
-        </div>
+        <!-- 단축키 필드는 숨김 처리 (변경 불가) -->
+        <input type="hidden" id="edit-button-shortcut">
         <div class="form-group">
           <label for="edit-button-action">동작 유형</label>
           <select id="edit-button-action">
