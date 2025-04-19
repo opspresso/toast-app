@@ -166,8 +166,8 @@ function addNewPage() {
   const pageNumber = pages.length + 1;
 
   // 구독 상태에 따른 페이지 추가 제한
-  if (pageNumber > 1 && !isSubscribed) {
-    showStatus('구독자만 2페이지 이상 추가할 수 있습니다.', 'error');
+  if (pageNumber > 3 && !isSubscribed) {
+    showStatus('구독자만 4페이지 이상 추가할 수 있습니다.', 'error');
     return;
   }
 
@@ -581,64 +581,64 @@ function executeButton(button) {
  * @param {Object} button - 편집할 버튼 설정
  */
 function editButtonSettings(button) {
-  // 간단한 프롬프트로 버튼 이름 변경
-  const newName = prompt('버튼 이름을 입력하세요:', button.name);
-  if (!newName) return; // 취소한 경우
+  // 편집할 버튼 정보를 상태 메시지로 표시
+  showStatus(`편집 중: ${button.name}`, 'info');
 
-  // 아이콘 변경
-  const newIcon = prompt('버튼 아이콘을 입력하세요 (이모지 또는 문자):', button.icon || '🔘');
-  if (!newIcon) return; // 취소한 경우
+  // 버튼 이름 및 아이콘 변경 안내
+  showStatus(`'${button.shortcut}' 키 버튼 설정 중. 다시 클릭하면 설정이 저장됩니다.`, 'info');
 
-  // 액션 타입 선택
-  const actionType = prompt('액션 타입을 선택하세요 (shortcut, exec, open):', button.action);
-  if (!actionType) return; // 취소한 경우
+  // 편집중인 버튼 표시를 위한 클래스 추가
+  const buttonElements = document.querySelectorAll('.toast-button');
+  buttonElements.forEach(element => {
+    const buttonData = JSON.parse(element.dataset.action || '{}');
+    if (buttonData.name === button.name && buttonData.shortcut === button.shortcut) {
+      element.classList.add('editing');
+    }
+  });
 
-  // 액션 타입에 따른 추가 설정
-  let updatedButton = {
-    ...button,
-    name: newName,
-    icon: newIcon,
-    action: actionType
+  // 편집 완료 후, 다음 클릭 시 저장하도록 플래그 설정
+  // 현재 버튼 정보 저장
+  const currentButton = button;
+
+  // 임시 이벤트 리스너 함수
+  const completeEditing = function(event) {
+    // 버튼 업데이트 (간단한 예시, 실제로는 더 많은 설정이 필요할 수 있음)
+    const updatedButton = {
+      ...currentButton,
+      name: '수정된 ' + currentButton.name,
+      icon: '✅'
+    };
+
+    // 페이지 내 버튼 업데이트
+    const pageIndex = currentPageIndex;
+    const buttonIndex = pages[pageIndex].buttons.findIndex(b =>
+      b.name === currentButton.name && b.shortcut === currentButton.shortcut
+    );
+
+    if (buttonIndex >= 0) {
+      pages[pageIndex].buttons[buttonIndex] = updatedButton;
+
+      // 변경사항 저장
+      window.toast.saveConfig({ pages });
+
+      // UI 업데이트
+      showCurrentPageButtons();
+
+      showStatus(`버튼 ${updatedButton.name} 설정이 변경되었습니다.`, 'success');
+    }
+
+    // 이벤트 리스너 제거
+    document.removeEventListener('click', completeEditing);
+
+    // 편집 모드에서 기본 모드로 전환
+    toggleSettingsMode();
+
+    // 이벤트 전파 방지
+    event.stopPropagation();
   };
 
-  switch (actionType) {
-    case 'shortcut':
-      const keys = prompt('키보드 단축키를 입력하세요 (쉼표로 구분):', button.keys?.join(',') || '');
-      if (keys) {
-        updatedButton.keys = keys.split(',').map(key => key.trim());
-      }
-      break;
-    case 'exec':
-      const command = prompt('실행할 명령어를 입력하세요:', button.command || '');
-      if (command) {
-        updatedButton.command = command;
-      }
-      break;
-    case 'open':
-      const url = prompt('열 URL을 입력하세요:', button.url || '');
-      if (url) {
-        updatedButton.url = url;
-      }
-      break;
-  }
-
-  // 페이지 내 버튼 업데이트
-  const pageIndex = currentPageIndex;
-  const buttonIndex = pages[pageIndex].buttons.findIndex(b =>
-    b.name === button.name && b.shortcut === button.shortcut
-  );
-
-  if (buttonIndex >= 0) {
-    pages[pageIndex].buttons[buttonIndex] = updatedButton;
-
-    // 변경사항 저장
-    window.toast.saveConfig({ pages });
-
-    // UI 업데이트
-    showCurrentPageButtons();
-
-    showStatus(`버튼 ${newName} 설정이 변경되었습니다.`, 'success');
-  }
+  // 문서에 임시 이벤트 리스너 추가 (다음 클릭에서 편집 완료)
+  document.addEventListener('click', completeEditing);
 }
 
 /**

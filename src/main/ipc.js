@@ -76,6 +76,23 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // Save configuration (specific changes)
+  ipcMain.handle('save-config', (event, changes) => {
+    try {
+      if (typeof changes === 'object') {
+        // Apply each change to config
+        Object.keys(changes).forEach(key => {
+          config.set(key, changes[key]);
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error saving config:', error);
+      return false;
+    }
+  });
+
   // Reset configuration to defaults
   ipcMain.handle('reset-config', async () => {
     try {

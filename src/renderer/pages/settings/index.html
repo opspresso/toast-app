@@ -20,7 +20,6 @@
       <div class="settings-sidebar">
         <ul class="settings-nav">
           <li data-tab="general" class="active">General</li>
-          <li data-tab="buttons">Buttons</li>
           <li data-tab="appearance">Appearance</li>
           <li data-tab="advanced">Advanced</li>
         </ul>
@@ -50,22 +49,6 @@
           </div>
         </div>
 
-        <!-- Buttons Tab -->
-        <div id="buttons" class="settings-tab">
-          <h2>Buttons</h2>
-
-          <div class="buttons-toolbar">
-            <button id="add-button" class="primary-button">Add Button</button>
-            <button id="import-buttons" class="secondary-button">Import</button>
-            <button id="export-buttons" class="secondary-button">Export</button>
-          </div>
-
-          <div class="buttons-list-container">
-            <ul id="buttons-list" class="buttons-list">
-              <!-- Buttons will be dynamically inserted here -->
-            </ul>
-          </div>
-        </div>
 
         <!-- Appearance Tab -->
         <div id="appearance" class="settings-tab">
@@ -166,109 +149,6 @@
     </div>
   </div>
 
-  <!-- Button Editor Dialog -->
-  <div id="button-editor" class="dialog">
-    <div class="dialog-content">
-      <div class="dialog-header">
-        <h2 id="dialog-title">Add Button</h2>
-        <button id="close-dialog" class="close-button">×</button>
-      </div>
-
-      <div class="dialog-body">
-        <div class="form-group">
-          <label for="button-name">Name</label>
-          <input type="text" id="button-name" placeholder="Button Name">
-        </div>
-
-        <div class="form-group">
-          <label for="button-shortcut">Shortcut Key</label>
-          <input type="text" id="button-shortcut" placeholder="Single key (e.g., A, B, C)" maxlength="1">
-        </div>
-
-        <div class="form-group">
-          <label for="button-icon">Icon</label>
-          <input type="text" id="button-icon" placeholder="Emoji or icon name">
-        </div>
-
-        <div class="form-group">
-          <label for="action-type">Action Type</label>
-          <select id="action-type">
-            <option value="exec">Execute Command</option>
-            <option value="open">Open URL/File</option>
-            <option value="shortcut">Keyboard Shortcut</option>
-            <option value="script">Custom Script</option>
-          </select>
-        </div>
-
-        <!-- Dynamic action parameters will be inserted here -->
-        <div id="action-params"></div>
-
-        <div class="form-group">
-          <button id="test-action" class="secondary-button">Test Action</button>
-        </div>
-      </div>
-
-      <div class="dialog-footer">
-        <button id="save-button-dialog" class="primary-button">Save</button>
-        <button id="cancel-button-dialog" class="secondary-button">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Action parameter templates -->
-  <template id="exec-params-template">
-    <div class="form-group">
-      <label for="command">Command</label>
-      <input type="text" id="command" placeholder="Shell command to execute">
-    </div>
-    <div class="form-group">
-      <label for="working-dir">Working Directory (optional)</label>
-      <input type="text" id="working-dir" placeholder="Directory to run command in">
-    </div>
-    <div class="form-group">
-      <label>
-        <input type="checkbox" id="run-in-terminal">
-        Run in Terminal
-      </label>
-    </div>
-  </template>
-
-  <template id="open-params-template">
-    <div class="form-group">
-      <label for="url-or-path">URL or File Path</label>
-      <div class="input-with-button">
-        <input type="text" id="url-or-path" placeholder="URL or file path">
-        <button id="browse-file" class="small-button">Browse</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label for="application">Application (optional)</label>
-      <input type="text" id="application" placeholder="Application to open with">
-    </div>
-  </template>
-
-  <template id="shortcut-params-template">
-    <div class="form-group">
-      <label for="keys">Keyboard Shortcut</label>
-      <input type="text" id="keys" placeholder="e.g., Ctrl+C, Alt+Tab">
-    </div>
-  </template>
-
-  <template id="script-params-template">
-    <div class="form-group">
-      <label for="script-type">Script Type</label>
-      <select id="script-type">
-        <option value="javascript">JavaScript</option>
-        <option value="applescript">AppleScript (macOS only)</option>
-        <option value="powershell">PowerShell (Windows only)</option>
-        <option value="bash">Bash (macOS/Linux only)</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label for="script">Script</label>
-      <textarea id="script" rows="8" placeholder="Enter your script here"></textarea>
-    </div>
-  </template>
 
   <script src="index.js"></script>
 </body>
