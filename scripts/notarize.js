@@ -11,9 +11,9 @@ exports.default = async function notarizing(context) {
   const appName = context.packager.appInfo.productFilename;
 
   console.log(`Notarizing: ${appName}`);
-  console.log(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}`);
-
   process.stdout.write(`Notarizing: ${appName}\n`);
+
+  console.log(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}`);
   process.stdout.write(`APPLE_TEAM_ID: ${process.env.APPLE_TEAM_ID}\n`);
 
   if (!process.env.APPLE_TEAM_ID) {
@@ -23,10 +23,11 @@ exports.default = async function notarizing(context) {
   await notarize({
     appBundleId: 'com.opspresso.toast-app',
     appPath: `${appOutDir}/${appName}.app`,
+    teamId: process.env.APPLE_TEAM_ID,
     appleId: process.env.APPLE_ID,
     appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
-    teamId: process.env.APPLE_TEAM_ID,
   });
 
+  console.log(`Notarization complete for ${appName}`);
   process.stdout.write(`Notarization complete for ${appName}\n`);
 };
