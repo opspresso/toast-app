@@ -284,6 +284,23 @@ function toggleSettingsMode() {
  * 현재 페이지 버튼 표시
  */
 function showCurrentPageButtons() {
+  // 페이지가 하나도 없는 경우
+  if (pages.length === 0) {
+    // 버튼 컨테이너 초기화
+    buttonsContainer.innerHTML = '';
+
+    // 페이지 추가 안내 메시지 표시
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'no-results';
+    emptyMessage.textContent = '페이지가 없습니다. + 버튼을 눌러 새 페이지를 추가하세요.';
+    buttonsContainer.appendChild(emptyMessage);
+
+    // 필터링된 버튼 배열 초기화
+    filteredButtons = [];
+    return;
+  }
+
+  // 페이지가 있는 경우 현재 페이지의 버튼 표시
   if (currentPageIndex >= 0 && currentPageIndex < pages.length) {
     const currentPageButtons = pages[currentPageIndex].buttons || [];
     renderButtons(currentPageButtons);
@@ -752,9 +769,8 @@ function removePage() {
     return;
   }
 
-  // 페이지가 하나뿐이면 삭제 불가
-  if (pages.length <= 1) {
-    showStatus('마지막 페이지는 삭제할 수 없습니다.', 'error');
+  // 페이지가 없으면 삭제할 것이 없음
+  if (pages.length === 0) {
     return;
   }
 
@@ -784,6 +800,28 @@ function removePage() {
       page.shortcut = (index + 1).toString();
     }
   });
+
+  // 모든 페이지가 삭제된 경우, 사용자가 직접 페이지를 추가하도록 함
+  if (pages.length === 0) {
+    // 변경사항 저장
+    window.toast.saveConfig({ pages });
+
+    // 페이징 버튼 업데이트
+    renderPagingButtons();
+
+    // 빈 화면 표시 (버튼 컨테이너 초기화)
+    buttonsContainer.innerHTML = '';
+    filteredButtons = [];
+
+    // 페이지 추가 안내 메시지 표시
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'no-results';
+    emptyMessage.textContent = '페이지가 없습니다. + 버튼을 눌러 새 페이지를 추가하세요.';
+    buttonsContainer.appendChild(emptyMessage);
+
+    showStatus(`모든 페이지가 삭제되었습니다. + 버튼으로 새 페이지를 추가하세요.`, 'info');
+    return;
+  }
 
   // 변경사항 저장
   window.toast.saveConfig({ pages });
