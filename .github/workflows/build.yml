@@ -30,35 +30,43 @@ jobs:
       - name: Setup macOS certificates
         if: matrix.os == 'macos-latest'
         run: |
-          echo ${{ secrets.APPLE_CERTIFICATE_BASE64 }} | base64 --decode > certificate.p12
-          # security create-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
-          # security default-keychain -s build.keychain
-          # security unlock-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
-          # security import certificate.p12 -k build.keychain -P ${{ secrets.APPLE_CERTIFICATE_PASSWORD }} -T /usr/bin/codesign
-          # security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+          mkdir -p ~/private_keys/
+          echo '${{ secrets.API_KEY_SECRET }}' > ~/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8
 
-      - name: Build for macOS
-        if: matrix.os == 'macos-latest'
-        run: npm run build:mac
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          github_token: ${{ secrets.GHP_TOKEN }}
+          mac_certs: ${{ secrets.MAC_CERTS }}
+          mac_certs_password: ${{ secrets.MAC_CERTS_PASSWORD }}
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: certificate.p12
-          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+          # macOS notarization API key
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}
 
-      - name: Build for Windows
-        if: matrix.os == 'windows-latest'
-        run: npm run build:win
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+      # - name: Build for macOS
+      #   if: matrix.os == 'macos-latest'
+      #   run: npm run build:mac
+      #   env:
+      #     APPLE_ID: ${{ secrets.APPLE_ID }}
+      #     APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      #     APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      #     CSC_LINK: certificate.p12
+      #     CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      #     GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
 
-      - name: Build for Linux
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+      # - name: Build for Windows
+      #   if: matrix.os == 'windows-latest'
+      #   run: npm run build:win
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+
+      # - name: Build for Linux
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: npm run build
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
 
       # macOS에서만 keychain 정리
       - name: Clean up keychain
