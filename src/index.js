@@ -6,6 +6,7 @@
  */
 
 const { app } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
@@ -61,9 +62,42 @@ function initialize() {
   app.isQuitting = false;
 }
 
+// Configure auto updater
+function setupAutoUpdater() {
+  if (process.env.NODE_ENV !== 'development') {
+    autoUpdater.checkForUpdatesAndNotify();
+
+    // Log update events
+    autoUpdater.on('checking-for-update', () => {
+      console.log('Checking for update...');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      console.log('Update available:', info.version);
+    });
+
+    autoUpdater.on('update-not-available', () => {
+      console.log('Update not available');
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.error('Error in auto-updater:', err);
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      console.log(`Download progress: ${progressObj.percent.toFixed(2)}%`);
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      console.log('Update downloaded. Will install on restart.');
+    });
+  }
+}
+
 // When Electron has finished initialization
 app.whenReady().then(() => {
   initialize();
+  setupAutoUpdater();
 
   // Show the settings window on first launch if this is a new installation
   const isFirstLaunch = !config.has('firstLaunchCompleted');

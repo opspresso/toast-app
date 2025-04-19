@@ -86,7 +86,17 @@ The application supports multiple action types:
 - System tray/menu bar integration
 - Global hotkey registration
 - Auto-launch capability
+- Auto-update capability
 - Cross-platform support (macOS and Windows)
+
+### Auto-Update System
+
+- Automatic update checking on application startup (production mode only)
+- Silent download of updates in the background
+- Notification to users when updates are available
+- Automatic installation on application restart
+- Comprehensive logging of update process
+- Error handling for update failures
 
 ## Architecture
 
@@ -94,7 +104,7 @@ The application follows a modular architecture with clear separation of concerns
 
 ### Main Process
 
-- **Application Lifecycle**: Initialization, window management, event handling
+- **Application Lifecycle**: Initialization, window management, event handling, auto-updates
 - **Configuration**: Schema validation, defaults, migration
 - **System Integration**: Global shortcuts, tray icon, auto-launch
 - **IPC Handling**: Communication with renderer processes
