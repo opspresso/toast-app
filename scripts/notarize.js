@@ -25,5 +25,5 @@ exports.default = async function notarizing(context) {
     teamId: process.env.APPLE_TEAM_ID,
   });
 
-  console.log(`Notarization complete for ${appName}`);
+  process.stdout.write(`Notarization complete for ${appName}\n`);
 };
