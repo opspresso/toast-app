@@ -8,7 +8,6 @@
 const buttonsContainer = document.getElementById('buttons-container');
 const pagingContainer = document.getElementById('paging-container');
 const pagingButtonsContainer = document.getElementById('paging-buttons-container');
-const searchInput = document.getElementById('search-input');
 const closeButton = document.getElementById('close-button');
 const statusContainer = document.getElementById('status-container');
 const buttonTemplate = document.getElementById('button-template');
@@ -18,7 +17,7 @@ const addPageButton = document.getElementById('add-page-button');
 // State
 let pages = []; // 페이지 배열 (각 페이지는 버튼 배열을 가짐)
 let selectedButtonIndex = -1; // 현재 선택된 버튼 인덱스
-let filteredButtons = []; // 필터링된 버튼들 (검색용)
+let filteredButtons = []; // 필터링된 버튼들
 let currentPageIndex = 0; // 현재 페이지 인덱스
 let isSettingsMode = false; // 설정 모드 상태
 let isSubscribed = true; // 구독 상태 (기본값: 구독 중)
@@ -40,6 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
       changePage(0);
     }
 
+    // 구독 상태 확인
+    if (config.subscription) {
+      isSubscribed = config.subscription.isSubscribed;
+    }
+
     // Apply appearance settings
     if (config.appearance) {
       applyAppearanceSettings(config.appearance);
@@ -49,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set up event listeners
   setupEventListeners();
 });
-
 
 /**
  * 페이징 버튼 렌더링
@@ -88,11 +91,6 @@ function setupEventListeners() {
     window.toast.hideWindow();
   });
 
-  // Search input
-  searchInput.addEventListener('input', () => {
-    filterButtons();
-  });
-
   // 설정 모드 토글 버튼
   settingsModeToggle.addEventListener('click', toggleSettingsMode);
 
@@ -124,6 +122,10 @@ function setupEventListeners() {
     if (config.appearance) {
       applyAppearanceSettings(config.appearance);
     }
+
+    if (config.subscription) {
+      isSubscribed = config.subscription.isSubscribed;
+    }
   });
 }
 
@@ -144,21 +146,38 @@ function toggleSettingsMode() {
   }
 
   // 현재 페이지 다시 렌더링
-  filterButtons();
+  showCurrentPageButtons();
+}
+
+/**
+ * 현재 페이지 버튼 표시
+ */
+function showCurrentPageButtons() {
+  if (currentPageIndex >= 0 && currentPageIndex < pages.length) {
+    const currentPageButtons = pages[currentPageIndex].buttons || [];
+    renderButtons(currentPageButtons);
+  }
 }
 
 /**
  * 새 페이지 추가
  */
 function addNewPage() {
-  // 현재 구독 상태가 아니면 알림 표시
-  if (!isSubscribed) {
-    showStatus('구독자만 페이지를 추가할 수 있습니다.', 'error');
+  const pageNumber = pages.length + 1;
+
+  // 구독 상태에 따른 페이지 추가 제한
+  if (pageNumber > 1 && !isSubscribed) {
+    showStatus('구독자만 2페이지 이상 추가할 수 있습니다.', 'error');
+    return;
+  }
+
+  // 최대 9페이지 제한
+  if (pageNumber > 9) {
+    showStatus('최대 9페이지까지만 추가할 수 있습니다.', 'error');
     return;
   }
 
   // 새 페이지 기본 구성
-  const pageNumber = pages.length + 1;
   const newPage = {
     name: `페이지 ${pageNumber}`,
     shortcut: pageNumber.toString(),
@@ -169,35 +188,35 @@ function addNewPage() {
         shortcut: 'Q',
         icon: '💻',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
+        command: window.toast.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
       },
       {
         name: 'Photos',
         shortcut: 'W',
         icon: '🖼️',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Photos' : 'start ms-photos:'
+        command: window.toast.platform === 'darwin' ? 'open -a Photos' : 'start ms-photos:'
       },
       {
         name: 'Notes',
         shortcut: 'E',
         icon: '📝',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Notes' : 'start onenote:'
+        command: window.toast.platform === 'darwin' ? 'open -a Notes' : 'start onenote:'
       },
       {
         name: 'Maps',
         shortcut: 'R',
         icon: '🗺️',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Maps' : 'start bingmaps:'
+        command: window.toast.platform === 'darwin' ? 'open -a Maps' : 'start bingmaps:'
       },
       {
         name: 'Messages',
         shortcut: 'T',
         icon: '💬',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Messages' : 'start ms-chat:'
+        command: window.toast.platform === 'darwin' ? 'open -a Messages' : 'start ms-chat:'
       },
       // asdfg 행
       {
@@ -205,28 +224,28 @@ function addNewPage() {
         shortcut: 'A',
         icon: '🛒',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
+        command: window.toast.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
       },
       {
         name: 'Spotify',
         shortcut: 'S',
         icon: '🎧',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Spotify' : 'start spotify:'
+        command: window.toast.platform === 'darwin' ? 'open -a Spotify' : 'start spotify:'
       },
       {
         name: 'Dictionary',
         shortcut: 'D',
         icon: '📚',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:'
+        command: window.toast.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:'
       },
       {
         name: 'Finder',
         shortcut: 'F',
         icon: '🔍',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open .' : 'explorer .'
+        command: window.toast.platform === 'darwin' ? 'open .' : 'explorer .'
       },
       {
         name: 'GitHub',
@@ -241,35 +260,35 @@ function addNewPage() {
         shortcut: 'Z',
         icon: '📹',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
+        command: window.toast.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
       },
       {
         name: 'Excel',
         shortcut: 'X',
         icon: '📊',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a "Microsoft Excel"' : 'start excel'
+        command: window.toast.platform === 'darwin' ? 'open -a "Microsoft Excel"' : 'start excel'
       },
       {
         name: 'Calculator',
         shortcut: 'C',
         icon: '🧮',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a Calculator' : 'calc'
+        command: window.toast.platform === 'darwin' ? 'open -a Calculator' : 'calc'
       },
       {
         name: 'Video Player',
         shortcut: 'V',
         icon: '🎬',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a "QuickTime Player"' : 'start wmplayer'
+        command: window.toast.platform === 'darwin' ? 'open -a "QuickTime Player"' : 'start wmplayer'
       },
       {
         name: 'Brave',
         shortcut: 'B',
         icon: '🦁',
         action: 'exec',
-        command: process.platform === 'darwin' ? 'open -a "Brave Browser"' : 'start brave'
+        command: window.toast.platform === 'darwin' ? 'open -a "Brave Browser"' : 'start brave'
       }
     ]
   };
@@ -294,13 +313,6 @@ function addNewPage() {
  * @param {KeyboardEvent} event - Keyboard event
  */
 function handleKeyDown(event) {
-  // If search is focused, don't handle navigation keys
-  if (document.activeElement === searchInput &&
-      event.key !== 'Escape' &&
-      event.key !== 'Enter') {
-    return;
-  }
-
   switch (event.key) {
     case 'ArrowUp':
       event.preventDefault();
@@ -434,48 +446,6 @@ function selectButton(index) {
 }
 
 /**
- * 검색 및 페이지별 버튼 필터링
- */
-function filterButtons() {
-  const searchTerm = searchInput.value.toLowerCase();
-
-  // 필터링된 버튼 저장
-  let displayButtons = [];
-
-  if (searchTerm === '') {
-    // 검색어가 없을 때 - 현재 페이지의 버튼만 표시
-    if (currentPageIndex >= 0 && currentPageIndex < pages.length) {
-      // 현재 페이지의 버튼들을 표시
-      displayButtons = pages[currentPageIndex].buttons || [];
-    }
-  } else {
-    // 검색어가 있을 때 - 모든 페이지에서 검색
-    for (const page of pages) {
-      if (page.buttons && Array.isArray(page.buttons)) {
-        // 각 페이지의 버튼들을 검색
-        const matchingButtons = page.buttons.filter(button =>
-          button.name.toLowerCase().includes(searchTerm) ||
-          (button.shortcut && button.shortcut.toLowerCase().includes(searchTerm))
-        );
-        // 결과 배열에 추가
-        displayButtons = displayButtons.concat(matchingButtons);
-      }
-    }
-  }
-
-  // 버튼 렌더링
-  renderButtons(displayButtons);
-
-  // 초기 선택 버튼 설정
-  if (displayButtons.length > 0) {
-    selectedButtonIndex = 0;
-    selectButton(0);
-  } else {
-    selectedButtonIndex = -1;
-  }
-}
-
-/**
  * 페이지 전환
  * @param {number} pageIndex - 전환할 페이지 인덱스
  */
@@ -496,7 +466,7 @@ function changePage(pageIndex) {
     });
 
     // 현재 페이지의 버튼들 표시
-    filterButtons();
+    showCurrentPageButtons();
 
     // 상태 표시
     const pageName = pages[currentPageIndex].name || `페이지 ${currentPageIndex + 1}`;
@@ -536,7 +506,7 @@ function renderButtons(buttons) {
   if (filteredButtons.length === 0) {
     const noResults = document.createElement('div');
     noResults.className = 'no-results';
-    noResults.textContent = '매칭되는 버튼이 없습니다';
+    noResults.textContent = '버튼이 없습니다';
     buttonsContainer.appendChild(noResults);
   }
 }
@@ -665,7 +635,7 @@ function editButtonSettings(button) {
     window.toast.saveConfig({ pages });
 
     // UI 업데이트
-    filterButtons();
+    showCurrentPageButtons();
 
     showStatus(`버튼 ${newName} 설정이 변경되었습니다.`, 'success');
   }

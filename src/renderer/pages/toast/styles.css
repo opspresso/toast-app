@@ -119,46 +119,24 @@ body {
   background-color: var(--button-hover-bg);
 }
 
-/* Search */
-.toast-search-container {
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.toast-search {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background-color: var(--search-bg);
-  color: var(--text-color);
-  font-size: 14px;
-  outline: none;
-}
-
-.toast-search:focus {
-  border-color: #007bff;
-}
-
 /* Paging */
 .toast-paging-container {
-  padding: 8px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   background-color: var(--header-bg);
 }
 
-.toast-paging-buttons {
+.toast-paging-wrapper {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 4px;
-  flex-wrap: wrap; /* 페이지 버튼이 많아지면 여러 줄로 표시 */
 }
 
-.toast-paging-actions {
+.toast-paging-buttons {
   display: flex;
-  justify-content: center;
-  margin-top: 8px;
+  gap: 8px;
+  flex-wrap: wrap; /* 페이지 버튼이 많아지면 여러 줄로 표시 */
 }
 
 .add-page-button {

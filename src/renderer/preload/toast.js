@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld(
     // Window control
     hideWindow: () => ipcRenderer.send('hide-toast'),
 
+    // Platform information
+    platform: process.platform,
+
+    // Save configuration
+    saveConfig: (config) => ipcRenderer.invoke('save-config', config),
+
     // Listen for events
     onConfigUpdated: (callback) => {
       ipcRenderer.on('config-updated', (event, config) => callback(config));
@@ -53,8 +59,9 @@ window.addEventListener('DOMContentLoaded', () => {
       // Dispatch a custom event with the configuration
       window.dispatchEvent(new CustomEvent('config-loaded', {
         detail: {
-          buttons: config.buttons,
-          appearance: config.appearance
+          pages: config.pages,
+          appearance: config.appearance,
+          subscription: config.subscription
         }
       }));
     });
