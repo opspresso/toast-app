@@ -432,8 +432,15 @@ function handleKeyDown(event) {
       }
       break;
     case ',':  // Toggle settings mode when comma key is pressed
-      event.preventDefault();
-      toggleSettingsMode();
+      // cmd+, (or ctrl+, on Windows) 단축키로는 설정 창을 엽니다
+      if (event.metaKey || event.ctrlKey) {
+        event.preventDefault();
+        window.toast.showSettings();
+      } else {
+        // 일반 콤마 키는 계속 설정 모드 토글로 작동
+        event.preventDefault();
+        toggleSettingsMode();
+      }
       break;
     case '+': // Add page when Shift+= is pressed
       if (event.shiftKey) {
