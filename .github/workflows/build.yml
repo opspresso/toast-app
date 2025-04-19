@@ -26,12 +26,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # macOS에서만 인증서 설정
+      - name: Setup macOS certificates
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo ${{ secrets.APPLE_CERTIFICATE_BASE64 }} | base64 --decode > certificate.p12
+          security create-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+          security import certificate.p12 -k build.keychain -P ${{ secrets.APPLE_CERTIFICATE_PASSWORD }} -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
+          rm certificate.p12
+
       - name: Build for macOS
         if: matrix.os == 'macos-latest'
-        run: npm run build:mac
         env:
           GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: true
+        run: npm run build:mac
 
       - name: Build for Windows
         if: matrix.os == 'windows-latest'
@@ -44,6 +61,11 @@ jobs:
         run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+
+      # macOS에서만 keychain 정리
+      - name: Clean up keychain
+        if: matrix.os == 'macos-latest' && always()
+        run: security delete-keychain build.keychain
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
