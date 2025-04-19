@@ -54,8 +54,35 @@ document.addEventListener('DOMContentLoaded', () => {
   window.settings.getConfig().then(loadedConfig => {
     config = loadedConfig;
     initializeUI();
+
+    // Apply current theme
+    applyTheme(config.appearance?.theme || 'system');
   });
 });
+
+/**
+ * Apply theme to the application
+ * @param {string} theme - The theme to apply ('light', 'dark', or 'system')
+ */
+function applyTheme(theme) {
+  // Remove any existing theme classes first
+  document.documentElement.classList.remove('theme-light', 'theme-dark');
+
+  // Remove data-theme attribute (used for forced themes)
+  document.documentElement.removeAttribute('data-theme');
+
+  // Apply the selected theme
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+
+  // If 'system', we don't set anything and let the media query handle it
+
+  // Log theme change
+  console.log('Theme changed to:', theme);
+}
 
 /**
  * Initialize UI with config values
@@ -99,7 +126,21 @@ function setupEventListeners() {
   });
 
   // Appearance settings
-  themeSelect.addEventListener('change', markUnsavedChanges);
+  themeSelect.addEventListener('change', () => {
+    // 현재 테마를 로컬에 적용
+    applyTheme(themeSelect.value);
+
+    // // Toast 창에도 즉시 테마 적용 (Toast 창 표시)
+    // window.settings.setConfig('appearance', {
+    //   ...config.appearance,
+    //   theme: themeSelect.value
+    // }).then(() => {
+    //   // Toast 창 표시 (테마 변경 확인용)
+    //   window.settings.showToast();
+    // });
+
+    markUnsavedChanges();
+  });
   positionSelect.addEventListener('change', markUnsavedChanges);
   sizeSelect.addEventListener('change', markUnsavedChanges);
 
@@ -306,7 +347,7 @@ async function saveSettings() {
   try {
     // Disable button and change text to "Saving..."
     saveButton.disabled = true;
-    saveButton.textContent = "Saving...";
+    // saveButton.textContent = "Saving...";
 
     // Save changes first
     await window.settings.setConfig('globalHotkey', settings.globalHotkey);
@@ -322,8 +363,14 @@ async function saveSettings() {
     // Change to saved message
     saveButton.textContent = "Saved!";
 
-    // Show toast window to demonstrate the setting changes
-    window.settings.showToast();
+    // Toast 창에 즉시 테마 적용
+    if (settings.appearance && settings.appearance.theme) {
+      // Toast 창에도 즉시 테마 적용 (Toast 창 표시)
+      window.settings.setConfig('appearance.theme', settings.appearance.theme);
+    }
+
+    // // Show toast window to demonstrate the setting changes
+    // window.settings.showToast();
 
     // Close window after a delay to let user see the changes
     setTimeout(() => {
@@ -331,8 +378,8 @@ async function saveSettings() {
       saveButton.textContent = originalButtonText;
       saveButton.disabled = false;
 
-      // Close settings window
-      window.settings.closeWindow();
+      // // Close settings window
+      // window.settings.closeWindow();
     }, 1500);
   } catch (error) {
     alert(`Error saving settings: ${error.message || 'Unknown error'}`);

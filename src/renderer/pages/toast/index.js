@@ -901,7 +901,14 @@ function applyAppearanceSettings(appearance) {
 
   // Apply theme
   if (appearance.theme) {
-    document.documentElement.setAttribute('data-theme', appearance.theme);
+    // 먼저 data-theme 속성 제거 (기존 테마 초기화)
+    document.documentElement.removeAttribute('data-theme');
+
+    // 시스템 테마가 아닌 경우에만 data-theme 속성 설정
+    if (appearance.theme === 'light' || appearance.theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', appearance.theme);
+    }
+    // 시스템 테마인 경우 data-theme 속성 없이 media query가 작동하도록 함
   }
 
   // Apply button layout

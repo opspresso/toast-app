@@ -32,9 +32,71 @@
   --remove-button-hover-color: #E03C31;
 }
 
-/* Dark theme */
+/* Dark theme - override default with data-theme */
+[data-theme="dark"] {
+  --primary-color: #339AF0;
+  --primary-hover-color: #5CAFFF;
+  --primary-active-color: #74BDFF;
+  --background-color: rgba(27, 32, 43, 0.98);
+  --text-color: #F1F3F5;
+  --secondary-text-color: #ADB5BD;
+  --border-color: #343A40;
+  --button-bg: #2D333B;
+  --button-hover-bg: #343C46;
+  --button-active-bg: #3E4752;
+  --header-bg: rgba(27, 32, 43, 0.95);
+  --search-bg: #343A40;
+  --status-bg: #2D333B;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --close-button-color: #ADB5BD;
+  --close-button-hover-color: #F1F3F5;
+  --success-color: #51CF66;
+  --error-color: #FF6B6B;
+  --warning-color: #FFD43B;
+  --info-color: #339AF0;
+  --card-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --button-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  --button-hover-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.4);
+  --add-button-color: #51CF66;
+  --add-button-hover-color: #40C057;
+  --remove-button-color: #FF6B6B;
+  --remove-button-hover-color: #FA5252;
+}
+
+/* Light theme - explicit */
+[data-theme="light"] {
+  --primary-color: #0064FF;
+  --primary-hover-color: #0052D9;
+  --primary-active-color: #0048C0;
+  --background-color: rgba(255, 255, 255, 0.98);
+  --text-color: #191F28;
+  --secondary-text-color: #4E5968;
+  --border-color: #E5E8EB;
+  --button-bg: #F9FAFB;
+  --button-hover-bg: #F2F4F6;
+  --button-active-bg: #EAEDF0;
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --search-bg: #fff;
+  --status-bg: #F9FAFB;
+  --shadow-color: rgba(25, 31, 40, 0.12);
+  --close-button-color: #8B95A1;
+  --close-button-hover-color: #4E5968;
+  --success-color: #00B884;
+  --error-color: #F44336;
+  --warning-color: #FF9800;
+  --info-color: #0064FF;
+  --card-shadow: 0 2px 8px 0 rgba(25, 31, 40, 0.1), 0 1px 2px 0 rgba(25, 31, 40, 0.06);
+  --button-shadow: 0 1px 3px 0 rgba(25, 31, 40, 0.1);
+  --button-hover-shadow: 0 2px 5px 0 rgba(25, 31, 40, 0.15);
+  --add-button-color: #00B884;
+  --add-button-hover-color: #00A376;
+  --remove-button-color: #F44336;
+  --remove-button-hover-color: #E03C31;
+}
+
+/* System theme - based on system preference */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --primary-color: #339AF0;
     --primary-hover-color: #5CAFFF;
     --primary-active-color: #74BDFF;

@@ -23,9 +23,55 @@
   --help-text-color: #6c757d;
 }
 
-/* Dark theme */
+/* Dark theme - override default with data-theme */
+[data-theme="dark"] {
+  --background-color: #2d2d2d;
+  --text-color: #eee;
+  --border-color: #444;
+  --input-bg: #3a3a3a;
+  --button-primary-bg: #0069d9;
+  --button-primary-text: #fff;
+  --button-secondary-bg: #444;
+  --button-secondary-text: #eee;
+  --button-danger-bg: #c82333;
+  --button-danger-text: #fff;
+  --sidebar-bg: #333;
+  --sidebar-active-bg: #444;
+  --header-bg: #333;
+  --dialog-bg: #333;
+  --dialog-overlay: rgba(0, 0, 0, 0.7);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --hover-bg: #444;
+  --active-bg: #555;
+  --help-text-color: #adb5bd;
+}
+
+/* Light theme - explicit */
+[data-theme="light"] {
+  --background-color: #f8f9fa;
+  --text-color: #333;
+  --border-color: #ddd;
+  --input-bg: #fff;
+  --button-primary-bg: #007bff;
+  --button-primary-text: #fff;
+  --button-secondary-bg: #f0f0f0;
+  --button-secondary-text: #333;
+  --button-danger-bg: #dc3545;
+  --button-danger-text: #fff;
+  --sidebar-bg: #f0f0f0;
+  --sidebar-active-bg: #e0e0e0;
+  --header-bg: #fff;
+  --dialog-bg: #fff;
+  --dialog-overlay: rgba(0, 0, 0, 0.5);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --hover-bg: #f0f0f0;
+  --active-bg: #e0e0e0;
+  --help-text-color: #6c757d;
+}
+
+/* System theme - based on system preference */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --background-color: #2d2d2d;
     --text-color: #eee;
     --border-color: #444;
