@@ -12,6 +12,15 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld(
   'settings',
   {
+    // 인증 및 구독
+    initiateLogin: () => ipcRenderer.invoke('initiate-login'),
+    exchangeCodeForToken: (code) => ipcRenderer.invoke('exchange-code-for-token', code),
+    logout: () => ipcRenderer.invoke('logout'),
+    fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
+    fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
+    getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
+    openUrl: (url) => ipcRenderer.invoke('open-url', url),
+
     // Configuration
     getConfig: (key) => ipcRenderer.invoke('get-config', key),
     setConfig: (key, value) => ipcRenderer.invoke('set-config', key, value),
@@ -55,4 +64,12 @@ window.addEventListener('DOMContentLoaded', () => {
         detail: config
       }));
     });
+});
+
+// OAuth 리디렉션 처리를 위한 이벤트 핸들러
+ipcRenderer.on('protocol-data', (event, url) => {
+  // 프로토콜 데이터 수신 시 이벤트 발생
+  window.dispatchEvent(new CustomEvent('protocol-data', {
+    detail: url
+  }));
 });

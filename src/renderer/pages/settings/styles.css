@@ -21,6 +21,12 @@
   --hover-bg: #f0f0f0;
   --active-bg: #e0e0e0;
   --help-text-color: #6c757d;
+  --badge-primary-bg: #007bff;
+  --badge-secondary-bg: #6c757d;
+  --badge-success-bg: #28a745;
+  --badge-warning-bg: #ffc107;
+  --badge-danger-bg: #dc3545;
+  --badge-text: #fff;
 }
 
 /* Dark theme - override default with data-theme */
@@ -44,6 +50,12 @@
   --hover-bg: #444;
   --active-bg: #555;
   --help-text-color: #adb5bd;
+  --badge-primary-bg: #0069d9;
+  --badge-secondary-bg: #5a6268;
+  --badge-success-bg: #218838;
+  --badge-warning-bg: #e0a800;
+  --badge-danger-bg: #c82333;
+  --badge-text: #fff;
 }
 
 /* Light theme - explicit */
@@ -67,6 +79,12 @@
   --hover-bg: #f0f0f0;
   --active-bg: #e0e0e0;
   --help-text-color: #6c757d;
+  --badge-primary-bg: #007bff;
+  --badge-secondary-bg: #6c757d;
+  --badge-success-bg: #28a745;
+  --badge-warning-bg: #ffc107;
+  --badge-danger-bg: #dc3545;
+  --badge-text: #fff;
 }
 
 /* System theme - based on system preference */
@@ -91,6 +109,12 @@
     --hover-bg: #444;
     --active-bg: #555;
     --help-text-color: #adb5bd;
+    --badge-primary-bg: #0069d9;
+    --badge-secondary-bg: #5a6268;
+    --badge-success-bg: #218838;
+    --badge-warning-bg: #e0a800;
+    --badge-danger-bg: #c82333;
+    --badge-text: #fff;
   }
 }
 
@@ -192,6 +216,12 @@ body {
   margin-bottom: 24px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.settings-tab h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  font-weight: 600;
 }
 
 /* Form elements */
@@ -474,6 +504,134 @@ button {
   border-top: 1px solid var(--border-color);
 }
 
+/* Account & Subscription styles */
+.auth-container {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.auth-container p {
+  margin-bottom: 16px;
+}
+
+.profile-container {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--button-secondary-bg);
+}
+
+.user-details h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+}
+
+.user-details p {
+  margin: 0;
+  color: var(--help-text-color);
+  font-size: 14px;
+}
+
+.subscription-container {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.subscription-details {
+  margin-bottom: 16px;
+}
+
+.subscription-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--badge-text);
+}
+
+.badge.premium {
+  background-color: var(--badge-primary-bg);
+}
+
+.badge.free {
+  background-color: var(--badge-secondary-bg);
+}
+
+.badge.trial {
+  background-color: var(--badge-warning-bg);
+  color: #333;
+}
+
+.badge.expired {
+  background-color: var(--badge-danger-bg);
+}
+
+.subscription-details p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.subscription-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.feature-list li {
+  margin-bottom: 8px;
+  padding-left: 24px;
+  position: relative;
+}
+
+.feature-list li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--badge-success-bg);
+  font-weight: bold;
+}
+
+.hidden {
+  display: none !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .settings-content {
@@ -495,5 +653,19 @@ button {
     border-bottom: none;
     border-right: 1px solid var(--border-color);
     white-space: nowrap;
+  }
+
+  .profile-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .profile-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .subscription-actions {
+    flex-direction: column;
   }
 }

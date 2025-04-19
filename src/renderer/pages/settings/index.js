@@ -21,6 +21,22 @@ const sizeSelect = document.getElementById('size');
 const opacityRange = document.getElementById('opacity');
 const opacityValue = document.getElementById('opacity-value');
 
+// DOM Elements - Account & Subscription
+const loginSection = document.getElementById('login-section');
+const profileSection = document.getElementById('profile-section');
+const subscriptionSection = document.getElementById('subscription-section');
+const loginButton = document.getElementById('login-button');
+const logoutButton = document.getElementById('logout-button');
+const userAvatar = document.getElementById('user-avatar');
+const userName = document.getElementById('user-name');
+const userEmail = document.getElementById('user-email');
+const subscriptionBadge = document.getElementById('subscription-badge');
+const subscriptionStatus = document.getElementById('subscription-status');
+const subscriptionExpiry = document.getElementById('subscription-expiry');
+const subscriptionFeatures = document.getElementById('subscription-features');
+const manageSubscriptionButton = document.getElementById('manage-subscription');
+const refreshSubscriptionButton = document.getElementById('refresh-subscription');
+
 // DOM Elements - Advanced Settings
 const hideAfterActionCheckbox = document.getElementById('hide-after-action');
 const hideOnBlurCheckbox = document.getElementById('hide-on-blur');
@@ -36,6 +52,11 @@ const cancelButton = document.getElementById('cancel-button');
 let config = {};
 let isRecordingHotkey = false;
 let unsavedChanges = false;
+let authState = {
+  isLoggedIn: false,
+  profile: null,
+  subscription: null
+};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -57,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply current theme
     applyTheme(config.appearance?.theme || 'system');
+
+    // Initialize auth state
+    initializeAuthState();
   });
 });
 
@@ -107,6 +131,264 @@ function initializeUI() {
 }
 
 /**
+ * Initialize authentication state
+ */
+async function initializeAuthState() {
+  try {
+    // Check if we have authentication tokens
+    const token = await window.settings.getAuthToken();
+
+    if (token) {
+      // We have tokens, fetch user profile
+      updateAuthStateUI(true);
+      fetchUserProfile();
+      fetchSubscriptionInfo();
+    } else {
+      // No tokens, show login UI
+      updateAuthStateUI(false);
+    }
+  } catch (error) {
+    console.error('Failed to initialize auth state:', error);
+    // 오류 발생 시 로그인 UI 표시
+    updateAuthStateUI(false);
+  }
+}
+
+/**
+ * Update UI based on authentication state
+ * @param {boolean} isLoggedIn - Whether the user is logged in
+ */
+function updateAuthStateUI(isLoggedIn) {
+  authState.isLoggedIn = isLoggedIn;
+
+  if (isLoggedIn) {
+    // Show profile and subscription sections, hide login section
+    loginSection.classList.add('hidden');
+    profileSection.classList.remove('hidden');
+    subscriptionSection.classList.remove('hidden');
+  } else {
+    // Show login section, hide profile and subscription sections
+    loginSection.classList.remove('hidden');
+    profileSection.classList.add('hidden');
+    subscriptionSection.classList.add('hidden');
+
+    // Reset profile and subscription UI
+    userAvatar.src = '';
+    userName.textContent = '-';
+    userEmail.textContent = '-';
+    subscriptionBadge.textContent = 'Free';
+    subscriptionBadge.className = 'badge free';
+    subscriptionStatus.textContent = '-';
+    subscriptionExpiry.textContent = '-';
+    subscriptionFeatures.textContent = '-';
+  }
+}
+
+/**
+ * Fetch user profile information
+ */
+async function fetchUserProfile() {
+  try {
+    // 토큰이 있는지 먼저 확인
+    const token = await window.settings.getAuthToken();
+    if (!token) {
+      console.log('No auth token available, skipping profile fetch');
+      return;
+    }
+
+    const profile = await window.settings.fetchUserProfile();
+    if (profile) {
+      authState.profile = profile;
+
+      // Update UI with profile information
+      userAvatar.src = profile.avatar_url || '';
+      userName.textContent = profile.name || 'User';
+      userEmail.textContent = profile.email || '';
+    }
+  } catch (error) {
+    console.error('Failed to fetch user profile:', error);
+    // Handle token expired case
+    if (error.message && error.message.includes('token expired')) {
+      handleTokenExpired();
+    }
+  }
+}
+
+/**
+ * Fetch subscription information
+ */
+async function fetchSubscriptionInfo() {
+  try {
+    // 토큰이 있는지 먼저 확인
+    const token = await window.settings.getAuthToken();
+    if (!token) {
+      console.log('No auth token available, skipping subscription fetch');
+      return;
+    }
+
+    const subscription = await window.settings.fetchSubscription();
+    if (subscription) {
+      authState.subscription = subscription;
+
+      // Update subscription UI
+      updateSubscriptionUI(subscription);
+
+      // Save subscription info to config
+      saveSubscriptionToConfig(subscription);
+    }
+  } catch (error) {
+    console.error('Failed to fetch subscription info:', error);
+    // Handle token expired case
+    if (error.message && error.message.includes('token expired')) {
+      handleTokenExpired();
+    }
+  }
+}
+
+/**
+ * Update subscription UI with subscription information
+ * @param {Object} subscription - Subscription information
+ */
+function updateSubscriptionUI(subscription) {
+  // Update subscription badge
+  if (subscription.is_subscribed) {
+    subscriptionBadge.textContent = subscription.plan || 'Premium';
+    subscriptionBadge.className = 'badge premium';
+    subscriptionStatus.textContent = 'Active';
+  } else {
+    subscriptionBadge.textContent = 'Free';
+    subscriptionBadge.className = 'badge free';
+    subscriptionStatus.textContent = 'Free Plan';
+  }
+
+  // Update subscription expiry
+  if (subscription.subscribed_until) {
+    const expiryDate = new Date(subscription.subscribed_until);
+    subscriptionExpiry.textContent = `Subscription valid until: ${expiryDate.toLocaleDateString()}`;
+  } else {
+    subscriptionExpiry.textContent = '';
+  }
+
+  // Update subscription features
+  const featuresText = [];
+  if (subscription.features) {
+    if (subscription.features.page_groups) {
+      featuresText.push(`${subscription.features.page_groups} page groups`);
+    }
+    if (subscription.features.advanced_actions) {
+      featuresText.push('Advanced actions');
+    }
+    if (subscription.features.cloud_sync) {
+      featuresText.push('Cloud sync');
+    }
+  }
+
+  subscriptionFeatures.textContent = featuresText.length > 0
+    ? `Features: ${featuresText.join(', ')}`
+    : 'Basic features';
+}
+
+/**
+ * Save subscription information to config
+ * @param {Object} subscription - Subscription information
+ */
+function saveSubscriptionToConfig(subscription) {
+  const subscriptionConfig = {
+    isSubscribed: subscription.is_subscribed,
+    plan: subscription.plan,
+    subscribedUntil: subscription.subscribed_until,
+    pageGroups: subscription.features?.page_groups || 1,
+    additionalFeatures: {
+      advancedActions: subscription.features?.advanced_actions || false,
+      cloudSync: subscription.features?.cloud_sync || false
+    }
+  };
+
+  window.settings.setConfig('subscription', subscriptionConfig);
+}
+
+/**
+ * Handle token expiration
+ */
+function handleTokenExpired() {
+  // Show token expired notification
+  alert('Your session has expired. Please sign in again.');
+
+  // Log out
+  handleLogout();
+}
+
+/**
+ * Handle login button click
+ */
+async function handleLogin() {
+  try {
+    // Call the main process to initiate the OAuth flow
+    const success = await window.settings.initiateLogin();
+
+    if (success) {
+      // Authentication successful, update UI
+      updateAuthStateUI(true);
+      fetchUserProfile();
+      fetchSubscriptionInfo();
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    alert(`Login failed: ${error.message || 'Unknown error'}`);
+  }
+}
+
+/**
+ * Handle logout button click
+ */
+async function handleLogout() {
+  try {
+    // Call the main process to log out
+    await window.settings.logout();
+
+    // Update UI
+    updateAuthStateUI(false);
+  } catch (error) {
+    console.error('Logout error:', error);
+    alert(`Logout failed: ${error.message || 'Unknown error'}`);
+  }
+}
+
+/**
+ * Handle manage subscription button click
+ */
+function handleManageSubscription() {
+  // Open subscription management page in browser
+  window.settings.openUrl('https://web.toast.sh/account/subscription');
+}
+
+/**
+ * Handle refresh subscription button click
+ */
+async function handleRefreshSubscription() {
+  try {
+    refreshSubscriptionButton.disabled = true;
+    refreshSubscriptionButton.textContent = 'Refreshing...';
+
+    // Fetch latest subscription info
+    await fetchSubscriptionInfo();
+
+    refreshSubscriptionButton.textContent = 'Refreshed!';
+    setTimeout(() => {
+      refreshSubscriptionButton.textContent = 'Refresh Status';
+      refreshSubscriptionButton.disabled = false;
+    }, 2000);
+  } catch (error) {
+    console.error('Failed to refresh subscription:', error);
+    refreshSubscriptionButton.textContent = 'Refresh Failed';
+    setTimeout(() => {
+      refreshSubscriptionButton.textContent = 'Refresh Status';
+      refreshSubscriptionButton.disabled = false;
+    }, 2000);
+  }
+}
+
+/**
  * Set up event listeners
  */
 function setupEventListeners() {
@@ -149,6 +431,12 @@ function setupEventListeners() {
     markUnsavedChanges();
   });
 
+  // Account & Subscription
+  loginButton.addEventListener('click', handleLogin);
+  logoutButton.addEventListener('click', handleLogout);
+  manageSubscriptionButton.addEventListener('click', handleManageSubscription);
+  refreshSubscriptionButton.addEventListener('click', handleRefreshSubscription);
+
   // Advanced settings
   hideAfterActionCheckbox.addEventListener('change', markUnsavedChanges);
   hideOnBlurCheckbox.addEventListener('change', markUnsavedChanges);
@@ -179,6 +467,51 @@ function setupEventListeners() {
       }
     }
   });
+
+  // Custom protocol handler for OAuth redirect
+  window.addEventListener('protocol-data', (event) => {
+    // Handle the OAuth redirect with auth code
+    if (event.detail && event.detail.includes('code=')) {
+      const code = extractAuthCode(event.detail);
+      if (code) {
+        handleAuthCode(code);
+      }
+    }
+  });
+}
+
+/**
+ * Extract authentication code from redirect URI
+ * @param {string} uri - Redirect URI containing auth code
+ * @returns {string|null} - Extracted auth code or null
+ */
+function extractAuthCode(uri) {
+  const match = uri.match(/[?&]code=([^&]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Handle authentication code
+ * @param {string} code - Authentication code
+ */
+async function handleAuthCode(code) {
+  try {
+    // Exchange code for token
+    const tokenResult = await window.settings.exchangeCodeForToken(code);
+
+    if (tokenResult.success) {
+      // Authentication successful, update UI
+      updateAuthStateUI(true);
+      fetchUserProfile();
+      fetchSubscriptionInfo();
+    } else {
+      throw new Error(tokenResult.error || 'Failed to exchange code for token');
+    }
+  } catch (error) {
+    console.error('Authentication error:', error);
+    alert(`Authentication failed: ${error.message || 'Unknown error'}`);
+    updateAuthStateUI(false);
+  }
 }
 
 /**

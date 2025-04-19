@@ -10,14 +10,25 @@ const { executeAction, validateAction } = require('./executor');
 const config = require('./config').createConfigStore();
 const path = require('path');
 const fs = require('fs');
-const { dialog } = require('electron');
+const { dialog, shell } = require('electron');
 const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortcuts');
+const auth = require('./auth');
 
 /**
  * Set up IPC handlers
  * @param {Object} windows - Object containing application windows
  */
 function setupIpcHandlers(windows) {
+  // URL 프로토콜 핸들러 등록 (OAuth 리디렉션 처리)
+  auth.registerProtocolHandler();
+
+  // 앱 실행 중 프로토콜 요청 처리
+  global.handleProtocolRequest = (url) => {
+    console.log('Protocol request received:', url);
+    if (windows.settings && !windows.settings.isDestroyed()) {
+      windows.settings.webContents.send('protocol-data', url);
+    }
+  };
   // Execute an action
   ipcMain.handle('execute-action', async (event, action) => {
     try {
@@ -265,6 +276,82 @@ function setupIpcHandlers(windows) {
   ipcMain.on('quit-app', () => {
     const { app } = require('electron');
     app.quit();
+  });
+
+  // 인증 관련 핸들러
+
+  // 로그인 프로세스 시작
+  ipcMain.handle('initiate-login', async () => {
+    try {
+      return await auth.initiateLogin();
+    } catch (error) {
+      console.error('Error initiating login:', error);
+      return false;
+    }
+  });
+
+  // 인증 코드로 토큰 교환
+  ipcMain.handle('exchange-code-for-token', async (event, code) => {
+    try {
+      return await auth.exchangeCodeForToken(code);
+    } catch (error) {
+      console.error('Error exchanging code for token:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to exchange code for token'
+      };
+    }
+  });
+
+  // 로그아웃
+  ipcMain.handle('logout', async () => {
+    try {
+      return await auth.logout();
+    } catch (error) {
+      console.error('Error logging out:', error);
+      return false;
+    }
+  });
+
+  // 사용자 프로필 정보 가져오기
+  ipcMain.handle('fetch-user-profile', async () => {
+    try {
+      return await auth.fetchUserProfile();
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      throw error;
+    }
+  });
+
+  // 구독 정보 가져오기
+  ipcMain.handle('fetch-subscription', async () => {
+    try {
+      return await auth.fetchSubscription();
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      throw error;
+    }
+  });
+
+  // 현재 인증 토큰 반환
+  ipcMain.handle('get-auth-token', async () => {
+    try {
+      return await auth.getAccessToken();
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
+  });
+
+  // URL 외부 브라우저에서 열기
+  ipcMain.handle('open-url', async (event, url) => {
+    try {
+      await shell.openExternal(url);
+      return true;
+    } catch (error) {
+      console.error('Error opening URL:', error);
+      return false;
+    }
   });
 
   // 단축키 레코딩을 위한 핸들러

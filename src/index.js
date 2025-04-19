@@ -111,7 +111,7 @@ app.whenReady().then(() => {
 });
 
 // Handle second instance
-app.on('second-instance', () => {
+app.on('second-instance', (event, commandLine, workingDirectory) => {
   // Focus the toast window if it exists
   if (windows.toast) {
     if (windows.toast.isMinimized()) {
@@ -119,6 +119,23 @@ app.on('second-instance', () => {
     }
     windows.toast.show();
     windows.toast.focus();
+  }
+
+  // 두 번째 인스턴스가 프로토콜 URL로 시작된 경우 처리
+  if (process.platform === 'win32' || process.platform === 'linux') {
+    // Windows와 Linux에서의 딥 링크 처리
+    const url = commandLine.find(arg => arg.startsWith('toast-app://'));
+    if (url && global.handleProtocolRequest) {
+      global.handleProtocolRequest(url);
+    }
+  }
+});
+
+// macOS에서 프로토콜 URL 처리
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  if (url.startsWith('toast-app://') && global.handleProtocolRequest) {
+    global.handleProtocolRequest(url);
   }
 });
 

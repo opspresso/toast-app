@@ -21,6 +21,7 @@
         <ul class="settings-nav">
           <li data-tab="general" class="active">General</li>
           <li data-tab="appearance">Appearance</li>
+          <li data-tab="account">Account & Subscription</li>
           <li data-tab="advanced">Advanced</li>
         </ul>
       </div>
@@ -93,7 +94,62 @@
             </div>
             <p class="help-text">Transparency of the Toast window.</p>
           </div>
+        </div>
 
+        <!-- Account & Subscription Tab -->
+        <div id="account" class="settings-tab">
+          <h2>Account & Subscription</h2>
+
+          <!-- 로그인 전 상태 -->
+          <div id="login-section" class="settings-group">
+            <div class="auth-container">
+              <p>Sign in to access premium features and sync your settings across devices.</p>
+              <button id="login-button" class="primary-button">Sign In</button>
+            </div>
+          </div>
+
+          <!-- 로그인 후 상태 -->
+          <div id="profile-section" class="settings-group hidden">
+            <div class="profile-container">
+              <div class="profile-info">
+                <img id="user-avatar" class="avatar" src="" alt="User Avatar">
+                <div class="user-details">
+                  <h3 id="user-name">-</h3>
+                  <p id="user-email">-</p>
+                </div>
+              </div>
+              <button id="logout-button" class="secondary-button">Sign Out</button>
+            </div>
+          </div>
+
+          <!-- 구독 정보 -->
+          <div id="subscription-section" class="settings-group hidden">
+            <h3>Subscription</h3>
+            <div class="subscription-container">
+              <div class="subscription-details">
+                <div class="subscription-status">
+                  <span id="subscription-badge" class="badge">Free</span>
+                  <span id="subscription-status">-</span>
+                </div>
+                <p id="subscription-expiry">-</p>
+                <p id="subscription-features">-</p>
+              </div>
+              <div class="subscription-actions">
+                <button id="manage-subscription" class="primary-button">Manage Subscription</button>
+                <button id="refresh-subscription" class="secondary-button">Refresh Status</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Premium Features</h3>
+            <ul class="feature-list">
+              <li>Up to 9 pages of shortcuts (Free: 3 pages)</li>
+              <li>Advanced actions and scripting</li>
+              <li>Cloud sync across multiple devices</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
         </div>
 
         <!-- Advanced Tab -->
