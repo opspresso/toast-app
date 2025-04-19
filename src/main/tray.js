@@ -101,22 +101,11 @@ function updateTrayMenu(tray, windows) {
  * @param {Object} windows - Object containing application windows
  */
 function setupTrayClickBehavior(tray, windows) {
-  // On macOS, left click should toggle the Toast window
-  if (process.platform === 'darwin') {
-    tray.on('click', () => {
-      if (windows.toast) {
-        if (windows.toast.isVisible()) {
-          windows.toast.hide();
-        } else {
-          windows.toast.show();
-          windows.toast.focus();
-        }
-      }
-    });
-  }
+  // On macOS, clicking the tray icon will show the context menu instead of toggling the window
+  // This is consistent with the default behavior on Windows
 
-  // On Windows, left click should show the context menu
-  // This is the default behavior, so no need to set it up
+  // No need to set up custom behavior, as we want to use the default behavior
+  // (right-click on macOS and left-click on Windows shows the context menu)
 }
 
 /**
