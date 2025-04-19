@@ -1,4 +1,4 @@
-Toast App
+# Toast App
 
 <p align="center">
   <img src="assets/icons/icon.png" alt="Toast App Logo" width="128" height="128">
