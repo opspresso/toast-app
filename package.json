@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.0.17",
+  "version": "v0.0.18",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -58,7 +58,7 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "identity": "Mac Development: Jungyoul Yu (3TMN29X5ES)",
+      "identity": "Developer ID Application: Jungyoul Yu (3TMN29X5ES)",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",

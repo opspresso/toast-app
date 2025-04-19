@@ -36,7 +36,6 @@ jobs:
           security unlock-keychain -p ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
           security import certificate.p12 -k build.keychain -P ${{ secrets.APPLE_CERTIFICATE_PASSWORD }} -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PASSWORD }} build.keychain
-          rm certificate.p12
 
       - name: Build for macOS
         if: matrix.os == 'macos-latest'
@@ -44,9 +43,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: certificate.p12
           CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: true
 
@@ -65,7 +64,9 @@ jobs:
       # macOS에서만 keychain 정리
       - name: Clean up keychain
         if: matrix.os == 'macos-latest' && always()
-        run: security delete-keychain build.keychain
+        run: |
+          rm certificate.p12
+          security delete-keychain build.keychain
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
