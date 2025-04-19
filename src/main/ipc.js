@@ -179,6 +179,16 @@ function setupIpcHandlers(windows) {
     try {
       const { resetToDefaults } = require('./config');
       resetToDefaults(config);
+
+      // 설정 초기화 후 토스트 창에 변경 알림 전송
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        windows.toast.webContents.send('config-updated', {
+          pages: config.get('pages'),
+          appearance: config.get('appearance'),
+          subscription: config.get('subscription')
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Error resetting config:', error);

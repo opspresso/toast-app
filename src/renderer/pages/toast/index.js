@@ -278,10 +278,26 @@ function setupEventListeners() {
 
   // Listen for configuration updates
   window.toast.onConfigUpdated((config) => {
-    if (config.pages) {
-      pages = config.pages;
+    // config.pages가 undefined, null, 빈 배열인 경우에도 처리
+    if ('pages' in config) {
+      pages = config.pages || [];
       renderPagingButtons();
-      changePage(currentPageIndex < pages.length ? currentPageIndex : 0);
+
+      if (pages.length > 0) {
+        changePage(currentPageIndex < pages.length ? currentPageIndex : 0);
+      } else {
+        // 페이지가 없는 경우 버튼 컨테이너 초기화
+        buttonsContainer.innerHTML = '';
+
+        // 안내 메시지 표시
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'no-results';
+        emptyMessage.textContent = 'No pages found. Press the + button to add a new page.';
+        buttonsContainer.appendChild(emptyMessage);
+
+        // 필터링된 버튼 배열 초기화
+        filteredButtons = [];
+      }
     }
 
     if (config.appearance) {
