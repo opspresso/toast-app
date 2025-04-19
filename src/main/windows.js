@@ -43,8 +43,8 @@ function createToastWindow(config) {
       break;
     case 'medium':
     default:
-      width = 650;
-      height = 450;
+      width = 700;
+      height = 500;
       break;
   }
 
