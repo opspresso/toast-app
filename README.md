@@ -1,4 +1,4 @@
-# Toast App
+Toast App
 
 <p align="center">
   <img src="assets/icons/icon.png" alt="Toast App Logo" width="128" height="128">
@@ -10,7 +10,7 @@
 
 ## Overview
 
-Toast App is a productivity tool that allows users to define custom shortcuts and actions. When triggered with a global hotkey, Toast displays a popup with user-defined buttons. Each button can be assigned a specific action or command to execute.
+Toast App is a productivity tool that allows users to define custom shortcuts and actions. When triggered with a global hotkey Toast displays a popup with user-defined buttons. Each button can be assigned a specific action or command to execute.
 
 <p align="center">
   <img src="docs/images/toast-app-screenshot.png" alt="Toast App Screenshot" width="500">
@@ -20,14 +20,21 @@ Toast App is a productivity tool that allows users to define custom shortcuts an
 
 - Global hotkey to trigger the Toast popup
 - Multiple pages of customizable buttons for better organization
+- Settings Mode for quick button and page editing
 - Customizable buttons with user-defined actions
 - Support for keyboard shortcuts to trigger specific actions
-- Multiple action types: execute commands, open URLs, trigger keyboard shortcuts, run scripts
+- Multiple action types:
+  - Execute commands
+  - Open URLs and files
+  - Trigger keyboard shortcuts
+  - Run scripts (JavaScript, AppleScript, PowerShell, Bash)
+  - Chain actions together in sequence
 - Cross-platform support (macOS and Windows)
-- Theme support (light, dark, or system)
+- Theme support (light, dark or system)
 - Customizable position and size
 - Minimal and non-intrusive UI
 - Runs in the background with system tray integration
+- Automatic updates
 
 ## Installation
 
@@ -78,12 +85,12 @@ npm run build:win
 
 ## Usage
 
-1. After installation, Toast App will run in the background with an icon in the system tray/menu bar.
+1. After installation Toast App will run in the background with an icon in the system tray/menu bar.
 2. Press the global hotkey (default: `Alt+Space`) to open the Toast popup.
 3. Navigate between pages using the number keys (1-9) or by clicking the page tabs.
 4. Click on a button or use the corresponding shortcut key to execute an action.
 5. Right-click on the system tray icon to access settings, add new buttons, or quit the application.
-6. Toggle settings mode by clicking the gear icon (⚙️) or pressing the comma key (,) to edit buttons.
+6. Toggle settings mode by clicking the gear icon (⚙️) or pressing the comma key (,) to edit buttons and pages.
 
 ## Configuration
 
@@ -222,4 +229,5 @@ MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 - [Electron](https://www.electronjs.org/) - Framework for building cross-platform desktop apps
 - [electron-store](https://github.com/sindresorhus/electron-store) - Simple data persistence for Electron apps
 - [@nut-tree-fork/nut-js](https://github.com/nut-tree/nut.js) - Native UI automation for keyboard shortcuts
+- [electron-updater](https://github.com/electron-userland/electron-builder/tree/master/packages/electron-updater) - Auto-update functionality
 - [All Contributors](https://github.com/opspresso/toast-app/graphs/contributors)
