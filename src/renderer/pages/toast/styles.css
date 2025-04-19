@@ -210,7 +210,7 @@ body {
 .toast-paging-buttons {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap; /* 페이지 버튼이 많아지면 여러 줄로 표시 */
+  flex-wrap: wrap;
 }
 
 .add-page-button {
