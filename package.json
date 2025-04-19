@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.0.1",
+  "version": "v0.0.2",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -26,7 +26,7 @@
     "desktop",
     "utility"
   ],
-  "author": "nalbam <byforce@gmail.com>, bruce <bruce@daangn.com>",
+  "author": "nalbam <me@nalbam.com>, bruce <bruce@daangn.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/opspresso/toast-app/issues"
@@ -34,7 +34,8 @@
   "homepage": "https://github.com/opspresso/toast-app#readme",
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^35.1.5",
@@ -77,5 +78,10 @@
       ],
       "category": "Utility"
     }
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "opspresso",
+    "repo": "toast-app"
   }
 }
