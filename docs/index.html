@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast App - Customizable Shortcut Launcher</title>
+    <link rel="icon" href="../assets/icons/icon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <div class="nav-container container">
+            <a href="#" class="nav-logo">
+                <img src="../assets/icons/icon.png" alt="Toast App Logo">
+                <span>Toast App</span>
+            </a>
+            <button class="mobile-menu-btn">☰</button>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#documentation">Documentation</a></li>
+                <li><a href="#download">Download</a></li>
+                <li><a href="https://github.com/opspresso/toast-app">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header>
+        <div class="container">
+            <img src="../assets/icons/icon.png" alt="Toast App Logo" class="logo">
+            <h1>Toast App</h1>
+            <p>A customizable shortcut launcher for macOS and Windows</p>
+            <div class="header-buttons">
+                <a href="https://github.com/opspresso/toast-app" class="btn">GitHub</a>
+                <a href="#download" class="btn">Download</a>
+                <a href="USER_GUIDE.html" class="btn btn-secondary">Documentation</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="overview">
+        <div class="container">
+            <h2>Overview</h2>
+            <p>
+                Toast App is a productivity tool that allows users to define custom shortcuts and actions.
+                When triggered with a global hotkey, Toast displays a popup with user-defined buttons.
+                Each button can be assigned a specific action or command to execute.
+            </p>
+            <img src="images/toast-app-screenshot.png" alt="Toast App Screenshot" class="screenshot">
+        </div>
+    </section>
+
+    <section id="features">
+        <div class="container">
+            <h2>Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">⌨️</div>
+                    <h3>Global Hotkey</h3>
+                    <p>Trigger the Toast popup from anywhere with a customizable global hotkey</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📑</div>
+                    <h3>Multiple Pages</h3>
+                    <p>Organize your shortcuts with multiple pages of customizable buttons</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>Customizable Buttons</h3>
+                    <p>Create buttons with user-defined actions, icons, and keyboard shortcuts</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Multiple Action Types</h3>
+                    <p>Execute commands, open URLs, trigger keyboard shortcuts, or run scripts</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💻</div>
+                    <h3>Cross-platform</h3>
+                    <p>Works on both macOS and Windows with consistent experience</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Theme Support</h3>
+                    <p>Choose between light, dark, or system theme to match your preferences</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="installation">
+        <div class="container">
+            <h2>Installation</h2>
+            <h3>Prerequisites</h3>
+            <p>
+                - Node.js (v16 or later)<br>
+                - npm or yarn
+            </p>
+
+            <h3>Development Setup</h3>
+            <p>1. Clone the repository:</p>
+            <pre><code>git clone https://github.com/opspresso/toast-app.git
+cd toast-app</code></pre>
+
+            <p>2. Install dependencies:</p>
+            <pre><code>npm install</code></pre>
+
+            <p>3. Start the development server:</p>
+            <pre><code>npm run dev</code></pre>
+
+            <h3>Building for Production</h3>
+            <p>Build for your current platform:</p>
+            <pre><code>npm run build</code></pre>
+
+            <p>Build for specific platforms:</p>
+            <pre><code>npm run build:mac
+npm run build:win</code></pre>
+        </div>
+    </section>
+
+    <section id="usage">
+        <div class="container">
+            <h2>Usage</h2>
+            <p>
+                1. After installation, Toast App will run in the background with an icon in the system tray/menu bar.<br>
+                2. Press the global hotkey (default: <code>Alt+Space</code>) to open the Toast popup.<br>
+                3. Navigate between pages using the number keys (1-9) or by clicking the page tabs.<br>
+                4. Click on a button or use the corresponding shortcut key to execute an action.<br>
+                5. Right-click on the system tray icon to access settings, add new buttons, or quit the application.<br>
+                6. Toggle settings mode by clicking the gear icon (⚙️) or pressing the comma key (,) to edit buttons.
+            </p>
+        </div>
+    </section>
+
+    <section id="configuration">
+        <div class="container">
+            <h2>Configuration</h2>
+            <p>
+                Toast App can be configured through the settings UI or by directly editing the configuration file located at:
+            </p>
+            <p>
+                - macOS: <code>~/Library/Application Support/toast-app/config.json</code><br>
+                - Windows: <code>%APPDATA%\toast-app\config.json</code>
+            </p>
+            <p>Example configuration:</p>
+            <pre><code>{
+  "globalHotkey": "Alt+Space",
+  "pages": [
+    {
+      "name": "Applications",
+      "shortcut": "1",
+      "buttons": [
+        {
+          "name": "Terminal",
+          "shortcut": "T",
+          "icon": "⌨️",
+          "action": "exec",
+          "command": "open -a Terminal"
+        },
+        {
+          "name": "Browser",
+          "shortcut": "B",
+          "icon": "🌐",
+          "action": "open",
+          "url": "https://www.google.com"
+        }
+      ]
+    }
+  ],
+  "appearance": {
+    "theme": "system",
+    "position": "center",
+    "size": "medium"
+  }
+}</code></pre>
+        </div>
+    </section>
+
+    <section id="documentation">
+        <div class="container">
+            <h2>Documentation</h2>
+            <p>Comprehensive documentation is available in the repository:</p>
+            <ul>
+                <li><a href="USER_GUIDE.html">User Guide</a> - Complete guide for end users</li>
+                <li><a href="ARCHITECTURE.html">Architecture</a> - System architecture and design decisions</li>
+                <li><a href="API_DOCUMENTATION.html">API Documentation</a> - Internal API documentation</li>
+                <li><a href="CONFIG_SCHEMA.html">Configuration Schema</a> - Configuration options and schema</li>
+                <li><a href="PAGES.html">Pages and Navigation</a> - Page layout and navigation structure</li>
+                <li><a href="PROJECT_STRUCTURE.html">Project Structure</a> - Project structure and code organization</li>
+                <li><a href="TECHNICAL_REQUIREMENTS.html">Technical Requirements</a> - Technical specifications and requirements</li>
+                <li><a href="DEVELOPMENT_ROADMAP.html">Development Roadmap</a> - Future development plans</li>
+                <li><a href="TESTING_STRATEGY.html">Testing Strategy</a> - Testing approach and methodologies</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="download">
+        <div class="container">
+            <h2>Download</h2>
+            <p>Get Toast App for your platform:</p>
+            <div class="download-buttons">
+                <a href="#" class="btn">Download for macOS</a>
+                <a href="#" class="btn">Download for Windows</a>
+                <a href="https://github.com/opspresso/toast-app" class="btn btn-secondary">Source Code</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Toast App. ISC License.</p>
+            <ul class="footer-links">
+                <li><a href="https://github.com/opspresso/toast-app">GitHub</a></li>
+                <li><a href="CONTRIBUTING.html">Contributing</a></li>
+                <li><a href="CODE_OF_CONDUCT.html">Code of Conduct</a></li>
+                <li><a href="SECURITY.html">Security</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
+
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+</html>

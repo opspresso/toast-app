@@ -206,7 +206,7 @@ We welcome contributions to Toast App! Please see our [Contributing Guidelines](
 
 ## License
 
-ISC License
+MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ## Acknowledgements
 

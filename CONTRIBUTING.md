@@ -357,7 +357,7 @@ We value all contributions, big and small. Contributors will be recognized in:
 
 ## License
 
-By contributing to Toast App, you agree that your contributions will be licensed under the project's [ISC License](LICENSE).
+By contributing to Toast App, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
 
 ---
 
