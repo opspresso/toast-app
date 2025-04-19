@@ -163,6 +163,22 @@ function setupEventListeners() {
 
   // Hotkey recording
   document.addEventListener('keydown', handleHotkeyRecording);
+
+  // ESC 키로 설정 창 닫기
+  document.addEventListener('keydown', (event) => {
+    // ESC 키가 눌렸고, 단축키 녹화 모드가 아닌 경우에만 처리
+    if (event.key === 'Escape' && !isRecordingHotkey) {
+      // 변경 사항이 있다면 저장 확인
+      if (unsavedChanges) {
+        if (confirm('저장되지 않은 변경 사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+          window.settings.closeWindow();
+        }
+      } else {
+        // 변경 사항이 없으면 바로 닫기
+        window.settings.closeWindow();
+      }
+    }
+  });
 }
 
 /**
