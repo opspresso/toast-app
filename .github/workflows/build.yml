@@ -61,15 +61,15 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout code 🛎️
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download all artifacts 📥
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Create Release
+      - name: Create Release 📦
         id: create_release
         uses: softprops/action-gh-release@v1
         env:
@@ -85,3 +85,13 @@ jobs:
             artifacts/**/*.dmg
             artifacts/**/*.exe
             artifacts/**/*.zip
+
+      - name: Trigger for Homebrew 🚀
+        uses: opspresso/action-builder@master
+        with:
+          args: --dispatch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+          GITOPS_REPO: "opspresso/homebrew-tap"
+          PROJECT: "toast"
+          VERSION: ${{ github.ref_name }}
