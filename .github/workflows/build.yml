@@ -68,12 +68,12 @@ jobs:
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
 
-      # macOS에서만 keychain 정리
-      - name: Clean up keychain
-        if: matrix.os == 'macos-latest' && always()
-        run: |
-          rm certificate.p12
-          # security delete-keychain build.keychain
+      # # macOS에서만 keychain 정리
+      # - name: Clean up keychain
+      #   if: matrix.os == 'macos-latest' && always()
+      #   run: |
+      #     rm certificate.p12
+      #     # security delete-keychain build.keychain
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
