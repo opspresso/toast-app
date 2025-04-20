@@ -5,10 +5,11 @@
  */
 
 // Import action handlers
+const { executeApplication } = require('./actions/application');
 const { executeCommand } = require('./actions/exec');
-const { openItem } = require('./actions/open');
-const { executeShortcut } = require('./actions/shortcut');
 const { executeScript } = require('./actions/script');
+const { executeShortcut } = require('./actions/shortcut');
+const { openItem } = require('./actions/open');
 
 /**
  * Execute an action based on its type
@@ -28,6 +29,8 @@ async function executeAction(action) {
 
     // Execute based on action type
     switch (action.action) {
+      case 'application':
+        return await executeApplication(action);
       case 'exec':
         return await executeCommand(action);
       case 'open':
@@ -113,6 +116,11 @@ async function validateAction(action) {
 
     // Validate based on action type
     switch (action.action) {
+      case 'application':
+        if (!action.applicationPath) {
+          return { valid: false, message: 'Application path is required for application action' };
+        }
+        break;
       case 'exec':
         if (!action.command) {
           return { valid: false, message: 'Command is required for exec action' };

@@ -28,10 +28,13 @@ const editButtonCommandInput = document.getElementById('edit-button-command');
 const editButtonUrlInput = document.getElementById('edit-button-url');
 const editButtonScriptInput = document.getElementById('edit-button-script');
 const editButtonKeyShortcutInput = document.getElementById('edit-button-key-shortcut');
+const editButtonApplicationInput = document.getElementById('edit-button-application');
+const browseApplicationButton = document.getElementById('browse-application-button');
 const commandInputGroup = document.getElementById('command-input-group');
 const urlInputGroup = document.getElementById('url-input-group');
 const scriptInputGroup = document.getElementById('script-input-group');
 const shortcutInputGroup = document.getElementById('shortcut-input-group');
+const applicationInputGroup = document.getElementById('application-input-group');
 
 // Define default button set
 const defaultButtons = [
@@ -756,6 +759,37 @@ function setupModalEventListeners() {
     showActionFields(editButtonActionSelect.value);
   });
 
+  // Browse button for application selection
+  if (browseApplicationButton) {
+    browseApplicationButton.addEventListener('click', async () => {
+      try {
+        // Application 폴더를 기본 경로로 설정
+        const defaultPath = window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
+
+        // 파일 선택 대화상자 옵션 설정
+        const options = {
+          title: '애플리케이션 선택',
+          defaultPath: defaultPath,
+          properties: ['openFile'],
+          filters: window.toast?.platform === 'darwin'
+            ? [{ name: '애플리케이션', extensions: ['app'] }]
+            : [{ name: '실행 파일', extensions: ['exe'] }]
+        };
+
+        // 파일 선택 대화상자 호출
+        const result = await window.toast.showOpenDialog(options);
+
+        if (!result.canceled && result.filePaths.length > 0) {
+          // 선택한 애플리케이션 경로를 입력 필드에 설정
+          editButtonApplicationInput.value = result.filePaths[0];
+        }
+      } catch (error) {
+        console.error('애플리케이션 선택 중 오류 발생:', error);
+        showStatus('애플리케이션 선택 중 오류가 발생했습니다.', 'error');
+      }
+    });
+  }
+
   // Close on click outside modal
   buttonEditModal.addEventListener('click', (event) => {
     if (event.target === buttonEditModal) {
@@ -793,6 +827,7 @@ function editButtonSettings(button) {
   editButtonUrlInput.value = button.url || '';
   editButtonScriptInput.value = button.script || '';
   editButtonKeyShortcutInput.value = button.keyShortcut || '';
+  editButtonApplicationInput.value = button.applicationPath || '';
 
   // Show input fields appropriate for current action type
   showActionFields(button.action || 'exec');
@@ -822,6 +857,7 @@ function showActionFields(actionType) {
   urlInputGroup.style.display = 'none';
   scriptInputGroup.style.display = 'none';
   shortcutInputGroup.style.display = 'none';
+  applicationInputGroup.style.display = 'none';
 
   // Show corresponding input field group based on selected action type
   switch (actionType) {
@@ -836,6 +872,9 @@ function showActionFields(actionType) {
       break;
     case 'shortcut':
       shortcutInputGroup.style.display = 'block';
+      break;
+    case 'application':
+      applicationInputGroup.style.display = 'block';
       break;
   }
 }
@@ -879,6 +918,9 @@ function saveButtonSettings() {
       break;
     case 'shortcut':
       updatedButton.keyShortcut = editButtonKeyShortcutInput.value;
+      break;
+    case 'application':
+      updatedButton.applicationPath = editButtonApplicationInput.value;
       break;
   }
 

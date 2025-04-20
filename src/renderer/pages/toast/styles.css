@@ -765,6 +765,23 @@ body {
   transition: all 0.2s ease;
 }
 
+.application-input-container {
+  display: flex;
+  gap: 10px;
+}
+
+.application-input-container input {
+  flex: 1;
+}
+
+.application-input-container button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
 .form-group textarea {
   min-height: 120px;
   resize: vertical;

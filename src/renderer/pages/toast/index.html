@@ -62,6 +62,7 @@
         <div class="form-group">
           <label for="edit-button-action">Action Type</label>
           <select id="edit-button-action">
+            <option value="application">Run Application</option>
             <option value="exec">Execute Command</option>
             <option value="open">Open URL</option>
             <option value="script">Run Script</option>
@@ -83,6 +84,13 @@
         <div class="form-group" id="shortcut-input-group" style="display: none;">
           <label for="edit-button-key-shortcut">Key Combination</label>
           <input type="text" id="edit-button-key-shortcut" placeholder="Set shortcut keys">
+        </div>
+        <div class="form-group" id="application-input-group" style="display: none;">
+          <label for="edit-button-application">Application Path</label>
+          <div class="application-input-container">
+            <input type="text" id="edit-button-application" placeholder="Application path">
+            <button id="browse-application-button" class="secondary-button">Browse</button>
+          </div>
         </div>
       </div>
       <div class="modal-footer">

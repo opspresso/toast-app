@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld(
     // Save configuration
     saveConfig: (config) => ipcRenderer.invoke('save-config', config),
 
+    // File dialogs
+    showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
+
     // Listen for events
     onConfigUpdated: (callback) => {
       ipcRenderer.on('config-updated', (event, config) => callback(config));
