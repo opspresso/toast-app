@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld(
     // Modal state
     setModalOpen: (isOpen) => ipcRenderer.send('modal-state-changed', isOpen),
 
+    // Window state
+    setAlwaysOnTop: (value) => ipcRenderer.invoke('set-always-on-top', value),
+    getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
+    hideWindowTemporarily: () => ipcRenderer.invoke('hide-window-temporarily'),
+    showWindowAfterDialog: (position) => ipcRenderer.invoke('show-window-after-dialog', position),
+
     // Configuration
     getConfig: (key) => ipcRenderer.invoke('get-config', key),
 

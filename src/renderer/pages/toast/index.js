@@ -776,16 +776,29 @@ function setupModalEventListeners() {
             : [{ name: '실행 파일', extensions: ['exe'] }]
         };
 
-        // 파일 선택 대화상자 호출
-        const result = await window.toast.showOpenDialog(options);
+        // 현재 토스트 창의 위치를 저장하기 위해 ipcRenderer 호출
+        const windowPosition = await window.toast.getWindowPosition();
 
-        if (!result.canceled && result.filePaths.length > 0) {
-          // 선택한 애플리케이션 경로를 입력 필드에 설정
-          editButtonApplicationInput.value = result.filePaths[0];
+        // 토스트 창 숨기기 (파일 선택 대화상자가 가장 앞에 표시되도록)
+        await window.toast.hideWindowTemporarily();
+
+        try {
+          // 파일 선택 대화상자 호출
+          const result = await window.toast.showOpenDialog(options);
+
+          if (!result.canceled && result.filePaths.length > 0) {
+            // 선택한 애플리케이션 경로를 입력 필드에 설정
+            editButtonApplicationInput.value = result.filePaths[0];
+          }
+        } finally {
+          // 파일 선택 대화상자가 닫힌 후 토스트 창 다시 표시
+          await window.toast.showWindowAfterDialog(windowPosition);
         }
       } catch (error) {
         console.error('애플리케이션 선택 중 오류 발생:', error);
         showStatus('애플리케이션 선택 중 오류가 발생했습니다.', 'error');
+        // 오류 발생 시에도 alwaysOnTop 속성을 복원
+        await window.toast.setAlwaysOnTop(true);
       }
     });
   }

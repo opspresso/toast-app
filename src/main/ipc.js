@@ -46,6 +46,79 @@ function setupIpcHandlers(windows) {
     isModalOpen = open;
     console.log('Modal state changed:', isModalOpen ? 'open' : 'closed');
   });
+  // 창의 alwaysOnTop 속성 설정
+  ipcMain.handle('set-always-on-top', (event, value) => {
+    try {
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        windows.toast.setAlwaysOnTop(value);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error setting alwaysOnTop:', error);
+      return false;
+    }
+  });
+
+  // 창의 현재 위치 반환
+  ipcMain.handle('get-window-position', (event) => {
+    try {
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        return windows.toast.getPosition();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting window position:', error);
+      return null;
+    }
+  });
+
+  // 창을 일시적으로 숨김 (파일 선택 대화상자 표시를 위해)
+  ipcMain.handle('hide-window-temporarily', async (event) => {
+    try {
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        // 창을 숨기기 전에 항상 위 속성 끄기
+        windows.toast.setAlwaysOnTop(false);
+        // 창 숨기기
+        windows.toast.hide();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error hiding window temporarily:', error);
+      return false;
+    }
+  });
+
+  // 대화상자가 닫힌 후 창 다시 표시
+  ipcMain.handle('show-window-after-dialog', async (event, position) => {
+    try {
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        // 저장된 위치로 창 이동 (위치 정보가 있는 경우)
+        if (position && Array.isArray(position) && position.length === 2) {
+          windows.toast.setPosition(position[0], position[1]);
+        }
+
+        // 창 표시 및 포커스
+        windows.toast.show();
+        windows.toast.focus();
+
+        // 항상 위로 설정 복원
+        setTimeout(() => {
+          if (windows.toast && !windows.toast.isDestroyed()) {
+            windows.toast.setAlwaysOnTop(true);
+          }
+        }, 100); // 약간의 지연 후 alwaysOnTop 설정
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error showing window after dialog:', error);
+      return false;
+    }
+  });
+
   // Execute an action
   ipcMain.handle('execute-action', async (event, action) => {
     try {
@@ -398,7 +471,14 @@ function setupIpcHandlers(windows) {
   // Show open dialog
   ipcMain.handle('show-open-dialog', async (event, options) => {
     try {
-      return await dialog.showOpenDialog(options);
+      // options에 modal: true 추가하여 모달로 표시
+      const modalOptions = {
+        ...options,
+        modal: true,
+        // toast 창을 부모로 설정하여 항상 toast 창 위에 표시
+        parent: windows.toast
+      };
+      return await dialog.showOpenDialog(modalOptions);
     } catch (error) {
       console.error('Error showing open dialog:', error);
       return { canceled: true, error: error.toString() };
@@ -408,7 +488,14 @@ function setupIpcHandlers(windows) {
   // Show save dialog
   ipcMain.handle('show-save-dialog', async (event, options) => {
     try {
-      return await dialog.showSaveDialog(options);
+      // options에 modal: true 추가하여 모달로 표시
+      const modalOptions = {
+        ...options,
+        modal: true,
+        // toast 창을 부모로 설정하여 항상 toast 창 위에 표시
+        parent: windows.toast
+      };
+      return await dialog.showSaveDialog(modalOptions);
     } catch (error) {
       console.error('Error showing save dialog:', error);
       return { canceled: true, error: error.toString() };
@@ -418,7 +505,14 @@ function setupIpcHandlers(windows) {
   // Show message box
   ipcMain.handle('show-message-box', async (event, options) => {
     try {
-      return await dialog.showMessageBox(options);
+      // options에 modal: true 추가하여 모달로 표시
+      const modalOptions = {
+        ...options,
+        modal: true,
+        // toast 창을 부모로 설정하여 항상 toast 창 위에 표시
+        parent: windows.toast
+      };
+      return await dialog.showMessageBox(modalOptions);
     } catch (error) {
       console.error('Error showing message box:', error);
       return { response: 0, error: error.toString() };
