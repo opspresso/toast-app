@@ -35,6 +35,7 @@ Toast App is a productivity tool that allows users to define custom shortcuts an
 - Minimal and non-intrusive UI
 - Runs in the background with system tray integration
 - Automatic updates
+- Integration with Toast Web for authentication and subscription management
 
 ## Installation
 
@@ -162,6 +163,19 @@ Example configuration:
 }
 ```
 
+## Integration with Toast Web
+
+Toast App integrates with [Toast Web](https://web.toast.sh) for user authentication and subscription management. This integration enables:
+
+- User account creation and authentication
+- Subscription management for premium features
+- Secure access to paid features based on subscription status
+- Seamless login experience via system browser
+
+For developers working on Toast App, refer to [INTEGRATION_WITH_TOAST_WEB.md](docs/INTEGRATION_WITH_TOAST_WEB.md) for detailed integration documentation.
+
+Users can create an account and manage their subscription at [https://web.toast.sh](https://web.toast.sh).
+
 ## Documentation
 
 Comprehensive documentation is available in the repository:
@@ -175,6 +189,7 @@ Comprehensive documentation is available in the repository:
 - [Technical Requirements](TECHNICAL_REQUIREMENTS.md) - Technical specifications and requirements
 - [Development Roadmap](DEVELOPMENT_ROADMAP.md) - Future development plans
 - [Testing Strategy](TESTING_STRATEGY.md) - Testing approach and methodologies
+- [Integration with Toast Web](docs/INTEGRATION_WITH_TOAST_WEB.md) - Guide for integrating with Toast Web
 
 ## Project Structure
 
@@ -187,6 +202,7 @@ toast-app/
 ├── src/                   # Source code
 │   ├── main/              # Main process code
 │   │   ├── actions/       # Action implementations
+│   │   ├── auth.js        # Authentication handling
 │   │   ├── config.js      # Configuration management
 │   │   ├── executor.js    # Action execution
 │   │   ├── ipc.js         # IPC handling
