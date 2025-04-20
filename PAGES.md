@@ -57,7 +57,10 @@ The Toast window is the main interface that users interact with to execute actio
 #### Page Navigation
 
 - **Page Buttons**: Numbered buttons (1-9) to switch between pages
-- **Add Page Button**: Adds a new page of buttons (+)
+  - **Free Users**: Limited to 1 page
+  - **Authenticated Users**: Can create up to 3 pages
+  - **Subscribers**: Can create up to 9 pages
+- **Add Page Button**: Adds a new page of buttons (+) (based on account limits)
 - **Remove Page Button**: Removes the current page (-)
 
 #### Button Grid
@@ -332,6 +335,30 @@ The system tray menu provides quick access to Toast App functions.
 1. User right-clicks the system tray icon
 2. User selects "Quit" from the menu
 3. Toast App closes
+
+## Page Limits and Authentication
+
+Toast App provides different page limits based on your account status:
+
+### Page Allocation Policy
+
+- **Free Users**: All users without authentication receive 1 page for basic functionality.
+- **Authenticated Users**: Users who have logged in and been authenticated receive up to 3 pages.
+- **Subscribers**: Users with an active subscription can create up to 9 pages.
+
+### Authentication Process
+
+1. Open Settings and navigate to the Account tab
+2. Click "Log In" and authenticate through the Toast Web service
+3. Your account status is automatically verified and page limits updated accordingly
+
+### Subscription Benefits
+
+Subscribing to Toast App Premium provides additional benefits:
+- Increased page limit (up to 9 pages)
+- Access to premium actions and integrations
+- Cloud backup of configurations
+- Priority support
 
 ## Responsive Behavior
 

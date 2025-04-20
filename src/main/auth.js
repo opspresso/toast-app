@@ -11,6 +11,8 @@ const { v4: uuidv4 } = require('uuid');
 const { URL } = require('url');
 const path = require('path');
 const os = require('os');
+const Store = require('electron-store');
+const { createConfigStore } = require('./config');
 
 // 보안 상수
 const AUTH_SERVICE_NAME = 'toast-app';
@@ -377,13 +379,127 @@ async function getAccessToken() {
   return currentToken;
 }
 
+/**
+ * 인증 상태와 구독 정보에 따라 페이지 그룹 개수를 업데이트합니다
+ * @returns {Promise<void>}
+ */
+async function updatePageGroupSettings() {
+  try {
+    const config = createConfigStore();
+    const isAuthenticated = await hasValidToken();
+
+    // 기본값 설정: 인증되지 않은 사용자는 1개 페이지
+    let pageGroups = 1;
+    let isSubscribed = false;
+    let subscribedUntil = '';
+
+    // 인증된 사용자인 경우
+    if (isAuthenticated) {
+      // 인증된 상태 설정 (최소 3개 페이지)
+      pageGroups = 3;
+
+      try {
+        // 구독 정보 가져오기
+        const subscription = await fetchSubscription();
+
+        // 구독 활성화 여부 확인
+        if (subscription && subscription.active) {
+          isSubscribed = true;
+          subscribedUntil = subscription.expiresAt || '';
+          pageGroups = 9; // 구독자는 9개 페이지
+        }
+      } catch (error) {
+        console.error('Error fetching subscription info:', error);
+        // 구독 정보 가져오기 실패 시 인증된 사용자 기본값 유지
+      }
+    }
+
+    // 구성 파일 업데이트
+    config.set('subscription', {
+      isAuthenticated,
+      isSubscribed,
+      subscribedUntil,
+      pageGroups
+    });
+
+    console.log(`Page group settings updated: authenticated=${isAuthenticated}, subscribed=${isSubscribed}, pages=${pageGroups}`);
+
+    return {
+      isAuthenticated,
+      isSubscribed,
+      subscribedUntil,
+      pageGroups
+    };
+  } catch (error) {
+    console.error('Failed to update page group settings:', error);
+    throw error;
+  }
+}
+
+/**
+ * 인증 코드를 토큰으로 교환하고 구독 상태를 업데이트합니다
+ * @param {string} code - OAuth 인증 코드
+ * @returns {Promise<Object>} 토큰 교환 및 구독 업데이트 결과
+ */
+async function exchangeCodeForTokenAndUpdateSubscription(code) {
+  try {
+    // 토큰 교환
+    const result = await exchangeCodeForToken(code);
+
+    if (result.success) {
+      // 구독 정보 및 페이지 그룹 설정 업데이트
+      await updatePageGroupSettings();
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Failed during token exchange and subscription update:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * 로그아웃 후 페이지 그룹 설정을 초기화합니다
+ * @returns {Promise<boolean>} 로그아웃 성공 여부
+ */
+async function logoutAndResetPageGroups() {
+  try {
+    // 로그아웃 처리
+    const logoutSuccess = await logout();
+
+    if (logoutSuccess) {
+      // 페이지 그룹 설정 초기화
+      const config = createConfigStore();
+      config.set('subscription', {
+        isAuthenticated: false,
+        isSubscribed: false,
+        subscribedUntil: '',
+        pageGroups: 1
+      });
+
+      console.log('Logged out and reset page group settings to defaults');
+    }
+
+    return logoutSuccess;
+  } catch (error) {
+    console.error('Logout and reset page groups error:', error);
+    return false;
+  }
+}
+
 module.exports = {
   initiateLogin,
   exchangeCodeForToken,
+  exchangeCodeForTokenAndUpdateSubscription,
   logout,
+  logoutAndResetPageGroups,
   fetchUserProfile,
   fetchSubscription,
   registerProtocolHandler,
   hasValidToken,
-  getAccessToken
+  getAccessToken,
+  updatePageGroupSettings
 };

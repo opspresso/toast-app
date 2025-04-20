@@ -19,7 +19,10 @@ Toast App is a productivity tool that allows users to define custom shortcuts an
 ## Features
 
 - Global hotkey to trigger the Toast popup
-- Multiple pages of customizable buttons for better organization
+- Multiple pages of customizable buttons for better organization:
+  - Free users: 1 page
+  - Authenticated users: Up to 3 pages
+  - Subscribers: Up to 9 pages
 - Settings Mode for quick button and page editing
 - Customizable buttons with user-defined actions
 - Support for keyboard shortcuts to trigger specific actions

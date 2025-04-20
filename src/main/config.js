@@ -94,17 +94,23 @@ const schema = {
         type: 'boolean',
         default: false
       },
+      isAuthenticated: {
+        type: 'boolean',
+        default: false
+      },
       subscribedUntil: {
         type: 'string',
         default: ''
       },
       pageGroups: {
         type: 'number',
-        default: 1
+        default: 1,
+        description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers'
       }
     },
     default: {
       isSubscribed: false,
+      isAuthenticated: false,
       subscribedUntil: '',
       pageGroups: 1
     }

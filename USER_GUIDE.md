@@ -147,7 +147,10 @@ Toast App supports organizing your buttons into multiple pages, making it easier
 
 - When the Toast popup is open, you can see the page tabs at the top.
 - Each page has a number shortcut (1-9) for quick access.
-- Free users can create up to 3 pages, while subscribers can create up to 9 pages.
+- Page limits depend on your account status:
+  - **Free Users**: Limited to 1 page
+  - **Authenticated Users**: Can create up to 3 pages
+  - **Subscribers**: Can create up to 9 pages
 
 ### Adding a Page
 
@@ -491,7 +494,12 @@ There is no hard limit on the number of buttons you can add per page. However fo
 
 ### How many pages can I create?
 
-Free users can create up to 3 pages. Subscribers can create up to 9 pages. This limit helps to maintain performance and encourages upgrading to the premium version.
+Page limits depend on your account status:
+- **Free Users**: Limited to 1 page
+- **Authenticated Users**: Can create up to 3 pages after logging in
+- **Subscribers**: Can create up to 9 pages with an active subscription
+
+These limits help maintain application performance and provide incentive to authenticate and subscribe for additional functionality.
 
 ### Can I use multiple global hotkeys?
 
