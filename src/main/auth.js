@@ -27,12 +27,22 @@ const CLIENT_SECRET = getEnv('CLIENT_SECRET', 'toast-app-secret');
 
 // API 엔드포인트
 const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
-const API_BASE_URL = `${TOAST_URL}/api`;
+// 개발 환경에서 로컬 URL 사용 가능하도록 설정
+const isLocal = process.env.NODE_ENV === 'development' && getEnv('USE_LOCAL_API', 'false') === 'true';
+const API_HOST = isLocal ? 'http://localhost:3000' : TOAST_URL;
+const API_BASE_URL = `${API_HOST}/api`;
 const OAUTH_AUTHORIZE_URL = `${API_BASE_URL}/oauth/authorize`;
 const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
 const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
 const USER_PROFILE_URL = `${API_BASE_URL}/users/profile`;
 const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/users/subscription`;
+
+console.log('API 엔드포인트 설정:', {
+  TOAST_URL,
+  API_HOST,
+  API_BASE_URL,
+  USER_SUBSCRIPTION_URL
+});
 const REDIRECT_URI = 'toast-app://auth';
 
 // 토큰 저장소 (메모리)
@@ -653,7 +663,14 @@ async function authenticatedRequest(apiCall, options = {}) {
 async function fetchUserProfile() {
   return authenticatedRequest(async () => {
     const headers = await getAuthHeaders();
+    console.log('프로필 API 호출:', USER_PROFILE_URL);
+    console.log('사용 중인 인증 헤더:', {
+      authorization: headers.Authorization ? `Bearer ${headers.Authorization.substring(7, 15)}...` : 'none',
+      contentType: headers['Content-Type']
+    });
+
     const response = await axios.get(USER_PROFILE_URL, { headers });
+    console.log('프로필 API 응답 상태:', response.status);
     return response.data;
   });
 }
@@ -683,9 +700,14 @@ async function fetchSubscription() {
   return authenticatedRequest(async () => {
     const headers = await getAuthHeaders();
     console.log('구독 정보 API 호출:', USER_SUBSCRIPTION_URL);
+    console.log('사용 중인 인증 헤더:', {
+      authorization: headers.Authorization ? `Bearer ${headers.Authorization.substring(7, 15)}...` : 'none',
+      contentType: headers['Content-Type']
+    });
 
     const response = await axios.get(USER_SUBSCRIPTION_URL, { headers });
     console.log('구독 정보 API 응답 상태:', response.status);
+    console.log('구독 정보 API 응답 헤더:', response.headers);
 
     if (!response.data) {
       console.log('응답에 데이터 없음');
@@ -806,6 +828,11 @@ async function updatePageGroupSettings() {
     const isAuthenticated = !!currentToken;
     console.log('토큰 검증 결과:', isAuthenticated ? '토큰 있음' : '토큰 없음');
 
+    // 사용자 권한별 페이지 그룹 수 설정:
+    // 1. 인증되지 않은 사용자: 1개 페이지
+    // 2. 인증된 사용자: 3개 페이지
+    // 3. 구독 또는 VIP 사용자: 9개 페이지
+
     // 기본값 설정: 인증되지 않은 사용자는 1개 페이지
     let pageGroups = 1;
     let isSubscribed = false;
@@ -814,7 +841,7 @@ async function updatePageGroupSettings() {
 
     // 인증된 사용자인 경우
     if (isAuthenticated) {
-      // 인증된 상태 설정 (최소 3개 페이지)
+      // 인증된 상태 설정 (기본 3개 페이지)
       pageGroups = 3;
       console.log('인증된 사용자: 기본 3개 페이지 설정');
 
@@ -836,12 +863,21 @@ async function updatePageGroupSettings() {
             console.error('구독 정보 조회 중 일반 오류:', subscription.error);
             // 다른 오류는 인증된 사용자 기본값 유지 (3개 페이지)
           }
-        } else if (subscription && subscription.active) {
-          // 구독 활성화 여부 확인
+        } else if (subscription && (subscription.active === true || subscription.is_subscribed === true)) {
+          // 구독 활성화 여부 확인 (active 또는 is_subscribed 필드로)
           console.log('활성 구독 발견: 9개 페이지 설정');
           isSubscribed = true;
-          subscribedUntil = subscription.expiresAt || '';
-          pageGroups = 9; // 구독자는 9개 페이지
+
+          // subscribed_until 또는 expiresAt 필드 확인
+          subscribedUntil = subscription.subscribed_until || subscription.expiresAt || '';
+
+          // page_groups 필드가 있으면 사용, 없으면 구독자에게 9페이지 제공
+          if (subscription.features && subscription.features.page_groups) {
+            pageGroups = subscription.features.page_groups;
+            console.log(`페이지 그룹 수를 서버에서 제공한 ${pageGroups}로 설정`);
+          } else {
+            pageGroups = 9; // 구독자 또는 VIP 사용자는 9개 페이지
+          }
         } else {
           console.log('활성 구독 없음: 기본 인증 사용자 유지 (3개 페이지)');
         }

@@ -25,7 +25,7 @@ OAuth 2.0은 사용자 인증 및 권한 부여를 위한 업계 표준 프로�
 Toast App은 OAuth 2.0의 Authorization Code Flow를 사용합니다:
 
 1. 사용자가 설정 페이지에서 "로그인" 버튼을 클릭합니다.
-2. Toast App은 시스템 기본 브라우저를 열어 웹 서비스의 인증 페이지(https://web.toast.sh/auth)로 리디렉션합니다.
+2. Toast App은 시스템 기본 브라우저를 열어 웹 서비스의 인증 페이지(https://web.toast.sh/oauth/authorize)로 리디렉션합니다.
 3. 사용자는 웹 서비스에서 로그인하고 Toast App에 대한 접근 권한을 승인합니다.
 4. 웹 서비스는 사용자를 커스텀 URI 스킴(toast-app://auth)으로 리디렉션하고 인증 코드를 전달합니다.
 5. Toast App은 이 URI를 인터셉트하여 인증 코드를 획득합니다.
@@ -44,7 +44,7 @@ https://web.toast.sh/api
 
 | 엔드포인트 | 메서드 | 설명 |
 |------------|--------|------|
-| `https://web.toast.sh/auth` | GET | 사용자 인증 및 앱 승인을 위한 웹 페이지 |
+| `/oauth/authorize` | GET | 사용자 인증 및 앱 승인을 위한 웹 페이지 |
 | `/oauth/token` | POST | 액세스 토큰 및 리프레시 토큰 발급/갱신 |
 | `/oauth/revoke` | POST | 토큰 무효화(로그아웃) |
 
@@ -60,7 +60,7 @@ https://web.toast.sh/api
 ### 인증 요청 (`/oauth/authorize`)
 
 ```
-https://web.toast.sh/auth?
+https://web.toast.sh/oauth/authorize?
   response_type=code&
   client_id=YOUR_CLIENT_ID&
   redirect_uri=toast-app://auth&
@@ -157,7 +157,7 @@ Authorization: Bearer ACCESS_TOKEN
   "plan": "premium",
   "subscribed_until": "2025-12-31T23:59:59Z",
   "features": {
-    "page_groups": 3,
+    "page_groups": 9,
     "advanced_actions": true,
     "cloud_sync": true
   },
@@ -190,6 +190,16 @@ Toast App은 다음과 같은 시점에 구독 정보를 동기화합니다:
 - 설정 페이지에 진입할 때
 - 사용자가 구독 상태를 수동으로 새로고침할 때
 - 일정 시간(12시간) 간격으로 백그라운드에서 자동 동기화
+
+### 사용자 권한별 페이지 그룹 수
+
+Toast App은 사용자의 인증 및 구독 상태에 따라 다음과 같이 페이지 그룹 수를 차등 제공합니다:
+
+| 사용자 유형 | 페이지 그룹 수 |
+|------------|--------------|
+| 인증되지 않은 사용자 | 1개 |
+| 인증된 사용자 | 3개 |
+| 구독 사용자 또는 VIP | 9개 |
 
 구독 정보를 받으면 config 저장소의 `subscription` 객체를 다음과 같이 업데이트합니다:
 
