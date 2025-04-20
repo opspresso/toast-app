@@ -12,6 +12,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld(
   'toast',
   {
+    // Modal state
+    setModalOpen: (isOpen) => ipcRenderer.send('modal-state-changed', isOpen),
+
     // Configuration
     getConfig: (key) => ipcRenderer.invoke('get-config', key),
 

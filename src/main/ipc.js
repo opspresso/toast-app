@@ -14,6 +14,17 @@ const { dialog, shell } = require('electron');
 const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortcuts');
 const auth = require('./auth');
 
+// 버튼 편집 모달 상태 추적
+let isModalOpen = false;
+
+/**
+ * 현재 모달이 열려있는지 확인하는 함수
+ * @returns {boolean} 모달 열림 상태
+ */
+function isModalOpened() {
+  return isModalOpen;
+}
+
 /**
  * Set up IPC handlers
  * @param {Object} windows - Object containing application windows
@@ -29,6 +40,12 @@ function setupIpcHandlers(windows) {
       windows.settings.webContents.send('protocol-data', url);
     }
   };
+
+  // 버튼 편집 모달 상태 변경 처리
+  ipcMain.on('modal-state-changed', (event, open) => {
+    isModalOpen = open;
+    console.log('Modal state changed:', isModalOpen ? 'open' : 'closed');
+  });
   // Execute an action
   ipcMain.handle('execute-action', async (event, action) => {
     try {
@@ -433,5 +450,6 @@ function setupIpcHandlers(windows) {
 }
 
 module.exports = {
-  setupIpcHandlers
+  setupIpcHandlers,
+  isModalOpened
 };

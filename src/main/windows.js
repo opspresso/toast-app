@@ -7,6 +7,7 @@
 const { BrowserWindow, app } = require('electron');
 const path = require('path');
 const { positionToastWindow } = require('./shortcuts');
+const { isModalOpened } = require('./ipc');
 
 // Store window references to prevent garbage collection
 const windows = {
@@ -95,7 +96,9 @@ function setupToastWindowEvents(toastWindow, config) {
   // Hide window when it loses focus if hideOnBlur is enabled
   toastWindow.on('blur', () => {
     const hideOnBlur = config.get('advanced.hideOnBlur');
-    if (hideOnBlur !== false) {
+
+    // 모달이 열려있지 않고 hideOnBlur 설정이 활성화된 경우에만 창 숨김
+    if (hideOnBlur !== false && !isModalOpened()) {
       // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
       toastWindow.webContents.send('before-hide');
       toastWindow.hide();

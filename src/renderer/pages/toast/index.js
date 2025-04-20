@@ -832,6 +832,9 @@ function editButtonSettings(button) {
   // Show input fields appropriate for current action type
   showActionFields(button.action || 'exec');
 
+  // 모달이 열렸음을 메인 프로세스에 알림
+  window.toast.setModalOpen(true);
+
   // Show modal
   buttonEditModal.classList.add('show');
 
@@ -843,6 +846,9 @@ function editButtonSettings(button) {
  * Close button edit modal
  */
 function closeButtonEditModal() {
+  // 모달이 닫혔음을 메인 프로세스에 알림
+  window.toast.setModalOpen(false);
+
   buttonEditModal.classList.remove('show');
   currentEditingButton = null;
 }
