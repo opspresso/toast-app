@@ -797,8 +797,18 @@ async function fetchSubscription() {
         is_subscribed: subscriptionData.is_subscribed || subscriptionData.active || false,
         // 만료일 필드 동기화 (expiresAt 또는 subscribed_until)
         expiresAt: subscriptionData.expiresAt || subscriptionData.subscribed_until || null,
-        subscribed_until: subscriptionData.subscribed_until || subscriptionData.expiresAt || null
+        subscribed_until: subscriptionData.subscribed_until || subscriptionData.expiresAt || null,
+        // VIP 상태 보존 (기본값은 false)
+        isVip: subscriptionData.isVip === true
       };
+
+      // VIP 사용자면 프리미엄 페이지 그룹 및 기능 보장
+      if (normalizedSubscription.isVip) {
+        console.log('VIP 사용자 확인됨 - 프리미엄 혜택 적용');
+        normalizedSubscription.active = true;
+        normalizedSubscription.is_subscribed = true;
+        normalizedSubscription.plan = 'premium';
+      }
 
       // features 객체가 없으면 기본값 사용
       if (!normalizedSubscription.features) {
