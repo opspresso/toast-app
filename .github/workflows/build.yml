@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies 📦
         run: npm ci
 
+      - name: Configure environment variables 🔑
+        run: |
+          echo "CLIENT_ID=${{ secrets.TOAST_CLIENT_ID }}" >> src/main/config/.env
+          echo "CLIENT_SECRET=${{ secrets.TOAST_CLIENT_SECRET }}" >> src/main/config/.env
+
       # macOS에서만 인증서 설정
       - name: Setup macOS certificates 🔑
         if: matrix.os == 'macos-latest'

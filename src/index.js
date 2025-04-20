@@ -6,9 +6,13 @@
  */
 
 const { app } = require('electron');
+const { loadEnv } = require('./main/config/env');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+
+// 환경 변수 로드
+loadEnv();
 
 // Import modules
 const { createConfigStore } = require('./main/config');
