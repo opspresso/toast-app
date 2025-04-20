@@ -415,7 +415,29 @@ function setupIpcHandlers(windows) {
       return await auth.fetchUserProfile();
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      throw error;
+
+      // 인증 관련 오류인지 확인
+      if (error.message && error.message.includes('Authentication failed')) {
+        // 유저에게 재로그인을 요청하는 상세 오류 반환
+        return {
+          success: false,
+          error: {
+            code: 'AUTH_ERROR',
+            message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
+            originalError: error.message
+          }
+        };
+      }
+
+      // 그 외 오류는 일반 오류로 처리
+      return {
+        success: false,
+        error: {
+          code: 'FETCH_ERROR',
+          message: '사용자 프로필 정보를 가져오는 중 오류가 발생했습니다.',
+          originalError: error.message
+        }
+      };
     }
   });
 
@@ -425,7 +447,29 @@ function setupIpcHandlers(windows) {
       return await auth.fetchSubscription();
     } catch (error) {
       console.error('Error fetching subscription:', error);
-      throw error;
+
+      // 인증 관련 오류인지 확인
+      if (error.message && error.message.includes('Authentication failed')) {
+        // 유저에게 재로그인을 요청하는 상세 오류 반환
+        return {
+          success: false,
+          error: {
+            code: 'AUTH_ERROR',
+            message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
+            originalError: error.message
+          }
+        };
+      }
+
+      // 그 외 오류는 일반 오류로 처리
+      return {
+        success: false,
+        error: {
+          code: 'FETCH_ERROR',
+          message: '구독 정보를 가져오는 중 오류가 발생했습니다.',
+          originalError: error.message
+        }
+      };
     }
   });
 

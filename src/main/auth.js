@@ -181,7 +181,7 @@ async function exchangeCodeForToken(code) {
 
 /**
  * 리프레시 토큰을 사용하여 새 액세스 토큰을 얻습니다
- * @returns {Promise<boolean>} 토큰 새로고침 성공 여부
+ * @returns {Promise<object>} 토큰 새로고침 결과 (success: boolean, error?: string)
  */
 async function refreshAccessToken() {
   try {
@@ -189,7 +189,11 @@ async function refreshAccessToken() {
     const refreshToken = currentRefreshToken || await getStoredRefreshToken();
 
     if (!refreshToken) {
-      throw new Error('No refresh token available');
+      console.error('No refresh token available');
+      return {
+        success: false,
+        error: 'No refresh token available'
+      };
     }
 
     // 토큰 갱신 요청 데이터 준비
@@ -216,10 +220,14 @@ async function refreshAccessToken() {
       await storeRefreshToken(refresh_token);
     }
 
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Failed to refresh access token:', error);
-    return false;
+    const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+    return {
+      success: false,
+      error: errorMessage
+    };
   }
 }
 
@@ -293,14 +301,16 @@ async function authenticatedRequest(apiCall) {
     // 토큰이 만료된 경우 (401 Unauthorized)
     if (error.response && error.response.status === 401) {
       // 토큰 갱신 시도
-      const refreshSucceeded = await refreshAccessToken();
+      const refreshResult = await refreshAccessToken();
 
-      if (refreshSucceeded) {
+      if (refreshResult.success) {
         // 갱신된 토큰으로 API 호출 재시도
         return await apiCall();
       } else {
-        // 토큰 갱신 실패
-        throw new Error('token expired');
+        // 토큰 갱신 실패 - 상세 에러 메시지 포함
+        console.error('Token refresh failed:', refreshResult.error);
+        // 사용자 재인증 필요 표시
+        throw new Error(`Authentication failed: ${refreshResult.error}. Please login again.`);
       }
     }
 
@@ -382,7 +392,7 @@ async function getAccessToken() {
 
 /**
  * 인증 상태와 구독 정보에 따라 페이지 그룹 개수를 업데이트합니다
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} 업데이트된 구독 정보 (성공 여부 포함)
  */
 async function updatePageGroupSettings() {
   try {
@@ -393,6 +403,7 @@ async function updatePageGroupSettings() {
     let pageGroups = 1;
     let isSubscribed = false;
     let subscribedUntil = '';
+    let authError = false;
 
     // 인증된 사용자인 경우
     if (isAuthenticated) {
@@ -403,15 +414,36 @@ async function updatePageGroupSettings() {
         // 구독 정보 가져오기
         const subscription = await fetchSubscription();
 
-        // 구독 활성화 여부 확인
-        if (subscription && subscription.active) {
+        // 구독 정보가 오류 객체인지 확인
+        if (subscription && subscription.error) {
+          // 인증 오류인 경우
+          if (subscription.error.code === 'AUTH_ERROR') {
+            console.error('Authentication error during subscription update:', subscription.error.message);
+            authError = true;
+            // 인증 오류 시 비인증 상태로 설정
+            isAuthenticated = false;
+            pageGroups = 1;
+          } else {
+            console.error('Error fetching subscription info:', subscription.error);
+            // 다른 오류는 인증된 사용자 기본값 유지
+          }
+        } else if (subscription && subscription.active) {
+          // 구독 활성화 여부 확인
           isSubscribed = true;
           subscribedUntil = subscription.expiresAt || '';
           pageGroups = 9; // 구독자는 9개 페이지
         }
       } catch (error) {
         console.error('Error fetching subscription info:', error);
-        // 구독 정보 가져오기 실패 시 인증된 사용자 기본값 유지
+
+        // 인증 관련 오류인지 확인
+        if (error.message && error.message.includes('Authentication failed')) {
+          authError = true;
+          // 인증 오류 시 비인증 상태로 설정
+          isAuthenticated = false;
+          pageGroups = 1;
+        }
+        // 다른 오류는 인증된 사용자 기본값 유지
       }
     }
 
@@ -426,14 +458,19 @@ async function updatePageGroupSettings() {
     console.log(`Page group settings updated: authenticated=${isAuthenticated}, subscribed=${isSubscribed}, pages=${pageGroups}`);
 
     return {
+      success: true,
       isAuthenticated,
       isSubscribed,
       subscribedUntil,
-      pageGroups
+      pageGroups,
+      authError
     };
   } catch (error) {
     console.error('Failed to update page group settings:', error);
-    throw error;
+    return {
+      success: false,
+      error: error.message || 'Unknown error updating page group settings'
+    };
   }
 }
 
@@ -445,19 +482,47 @@ async function updatePageGroupSettings() {
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   try {
     // 토큰 교환
-    const result = await exchangeCodeForToken(code);
+    const tokenResult = await exchangeCodeForToken(code);
 
-    if (result.success) {
+    if (tokenResult.success) {
       // 구독 정보 및 페이지 그룹 설정 업데이트
-      await updatePageGroupSettings();
+      const updateResult = await updatePageGroupSettings();
+
+      // 업데이트 결과 확인
+      if (!updateResult.success) {
+        console.error('Failed to update page group settings:', updateResult.error);
+        return {
+          success: true,
+          warning: '토큰이 성공적으로 교환되었지만 구독 정보 업데이트 중 오류가 발생했습니다.'
+        };
+      }
+
+      // 인증 오류가 있었는지 확인
+      if (updateResult.authError) {
+        console.error('Authentication error occurred during subscription update');
+        return {
+          success: false,
+          error: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
+          authError: true
+        };
+      }
+
+      // 업데이트 결과 합치기
+      return {
+        success: true,
+        isAuthenticated: updateResult.isAuthenticated,
+        isSubscribed: updateResult.isSubscribed,
+        subscribedUntil: updateResult.subscribedUntil,
+        pageGroups: updateResult.pageGroups
+      };
     }
 
-    return result;
+    return tokenResult;
   } catch (error) {
     console.error('Failed during token exchange and subscription update:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Unknown error during token exchange and subscription update'
     };
   }
 }
