@@ -28,11 +28,16 @@ contextBridge.exposeInMainWorld(
     executeAction: (action) => ipcRenderer.invoke('execute-action', action),
 
     // Window control
-    hideWindow: () => {
-      // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
-      window.dispatchEvent(new Event('before-window-hide'));
-      ipcRenderer.send('hide-toast');
+    hideWindow: async () => {
+      // 모달 상태 확인 후 모달이 열려있지 않은 경우에만 창 숨김
+      const isModalOpen = await ipcRenderer.invoke('is-modal-open');
+      if (!isModalOpen) {
+        // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+        window.dispatchEvent(new Event('before-window-hide'));
+        ipcRenderer.send('hide-toast');
+      }
     },
+
     showSettings: () => ipcRenderer.send('show-settings'),
 
     // Platform information
@@ -60,12 +65,19 @@ contextBridge.exposeInMainWorld(
 window.addEventListener('keydown', (event) => {
   // Close window on Escape key if hideOnEscape is enabled
   if (event.key === 'Escape') {
-    ipcRenderer.invoke('get-config', 'advanced.hideOnEscape')
-      .then(hideOnEscape => {
-        if (hideOnEscape !== false) {
-          // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
-          window.dispatchEvent(new Event('before-window-hide'));
-          ipcRenderer.send('hide-toast');
+    // 먼저 모달 상태를 확인
+    ipcRenderer.invoke('is-modal-open')
+      .then(isModalOpen => {
+        // 모달이 열려있지 않은 경우에만 hideOnEscape 설정 확인 및 창 숨김 처리
+        if (!isModalOpen) {
+          ipcRenderer.invoke('get-config', 'advanced.hideOnEscape')
+            .then(hideOnEscape => {
+              if (hideOnEscape !== false) {
+                // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+                window.dispatchEvent(new Event('before-window-hide'));
+                ipcRenderer.send('hide-toast');
+              }
+            });
         }
       });
   }

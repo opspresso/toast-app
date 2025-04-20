@@ -46,6 +46,12 @@ function setupIpcHandlers(windows) {
     isModalOpen = open;
     console.log('Modal state changed:', isModalOpen ? 'open' : 'closed');
   });
+
+  // 현재 모달 상태 반환 핸들러
+  ipcMain.handle('is-modal-open', () => {
+    return isModalOpen;
+  });
+
   // 창의 alwaysOnTop 속성 설정
   ipcMain.handle('set-always-on-top', (event, value) => {
     try {
