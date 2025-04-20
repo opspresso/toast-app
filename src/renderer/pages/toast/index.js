@@ -467,15 +467,26 @@ function updateUserButton() {
   userButton.innerHTML = ''; // 기존 내용 제거
 
   if (userProfile) {
-    if (userProfile.profile_image || userProfile.avatar) {
+    if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       // 프로필 이미지가 있는 경우
       const img = document.createElement('img');
-      img.src = userProfile.profile_image || userProfile.avatar;
+      img.src = userProfile.profile_image || userProfile.avatar || userProfile.image;
       img.alt = '프로필';
       img.style.width = '100%';
       img.style.height = '100%';
       img.style.objectFit = 'cover';
       img.style.borderRadius = '50%';
+
+      // 이미지 로드 오류 처리
+      img.onerror = function() {
+        // 이미지 로드 실패 시 이니셜로 대체
+        const initials = getInitials(userProfile.name || userProfile.display_name || '사용자');
+        userButton.textContent = initials;
+        userButton.style.fontSize = '12px';
+        userButton.style.backgroundColor = 'var(--primary-color)';
+        userButton.style.color = 'white';
+      };
+
       userButton.appendChild(img);
     } else {
       // 이미지가 없는 경우 이니셜 표시
@@ -500,11 +511,26 @@ function updateUserButton() {
 function updateProfileDisplay() {
   if (userProfile) {
     // 프로필 이미지 (아바타)
-    if (userProfile.profile_image || userProfile.avatar) {
-      profileAvatar.innerHTML = '';
+    profileAvatar.innerHTML = '';
+
+    if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       const img = document.createElement('img');
-      img.src = userProfile.profile_image || userProfile.avatar;
+      img.src = userProfile.profile_image || userProfile.avatar || userProfile.image;
       img.alt = '프로필 이미지';
+
+      // 이미지 로드 오류 처리
+      img.onerror = function() {
+        // 이미지 로드 실패 시 이니셜로 대체
+        profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || '사용자');
+      };
+
+      // 이미지 로드 완료 시 효과 적용
+      img.onload = function() {
+        img.style.opacity = 1;
+      };
+
+      img.style.opacity = 0;
+      img.style.transition = 'opacity 0.3s ease';
       profileAvatar.appendChild(img);
     } else {
       // 이미지가 없으면 이니셜 사용
