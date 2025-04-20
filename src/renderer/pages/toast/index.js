@@ -14,7 +14,7 @@ const addPageButton = document.getElementById('add-page-button');
 const removePageButton = document.getElementById('remove-page-button');
 const userButton = document.getElementById('user-button');
 
-// 로그인 및 사용자 정보 관련 요소
+// Login and user information related elements
 const loginLoadingOverlay = document.getElementById('login-loading-overlay');
 const profileModal = document.getElementById('profile-modal');
 const closeProfileModal = document.getElementById('close-profile-modal');
@@ -183,9 +183,9 @@ let currentPageIndex = 0; // Current page index
 let isSettingsMode = false; // Settings mode state
 let isSubscribed = true; // Subscription status (default: subscribed)
 let currentEditingButton = null; // Currently editing button
-let userProfile = null; // 사용자 프로필 정보
-let userSubscription = null; // 사용자 구독 정보
-let isLoggingIn = false; // 로그인 진행 상태
+let userProfile = null; // User profile information
+let userSubscription = null; // User subscription information
+let isLoggingIn = false; // Login progress status
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -271,7 +271,7 @@ function setupEventListeners() {
   // Settings mode toggle button
   settingsModeToggle.addEventListener('click', toggleSettingsMode);
 
-  // User button - 사용자 정보 버튼
+  // User button - User information button
   userButton.addEventListener('click', showUserProfile);
 
   // Add page button
@@ -280,7 +280,7 @@ function setupEventListeners() {
   // Remove page button
   removePageButton.addEventListener('click', removePage);
 
-  // 프로필 모달 관련 이벤트 리스너 설정
+  // Set up profile modal related event listeners
   closeProfileModal.addEventListener('click', hideProfileModal);
   closeProfileButton.addEventListener('click', hideProfileModal);
   logoutButton.addEventListener('click', handleLogout);
@@ -344,62 +344,62 @@ function setupEventListeners() {
 }
 
 /**
- * 로그인 프로세스 시작 및 로딩 화면 표시
+ * Start login process and show loading screen
  */
 async function initiateSignIn() {
   try {
-    // 로딩 화면 활성화
+    // Activate loading screen
     showLoginLoadingScreen();
     isLoggingIn = true;
 
-    // 로그인 프로세스 시작
+    // Start login process
     const result = await window.toast.initiateLogin();
 
     if (result.success) {
-      // 사용자 정보 및 구독 정보 가져오기
+      // Get user profile and subscription information
       await fetchUserProfileAndSubscription();
 
-      showStatus('로그인 성공', 'success');
+      showStatus('Login successful', 'success');
 
-      // 로그인 성공 시 사용자 프로필 모달 표시
+      // Show user profile modal on successful login
       showUserProfile();
     } else {
-      showStatus(`로그인 실패: ${result.error || '알 수 없는 오류'}`, 'error');
+      showStatus(`Login failed: ${result.error || 'Unknown error'}`, 'error');
     }
   } catch (error) {
-    console.error('로그인 중 오류 발생:', error);
-    showStatus(`로그인 오류: ${error.message || '알 수 없는 오류'}`, 'error');
+    console.error('Error during login:', error);
+    showStatus(`Login error: ${error.message || 'Unknown error'}`, 'error');
   } finally {
-    // 로딩 화면 비활성화
+    // Deactivate loading screen
     hideLoginLoadingScreen();
     isLoggingIn = false;
   }
 }
 
 /**
- * 사용자 프로필 및 구독 정보 가져오기
+ * Fetch user profile and subscription information
  */
 async function fetchUserProfileAndSubscription() {
   try {
-    // 사용자 프로필 가져오기
+    // Fetch user profile
     const profileResult = await window.toast.fetchUserProfile();
     if (!profileResult.error) {
       userProfile = profileResult;
-      // 사용자 버튼 UI 즉시 업데이트
+      // Update user button UI immediately
       updateUserButton();
     } else {
-      console.error('사용자 프로필 정보를 가져오지 못했습니다:', profileResult.error);
+      console.error('Failed to fetch user profile information:', profileResult.error);
     }
 
-    // 구독 정보 가져오기
+    // Fetch subscription information
     const subscriptionResult = await window.toast.fetchSubscription();
     if (!subscriptionResult.error) {
       userSubscription = subscriptionResult;
 
-      // 구독 상태 업데이트
+      // Update subscription status
       isSubscribed = subscriptionResult.active || subscriptionResult.is_subscribed || false;
     } else {
-      console.error('구독 정보를 가져오지 못했습니다:', subscriptionResult.error);
+      console.error('Failed to fetch subscription information:', subscriptionResult.error);
     }
 
     return {
@@ -407,80 +407,80 @@ async function fetchUserProfileAndSubscription() {
       subscription: userSubscription
     };
   } catch (error) {
-    console.error('사용자 정보 가져오기 오류:', error);
+    console.error('Error fetching user information:', error);
     throw error;
   }
 }
 
 /**
- * 로그인 로딩 화면 표시
+ * Show login loading screen
  */
 function showLoginLoadingScreen() {
   loginLoadingOverlay.classList.add('show');
 }
 
 /**
- * 로그인 로딩 화면 숨기기
+ * Hide login loading screen
  */
 function hideLoginLoadingScreen() {
   loginLoadingOverlay.classList.remove('show');
 }
 
 /**
- * 사용자 프로필 모달 표시
+ * Show user profile modal
  */
 async function showUserProfile() {
-  // 사용자 프로필 정보가 없으면 가져오기
+  // Fetch user profile information if not available
   if (!userProfile || !userSubscription) {
     try {
-      showStatus('사용자 정보를 가져오는 중...', 'info');
+      showStatus('Fetching user information...', 'info');
       showLoginLoadingScreen();
 
       const result = await fetchUserProfileAndSubscription();
       hideLoginLoadingScreen();
 
       if (!result.profile || !result.subscription) {
-        // 사용자 정보가 없으면 로그인 실행
+        // Execute login if user information doesn't exist
         initiateSignIn();
         return;
       }
     } catch (error) {
       hideLoginLoadingScreen();
-      showStatus('사용자 정보를 가져오지 못했습니다. 다시 로그인 해주세요.', 'error');
+      showStatus('Failed to fetch user information. Please login again.', 'error');
       initiateSignIn();
       return;
     }
   }
 
-  // 프로필 정보 채우기
+  // Fill profile information
   updateProfileDisplay();
 
-  // 모달 표시
+  // Show modal
   profileModal.classList.add('show');
   window.toast.setModalOpen(true);
 }
 
 /**
- * 사용자 버튼에 프로필 이미지 표시
+ * Display profile image in user button
  */
 function updateUserButton() {
-  userButton.innerHTML = ''; // 기존 내용 제거
+  userButton.innerHTML = ''; // Remove existing content
 
   if (userProfile) {
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
-      // 프로필 이미지가 있는 경우
+      // If profile image exists
       const img = document.createElement('img');
       img.src = userProfile.profile_image || userProfile.avatar || userProfile.image;
-      img.alt = '프로필';
+      img.alt = 'Profile';
       img.style.width = '100%';
       img.style.height = '100%';
       img.style.objectFit = 'cover';
       img.style.borderRadius = '50%';
 
-      // 이미지 로드 오류 처리
+      // Handle image load error
       img.onerror = function() {
-        // 이미지 로드 실패 시 이니셜로 대체
-        const initials = getInitials(userProfile.name || userProfile.display_name || '사용자');
+        // Use initials as fallback if image load fails
+        const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
         userButton.textContent = initials;
         userButton.style.fontSize = '12px';
         userButton.style.backgroundColor = 'var(--primary-color)';
@@ -489,15 +489,15 @@ function updateUserButton() {
 
       userButton.appendChild(img);
     } else {
-      // 이미지가 없는 경우 이니셜 표시
-      const initials = getInitials(userProfile.name || userProfile.display_name || '사용자');
+      // Display initials if no image available
+      const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
       userButton.textContent = initials;
       userButton.style.fontSize = '12px';
       userButton.style.backgroundColor = 'var(--primary-color)';
       userButton.style.color = 'white';
     }
   } else {
-    // 로그인하지 않은 경우 기본 아이콘
+    // Default icon if not logged in
     userButton.textContent = '👤';
     userButton.style.fontSize = '16px';
     userButton.style.backgroundColor = 'transparent';
@@ -506,25 +506,25 @@ function updateUserButton() {
 }
 
 /**
- * 프로필 표시 업데이트
+ * Update profile display
  */
 function updateProfileDisplay() {
   if (userProfile) {
-    // 프로필 이미지 (아바타)
+    // Profile image (avatar)
     profileAvatar.innerHTML = '';
 
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       const img = document.createElement('img');
       img.src = userProfile.profile_image || userProfile.avatar || userProfile.image;
-      img.alt = '프로필 이미지';
+      img.alt = 'Profile image';
 
-      // 이미지 로드 오류 처리
+      // Handle image load error
       img.onerror = function() {
-        // 이미지 로드 실패 시 이니셜로 대체
-        profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || '사용자');
+        // Replace with initials if image load fails
+        profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || 'User');
       };
 
-      // 이미지 로드 완료 시 효과 적용
+      // Apply effect when image load completes
       img.onload = function() {
         img.style.opacity = 1;
       };
@@ -533,44 +533,44 @@ function updateProfileDisplay() {
       img.style.transition = 'opacity 0.3s ease';
       profileAvatar.appendChild(img);
     } else {
-      // 이미지가 없으면 이니셜 사용
-      profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || '사용자');
+      // Use initials if no image available
+      profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || 'User');
     }
 
-    // 이름 및 이메일 설정
-    profileName.textContent = userProfile.name || userProfile.display_name || '사용자';
+    // Set name and email
+    profileName.textContent = userProfile.name || userProfile.display_name || 'User';
     profileEmail.textContent = userProfile.email || '';
 
-    // 사용자 버튼 업데이트
+    // Update user button
     updateUserButton();
   }
 
   if (userSubscription) {
-    // 구독 상태 및 플랜 (한 줄로 표시)
+    // Subscription status and plan (displayed in one line)
     const isActive = userSubscription.active || userSubscription.is_subscribed || false;
-    subscriptionStatus.textContent = isActive ? '활성' : '비활성';
+    subscriptionStatus.textContent = isActive ? 'Active' : 'Inactive';
     subscriptionStatus.className = 'subscription-value ' + (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
 
-    // 구독 플랜
+    // Subscription plan
     const planName = (userSubscription.plan || 'free').toUpperCase();
     subscriptionPlan.textContent = planName;
     if (planName === 'PREMIUM' || planName === 'PRO') {
       subscriptionPlan.classList.add('subscription-plan-premium');
     }
 
-    // 만료일
+    // Expiry date
     const expiryDate = userSubscription.expiresAt || userSubscription.subscribed_until;
-    subscriptionExpiry.textContent = expiryDate ? new Date(expiryDate).toLocaleDateString() : '없음';
+    subscriptionExpiry.textContent = expiryDate ? new Date(expiryDate).toLocaleDateString() : 'None';
 
-    // 페이지 그룹 정보는 저장은 하되 표시하지 않음
+    // Page group information is saved but not displayed
     const pageGroups = userSubscription.features?.page_groups || '1';
     subscriptionPages.textContent = pageGroups;
-    // HTML에서 이미 display: none 처리함
+    // Already set display: none in HTML
   }
 }
 
 /**
- * 사용자 이름에서 이니셜 추출
+ * Extract initials from user name
  */
 function getInitials(name) {
   return name
@@ -582,7 +582,7 @@ function getInitials(name) {
 }
 
 /**
- * 프로필 모달 숨기기
+ * Hide profile modal
  */
 function hideProfileModal() {
   profileModal.classList.remove('show');
@@ -590,20 +590,20 @@ function hideProfileModal() {
 }
 
 /**
- * 앱 설정을 기본값으로 초기화
- * @param {Object} options - 초기화 옵션
- * @param {boolean} options.keepAppearance - 외관 설정 유지 여부
- * @returns {Promise<Object>} 결과 객체
+ * Reset app settings to default values
+ * @param {Object} options - Reset options
+ * @param {boolean} options.keepAppearance - Whether to keep appearance settings
+ * @returns {Promise<Object>} Result object
  */
 async function resetToDefaults(options = { keepAppearance: true }) {
   try {
-    showStatus('설정을 초기화하는 중...', 'info');
+    showStatus('Resetting settings...', 'info');
 
-    // resetToDefaults 함수 호출 (preload에서 노출된 함수)
+    // Call resetToDefaults function (exposed from preload)
     const result = await window.toast.resetToDefaults(options);
 
     if (result.success) {
-      // 기본 페이지 생성 (페이지가 없는 경우)
+      // Create default page (if no pages exist)
       if (pages.length === 0) {
         const newPage = {
           name: 'Page 1',
@@ -615,50 +615,50 @@ async function resetToDefaults(options = { keepAppearance: true }) {
         await window.toast.saveConfig({ pages });
       }
 
-      // UI 갱신
+      // Update UI
       currentPageIndex = 0;
       renderPagingButtons();
       showCurrentPageButtons();
 
-      showStatus('설정이 기본값으로 초기화되었습니다.', 'success');
+      showStatus('Settings have been reset to defaults.', 'success');
       return { success: true };
     } else {
-      showStatus(`설정 초기화 실패: ${result.error}`, 'error');
+      showStatus(`Failed to reset settings: ${result.error}`, 'error');
       return { success: false, error: result.error };
     }
   } catch (error) {
-    console.error('설정 초기화 오류:', error);
-    showStatus(`설정 초기화 오류: ${error.message || '알 수 없는 오류'}`, 'error');
+    console.error('Error resetting settings:', error);
+    showStatus(`Error resetting settings: ${error.message || 'Unknown error'}`, 'error');
     return { success: false, error: error.message };
   }
 }
 
 /**
- * 로그아웃 처리
+ * Handle logout process
  */
 async function handleLogout() {
   try {
-    showStatus('로그아웃 중...', 'info');
+    showStatus('Logging out...', 'info');
     const result = await window.toast.logout();
 
     if (result) {
-      // 사용자 프로필 및 구독 정보 초기화
+      // Reset user profile and subscription information
       userProfile = null;
       userSubscription = null;
       isSubscribed = false;
 
-      // 현재 설정 가져오기 (백업용)
+      // Get current settings (for backup)
       const currentAppearance = await window.toast.getConfig('appearance') || {};
 
-      // 전체 설정 초기화 시도
+      // Attempt to reset all settings
       try {
-        // logoutAndResetPageGroups 호출 (auth.js에서 제공하는 함수)
+        // Call logoutAndResetPageGroups (function provided in auth.js)
         await window.toast.invoke('logoutAndResetPageGroups');
-        console.log('전체 설정 초기화 성공');
+        console.log('Settings reset successful');
       } catch (resetError) {
-        console.error('설정 초기화 중 오류:', resetError);
+        console.error('Error resetting settings:', resetError);
 
-        // 대체 방법: 수동으로 설정 리셋
+        // Alternative method: manually reset settings
         await window.toast.saveConfig({
           subscription: {
             isAuthenticated: false,
@@ -675,38 +675,38 @@ async function handleLogout() {
         });
       }
 
-      // 외관 설정은 유지하기 위해 다시 저장
+      // Save appearance settings again to preserve them
       if (currentAppearance && Object.keys(currentAppearance).length > 0) {
         await window.toast.saveConfig({ appearance: currentAppearance });
       }
 
-      // 페이지 수 제한 (비인증 사용자는 1페이지로 제한)
+      // Limit number of pages (unauthenticated users are limited to 1 page)
       if (pages.length > 1) {
-        // 첫 번째 페이지만 유지하고 나머지 삭제
+        // Keep only the first page and delete the rest
         const firstPage = pages[0];
         pages = [firstPage];
 
-        // 현재 페이지를 첫 번째 페이지로 설정
+        // Set current page to the first page
         currentPageIndex = 0;
 
-        // UI 업데이트
+        // Update UI
         renderPagingButtons();
         showCurrentPageButtons();
 
-        // 구성 저장
+        // Save configuration
         await window.toast.saveConfig({ pages });
 
-        showStatus('인증되지 않은 사용자는 1개의 페이지만 사용할 수 있습니다. 첫 번째 페이지만 유지됩니다.', 'info');
+        showStatus('Unauthenticated users can only use 1 page. Only the first page has been kept.', 'info');
       }
 
-      showStatus('로그아웃 되었습니다.', 'success');
+      showStatus('Logged out successfully.', 'success');
       hideProfileModal();
     } else {
-      showStatus('로그아웃 실패', 'error');
+      showStatus('Logout failed', 'error');
     }
   } catch (error) {
-    console.error('로그아웃 오류:', error);
-    showStatus(`로그아웃 오류: ${error.message || '알 수 없는 오류'}`, 'error');
+    console.error('Logout error:', error);
+    showStatus(`Logout error: ${error.message || 'Unknown error'}`, 'error');
   }
 }
 
@@ -763,28 +763,28 @@ function showCurrentPageButtons() {
 function addNewPage() {
   const pageNumber = pages.length + 1;
 
-  // 인증 여부 확인
+  // Check authentication status
   if (!userProfile) {
-    // 인증되지 않은 사용자는 최대 1개 페이지만 가능
+    // Unauthenticated users are limited to 1 page only
     if (pageNumber > 1) {
-      showStatus('인증되지 않은 사용자는 1개의 페이지만 사용할 수 있습니다. 로그인해 주세요.', 'error');
-      // 로그인 유도
+      showStatus('Unauthenticated users can only use 1 page. Please login.', 'error');
+      // Prompt login
       setTimeout(() => {
-        showUserProfile(); // 로그인 모달 표시
+        showUserProfile(); // Show login modal
       }, 1500);
       return;
     }
   } else {
-    // 인증된 사용자 중 구독자가 아닌 경우 3개 제한
+    // Free authenticated users are limited to 3 pages
     if (pageNumber > 3 && !isSubscribed) {
-      showStatus('무료 사용자는 최대 3개의 페이지만 사용할 수 있습니다. 구독을 통해 더 많은 페이지를 추가하세요.', 'error');
+      showStatus('Free users can only use up to 3 pages. Subscribe to add more pages.', 'error');
       return;
     }
   }
 
-  // Maximum 9 pages limit (구독 사용자)
+  // Maximum 9 pages limit (for subscribed users)
   if (pageNumber > 9) {
-    showStatus('최대 9개의 페이지만 사용할 수 있습니다.', 'error');
+    showStatus('Maximum of 9 pages allowed.', 'error');
     return;
   }
 
@@ -822,9 +822,9 @@ function addNewPage() {
  * @param {KeyboardEvent} event - Keyboard event
  */
 function handleKeyDown(event) {
-  // 모달이 열려있을 때는 단축키를 무시합니다 (ESC 키 제외)
+  // Ignore shortcuts when modal is open (except ESC key)
   if (buttonEditModal.classList.contains('show') || profileModal.classList.contains('show')) {
-    // ESC 키는 모달 닫기용으로만 사용 (이미 별도 이벤트 리스너에서 처리됨)
+    // ESC key is only used to close modals (already handled in separate event listeners)
     return;
   }
 
@@ -860,12 +860,12 @@ function handleKeyDown(event) {
       }
       break;
     case ',':  // Toggle settings mode when comma key is pressed
-      // cmd+, (or ctrl+, on Windows) 단축키로는 설정 창을 엽니다
+      // Open settings window with cmd+, (or ctrl+, on Windows) shortcut
       if (event.metaKey || event.ctrlKey) {
         event.preventDefault();
         window.toast.showSettings();
       } else {
-        // 일반 콤마 키는 계속 설정 모드 토글로 작동
+        // Regular comma key continues to toggle settings mode
         event.preventDefault();
         toggleSettingsMode();
       }
@@ -1076,17 +1076,17 @@ function renderButtons(buttons) {
  */
 function getFaviconFromUrl(url) {
   try {
-    // URL 객체 생성
+    // Create URL object
     const urlObj = new URL(url);
-    // 기본 favicon URL 반환 (도메인/favicon.ico)
+    // Return default favicon URL (domain/favicon.ico)
     return `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
   } catch (e) {
-    // URL 파싱 오류 시 Google의 favicon 서비스 사용 (예외 처리)
+    // Use Google's favicon service when URL parsing fails (fallback)
     if (url && url.includes('://')) {
       const domain = url.split('://')[1].split('/')[0];
       return `https://www.google.com/s2/favicons?domain=${domain}`;
     }
-    // 모든 경우에 대한 기본값
+    // Default value for all cases
     return '';
   }
 }
@@ -1121,35 +1121,35 @@ function createButtonElement(button) {
   // Set button icon
   const iconElement = buttonElement.querySelector('.button-icon');
 
-  // URL 타입이고 아이콘이 비어있지만 URL이 있는 경우, URL의 favicon 사용
+  // If URL type and icon is empty but URL exists, use URL's favicon
   if (button.action === 'open' && (!button.icon || button.icon.trim() === '') && button.url) {
-    // URL에서 도메인 추출하여 favicon 경로 생성
+    // Extract domain from URL and create favicon path
     const faviconUrl = getFaviconFromUrl(button.url);
     iconElement.textContent = '';
     const img = document.createElement('img');
     img.src = faviconUrl;
     img.alt = button.name || 'Button icon';
     img.onerror = function() {
-      // favicon 로드 실패 시 기본 아이콘으로 대체
+      // Use default icon if favicon load fails
       iconElement.textContent = '🌐';
     };
     iconElement.appendChild(img);
   } else if (button.action === 'application' && (!button.icon || button.icon.trim() === '')) {
-    // 애플리케이션 타입이고 아이콘이 비어있는 경우 기본 앱 아이콘 사용
+    // Use default app icon if application type and icon is empty
     iconElement.textContent = '🚀';
   } else if (button.icon && isURL(button.icon)) {
-    // URL 이미지인 경우 이미지 태그 생성
+    // Create image tag if icon is a URL image
     iconElement.textContent = '';
     const img = document.createElement('img');
     img.src = button.icon;
     img.alt = button.name || 'Button icon';
     img.onerror = function() {
-      // 이미지 로드 실패 시 기본 아이콘으로 대체
+      // Replace with default icon if image load fails
       iconElement.textContent = '🔘';
     };
     iconElement.appendChild(img);
   } else {
-    // 이모지 또는 일반 텍스트인 경우
+    // Use as emoji or plain text
     iconElement.textContent = button.icon || '🔘';
   }
 
@@ -1230,41 +1230,41 @@ function setupModalEventListeners() {
   if (browseApplicationButton) {
     browseApplicationButton.addEventListener('click', async () => {
       try {
-        // Application 폴더를 기본 경로로 설정
+        // Set Application folder as default path
         const defaultPath = window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
 
-        // 파일 선택 대화상자 옵션 설정
+        // Configure file selection dialog options
         const options = {
-          title: '애플리케이션 선택',
+          title: 'Select Application',
           defaultPath: defaultPath,
           properties: ['openFile'],
           filters: window.toast?.platform === 'darwin'
-            ? [{ name: '애플리케이션', extensions: ['app'] }]
-            : [{ name: '실행 파일', extensions: ['exe'] }]
+            ? [{ name: 'Applications', extensions: ['app'] }]
+            : [{ name: 'Executable Files', extensions: ['exe'] }]
         };
 
-        // 현재 토스트 창의 위치를 저장하기 위해 ipcRenderer 호출
+        // Call ipcRenderer to save current toast window position
         const windowPosition = await window.toast.getWindowPosition();
 
-        // 토스트 창 숨기기 (파일 선택 대화상자가 가장 앞에 표시되도록)
+        // Hide toast window (so file selection dialog appears in front)
         await window.toast.hideWindowTemporarily();
 
         try {
-          // 파일 선택 대화상자 호출
+          // Call file selection dialog
           const result = await window.toast.showOpenDialog(options);
 
           if (!result.canceled && result.filePaths.length > 0) {
-            // 선택한 애플리케이션 경로를 입력 필드에 설정
+            // Set selected application path to input field
             editButtonApplicationInput.value = result.filePaths[0];
           }
         } finally {
-          // 파일 선택 대화상자가 닫힌 후 토스트 창 다시 표시
+          // Show toast window again after file selection dialog is closed
           await window.toast.showWindowAfterDialog(windowPosition);
         }
       } catch (error) {
-        console.error('애플리케이션 선택 중 오류 발생:', error);
-        showStatus('애플리케이션 선택 중 오류가 발생했습니다.', 'error');
-        // 오류 발생 시에도 alwaysOnTop 속성을 복원
+        console.error('Error selecting application:', error);
+        showStatus('An error occurred while selecting the application.', 'error');
+        // Restore alwaysOnTop property even if an error occurs
         await window.toast.setAlwaysOnTop(true);
       }
     });
@@ -1312,7 +1312,7 @@ function editButtonSettings(button) {
   // Show input fields appropriate for current action type
   showActionFields(button.action || 'exec');
 
-  // 모달이 열렸음을 메인 프로세스에 알림
+  // Notify main process that modal is open
   window.toast.setModalOpen(true);
 
   // Show modal
@@ -1326,7 +1326,7 @@ function editButtonSettings(button) {
  * Close button edit modal
  */
 function closeButtonEditModal() {
-  // 모달이 닫혔음을 메인 프로세스에 알림
+  // Notify main process that modal is closed
   window.toast.setModalOpen(false);
 
   buttonEditModal.classList.remove('show');
@@ -1345,16 +1345,16 @@ function showActionFields(actionType) {
   shortcutInputGroup.style.display = 'none';
   applicationInputGroup.style.display = 'none';
 
-  // 아이콘 필드 힌트 업데이트
+  // Update icon field hint
   const iconHint = document.querySelector('.field-hint');
   if (iconHint) {
-    // 타입별 맞춤 힌트 표시
+    // Show custom hint based on type
     if (actionType === 'open') {
-      iconHint.textContent = '이모지 사용 또는 비워두면 URL의 favicon이 자동으로 사용됩니다';
+      iconHint.textContent = 'Use emoji or leave empty to automatically use URL favicon';
     } else if (actionType === 'application') {
-      iconHint.textContent = '이모지 사용 또는 비워두면 앱 기본 아이콘이 사용됩니다';
+      iconHint.textContent = 'Use emoji or leave empty to use default app icon';
     } else {
-      iconHint.textContent = '이모지(예: 🚀) 또는 이미지 URL 사용(https://...)';
+      iconHint.textContent = 'Use emoji (e.g. 🚀) or an image URL (https://...)';
     }
   }
 
@@ -1471,14 +1471,14 @@ function applyAppearanceSettings(appearance) {
 
   // Apply theme
   if (appearance.theme) {
-    // 먼저 data-theme 속성 제거 (기존 테마 초기화)
+    // First remove data-theme attribute (reset existing theme)
     document.documentElement.removeAttribute('data-theme');
 
-    // 시스템 테마가 아닌 경우에만 data-theme 속성 설정
+    // Set data-theme attribute only if it's not system theme
     if (appearance.theme === 'light' || appearance.theme === 'dark') {
       document.documentElement.setAttribute('data-theme', appearance.theme);
     }
-    // 시스템 테마인 경우 data-theme 속성 없이 media query가 작동하도록 함
+    // For system theme, let media query work without data-theme attribute
   }
 
   // Apply button layout

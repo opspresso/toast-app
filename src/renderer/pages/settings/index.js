@@ -151,7 +151,7 @@ async function initializeAuthState() {
     }
   } catch (error) {
     console.error('Failed to initialize auth state:', error);
-    // 오류 발생 시 로그인 UI 표시
+    // Show login UI when error occurs
     updateAuthStateUI(false);
   }
 }
@@ -191,7 +191,7 @@ function updateAuthStateUI(isLoggedIn) {
  */
 async function fetchUserProfile() {
   try {
-    // 토큰이 있는지 먼저 확인
+    // Check if token exists first
     const token = await window.settings.getAuthToken();
     if (!token) {
       console.log('No auth token available, skipping profile fetch');
@@ -221,10 +221,10 @@ async function fetchUserProfile() {
  */
 async function fetchSubscriptionInfo() {
   try {
-    // 로딩 상태 표시
+    // Show loading state
     setLoading(subscriptionLoading, true);
 
-    // 토큰이 있는지 먼저 확인
+    // Check if token exists first
     const token = await window.settings.getAuthToken();
     if (!token) {
       console.log('No auth token available, skipping subscription fetch');
@@ -243,11 +243,11 @@ async function fetchSubscriptionInfo() {
       saveSubscriptionToConfig(subscription);
     }
 
-    // 로딩 상태 숨김
+    // Hide loading state
     setLoading(subscriptionLoading, false);
   } catch (error) {
     console.error('Failed to fetch subscription info:', error);
-    // 로딩 상태 숨김
+    // Hide loading state
     setLoading(subscriptionLoading, false);
 
     // Handle token expired case
@@ -331,9 +331,9 @@ function handleTokenExpired() {
 }
 
 /**
- * 로딩 상태 표시/숨김 처리
- * @param {HTMLElement} loadingElement - 로딩 인디케이터 요소
- * @param {boolean} isLoading - 로딩 상태 여부
+ * Show/hide loading state
+ * @param {HTMLElement} loadingElement - Loading indicator element
+ * @param {boolean} isLoading - Loading state
  */
 function setLoading(loadingElement, isLoading) {
   if (isLoading) {
@@ -344,33 +344,33 @@ function setLoading(loadingElement, isLoading) {
 }
 
 /**
- * 사용자 프로필 및 구독 정보를 로드하고 UI를 업데이트합니다
+ * Load user profile and subscription information and update UI
  * @returns {Promise<void>}
  */
 async function loadUserDataAndUpdateUI() {
   try {
-    // 프로필 정보 로드
+    // Load profile information
     await fetchUserProfile();
 
-    // 구독 정보 로드
+    // Load subscription information
     await fetchSubscriptionInfo();
 
-    // 모든 데이터 로드 후 UI 업데이트
+    // Update UI after loading all data
     updateAuthStateUI(true);
 
-    // 로딩 인디케이터 숨김
+    // Hide loading indicator
     setLoading(authLoading, false);
     loginButton.disabled = false;
   } catch (error) {
     console.error('Error loading user data:', error);
 
-    // 오류 발생 시 로그인 상태로 돌아가기
+    // Return to login state if error occurs
     updateAuthStateUI(false);
     setLoading(authLoading, false);
     loginButton.disabled = false;
 
-    // 사용자에게 오류 알림
-    alert(`데이터 로딩 실패: ${error.message || '알 수 없는 오류'}`);
+    // Notify user of error
+    alert(`Data loading failed: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -379,7 +379,7 @@ async function loadUserDataAndUpdateUI() {
  */
 async function handleLogin() {
   try {
-    // 로딩 상태 표시 및 버튼 비활성화
+    // Show loading state and disable button
     setLoading(authLoading, true);
     loginButton.disabled = true;
 
@@ -387,18 +387,18 @@ async function handleLogin() {
     const success = await window.settings.initiateLogin();
 
     if (success) {
-      // 인증 성공 - 사용자 데이터를 로드하고 UI 업데이트
-      // 참고: UI는 데이터 로드 후 loadUserDataAndUpdateUI에서 업데이트됨
+      // Authentication successful - load user data and update UI
+      // Note: UI is updated in loadUserDataAndUpdateUI after data loading
       await loadUserDataAndUpdateUI();
     } else {
-      // 로그인 프로세스 시작 실패
+      // Login process start failed
       setLoading(authLoading, false);
       loginButton.disabled = false;
     }
   } catch (error) {
     console.error('Login error:', error);
     alert(`Login failed: ${error.message || 'Unknown error'}`);
-    // 로딩 상태 숨김 및 버튼 활성화
+    // Hide loading state and enable button
     setLoading(authLoading, false);
     loginButton.disabled = false;
   }
@@ -433,7 +433,7 @@ function handleManageSubscription() {
  */
 async function handleRefreshSubscription() {
   try {
-    // 버튼 비활성화 및 로딩 표시
+    // Disable button and show loading
     refreshSubscriptionButton.disabled = true;
     refreshSubscriptionButton.textContent = 'Refreshing...';
     setLoading(subscriptionLoading, true);
@@ -441,7 +441,7 @@ async function handleRefreshSubscription() {
     // Fetch latest subscription info
     await fetchSubscriptionInfo();
 
-    // 성공 메시지 표시 후 버튼 원래대로 복원
+    // Show success message and restore button
     refreshSubscriptionButton.textContent = 'Refreshed!';
     setTimeout(() => {
       refreshSubscriptionButton.textContent = 'Refresh Status';
@@ -449,10 +449,10 @@ async function handleRefreshSubscription() {
     }, 2000);
   } catch (error) {
     console.error('Failed to refresh subscription:', error);
-    // 로딩 상태 숨김
+    // Hide loading state
     setLoading(subscriptionLoading, false);
 
-    // 에러 메시지 표시 후 버튼 원래대로 복원
+    // Show error message and restore button
     refreshSubscriptionButton.textContent = 'Refresh Failed';
     setTimeout(() => {
       refreshSubscriptionButton.textContent = 'Refresh Status';
@@ -482,15 +482,15 @@ function setupEventListeners() {
 
   // Appearance settings
   themeSelect.addEventListener('change', () => {
-    // 현재 테마를 로컬에 적용
+    // Apply theme locally
     applyTheme(themeSelect.value);
 
-    // // Toast 창에도 즉시 테마 적용 (Toast 창 표시)
+    // // Also apply theme to Toast window immediately (show Toast window)
     // window.settings.setConfig('appearance', {
     //   ...config.appearance,
     //   theme: themeSelect.value
     // }).then(() => {
-    //   // Toast 창 표시 (테마 변경 확인용)
+    //   // Show Toast window (to verify theme change)
     //   window.settings.showToast();
     // });
 
@@ -525,17 +525,17 @@ function setupEventListeners() {
   // Hotkey recording
   document.addEventListener('keydown', handleHotkeyRecording);
 
-  // ESC 키로 설정 창 닫기
+  // Close settings window with ESC key
   document.addEventListener('keydown', (event) => {
-    // ESC 키가 눌렸고, 단축키 녹화 모드가 아닌 경우에만 처리
+    // Only process if ESC key is pressed and not in hotkey recording mode
     if (event.key === 'Escape' && !isRecordingHotkey) {
-      // 변경 사항이 있다면 저장 확인
+      // Confirm save if there are unsaved changes
       if (unsavedChanges) {
-        if (confirm('저장되지 않은 변경 사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+        if (confirm('You have unsaved changes. Close without saving?')) {
           window.settings.closeWindow();
         }
       } else {
-        // 변경 사항이 없으면 바로 닫기
+        // Close directly if no changes
         window.settings.closeWindow();
       }
     }
@@ -569,15 +569,15 @@ function extractAuthCode(uri) {
  */
 async function handleAuthCode(code) {
   try {
-    // 로딩 상태 표시
+    // Show loading state
     setLoading(authLoading, true);
 
     // Exchange code for token
     const tokenResult = await window.settings.exchangeCodeForToken(code);
 
     if (tokenResult.success) {
-      // 토큰 교환 성공 - 사용자 데이터를 로드하고 UI 업데이트
-      // 참고: UI는 데이터 로드 후 loadUserDataAndUpdateUI에서 업데이트됨
+      // Token exchange successful - load user data and update UI
+      // Note: UI is updated in loadUserDataAndUpdateUI after data loading
       await loadUserDataAndUpdateUI();
     } else {
       throw new Error(tokenResult.error || 'Failed to exchange code for token');
@@ -586,7 +586,7 @@ async function handleAuthCode(code) {
     console.error('Authentication error:', error);
     alert(`Authentication failed: ${error.message || 'Unknown error'}`);
     updateAuthStateUI(false);
-    // 로딩 상태 숨김
+    // Hide loading state
     setLoading(authLoading, false);
   }
 }
@@ -611,7 +611,7 @@ function switchTab(tabId) {
  * Start recording a hotkey
  */
 function startRecordingHotkey() {
-  // 기존 단축키 잠시 비활성화 (레코드 중엔 다른 단축키 작동 방지)
+  // Temporarily disable existing shortcuts (prevent other shortcuts from working during recording)
   window.settings.temporarilyDisableShortcuts()
     .then(() => {
       console.log('Shortcuts temporarily disabled for recording');
@@ -637,14 +637,14 @@ function handleHotkeyRecording(event) {
   event.preventDefault();
   event.stopPropagation();
 
-  // Get modifier keys (Electron accelerator 형식으로 변환)
+  // Get modifier keys (convert to Electron accelerator format)
   const modifiers = [];
   if (event.ctrlKey) modifiers.push('CommandOrControl');
   if (event.altKey) modifiers.push('Alt');
   if (event.shiftKey) modifiers.push('Shift');
   if (event.metaKey) modifiers.push('Super');
 
-  // Get the key (Electron accelerator 형식으로 변환)
+  // Get the key (convert to Electron accelerator format)
   let key = event.key;
   let code = event.code;
 
@@ -680,7 +680,7 @@ function handleHotkeyRecording(event) {
   // Create hotkey string in Electron accelerator format
   const hotkey = [...modifiers, key].join('+');
 
-  // 디버깅 정보 (콘솔에 로깅)
+  // Debug information (log to console)
   console.log('Recorded hotkey:', hotkey, 'from key:', event.key, 'code:', event.code);
 
   // Set the hotkey
@@ -689,7 +689,7 @@ function handleHotkeyRecording(event) {
   recordHotkeyButton.disabled = false;
   isRecordingHotkey = false;
 
-  // 단축키 다시 활성화
+  // Re-enable shortcuts
   window.settings.restoreShortcuts()
     .then(() => console.log('Shortcuts restored after recording'))
     .catch(err => console.error('Failed to restore shortcuts:', err));
@@ -789,9 +789,9 @@ async function saveSettings() {
     // Change to saved message
     saveButton.textContent = "Saved!";
 
-    // Toast 창에 즉시 테마 적용
+    // Apply theme to Toast window immediately
     if (settings.appearance && settings.appearance.theme) {
-      // Toast 창에도 즉시 테마 적용 (Toast 창 표시)
+      // Apply theme to Toast window immediately (display Toast window)
       window.settings.setConfig('appearance.theme', settings.appearance.theme);
     }
 

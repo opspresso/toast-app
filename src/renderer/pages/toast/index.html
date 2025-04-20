@@ -32,19 +32,19 @@
       <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
     </div>
 
-  <!-- 로그인 로딩 화면 -->
+  <!-- Login loading screen -->
   <div id="login-loading-overlay" class="login-loading-overlay">
     <div class="login-loading-content">
       <div class="loading-spinner"></div>
-      <div class="loading-text">로그인 중입니다...</div>
+      <div class="loading-text">Logging in...</div>
     </div>
   </div>
 
-  <!-- 사용자 프로필 및 구독 정보 모달 -->
+  <!-- User profile and subscription info modal -->
   <div id="profile-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>사용자 정보</h2>
+        <h2>User Information</h2>
         <span class="close-modal" id="close-profile-modal">&times;</span>
       </div>
       <div class="modal-body">
@@ -58,28 +58,28 @@
           </div>
           <div class="profile-divider"></div>
           <div class="subscription-container">
-            <h3>구독 정보</h3>
+            <h3>Subscription Information</h3>
             <div class="subscription-details">
               <div class="subscription-item">
-                <span class="subscription-label">구독 정보:</span>
+                <span class="subscription-label">Subscription Status:</span>
                 <span>
                   <span id="subscription-status" class="subscription-value"></span>
                   (<span id="subscription-plan" class="subscription-value"></span>)
                 </span>
               </div>
               <div class="subscription-item">
-                <span class="subscription-label">만료일:</span>
+                <span class="subscription-label">Expiry Date:</span>
                 <span id="subscription-expiry" class="subscription-value"></span>
               </div>
-              <!-- 페이지 그룹 정보는 숨김 처리 -->
+              <!-- Page group information is hidden -->
               <div id="subscription-pages" style="display: none;"></div>
             </div>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="logout-button" class="secondary-button">로그아웃</button>
-        <button id="close-profile-button" class="primary-button">닫기</button>
+        <button id="logout-button" class="secondary-button">Sign Out</button>
+        <button id="close-profile-button" class="primary-button">Close</button>
       </div>
     </div>
   </div>
@@ -89,7 +89,7 @@
       <!-- Status messages will be displayed here -->
     </div>
     <div class="toast-settings">
-      <div class="toast-user-button" id="user-button" title="사용자 정보">👤</div>
+      <div class="toast-user-button" id="user-button" title="User Information">👤</div>
       <div class="toast-mode-toggle" id="settings-mode-toggle" title="Settings Mode">⚙️</div>
     </div>
   </div>
@@ -112,7 +112,7 @@
           <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL">
           <small class="field-hint">Use emoji (e.g. 🚀) or an image URL (https://...)</small>
         </div>
-        <!-- 단축키 필드는 숨김 처리 (변경 불가) -->
+        <!-- Shortcut field is hidden (cannot be changed) -->
         <input type="hidden" id="edit-button-shortcut">
         <div class="form-group">
           <label for="edit-button-action">Action Type</label>
