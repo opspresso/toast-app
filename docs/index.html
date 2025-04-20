@@ -101,35 +101,23 @@
     <section id="installation">
         <div class="container">
             <h2 class="fadeIn">Installation</h2>
-            <div class="installation-content fadeIn delay-1">
-                <div class="installation-prerequisites">
-                    <h3>Prerequisites</h3>
-                    <ul>
-                        <li>Node.js (v16 or later)</li>
-                        <li>npm or yarn</li>
-                    </ul>
-                </div>
+            <p class="fadeIn delay-1">Get Toast App for your platform:</p>
+            <div class="download-buttons fadeIn delay-2">
+                <a href="https://github.com/opspresso/toast-app/releases" class="btn btn-primary" target="_blank">Download for macOS</a>
+                <a href="https://github.com/opspresso/toast-app/releases" class="btn btn-primary" target="_blank">Download for Windows</a>
+                <a href="https://github.com/opspresso/toast-app" class="btn btn-outline" target="_blank">Source Code</a>
+            </div>
+            <p class="fadeIn delay-3 release-note">
+                You can download installation files for each operating system from the latest release page:<br>
+                macOS: <code>Toast-App-mac.dmg</code> | Windows: <code>Toast-App-win.exe</code>
+            </p>
 
-                <div class="installation-steps">
-                    <h3>Development Setup</h3>
-                    <p>1. Clone the repository:</p>
-                    <pre><code>git clone https://github.com/opspresso/toast-app.git
-cd toast-app</code></pre>
-
-                    <p>2. Install dependencies:</p>
-                    <pre><code>npm install</code></pre>
-
-                    <p>3. Start the development server:</p>
-                    <pre><code>npm run dev</code></pre>
-
-                    <h3>Production Build</h3>
-                    <p>Build for your current platform:</p>
-                    <pre><code>npm run build</code></pre>
-
-                    <p>Build for specific platforms:</p>
-                    <pre><code>npm run build:mac
-npm run build:win</code></pre>
-                </div>
+            <div class="homebrew-installation fadeIn delay-3">
+                <h3>Homebrew Installation (macOS)</h3>
+                <p>macOS users can install Toast App through Homebrew:</p>
+                <pre><code>brew install opspresso/tap/toast</code></pre>
+                <p>To uninstall, use the following command:</p>
+                <pre><code>brew uninstall opspresso/tap/toast</code></pre>
             </div>
         </div>
     </section>
@@ -148,52 +136,6 @@ npm run build:win</code></pre>
                         <li>Toggle settings mode by clicking the gear icon (⚙️) or pressing the comma key (,) to edit buttons.</li>
                     </ol>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="configuration">
-        <div class="container">
-            <h2 class="fadeIn">Configuration</h2>
-            <div class="configuration-content fadeIn delay-1">
-                <p>
-                    Toast App can be configured through the settings UI or by directly editing the configuration file located at:
-                </p>
-                <ul>
-                    <li>macOS: <code>~/Library/Application Support/toast-app/config.json</code></li>
-                    <li>Windows: <code>%APPDATA%\toast-app\config.json</code></li>
-                </ul>
-                <p>Example configuration:</p>
-                <pre><code>{
-  "globalHotkey": "Alt+Space",
-  "pages": [
-    {
-      "name": "Applications",
-      "shortcut": "1",
-      "buttons": [
-        {
-          "name": "Terminal",
-          "shortcut": "T",
-          "icon": "⌨️",
-          "action": "exec",
-          "command": "open -a Terminal"
-        },
-        {
-          "name": "Browser",
-          "shortcut": "B",
-          "icon": "🌐",
-          "action": "open",
-          "url": "https://www.google.com"
-        }
-      ]
-    }
-  ],
-  "appearance": {
-    "theme": "system",
-    "position": "center",
-    "size": "medium"
-  }
-}</code></pre>
             </div>
         </div>
     </section>
@@ -225,30 +167,6 @@ npm run build:win</code></pre>
                         <a href="CONFIG_SCHEMA.html" class="btn btn-outline">View</a>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="download">
-        <div class="container">
-            <h2 class="fadeIn">Download</h2>
-            <p class="fadeIn delay-1">Get Toast App for your platform:</p>
-            <div class="download-buttons fadeIn delay-2">
-                <a href="https://github.com/opspresso/toast-app/releases" class="btn btn-primary" target="_blank">Download for macOS</a>
-                <a href="https://github.com/opspresso/toast-app/releases" class="btn btn-primary" target="_blank">Download for Windows</a>
-                <a href="https://github.com/opspresso/toast-app" class="btn btn-outline" target="_blank">Source Code</a>
-            </div>
-            <p class="fadeIn delay-3 release-note">
-                최신 릴리스 페이지에서 각 운영체제에 맞는 설치 파일을 다운로드할 수 있습니다:<br>
-                macOS: <code>Toast-App-mac.dmg</code> | Windows: <code>Toast-App-win.exe</code>
-            </p>
-
-            <div class="homebrew-installation fadeIn delay-3">
-                <h3>Homebrew Installation (macOS)</h3>
-                <p>macOS 사용자는 Homebrew를 통해 Toast App을 설치할 수 있습니다:</p>
-                <pre><code>brew install opspresso/tap/toast</code></pre>
-                <p>제거하려면 다음 명령어를 사용하세요:</p>
-                <pre><code>brew uninstall opspresso/tap/toast</code></pre>
             </div>
         </div>
     </section>
