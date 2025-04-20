@@ -731,6 +731,9 @@ function createButtonElement(button) {
       iconElement.textContent = '🌐';
     };
     iconElement.appendChild(img);
+  } else if (button.action === 'application' && (!button.icon || button.icon.trim() === '')) {
+    // 애플리케이션 타입이고 아이콘이 비어있는 경우 기본 앱 아이콘 사용
+    iconElement.textContent = '🚀';
   } else if (button.icon && isURL(button.icon)) {
     // URL 이미지인 경우 이미지 태그 생성
     iconElement.textContent = '';
@@ -942,9 +945,11 @@ function showActionFields(actionType) {
   // 아이콘 필드 힌트 업데이트
   const iconHint = document.querySelector('.field-hint');
   if (iconHint) {
-    // Open URL 타입일 때는 특별한 힌트 표시
+    // 타입별 맞춤 힌트 표시
     if (actionType === 'open') {
       iconHint.textContent = '이모지 사용 또는 비워두면 URL의 favicon이 자동으로 사용됩니다';
+    } else if (actionType === 'application') {
+      iconHint.textContent = '이모지 사용 또는 비워두면 앱 기본 아이콘이 사용됩니다';
     } else {
       iconHint.textContent = '이모지(예: 🚀) 또는 이미지 URL 사용(https://...)';
     }
