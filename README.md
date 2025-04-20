@@ -51,6 +51,20 @@ You can download the latest version of Toast App from the [GitHub Releases](http
 - macOS: `Toast-App-mac.dmg`
 - Windows: `Toast-App-win.exe`
 
+### Homebrew (macOS)
+
+macOS 사용자는 Homebrew를 통해 Toast App을 설치할 수 있습니다:
+
+```bash
+brew install opspresso/tap/toast
+```
+
+제거하려면 다음 명령어를 사용하세요:
+
+```bash
+brew uninstall opspresso/tap/toast
+```
+
 ### Development Prerequisites
 
 - Node.js (v16 or later)
