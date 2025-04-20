@@ -6,6 +6,7 @@
 
 - [개요](#개요)
 - [인증 구성](#인증-구성)
+- [환경 변수 설정](#환경-변수-설정)
 - [프로토콜 핸들러 설정](#프로토콜-핸들러-설정)
 - [인증 흐름 구현](#인증-흐름-구현)
 - [토큰 관리](#토큰-관리)
@@ -19,13 +20,59 @@ Toast-App은 사용자의 단축키 액션을 수행하는 Electron 데스크톱
 
 ## 인증 구성
 
-Toast-App은 OAuth 2.0 클라이언트로 동작하며, Toast-Web은 OAuth 2.0 서버 역할을 합니다. Toast-App은 미리 등록된 공개 클라이언트(Public Client)로, 사용자는 별도의 클라이언트 ID나 시크릿을 설정할 필요 없이 앱을 사용할 수 있습니다.
+Toast-App은 OAuth 2.0 클라이언트로 동작하며, Toast-Web은 OAuth 2.0 서버 역할을 합니다. Toast-App은 Toast-Web에 등록된 클라이언트로, 인증을 위해 클라이언트 ID와 클라이언트 시크릿을 사용합니다.
 
 ### 핵심 개념
 
 1. **인증 코드 흐름**: 사용자가 앱에서 로그인하면 시스템 브라우저가 열리고 웹 서비스에서 인증 후 `toast-app://auth` 프로토콜로 인증 코드가 반환됩니다.
 2. **토큰 교환**: 인증 코드는 액세스 토큰 및 리프레시 토큰으로 교환됩니다.
 3. **자원 접근**: 액세스 토큰을 사용하여 사용자 프로필, 구독 정보 등의 API에 접근합니다.
+
+## 환경 변수 설정
+
+Toast-App은 환경 변수를 통해 클라이언트 ID와 시크릿을 관리합니다. 개발 환경에서는 `.env.local` 파일을 통해 이러한 변수를 설정합니다.
+
+```
+# .env.example 파일 예시
+CLIENT_ID=
+CLIENT_SECRET=
+```
+
+1. 프로젝트 루트에 `.env.local` 파일을 생성합니다:
+
+```
+# .env.local 파일 예시
+CLIENT_ID=your-client-id
+CLIENT_SECRET=your-client-secret
+```
+
+2. 환경 변수 로드 설정:
+
+```javascript
+// src/main/config.js 또는 유사한 파일
+const dotenv = require('dotenv');
+const path = require('path');
+
+// 개발 환경에서 .env.local 파일 로드
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.join(__dirname, '../../.env.local') });
+}
+
+// 환경 변수 내보내기
+module.exports = {
+  CLIENT_ID: process.env.CLIENT_ID || 'toast-app-client',
+  CLIENT_SECRET: process.env.CLIENT_SECRET || 'default-secret',
+  // 다른 설정들...
+};
+```
+
+3. 코드에서 환경 변수 사용:
+
+```javascript
+const { CLIENT_ID, CLIENT_SECRET } = require('../config');
+
+// 이제 CLIENT_ID와 CLIENT_SECRET을 사용할 수 있습니다
+```
 
 ## 프로토콜 핸들러 설정
 
@@ -67,7 +114,7 @@ app.on('open-url', (event, url) => {
 
 // Windows
 app.on('second-instance', (event, commandLine) => {
-  // 대부분의 경우 마지막 인수가 URL
+  // 대부분의 경우, 마지막 인수가 URL
   const url = commandLine.pop();
   if (url.startsWith('toast-app://')) {
     handleAuthRedirect(url);
@@ -80,19 +127,12 @@ app.on('second-instance', (event, commandLine) => {
 ### 1. 로그인 시작
 
 ```javascript
-// 클라이언트 ID는 앱 내부에 미리 포함되어 있음
-const CLIENT_ID = 'toast-app-client';
+// config.js에서 가져온 클라이언트 ID 사용
+const { CLIENT_ID } = require('../config');
 const REDIRECT_URI = 'toast-app://auth';
 
 async function initiateLogin() {
   const state = uuidv4(); // CSRF 방지용 상태 값
-
-  // 코드 검증기(PKCE)를 위한 코드 생성
-  const codeVerifier = generateCodeVerifier();
-  // 코드 검증기를 저장 (토큰 교환 시 사용)
-  await storeCodeVerifier(codeVerifier);
-  // 코드 챌린지 생성
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
 
   const authUrl = new URL('https://web.toast.sh/api/oauth/authorize');
   authUrl.searchParams.append('response_type', 'code');
@@ -100,31 +140,9 @@ async function initiateLogin() {
   authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
   authUrl.searchParams.append('scope', 'profile subscription');
   authUrl.searchParams.append('state', state);
-  // PKCE 파라미터 추가
-  authUrl.searchParams.append('code_challenge', codeChallenge);
-  authUrl.searchParams.append('code_challenge_method', 'S256');
 
   await shell.openExternal(authUrl.toString());
   return true;
-}
-
-// PKCE 코드 검증기 생성
-function generateCodeVerifier() {
-  return base64URLEncode(crypto.randomBytes(32));
-}
-
-// 코드 챌린지 생성 (SHA-256)
-async function generateCodeChallenge(verifier) {
-  const hash = crypto.createHash('sha256').update(verifier).digest();
-  return base64URLEncode(hash);
-}
-
-// Base64URL 인코딩
-function base64URLEncode(buffer) {
-  return buffer.toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
 }
 ```
 
@@ -160,19 +178,18 @@ function handleAuthRedirect(url) {
 ### 3. 토큰 교환
 
 ```javascript
+// config.js에서 클라이언트 ID와 시크릿 가져오기
+const { CLIENT_ID, CLIENT_SECRET } = require('../config');
+
 async function exchangeCodeForToken(code) {
   try {
-    // 저장된 코드 검증기 가져오기
-    const codeVerifier = await getStoredCodeVerifier();
-
     // 토큰 요청 데이터 준비
     const data = new URLSearchParams();
     data.append('grant_type', 'authorization_code');
     data.append('code', code);
     data.append('client_id', CLIENT_ID);
-    data.append('redirect_uri', REDIRECT_URI);
-    // PKCE 코드 검증기 추가
-    data.append('code_verifier', codeVerifier);
+    data.append('client_secret', CLIENT_SECRET);
+    data.append('redirect_uri', 'toast-app://auth');
 
     // 토큰 요청
     const response = await axios.post('https://web.toast.sh/api/oauth/token', data, {
@@ -206,16 +223,6 @@ Toast-App은 액세스 토큰과 리프레시 토큰을 안전하게 저장해�
 ```javascript
 const keytar = require('keytar');
 
-// 코드 검증기 저장
-async function storeCodeVerifier(codeVerifier) {
-  await keytar.setPassword('toast-app', 'code-verifier', codeVerifier);
-}
-
-// 코드 검증기 가져오기
-async function getStoredCodeVerifier() {
-  return await keytar.getPassword('toast-app', 'code-verifier');
-}
-
 // 토큰 저장
 async function storeToken(token) {
   await keytar.setPassword('toast-app', 'auth-token', token);
@@ -240,13 +247,14 @@ async function getStoredRefreshToken() {
 async function clearTokens() {
   await keytar.deletePassword('toast-app', 'auth-token');
   await keytar.deletePassword('toast-app', 'refresh-token');
-  await keytar.deletePassword('toast-app', 'code-verifier');
 }
 ```
 
 ### 토큰 갱신
 
 ```javascript
+const { CLIENT_ID, CLIENT_SECRET } = require('../config');
+
 async function refreshAccessToken() {
   try {
     const refreshToken = await getStoredRefreshToken();
@@ -259,6 +267,7 @@ async function refreshAccessToken() {
     data.append('grant_type', 'refresh_token');
     data.append('refresh_token', refreshToken);
     data.append('client_id', CLIENT_ID);
+    data.append('client_secret', CLIENT_SECRET);
 
     const response = await axios.post('https://web.toast.sh/api/oauth/token', data, {
       headers: {
@@ -395,9 +404,10 @@ function emitAuthError(type) {
 
 ## 보안 고려사항
 
-1. **PKCE 사용**:
-   - Toast-App은 공개 클라이언트로서 클라이언트 시크릿을 사용하지 않고 PKCE를 통해 인증합니다.
-   - 이는 사용자가 별도의 환경 변수나 설정 없이도 인증을 안전하게 수행할 수 있게 합니다.
+1. **클라이언트 시크릿 보호**:
+   - 클라이언트 시크릿은 소스 코드에 포함해서는 안됩니다.
+   - 개발 환경에서는 `.env.local` 파일을 사용하고, 이 파일은 버전 관리에서 제외해야 합니다.
+   - 프로덕션 빌드에서는 환경 변수나 빌드 프로세스를 통해 안전하게 주입해야 합니다.
 
 2. **토큰 저장**:
    - 토큰은 항상 시스템의 안전한 저장소(keytar 등)를 사용하여 저장해야 합니다.
@@ -410,6 +420,8 @@ function emitAuthError(type) {
    - 로그아웃 시 항상 서버에 토큰 무효화 요청을 보내고, 로컬 토큰도 삭제해야 합니다.
 
 ```javascript
+const { CLIENT_ID, CLIENT_SECRET } = require('../config');
+
 async function logout() {
   try {
     const token = await getStoredToken();
@@ -419,6 +431,7 @@ async function logout() {
       const data = new URLSearchParams();
       data.append('token', token);
       data.append('client_id', CLIENT_ID);
+      data.append('client_secret', CLIENT_SECRET);
 
       await axios.post('https://web.toast.sh/api/oauth/revoke', data, {
         headers: {
