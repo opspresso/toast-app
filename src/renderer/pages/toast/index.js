@@ -265,6 +265,8 @@ async function fetchUserProfileAndSubscription() {
     const profileResult = await window.toast.fetchUserProfile();
     if (!profileResult.error) {
       userProfile = profileResult;
+      // 사용자 버튼 UI 즉시 업데이트
+      updateUserButton();
     } else {
       console.error('사용자 프로필 정보를 가져오지 못했습니다:', profileResult.error);
     }
@@ -339,6 +341,40 @@ async function showUserProfile() {
 }
 
 /**
+ * 사용자 버튼에 프로필 이미지 표시
+ */
+function updateUserButton() {
+  userButton.innerHTML = ''; // 기존 내용 제거
+
+  if (userProfile) {
+    if (userProfile.profile_image || userProfile.avatar) {
+      // 프로필 이미지가 있는 경우
+      const img = document.createElement('img');
+      img.src = userProfile.profile_image || userProfile.avatar;
+      img.alt = '프로필';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '50%';
+      userButton.appendChild(img);
+    } else {
+      // 이미지가 없는 경우 이니셜 표시
+      const initials = getInitials(userProfile.name || userProfile.display_name || '사용자');
+      userButton.textContent = initials;
+      userButton.style.fontSize = '12px';
+      userButton.style.backgroundColor = 'var(--primary-color)';
+      userButton.style.color = 'white';
+    }
+  } else {
+    // 로그인하지 않은 경우 기본 아이콘
+    userButton.textContent = '👤';
+    userButton.style.fontSize = '16px';
+    userButton.style.backgroundColor = 'transparent';
+    userButton.style.color = 'var(--text-color)';
+  }
+}
+
+/**
  * 프로필 표시 업데이트
  */
 function updateProfileDisplay() {
@@ -358,6 +394,9 @@ function updateProfileDisplay() {
     // 이름 및 이메일 설정
     profileName.textContent = userProfile.name || userProfile.display_name || '사용자';
     profileEmail.textContent = userProfile.email || '';
+
+    // 사용자 버튼 업데이트
+    updateUserButton();
   }
 
   if (userSubscription) {
@@ -801,7 +840,123 @@ function setupModalEventListeners() {
  * Edit button settings
  */
 function editButtonSettings(button) {
-  // 버튼 설정 편집 로직 (간략화)
+  currentEditingButton = button;
+
+  // 모달 내용 초기화
+  editButtonNameInput.value = button.name || '';
+  editButtonIconInput.value = button.icon || '';
+  editButtonShortcutInput.value = button.shortcut || '';
+  editButtonActionSelect.value = button.action || 'exec';
+  editButtonCommandInput.value = button.command || '';
+  editButtonUrlInput.value = button.url || '';
+  editButtonScriptInput.value = button.script || '';
+  editButtonKeyShortcutInput.value = button.keyShortcut || '';
+  editButtonApplicationInput.value = button.application || '';
+
+  // 액션 유형에 따라 필드 표시/숨김
+  showActionFields(button.action || 'exec');
+
+  // 모달 표시
+  buttonEditModal.classList.add('show');
+  window.toast.setModalOpen(true);
+}
+
+/**
+ * 버튼 액션 유형에 따라 적절한 필드 표시
+ */
+function showActionFields(actionType) {
+  // 모든 입력 그룹 숨기기
+  commandInputGroup.style.display = 'none';
+  urlInputGroup.style.display = 'none';
+  scriptInputGroup.style.display = 'none';
+  shortcutInputGroup.style.display = 'none';
+  applicationInputGroup.style.display = 'none';
+
+  // 선택된 액션 타입에 따라 필요한 입력 그룹 표시
+  switch (actionType) {
+    case 'exec':
+      commandInputGroup.style.display = 'block';
+      break;
+    case 'open':
+      urlInputGroup.style.display = 'block';
+      break;
+    case 'script':
+      scriptInputGroup.style.display = 'block';
+      break;
+    case 'shortcut':
+      shortcutInputGroup.style.display = 'block';
+      break;
+    case 'application':
+      applicationInputGroup.style.display = 'block';
+      break;
+  }
+}
+
+/**
+ * 버튼 설정 저장
+ */
+function saveButtonSettings() {
+  if (!currentEditingButton || !pages[currentPageIndex]) {
+    return;
+  }
+
+  // 현재 페이지 버튼 배열 가져오기
+  const buttons = pages[currentPageIndex].buttons || [];
+
+  // 현재 편집 중인 버튼 찾기
+  const buttonIndex = buttons.findIndex(b =>
+    b.name === currentEditingButton.name &&
+    b.shortcut === currentEditingButton.shortcut
+  );
+
+  if (buttonIndex === -1) {
+    return;
+  }
+
+  // 수정된 버튼 정보 생성
+  const updatedButton = {
+    ...currentEditingButton,
+    name: editButtonNameInput.value.trim(),
+    icon: editButtonIconInput.value.trim(),
+    shortcut: editButtonShortcutInput.value.trim() || currentEditingButton.shortcut,
+    action: editButtonActionSelect.value
+  };
+
+  // 액션 타입에 따라 추가 필드 설정
+  switch (updatedButton.action) {
+    case 'exec':
+      updatedButton.command = editButtonCommandInput.value.trim();
+      break;
+    case 'open':
+      updatedButton.url = editButtonUrlInput.value.trim();
+      break;
+    case 'script':
+      updatedButton.script = editButtonScriptInput.value.trim();
+      break;
+    case 'shortcut':
+      updatedButton.keyShortcut = editButtonKeyShortcutInput.value.trim();
+      break;
+    case 'application':
+      updatedButton.application = editButtonApplicationInput.value.trim();
+      break;
+  }
+
+  // 버튼 배열 업데이트
+  buttons[buttonIndex] = updatedButton;
+  pages[currentPageIndex].buttons = buttons;
+
+  // 설정 저장
+  window.toast.saveConfig({ pages })
+    .then(() => {
+      showStatus('버튼 설정이 저장되었습니다.', 'success');
+      renderButtons(buttons);
+    })
+    .catch(error => {
+      showStatus(`저장 오류: ${error.message}`, 'error');
+    });
+
+  // 모달 닫기
+  closeButtonEditModal();
 }
 
 /**

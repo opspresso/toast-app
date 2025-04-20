@@ -715,6 +715,20 @@ body {
   font-size: 36px;
   color: white;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+
+.profile-avatar img[src=""] {
+  display: none;
 }
 
 .profile-info {
