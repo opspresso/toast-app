@@ -7,11 +7,16 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Expose protected methods that allow the renderer process to use
-// the ipcRenderer without exposing the entire object
-contextBridge.exposeInMainWorld(
-  'toast',
-  {
+    // Expose protected methods that allow the renderer process to use
+    // the ipcRenderer without exposing the entire object
+    contextBridge.exposeInMainWorld(
+      'toast',
+      {
+        // 로그인 및 사용자 정보 관련 메서드
+        initiateLogin: () => ipcRenderer.invoke('initiate-login'),
+        fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
+        fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
+        logout: () => ipcRenderer.invoke('logout'),
     // Modal state
     setModalOpen: (isOpen) => ipcRenderer.send('modal-state-changed', isOpen),
 

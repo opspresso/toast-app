@@ -621,6 +621,182 @@ body {
   box-shadow: var(--button-shadow);
 }
 
+/* 사용자 버튼 스타일 */
+.toast-user-button {
+  cursor: pointer;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin-right: 10px;
+  transition: all var(--animation-speed) ease;
+  background-color: transparent;
+}
+
+.toast-user-button:hover {
+  background-color: var(--button-hover-bg);
+  transform: scale(1.05);
+  box-shadow: var(--button-hover-shadow);
+}
+
+/* 로그인 로딩 오버레이 */
+.login-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--background-color);
+  z-index: 150;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.login-loading-overlay.show {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.login-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(0, 100, 255, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid var(--primary-color);
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 프로필 모달 스타일 */
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text-color);
+}
+
+.profile-email {
+  font-size: 14px;
+  color: var(--secondary-text-color);
+}
+
+.profile-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 10px 0;
+}
+
+.subscription-container {
+  padding: 15px;
+  background-color: var(--button-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.subscription-container h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: var(--text-color);
+}
+
+.subscription-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subscription-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subscription-label {
+  font-weight: 600;
+  color: var(--secondary-text-color);
+}
+
+.subscription-value {
+  font-weight: 500;
+  color: var(--text-color);
+  background-color: var(--search-bg);
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+/* 구독 상태 별 색상 */
+.subscription-status-active {
+  color: var(--success-color);
+  border-color: var(--success-color);
+  background-color: rgba(0, 184, 132, 0.1);
+}
+
+.subscription-status-inactive {
+  color: var(--error-color);
+  border-color: var(--error-color);
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.subscription-plan-premium {
+  color: #ffc107;
+  border-color: #ffc107;
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

@@ -32,14 +32,70 @@
       <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
     </div>
 
-    <div class="toast-footer">
-      <div class="toast-status" id="status-container">
-        <!-- Status messages will be displayed here -->
+  <!-- 로그인 로딩 화면 -->
+  <div id="login-loading-overlay" class="login-loading-overlay">
+    <div class="login-loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">로그인 중입니다...</div>
+    </div>
+  </div>
+
+  <!-- 사용자 프로필 및 구독 정보 모달 -->
+  <div id="profile-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>사용자 정보</h2>
+        <span class="close-modal" id="close-profile-modal">&times;</span>
       </div>
-      <div class="toast-settings">
-        <div class="toast-mode-toggle" id="settings-mode-toggle" title="Settings Mode">⚙️</div>
+      <div class="modal-body">
+        <div id="profile-container" class="profile-container">
+          <div class="profile-header">
+            <div id="profile-avatar" class="profile-avatar"></div>
+            <div class="profile-info">
+              <div id="profile-name" class="profile-name"></div>
+              <div id="profile-email" class="profile-email"></div>
+            </div>
+          </div>
+          <div class="profile-divider"></div>
+          <div class="subscription-container">
+            <h3>구독 정보</h3>
+            <div class="subscription-details">
+              <div class="subscription-item">
+                <span class="subscription-label">구독 상태:</span>
+                <span id="subscription-status" class="subscription-value"></span>
+              </div>
+              <div class="subscription-item">
+                <span class="subscription-label">플랜:</span>
+                <span id="subscription-plan" class="subscription-value"></span>
+              </div>
+              <div class="subscription-item">
+                <span class="subscription-label">만료일:</span>
+                <span id="subscription-expiry" class="subscription-value"></span>
+              </div>
+              <div class="subscription-item">
+                <span class="subscription-label">페이지 그룹:</span>
+                <span id="subscription-pages" class="subscription-value"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="logout-button" class="secondary-button">로그아웃</button>
+        <button id="close-profile-button" class="primary-button">닫기</button>
       </div>
     </div>
+  </div>
+
+  <div class="toast-footer">
+    <div class="toast-status" id="status-container">
+      <!-- Status messages will be displayed here -->
+    </div>
+    <div class="toast-settings">
+      <div class="toast-user-button" id="user-button" title="사용자 정보">👤</div>
+      <div class="toast-mode-toggle" id="settings-mode-toggle" title="Settings Mode">⚙️</div>
+    </div>
+  </div>
   </div>
 
   <!-- Button Edit Modal -->
