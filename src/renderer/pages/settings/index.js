@@ -36,6 +36,8 @@ const subscriptionExpiry = document.getElementById('subscription-expiry');
 const subscriptionFeatures = document.getElementById('subscription-features');
 const manageSubscriptionButton = document.getElementById('manage-subscription');
 const refreshSubscriptionButton = document.getElementById('refresh-subscription');
+const authLoading = document.getElementById('auth-loading');
+const subscriptionLoading = document.getElementById('subscription-loading');
 
 // DOM Elements - Advanced Settings
 const hideAfterActionCheckbox = document.getElementById('hide-after-action');
@@ -219,10 +221,14 @@ async function fetchUserProfile() {
  */
 async function fetchSubscriptionInfo() {
   try {
+    // 로딩 상태 표시
+    setLoading(subscriptionLoading, true);
+
     // 토큰이 있는지 먼저 확인
     const token = await window.settings.getAuthToken();
     if (!token) {
       console.log('No auth token available, skipping subscription fetch');
+      setLoading(subscriptionLoading, false);
       return;
     }
 
@@ -236,8 +242,14 @@ async function fetchSubscriptionInfo() {
       // Save subscription info to config
       saveSubscriptionToConfig(subscription);
     }
+
+    // 로딩 상태 숨김
+    setLoading(subscriptionLoading, false);
   } catch (error) {
     console.error('Failed to fetch subscription info:', error);
+    // 로딩 상태 숨김
+    setLoading(subscriptionLoading, false);
+
     // Handle token expired case
     if (error.message && error.message.includes('token expired')) {
       handleTokenExpired();
@@ -319,22 +331,76 @@ function handleTokenExpired() {
 }
 
 /**
+ * 로딩 상태 표시/숨김 처리
+ * @param {HTMLElement} loadingElement - 로딩 인디케이터 요소
+ * @param {boolean} isLoading - 로딩 상태 여부
+ */
+function setLoading(loadingElement, isLoading) {
+  if (isLoading) {
+    loadingElement.classList.remove('hidden');
+  } else {
+    loadingElement.classList.add('hidden');
+  }
+}
+
+/**
+ * 사용자 프로필 및 구독 정보를 로드하고 UI를 업데이트합니다
+ * @returns {Promise<void>}
+ */
+async function loadUserDataAndUpdateUI() {
+  try {
+    // 프로필 정보 로드
+    await fetchUserProfile();
+
+    // 구독 정보 로드
+    await fetchSubscriptionInfo();
+
+    // 모든 데이터 로드 후 UI 업데이트
+    updateAuthStateUI(true);
+
+    // 로딩 인디케이터 숨김
+    setLoading(authLoading, false);
+    loginButton.disabled = false;
+  } catch (error) {
+    console.error('Error loading user data:', error);
+
+    // 오류 발생 시 로그인 상태로 돌아가기
+    updateAuthStateUI(false);
+    setLoading(authLoading, false);
+    loginButton.disabled = false;
+
+    // 사용자에게 오류 알림
+    alert(`데이터 로딩 실패: ${error.message || '알 수 없는 오류'}`);
+  }
+}
+
+/**
  * Handle login button click
  */
 async function handleLogin() {
   try {
+    // 로딩 상태 표시 및 버튼 비활성화
+    setLoading(authLoading, true);
+    loginButton.disabled = true;
+
     // Call the main process to initiate the OAuth flow
     const success = await window.settings.initiateLogin();
 
     if (success) {
-      // Authentication successful, update UI
-      updateAuthStateUI(true);
-      fetchUserProfile();
-      fetchSubscriptionInfo();
+      // 인증 성공 - 사용자 데이터를 로드하고 UI 업데이트
+      // 참고: UI는 데이터 로드 후 loadUserDataAndUpdateUI에서 업데이트됨
+      await loadUserDataAndUpdateUI();
+    } else {
+      // 로그인 프로세스 시작 실패
+      setLoading(authLoading, false);
+      loginButton.disabled = false;
     }
   } catch (error) {
     console.error('Login error:', error);
     alert(`Login failed: ${error.message || 'Unknown error'}`);
+    // 로딩 상태 숨김 및 버튼 활성화
+    setLoading(authLoading, false);
+    loginButton.disabled = false;
   }
 }
 
@@ -367,12 +433,15 @@ function handleManageSubscription() {
  */
 async function handleRefreshSubscription() {
   try {
+    // 버튼 비활성화 및 로딩 표시
     refreshSubscriptionButton.disabled = true;
     refreshSubscriptionButton.textContent = 'Refreshing...';
+    setLoading(subscriptionLoading, true);
 
     // Fetch latest subscription info
     await fetchSubscriptionInfo();
 
+    // 성공 메시지 표시 후 버튼 원래대로 복원
     refreshSubscriptionButton.textContent = 'Refreshed!';
     setTimeout(() => {
       refreshSubscriptionButton.textContent = 'Refresh Status';
@@ -380,6 +449,10 @@ async function handleRefreshSubscription() {
     }, 2000);
   } catch (error) {
     console.error('Failed to refresh subscription:', error);
+    // 로딩 상태 숨김
+    setLoading(subscriptionLoading, false);
+
+    // 에러 메시지 표시 후 버튼 원래대로 복원
     refreshSubscriptionButton.textContent = 'Refresh Failed';
     setTimeout(() => {
       refreshSubscriptionButton.textContent = 'Refresh Status';
@@ -496,14 +569,16 @@ function extractAuthCode(uri) {
  */
 async function handleAuthCode(code) {
   try {
+    // 로딩 상태 표시
+    setLoading(authLoading, true);
+
     // Exchange code for token
     const tokenResult = await window.settings.exchangeCodeForToken(code);
 
     if (tokenResult.success) {
-      // Authentication successful, update UI
-      updateAuthStateUI(true);
-      fetchUserProfile();
-      fetchSubscriptionInfo();
+      // 토큰 교환 성공 - 사용자 데이터를 로드하고 UI 업데이트
+      // 참고: UI는 데이터 로드 후 loadUserDataAndUpdateUI에서 업데이트됨
+      await loadUserDataAndUpdateUI();
     } else {
       throw new Error(tokenResult.error || 'Failed to exchange code for token');
     }
@@ -511,6 +586,8 @@ async function handleAuthCode(code) {
     console.error('Authentication error:', error);
     alert(`Authentication failed: ${error.message || 'Unknown error'}`);
     updateAuthStateUI(false);
+    // 로딩 상태 숨김
+    setLoading(authLoading, false);
   }
 }
 

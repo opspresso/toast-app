@@ -105,6 +105,10 @@
             <div class="auth-container">
               <p>Sign in to access premium features and sync your settings across devices.</p>
               <button id="login-button" class="primary-button">Sign In</button>
+              <div id="auth-loading" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>처리 중입니다...</p>
+              </div>
             </div>
           </div>
 
@@ -137,6 +141,10 @@
               <div class="subscription-actions">
                 <button id="manage-subscription" class="primary-button">Manage Subscription</button>
                 <button id="refresh-subscription" class="secondary-button">Refresh Status</button>
+              </div>
+              <div id="subscription-loading" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>구독 정보를 불러오는 중...</p>
               </div>
             </div>
           </div>
