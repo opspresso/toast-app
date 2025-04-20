@@ -408,8 +408,9 @@ async function refreshAccessToken() {
       if (tokenRequestError.response?.status === 401) {
         console.log('리프레시 토큰이 만료되었습니다. 재로그인 필요');
 
-        // 리프레시 토큰 만료 시 인증에 실패했지만 기존 토큰은 유지
-        // (기본 기능 계속 사용 가능하도록)
+        // 리프레시 토큰 만료 시 토큰 초기화
+        await clearTokens();
+        console.log('만료된 토큰 초기화 완료');
       }
 
       const errorMessage = tokenRequestError.response?.data?.error ||
@@ -697,8 +698,23 @@ async function fetchSubscription() {
       return defaultSubscription;
     }
 
-    // 실제 구독 데이터는 response.data.data에 있음
-    const subscriptionData = response.data.data || response.data;
+    // 응답 구조 확인 및 정규화
+    // 웹에서는 apiSuccess({...}) 형태로 응답하므로 data.data 또는 data 구조 모두 처리
+    let subscriptionData = {};
+
+    if (response.data.success === true && response.data.data) {
+      // toast-web의 apiSuccess 형식 응답: { success: true, data: {...} }
+      console.log('apiSuccess 형식 응답 확인됨');
+      subscriptionData = response.data.data;
+    } else if (typeof response.data === 'object') {
+      // 직접 객체를 반환하는 형식
+      console.log('직접 객체 반환 형식 응답 확인됨');
+      subscriptionData = response.data;
+    } else {
+      // 알 수 없는 형식은 기본값 사용
+      console.log('알 수 없는 응답 형식, 기본값 사용');
+      return defaultSubscription;
+    }
     console.log('구독 정보 수신:', subscriptionData.plan || 'unknown',
                 'VIP:', subscriptionData.isVip || false);
 
@@ -910,6 +926,9 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
     // 2. 지연을 두고 페이지 그룹 설정 업데이트
     console.log('2단계: 페이지 그룹 설정 업데이트 (약간의 지연 후)');
+
+    // 서버에 구독 정보가 반영될 시간을 확보하기 위해 잠시 지연
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // 구독 정보 및 페이지 그룹 설정 업데이트
     const updateResult = await updatePageGroupSettings();
