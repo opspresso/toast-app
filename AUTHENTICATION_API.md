@@ -52,8 +52,8 @@ https://web.toast.sh/api
 
 | 엔드포인트 | 메서드 | 설명 |
 |------------|--------|------|
-| `/user/profile` | GET | 사용자 프로필 정보 조회 |
-| `/user/subscription` | GET | 현재 구독 상태 및 정보 조회 |
+| `/users/profile` | GET | 사용자 프로필 정보 조회 |
+| `/users/subscription` | GET | 현재 구독 상태 및 정보 조회 |
 
 ## 4. 인증 요청 매개변수
 
@@ -124,7 +124,7 @@ redirect_uri=toast-app://auth
 ### 사용자 프로필 조회
 
 ```http
-GET /api/user/profile HTTP/1.1
+GET /api/users/profile HTTP/1.1
 Host: web.toast.sh
 Authorization: Bearer ACCESS_TOKEN
 ```
@@ -144,7 +144,7 @@ Authorization: Bearer ACCESS_TOKEN
 ### 구독 정보 조회
 
 ```http
-GET /api/user/subscription HTTP/1.1
+GET /api/users/subscription HTTP/1.1
 Host: web.toast.sh
 Authorization: Bearer ACCESS_TOKEN
 ```

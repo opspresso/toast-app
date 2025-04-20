@@ -313,7 +313,7 @@ async function getAuthHeaders() {
 async function fetchUserProfile() {
   return authenticatedRequest(async () => {
     const headers = await getAuthHeaders();
-    const response = await axios.get('https://web.toast.sh/api/user/profile', { headers });
+    const response = await axios.get('https://web.toast.sh/api/users/profile', { headers });
     return response.data;
   });
 }
@@ -328,7 +328,7 @@ async function fetchUserProfile() {
 async function fetchSubscription() {
   return authenticatedRequest(async () => {
     const headers = await getAuthHeaders();
-    const response = await axios.get('https://web.toast.sh/api/user/subscription', { headers });
+    const response = await axios.get('https://web.toast.sh/api/users/subscription', { headers });
     return response.data;
   });
 }

@@ -359,7 +359,7 @@ async function handleLogout() {
  */
 function handleManageSubscription() {
   // Open subscription management page in browser
-  window.settings.openUrl('https://web.toast.sh/account/subscription');
+  window.settings.openUrl('https://web.toast.sh/dashboard');
 }
 
 /**

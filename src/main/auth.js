@@ -22,11 +22,11 @@ const REFRESH_TOKEN_KEY = 'refresh-token';
 
 // API 엔드포인트
 const API_BASE_URL = 'https://web.toast.sh/api';
-const OAUTH_AUTHORIZE_URL = 'https://web.toast.sh/auth';
+const OAUTH_AUTHORIZE_URL = 'https://web.toast.sh/api/oauth/authorize';
 const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
 const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
-const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
-const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/user/subscription`;
+const USER_PROFILE_URL = `${API_BASE_URL}/users/profile`;
+const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/users/subscription`;
 
 // OAuth 설정
 const CLIENT_ID = process.env.CLIENT_ID || 'toast-app-client';
