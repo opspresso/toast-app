@@ -61,21 +61,18 @@
             <h3>구독 정보</h3>
             <div class="subscription-details">
               <div class="subscription-item">
-                <span class="subscription-label">구독 상태:</span>
-                <span id="subscription-status" class="subscription-value"></span>
-              </div>
-              <div class="subscription-item">
-                <span class="subscription-label">플랜:</span>
-                <span id="subscription-plan" class="subscription-value"></span>
+                <span class="subscription-label">구독 정보:</span>
+                <span>
+                  <span id="subscription-status" class="subscription-value"></span>
+                  (<span id="subscription-plan" class="subscription-value"></span>)
+                </span>
               </div>
               <div class="subscription-item">
                 <span class="subscription-label">만료일:</span>
                 <span id="subscription-expiry" class="subscription-value"></span>
               </div>
-              <div class="subscription-item">
-                <span class="subscription-label">페이지 그룹:</span>
-                <span id="subscription-pages" class="subscription-value"></span>
-              </div>
+              <!-- 페이지 그룹 정보는 숨김 처리 -->
+              <div id="subscription-pages" style="display: none;"></div>
             </div>
           </div>
         </div>

@@ -361,14 +361,15 @@ function updateProfileDisplay() {
   }
 
   if (userSubscription) {
-    // 구독 상태
+    // 구독 상태 및 플랜 (한 줄로 표시)
     const isActive = userSubscription.active || userSubscription.is_subscribed || false;
     subscriptionStatus.textContent = isActive ? '활성' : '비활성';
     subscriptionStatus.className = 'subscription-value ' + (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
 
     // 구독 플랜
-    subscriptionPlan.textContent = (userSubscription.plan || 'free').toUpperCase();
-    if (userSubscription.plan === 'premium' || userSubscription.plan === 'pro') {
+    const planName = (userSubscription.plan || 'free').toUpperCase();
+    subscriptionPlan.textContent = planName;
+    if (planName === 'PREMIUM' || planName === 'PRO') {
       subscriptionPlan.classList.add('subscription-plan-premium');
     }
 
@@ -376,8 +377,10 @@ function updateProfileDisplay() {
     const expiryDate = userSubscription.expiresAt || userSubscription.subscribed_until;
     subscriptionExpiry.textContent = expiryDate ? new Date(expiryDate).toLocaleDateString() : '없음';
 
-    // 페이지 그룹
-    subscriptionPages.textContent = userSubscription.features?.page_groups || '1';
+    // 페이지 그룹 정보는 저장은 하되 표시하지 않음
+    const pageGroups = userSubscription.features?.page_groups || '1';
+    subscriptionPages.textContent = pageGroups;
+    // HTML에서 이미 display: none 처리함
   }
 }
 
@@ -402,6 +405,50 @@ function hideProfileModal() {
 }
 
 /**
+ * 앱 설정을 기본값으로 초기화
+ * @param {Object} options - 초기화 옵션
+ * @param {boolean} options.keepAppearance - 외관 설정 유지 여부
+ * @returns {Promise<Object>} 결과 객체
+ */
+async function resetToDefaults(options = { keepAppearance: true }) {
+  try {
+    showStatus('설정을 초기화하는 중...', 'info');
+
+    // resetToDefaults 함수 호출 (preload에서 노출된 함수)
+    const result = await window.toast.resetToDefaults(options);
+
+    if (result.success) {
+      // 기본 페이지 생성 (페이지가 없는 경우)
+      if (pages.length === 0) {
+        const newPage = {
+          name: 'Page 1',
+          shortcut: '1',
+          buttons: [...defaultButtons]
+        };
+
+        pages = [newPage];
+        await window.toast.saveConfig({ pages });
+      }
+
+      // UI 갱신
+      currentPageIndex = 0;
+      renderPagingButtons();
+      showCurrentPageButtons();
+
+      showStatus('설정이 기본값으로 초기화되었습니다.', 'success');
+      return { success: true };
+    } else {
+      showStatus(`설정 초기화 실패: ${result.error}`, 'error');
+      return { success: false, error: result.error };
+    }
+  } catch (error) {
+    console.error('설정 초기화 오류:', error);
+    showStatus(`설정 초기화 오류: ${error.message || '알 수 없는 오류'}`, 'error');
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * 로그아웃 처리
  */
 async function handleLogout() {
@@ -410,9 +457,62 @@ async function handleLogout() {
     const result = await window.toast.logout();
 
     if (result) {
+      // 사용자 프로필 및 구독 정보 초기화
       userProfile = null;
       userSubscription = null;
       isSubscribed = false;
+
+      // 현재 설정 가져오기 (백업용)
+      const currentAppearance = await window.toast.getConfig('appearance') || {};
+
+      // 전체 설정 초기화 시도
+      try {
+        // logoutAndResetPageGroups 호출 (auth.js에서 제공하는 함수)
+        await window.toast.invoke('logoutAndResetPageGroups');
+        console.log('전체 설정 초기화 성공');
+      } catch (resetError) {
+        console.error('설정 초기화 중 오류:', resetError);
+
+        // 대체 방법: 수동으로 설정 리셋
+        await window.toast.saveConfig({
+          subscription: {
+            isAuthenticated: false,
+            isSubscribed: false,
+            plan: 'free',
+            subscribedUntil: '',
+            pageGroups: 1,
+            isVip: false,
+            additionalFeatures: {
+              advancedActions: false,
+              cloudSync: false
+            }
+          }
+        });
+      }
+
+      // 외관 설정은 유지하기 위해 다시 저장
+      if (currentAppearance && Object.keys(currentAppearance).length > 0) {
+        await window.toast.saveConfig({ appearance: currentAppearance });
+      }
+
+      // 페이지 수 제한 (비인증 사용자는 1페이지로 제한)
+      if (pages.length > 1) {
+        // 첫 번째 페이지만 유지하고 나머지 삭제
+        const firstPage = pages[0];
+        pages = [firstPage];
+
+        // 현재 페이지를 첫 번째 페이지로 설정
+        currentPageIndex = 0;
+
+        // UI 업데이트
+        renderPagingButtons();
+        showCurrentPageButtons();
+
+        // 구성 저장
+        await window.toast.saveConfig({ pages });
+
+        showStatus('인증되지 않은 사용자는 1개의 페이지만 사용할 수 있습니다. 첫 번째 페이지만 유지됩니다.', 'info');
+      }
 
       showStatus('로그아웃 되었습니다.', 'success');
       hideProfileModal();

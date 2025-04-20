@@ -17,6 +17,47 @@ const { contextBridge, ipcRenderer } = require('electron');
         fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
         fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
         logout: () => ipcRenderer.invoke('logout'),
+        invoke: (channel, ...args) => {
+          // 허용된 채널에 대해서만 invoke 호출
+          const allowedChannels = [
+            'logoutAndResetPageGroups',
+            'resetToDefaults',
+            'resetAppSettings'
+          ];
+          if (allowedChannels.includes(channel)) {
+            return ipcRenderer.invoke(channel, ...args);
+          }
+          throw new Error(`허용되지 않은 채널: ${channel}`);
+        },
+
+        // 앱 설정 기본값 초기화
+        resetToDefaults: async (options = {}) => {
+          try {
+            // 현재 설정 백업 (유지하려는 설정이 있을 경우)
+            const backupSettings = {};
+
+            // 외관 설정 유지 옵션
+            if (options.keepAppearance) {
+              backupSettings.appearance = await ipcRenderer.invoke('get-config', 'appearance');
+            }
+
+            // 설정 초기화 실행
+            await ipcRenderer.invoke('resetToDefaults');
+
+            // 백업한 설정 복원
+            if (Object.keys(backupSettings).length > 0) {
+              await ipcRenderer.invoke('save-config', backupSettings);
+            }
+
+            return { success: true, message: '설정이 기본값으로 초기화되었습니다.' };
+          } catch (error) {
+            console.error('설정 초기화 오류:', error);
+            return {
+              success: false,
+              error: error.message || '설정 초기화 중 오류가 발생했습니다.'
+            };
+          }
+        },
     // Modal state
     setModalOpen: (isOpen) => ipcRenderer.send('modal-state-changed', isOpen),
 
