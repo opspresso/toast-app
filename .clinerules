@@ -15,6 +15,12 @@
 - **Fail fast and visibly**: Surface errors early with meaningful messages or logs.
 - **Automate where practical**: Use automation for formatting, testing, and deployment to reduce manual effort and error.
 
+## Language Standard
+
+- Use English exclusively: All code, comments, documentation, commit messages, and pull request descriptions must be written in English.
+- Variable and function names: Use descriptive English terms following the project's naming conventions.
+- Documentation: All documentation files should be written in English for consistency and accessibility.
+
 ## Documentation Standards
 
 - Keep all documentation up to date and version-controlled.
