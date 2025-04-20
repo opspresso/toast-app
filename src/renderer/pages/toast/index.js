@@ -36,13 +36,13 @@ const scriptInputGroup = document.getElementById('script-input-group');
 const shortcutInputGroup = document.getElementById('shortcut-input-group');
 const applicationInputGroup = document.getElementById('application-input-group');
 
-// Define default button set
+  // Define default button set
 const defaultButtons = [
   // qwert row
   {
     name: 'VSCode',
     shortcut: 'Q',
-    icon: '💻',
+    icon: 'https://code.visualstudio.com/favicon.ico',
     action: 'exec',
     command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
   },
@@ -106,7 +106,7 @@ const defaultButtons = [
   {
     name: 'GitHub',
     shortcut: 'G',
-    icon: '🐙',
+    icon: 'https://github.com/favicon.ico',
     action: 'open',
     url: 'https://github.com'
   },
@@ -667,6 +667,39 @@ function renderButtons(buttons) {
 }
 
 /**
+ * Extract favicon URL from a given website URL
+ * @param {string} url - Website URL
+ * @returns {string} Favicon URL
+ */
+function getFaviconFromUrl(url) {
+  try {
+    // URL 객체 생성
+    const urlObj = new URL(url);
+    // 기본 favicon URL 반환 (도메인/favicon.ico)
+    return `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
+  } catch (e) {
+    // URL 파싱 오류 시 Google의 favicon 서비스 사용 (예외 처리)
+    if (url && url.includes('://')) {
+      const domain = url.split('://')[1].split('/')[0];
+      return `https://www.google.com/s2/favicons?domain=${domain}`;
+    }
+    // 모든 경우에 대한 기본값
+    return '';
+  }
+}
+
+/**
+ * Check if a string is a URL
+ * @param {string} str - String to check
+ * @returns {boolean} True if URL, false otherwise
+ */
+function isURL(str) {
+  if (!str) return false;
+  const pattern = /^(https?:\/\/|file:\/\/\/|data:image\/)/i;
+  return pattern.test(str.trim());
+}
+
+/**
  * Create a button element from a button configuration
  * @param {Object} button - Button configuration
  * @returns {HTMLElement} Button element
@@ -684,7 +717,35 @@ function createButtonElement(button) {
 
   // Set button icon
   const iconElement = buttonElement.querySelector('.button-icon');
-  iconElement.textContent = button.icon || '🔘';
+
+  // URL 타입이고 아이콘이 비어있지만 URL이 있는 경우, URL의 favicon 사용
+  if (button.action === 'open' && (!button.icon || button.icon.trim() === '') && button.url) {
+    // URL에서 도메인 추출하여 favicon 경로 생성
+    const faviconUrl = getFaviconFromUrl(button.url);
+    iconElement.textContent = '';
+    const img = document.createElement('img');
+    img.src = faviconUrl;
+    img.alt = button.name || 'Button icon';
+    img.onerror = function() {
+      // favicon 로드 실패 시 기본 아이콘으로 대체
+      iconElement.textContent = '🌐';
+    };
+    iconElement.appendChild(img);
+  } else if (button.icon && isURL(button.icon)) {
+    // URL 이미지인 경우 이미지 태그 생성
+    iconElement.textContent = '';
+    const img = document.createElement('img');
+    img.src = button.icon;
+    img.alt = button.name || 'Button icon';
+    img.onerror = function() {
+      // 이미지 로드 실패 시 기본 아이콘으로 대체
+      iconElement.textContent = '🔘';
+    };
+    iconElement.appendChild(img);
+  } else {
+    // 이모지 또는 일반 텍스트인 경우
+    iconElement.textContent = button.icon || '🔘';
+  }
 
   // Set button shortcut
   const shortcutElement = buttonElement.querySelector('.button-shortcut');
@@ -877,6 +938,17 @@ function showActionFields(actionType) {
   scriptInputGroup.style.display = 'none';
   shortcutInputGroup.style.display = 'none';
   applicationInputGroup.style.display = 'none';
+
+  // 아이콘 필드 힌트 업데이트
+  const iconHint = document.querySelector('.field-hint');
+  if (iconHint) {
+    // Open URL 타입일 때는 특별한 힌트 표시
+    if (actionType === 'open') {
+      iconHint.textContent = '이모지 사용 또는 비워두면 URL의 favicon이 자동으로 사용됩니다';
+    } else {
+      iconHint.textContent = '이모지(예: 🚀) 또는 이미지 URL 사용(https://...)';
+    }
+  }
 
   // Show corresponding input field group based on selected action type
   switch (actionType) {
