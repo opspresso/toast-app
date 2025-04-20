@@ -5,11 +5,13 @@
 ## 목차
 
 - [개요](#개요)
+- [시스템 아키텍처](#시스템-아키텍처)
 - [인증 구성](#인증-구성)
 - [환경 변수 설정](#환경-변수-설정)
 - [프로토콜 핸들러 설정](#프로토콜-핸들러-설정)
-- [인증 흐름 구현](#인증-흐름-구현)
+- [인증 흐름](#인증-흐름)
 - [토큰 관리](#토큰-관리)
+- [API 엔드포인트](#api-엔드포인트)
 - [구독 정보 활용](#구독-정보-활용)
 - [오류 처리](#오류-처리)
 - [보안 고려사항](#보안-고려사항)
@@ -17,6 +19,18 @@
 ## 개요
 
 Toast-App은 사용자의 단축키 액션을 수행하는 Electron 데스크톱 애플리케이션이며, Toast-Web은 사용자 인증, 구독 관리 등을 담당하는 Next.js 웹 애플리케이션입니다. 두 시스템은 OAuth 2.0 표준 프로토콜을 통해 안전하게 연동됩니다.
+
+## 시스템 아키텍처
+
+```mermaid
+graph TD
+    A[Toast-App] -->|인증 요청| B[Toast-Web]
+    B -->|인증 토큰| A
+    A -->|API 요청| C[Toast-Web API]
+    C -->|사용자 데이터/구독 정보| A
+    B -->|사용자 데이터 저장| D[(DynamoDB)]
+    C -->|사용자 정보 조회| D
+```
 
 ## 인증 구성
 
@@ -122,9 +136,31 @@ app.on('second-instance', (event, commandLine) => {
 });
 ```
 
-## 인증 흐름 구현
+## 인증 흐름
 
-### 1. 로그인 시작
+Toast-App과 Toast-Web 간의 인증 흐름은 OAuth 2.0 인증 코드 흐름을 따릅니다.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ToastApp
+    participant ToastWeb
+    participant Database
+
+    User->>ToastApp: 앱 실행 & 로그인 요청
+    ToastApp->>ToastWeb: 인증 페이지 요청 (웹 브라우저)
+    ToastWeb->>User: 로그인 페이지 표시
+    User->>ToastWeb: 자격 증명 입력
+    ToastWeb->>Database: 사용자 정보 확인
+    Database->>ToastWeb: 사용자 확인
+    ToastWeb->>ToastApp: 인증 코드 반환 (toast-app:// 프로토콜)
+    ToastApp->>ToastWeb: 인증 코드로 토큰 요청
+    ToastWeb->>ToastApp: 액세스 토큰 및 리프레시 토큰 발급
+    ToastApp->>ToastApp: 토큰 안전하게 저장
+    ToastApp->>User: 로그인 성공 & 앱 기능 활성화
+```
+
+### 로그인 시작
 
 ```javascript
 // config.js에서 가져온 클라이언트 ID 사용
@@ -133,6 +169,9 @@ const REDIRECT_URI = 'toast-app://auth';
 
 async function initiateLogin() {
   const state = uuidv4(); // CSRF 방지용 상태 값
+
+  // 상태 값을 안전하게 저장 (electron-store 등 사용)
+  storeStateParam(state);
 
   const authUrl = new URL('https://web.toast.sh/api/oauth/authorize');
   authUrl.searchParams.append('response_type', 'code');
@@ -146,7 +185,7 @@ async function initiateLogin() {
 }
 ```
 
-### 2. 인증 코드 처리
+### 인증 코드 처리
 
 ```javascript
 function handleAuthRedirect(url) {
@@ -155,6 +194,13 @@ function handleAuthRedirect(url) {
   // 인증 코드 추출
   const code = urlObj.searchParams.get('code');
   const state = urlObj.searchParams.get('state');
+
+  // 상태 값 검증 (CSRF 방지)
+  if (state !== retrieveStoredState()) {
+    // 상태 불일치 - 잠재적 CSRF 공격
+    emitLoginFailure('state-mismatch');
+    return;
+  }
 
   if (code) {
     // 토큰으로 교환
@@ -175,7 +221,7 @@ function handleAuthRedirect(url) {
 }
 ```
 
-### 3. 토큰 교환
+### 토큰 교환
 
 ```javascript
 // config.js에서 클라이언트 ID와 시크릿 가져오기
@@ -290,9 +336,21 @@ async function refreshAccessToken() {
 }
 ```
 
-## API 사용
+## API 엔드포인트
 
-Toast-App에서 Toast-Web API 엔드포인트를 사용하는 예시:
+### Toast-Web API 엔드포인트
+
+| 경로 | 메서드 | 설명 | 필요 파라미터 | 필요 권한 |
+|------|--------|------|--------------|-----------|
+| `/api/oauth/authorize` | GET | 인증 코드 발급 | response_type, client_id, redirect_uri, scope(선택), state(선택) | 없음 |
+| `/api/oauth/token` | POST | 인증 코드를 토큰으로 교환 | grant_type, client_id, client_secret, code, redirect_uri | 없음 |
+| `/api/oauth/token` | POST | 리프레시 토큰으로 토큰 갱신 | grant_type, client_id, client_secret, refresh_token | 없음 |
+| `/api/oauth/revoke` | POST | 토큰 무효화 (로그아웃) | token, client_id, client_secret | 없음 |
+| `/api/users/profile` | GET | 사용자 프로필 정보 조회 | | 인증 필요 |
+| `/api/users/subscription` | GET | 구독 정보 조회 | | 인증 필요 |
+| `/api/users/settings` | GET/POST | 사용자 설정 조회/수정 | | 인증 필요 |
+
+### API 요청 예시
 
 ```javascript
 // 인증 헤더 가져오기
@@ -319,9 +377,31 @@ async function fetchUserProfile() {
 }
 ```
 
+### Toast-App에서의 API 엔드포인트 설정
+
+```javascript
+// API 엔드포인트 상수
+const API_BASE_URL = 'https://web.toast.sh/api';
+const OAUTH_AUTHORIZE_URL = 'https://web.toast.sh/api/oauth/authorize';
+const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
+const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
+const USER_PROFILE_URL = `${API_BASE_URL}/users/profile`;
+const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/users/subscription`;
+```
+
 ## 구독 정보 활용
 
-구독 상태에 따라 앱 기능을 제한하거나 활성화하는 예시:
+### 구독 상태와 제공 기능
+
+| 상태 | 설명 | 제공 기능 | 페이지 수 |
+|------|------|-----------|----------|
+| `free` | 무료 기본 사용자 | 기본 단축키 기능 | 1개 페이지 |
+| `authenticated` | 인증된 사용자 | 기본 기능 + 확장 기능 | 3개 페이지 |
+| `premium` | 프리미엄 구독 사용자 | 모든 단축키 기능, 추가 액션 | 9개 페이지 |
+| `trial` | 시험 사용 기간 중 | 모든 기능 한시적 이용 가능 | 9개 페이지 |
+| `expired` | 구독 만료 | 기본 기능만 사용 가능 | 1개 페이지 |
+
+### 구독 정보에 따른 앱 기능 조정 예시
 
 ```javascript
 // 구독 정보 조회
@@ -333,30 +413,59 @@ async function fetchSubscription() {
   });
 }
 
-// 구독 상태에 따른 기능 활성화
-async function checkFeatureAvailability(featureName) {
+// 페이지 그룹 설정 업데이트
+async function updatePageGroupSettings() {
   try {
-    const subscription = await fetchSubscription();
+    const config = createConfigStore();
+    const isAuthenticated = await hasValidToken();
 
-    // 구독이 활성 상태인지 확인
-    if (subscription.status !== 'active') {
-      return { available: false, reason: 'inactive_subscription' };
+    // 기본값 설정: 인증되지 않은 사용자는 1개 페이지
+    let pageGroups = 1;
+    let isSubscribed = false;
+    let subscribedUntil = '';
+
+    // 인증된 사용자인 경우
+    if (isAuthenticated) {
+      // 인증된 상태 설정 (최소 3개 페이지)
+      pageGroups = 3;
+
+      try {
+        // 구독 정보 가져오기
+        const subscription = await fetchSubscription();
+
+        // 구독 활성화 여부 확인
+        if (subscription && subscription.active) {
+          isSubscribed = true;
+          subscribedUntil = subscription.expiresAt || '';
+          pageGroups = 9; // 구독자는 9개 페이지
+        }
+      } catch (error) {
+        console.error('Error fetching subscription info:', error);
+        // 오류 발생 시 인증된 사용자 기본값 유지
+      }
     }
 
-    // 플랜에 따른 기능 확인
-    if (subscription.plan === 'free' && isPremiumFeature(featureName)) {
-      return { available: false, reason: 'premium_required' };
-    }
+    // 구성 파일 업데이트
+    config.set('subscription', {
+      isAuthenticated,
+      isSubscribed,
+      subscribedUntil,
+      pageGroups
+    });
 
-    // 특정 기능이 구독에 포함되어 있는지 확인
-    if (subscription.features && !subscription.features.includes(featureName)) {
-      return { available: false, reason: 'feature_not_included' };
-    }
-
-    return { available: true };
+    return {
+      success: true,
+      isAuthenticated,
+      isSubscribed,
+      subscribedUntil,
+      pageGroups
+    };
   } catch (error) {
-    console.error('Error checking feature availability:', error);
-    return { available: false, reason: 'error', message: error.message };
+    console.error('Failed to update page group settings:', error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error updating page group settings'
+    };
   }
 }
 ```

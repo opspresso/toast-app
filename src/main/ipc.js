@@ -34,9 +34,45 @@ function setupIpcHandlers(windows) {
   auth.registerProtocolHandler();
 
   // 앱 실행 중 프로토콜 요청 처리
-  global.handleProtocolRequest = (url) => {
+  global.handleProtocolRequest = async (url) => {
     console.log('Protocol request received:', url);
-    if (windows.settings && !windows.settings.isDestroyed()) {
+
+    // auth.js의 handleAuthRedirect 함수로 인증 URL 처리
+    if (url.startsWith('toast-app://auth')) {
+      try {
+        const result = await auth.handleAuthRedirect(url);
+
+        // 처리 결과를 설정 창으로 전달
+        if (windows.settings && !windows.settings.isDestroyed()) {
+          windows.settings.webContents.send('auth-result', result);
+        }
+
+        // 로그인 결과를 토스트 창에도 알림
+        if (windows.toast && !windows.toast.isDestroyed()) {
+          if (result.success) {
+            windows.toast.webContents.send('login-success', {
+              isAuthenticated: result.isAuthenticated,
+              isSubscribed: result.isSubscribed,
+              pageGroups: result.pageGroups
+            });
+          } else {
+            windows.toast.webContents.send('login-error', {
+              error: result.error,
+              message: result.message || '인증에 실패했습니다.'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error handling auth redirect:', error);
+        // 오류 발생 시 설정 창에 알림
+        if (windows.settings && !windows.settings.isDestroyed()) {
+          windows.settings.webContents.send('auth-error', {
+            error: error.message || 'Unknown error'
+          });
+        }
+      }
+    } else if (windows.settings && !windows.settings.isDestroyed()) {
+      // 기타 프로토콜 데이터 전달
       windows.settings.webContents.send('protocol-data', url);
     }
   };
