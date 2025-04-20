@@ -20,18 +20,19 @@ const AUTH_ACCOUNT = 'user';
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 
-// API 엔드포인트
-const API_BASE_URL = 'https://web.toast.sh/api';
-const OAUTH_AUTHORIZE_URL = 'https://web.toast.sh/api/oauth/authorize';
-const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
-const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
-const USER_PROFILE_URL = `${API_BASE_URL}/users/profile`;
-const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/users/subscription`;
-
 // OAuth 설정
 const { getEnv } = require('./config/env');
 const CLIENT_ID = getEnv('CLIENT_ID', 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', 'toast-app-secret');
+
+// API 엔드포인트
+const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
+const API_BASE_URL = `${TOAST_URL}/api`;
+const OAUTH_AUTHORIZE_URL = `${API_BASE_URL}/oauth/authorize`;
+const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
+const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
+const USER_PROFILE_URL = `${API_BASE_URL}/users/profile`;
+const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/users/subscription`;
 const REDIRECT_URI = 'toast-app://auth';
 
 // 토큰 저장소 (메모리)
