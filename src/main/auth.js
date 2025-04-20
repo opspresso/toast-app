@@ -22,8 +22,8 @@ const REFRESH_TOKEN_KEY = 'refresh-token';
 
 // OAuth 설정
 const { getEnv } = require('./config/env');
-const CLIENT_ID = getEnv('CLIENT_ID', 'toast-app-client');
-const CLIENT_SECRET = getEnv('CLIENT_SECRET', 'toast-app-secret');
+const CLIENT_ID = getEnv('CLIENT_ID', process.env.NODE_ENV === 'production' ? '' : 'toast-app-client');
+const CLIENT_SECRET = getEnv('CLIENT_SECRET', process.env.NODE_ENV === 'production' ? '' : 'toast-app-secret');
 
 // API 엔드포인트
 const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
@@ -36,6 +36,13 @@ const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
 const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
 const USER_PROFILE_URL = `${API_BASE_URL}/users/profile`;
 const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/users/subscription`;
+
+// 구독 등급에 따른 페이지 그룹 수 상수
+const PAGE_GROUPS = {
+  ANONYMOUS: 1, // 인증되지 않은 사용자
+  AUTHENTICATED: 3, // 인증된 사용자
+  PREMIUM: 9 // 구독 또는 VIP 사용자
+};
 
 console.log('API 엔드포인트 설정:', {
   TOAST_URL,
@@ -356,7 +363,8 @@ async function refreshAccessToken() {
       console.error('리프레시 토큰이 없음');
       return {
         success: false,
-        error: 'No refresh token available'
+        error: 'No refresh token available',
+        code: 'NO_REFRESH_TOKEN'
       };
     }
 
@@ -376,7 +384,6 @@ async function refreshAccessToken() {
       client_id: CLIENT_ID
     });
 
-    // 401 리프레시 실패 시에도 토큰 초기화 없이 진행
     try {
       // 토큰 갱신 요청
       const response = await axios.post(OAUTH_TOKEN_URL, data, {
@@ -392,7 +399,8 @@ async function refreshAccessToken() {
         console.error('응답에 액세스 토큰 누락');
         return {
           success: false,
-          error: 'No access token in response'
+          error: 'No access token in response',
+          code: 'NO_ACCESS_TOKEN'
         };
       }
 
@@ -421,6 +429,13 @@ async function refreshAccessToken() {
         // 리프레시 토큰 만료 시 토큰 초기화
         await clearTokens();
         console.log('만료된 토큰 초기화 완료');
+
+        return {
+          success: false,
+          error: '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.',
+          code: 'SESSION_EXPIRED',
+          requireRelogin: true
+        };
       }
 
       const errorMessage = tokenRequestError.response?.data?.error ||
@@ -430,7 +445,8 @@ async function refreshAccessToken() {
       console.log('오류 메시지:', errorMessage);
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        code: 'REFRESH_FAILED'
       };
     }
   } catch (error) {
@@ -440,7 +456,8 @@ async function refreshAccessToken() {
     const errorMessage = error.message || 'Unknown error in refresh token process';
     return {
       success: false,
-      error: errorMessage
+      error: errorMessage,
+      code: 'REFRESH_EXCEPTION'
     };
   }
 }
@@ -517,6 +534,21 @@ async function authenticatedRequest(apiCall, options = {}) {
     isSubscriptionRequest = false
   } = options;
 
+  // 구독 API에 대한 기본 응답
+  const defaultSubscriptionResponse = {
+    active: false,
+    is_subscribed: false,
+    plan: 'free',
+    status: 'active',
+    features: {
+      page_groups: PAGE_GROUPS.ANONYMOUS
+    },
+    features_array: ['basic_shortcuts'],
+    expiresAt: null,
+    subscribed_until: null,
+    isVip: false
+  };
+
   // 인증된 API 요청 준비 및 토큰 상태 확인
   if (!currentToken) {
     const storedToken = await getStoredToken();
@@ -541,15 +573,6 @@ async function authenticatedRequest(apiCall, options = {}) {
     }
   }
 
-  // 구독 API에 대한 기본 응답
-  const defaultSubscriptionResponse = {
-    active: false,
-    plan: 'free',
-    status: 'active',
-    features: ['basic_shortcuts', 'standard_actions'],
-    expiresAt: null
-  };
-
   try {
     // API 호출 시도
     const result = await apiCall();
@@ -567,7 +590,13 @@ async function authenticatedRequest(apiCall, options = {}) {
           (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
         console.log('구독 API 401 응답을 기본 인증 사용자로 처리');
         // 기본 구독 정보 반환 (인증은 되었으나 구독은 없음)
-        return defaultSubscriptionResponse;
+        return {
+          ...defaultSubscriptionResponse,
+          features: {
+            page_groups: PAGE_GROUPS.AUTHENTICATED
+          },
+          features_array: ['basic_shortcuts', 'standard_actions']
+        };
       }
 
       // 토큰 갱신 시도
@@ -591,7 +620,13 @@ async function authenticatedRequest(apiCall, options = {}) {
                 (retryError.config && retryError.config.url &&
                  retryError.config.url.includes('/users/subscription'))) {
               console.log('재시도 실패했지만 구독 API이므로 기본 응답 반환');
-              return defaultSubscriptionResponse;
+              return {
+                ...defaultSubscriptionResponse,
+                features: {
+                  page_groups: PAGE_GROUPS.AUTHENTICATED
+                },
+                features_array: ['basic_shortcuts', 'standard_actions']
+              };
             }
 
             // 그 외 API는 오류 전파
@@ -601,6 +636,17 @@ async function authenticatedRequest(apiCall, options = {}) {
 
         // 토큰 갱신 실패
         console.error('토큰 갱신 실패:', refreshResult.error);
+
+        // 재로그인이 필요한 경우
+        if (refreshResult.requireRelogin) {
+          return {
+            error: {
+              code: 'SESSION_EXPIRED',
+              message: '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.',
+              requireRelogin: true
+            }
+          };
+        }
       } catch (refreshError) {
         console.error('토큰 갱신 중 예외 발생:', refreshError);
       }
@@ -611,7 +657,13 @@ async function authenticatedRequest(apiCall, options = {}) {
       if (isSubscriptionRequest ||
           (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
         console.log('토큰 갱신 실패했지만 구독 API이므로 기본 응답 반환');
-        return defaultSubscriptionResponse;
+        return {
+          ...defaultSubscriptionResponse,
+          features: {
+            page_groups: PAGE_GROUPS.AUTHENTICATED
+          },
+          features_array: ['basic_shortcuts', 'standard_actions']
+        };
       }
 
       if (allowUnauthenticated && defaultValue) {
@@ -624,7 +676,8 @@ async function authenticatedRequest(apiCall, options = {}) {
         error: {
           code: 'AUTH_ERROR',
           message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
-          originalError: refreshSuccess ? '토큰 갱신 후 API 호출 실패' : '토큰 갱신 실패'
+          originalError: refreshSuccess ? '토큰 갱신 후 API 호출 실패' : '토큰 갱신 실패',
+          requireRelogin: true
         }
       };
     }
@@ -634,7 +687,13 @@ async function authenticatedRequest(apiCall, options = {}) {
         (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
       console.log('구독 API 일반 오류를 기본 인증 사용자로 처리');
       // 기본 구독 정보 반환 (인증은 되었으나 구독은 없음)
-      return defaultSubscriptionResponse;
+      return {
+        ...defaultSubscriptionResponse,
+        features: {
+          page_groups: PAGE_GROUPS.AUTHENTICATED
+        },
+        features_array: ['basic_shortcuts', 'standard_actions']
+      };
     }
 
     // allowUnauthenticated 설정이면 기본값 반환
@@ -671,6 +730,12 @@ async function fetchUserProfile() {
 
     const response = await axios.get(USER_PROFILE_URL, { headers });
     console.log('프로필 API 응답 상태:', response.status);
+
+    // API 응답 형식이 apiSuccess({ ... }) 형태인 경우 data 필드 추출
+    if (response.data && response.data.success === true && response.data.data) {
+      return response.data.data;
+    }
+
     return response.data;
   });
 }
@@ -680,330 +745,213 @@ async function fetchUserProfile() {
  * @returns {Promise<Object>} 구독 정보
  */
 async function fetchSubscription() {
-  // 기본 구독 정보 (인증 실패나 오류 발생 시 사용)
+  // 구독 API에 대한 기본 응답 (인증 실패나 오류 발생 시 사용)
   const defaultSubscription = {
-    active: false,
+    id: 'sub_free_anonymous',
+    userId: 'anonymous',
     plan: 'free',
     status: 'active',
-    features: ['basic_shortcuts', 'standard_actions'],
+    active: false,
+    is_subscribed: false,
+    features: {
+      page_groups: PAGE_GROUPS.ANONYMOUS
+    },
+    features_array: ['basic_shortcuts'],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     expiresAt: null,
+    subscribed_until: null,
     isVip: false
   };
 
-  // 인증이 안된 경우 바로 기본 구독 정보 반환
-  if (!currentToken && !(await getStoredToken())) {
-    console.log('토큰 없음: 기본 무료 구독 정보 반환');
-    return defaultSubscription;
-  }
-
-  // authenticatedRequest 함수 사용하여 API 호출 (오류 처리 내장)
-  return authenticatedRequest(async () => {
-    const headers = await getAuthHeaders();
-    console.log('구독 정보 API 호출:', USER_SUBSCRIPTION_URL);
-    console.log('사용 중인 인증 헤더:', {
-      authorization: headers.Authorization ? `Bearer ${headers.Authorization.substring(7, 15)}...` : 'none',
-      contentType: headers['Content-Type']
-    });
-
-    const response = await axios.get(USER_SUBSCRIPTION_URL, { headers });
-    console.log('구독 정보 API 응답 상태:', response.status);
-    console.log('구독 정보 API 응답 헤더:', response.headers);
-
-    if (!response.data) {
-      console.log('응답에 데이터 없음');
-      return defaultSubscription;
-    }
-
-    // API 포맷: { success: true, data: {...} }
-    if (response.data.success === false) {
-      console.log('API 오류 응답:', response.data.error);
-      return defaultSubscription;
-    }
-
-    // 응답 구조 확인 및 정규화
-    // 웹에서는 apiSuccess({...}) 형태로 응답하므로 data.data 또는 data 구조 모두 처리
-    let subscriptionData = {};
-
-    if (response.data.success === true && response.data.data) {
-      // toast-web의 apiSuccess 형식 응답: { success: true, data: {...} }
-      console.log('apiSuccess 형식 응답 확인됨');
-      subscriptionData = response.data.data;
-    } else if (typeof response.data === 'object') {
-      // 직접 객체를 반환하는 형식
-      console.log('직접 객체 반환 형식 응답 확인됨');
-      subscriptionData = response.data;
-    } else {
-      // 알 수 없는 형식은 기본값 사용
-      console.log('알 수 없는 응답 형식, 기본값 사용');
-      return defaultSubscription;
-    }
-    console.log('구독 정보 수신:', subscriptionData.plan || 'unknown',
-                'VIP:', subscriptionData.isVip || false);
-
-    // VIP이거나 활성화된 구독이 있는 경우 페이지 그룹 수를 9로 설정
-    const isActive = subscriptionData.active === true;
-    const isVip = subscriptionData.isVip === true;
-    const isPremium = isActive &&
-                     (subscriptionData.plan === 'premium' ||
-                      subscriptionData.plan === 'pro' ||
-                      isVip);
-
-    if (isPremium) {
-      console.log('프리미엄 또는 VIP 사용자 구독 혜택 적용');
-      subscriptionData.pageGroups = 9;
-    } else {
-      console.log('일반 인증 사용자 기본 혜택 적용');
-      subscriptionData.pageGroups = 3;
-    }
-
-    return subscriptionData;
-  }, {
+  const options = {
     allowUnauthenticated: true,
     defaultValue: defaultSubscription,
     isSubscriptionRequest: true
-  });
-}
+  };
 
-/**
- * OAuth 리디렉션을 처리하는 프로토콜 핸들러 등록
- */
-function registerProtocolHandler() {
-  // 이미 등록된 프로토콜인지 확인
-  if (process.defaultApp) {
-    // 개발 모드에서는 앱 인수에 URL 스킴을 명시적으로 추가
-    if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient('toast-app', process.execPath, [
-        path.resolve(process.argv[1])
-      ]);
-    }
-  } else {
-    // 프로덕션 빌드에서는 간단하게 등록
-    app.setAsDefaultProtocolClient('toast-app');
-  }
-}
+  return authenticatedRequest(async () => {
+    try {
+      const headers = await getAuthHeaders();
+      console.log('구독 API 호출:', USER_SUBSCRIPTION_URL);
 
-/**
- * 현재 토큰 상태를 확인합니다
- * @returns {Promise<boolean>} 유효한 토큰이 있으면 true
- */
-async function hasValidToken() {
-  try {
-    if (!currentToken) {
-      currentToken = await getStoredToken();
-    }
+      const response = await axios.get(USER_SUBSCRIPTION_URL, { headers });
+      console.log('구독 API 응답 상태:', response.status);
 
-    return !!currentToken;
-  } catch (error) {
-    console.error('Error checking token validity:', error);
-    return false;
-  }
-}
-
-/**
- * 현재 액세스 토큰을 반환합니다
- * @returns {Promise<string|null>} 현재 액세스 토큰 또는 null
- */
-async function getAccessToken() {
-  if (!currentToken) {
-    currentToken = await getStoredToken();
-  }
-
-  return currentToken;
-}
-
-/**
- * 인증 상태와 구독 정보에 따라 페이지 그룹 개수를 업데이트합니다
- * @returns {Promise<Object>} 업데이트된 구독 정보 (성공 여부 포함)
- */
-async function updatePageGroupSettings() {
-  try {
-    console.log('페이지 그룹 설정 업데이트 시작');
-    const config = createConfigStore();
-
-    // 토큰 유효성 체크
-    if (!currentToken) {
-      currentToken = await getStoredToken();
-    }
-
-    const isAuthenticated = !!currentToken;
-    console.log('토큰 검증 결과:', isAuthenticated ? '토큰 있음' : '토큰 없음');
-
-    // 사용자 권한별 페이지 그룹 수 설정:
-    // 1. 인증되지 않은 사용자: 1개 페이지
-    // 2. 인증된 사용자: 3개 페이지
-    // 3. 구독 또는 VIP 사용자: 9개 페이지
-
-    // 기본값 설정: 인증되지 않은 사용자는 1개 페이지
-    let pageGroups = 1;
-    let isSubscribed = false;
-    let subscribedUntil = '';
-    let authError = false;
-
-    // 인증된 사용자인 경우
-    if (isAuthenticated) {
-      // 인증된 상태 설정 (기본 3개 페이지)
-      pageGroups = 3;
-      console.log('인증된 사용자: 기본 3개 페이지 설정');
-
-      try {
-        // 구독 정보 가져오기
-        console.log('구독 정보 조회 시작');
-        const subscription = await fetchSubscription();
-        console.log('구독 정보 조회 결과:', subscription);
-
-        // 구독 정보가 오류 객체인지 확인
-        if (subscription && subscription.error) {
-          // 인증 오류인 경우
-          if (subscription.error.code === 'AUTH_ERROR') {
-            console.error('구독 정보 조회 중 인증 오류:', subscription.error.message);
-            console.log('인증 오류이지만 기본 사용자로 유지 (3개 페이지)');
-            // 인증 오류가 있지만 이미 토큰이 있으므로 인증 상태는 유지
-            // 구독 혜택만 제외
-          } else {
-            console.error('구독 정보 조회 중 일반 오류:', subscription.error);
-            // 다른 오류는 인증된 사용자 기본값 유지 (3개 페이지)
-          }
-        } else if (subscription && (subscription.active === true || subscription.is_subscribed === true)) {
-          // 구독 활성화 여부 확인 (active 또는 is_subscribed 필드로)
-          console.log('활성 구독 발견: 9개 페이지 설정');
-          isSubscribed = true;
-
-          // subscribed_until 또는 expiresAt 필드 확인
-          // subscribedUntil 값이 항상 문자열이 되도록 보장
-          subscribedUntil = (subscription.subscribed_until || subscription.expiresAt || '').toString();
-
-          // page_groups 필드가 있으면 사용, 없으면 구독자에게 9페이지 제공
-          if (subscription.features && subscription.features.page_groups) {
-            pageGroups = subscription.features.page_groups;
-            console.log(`페이지 그룹 수를 서버에서 제공한 ${pageGroups}로 설정`);
-          } else {
-            pageGroups = 9; // 구독자 또는 VIP 사용자는 9개 페이지
-          }
-        } else {
-          console.log('활성 구독 없음: 기본 인증 사용자 유지 (3개 페이지)');
-        }
-      } catch (error) {
-        console.error('구독 정보 조회 중 예외 발생:', error);
-        console.log('구독 정보 오류이지만 기본 사용자로 유지 (3개 페이지)');
-        // 구독 정보 오류가 있어도 인증된 사용자로 간주 (기본 3페이지)
-        // 최소한의 기능을 계속 제공
+      // API 응답 형식이 apiSuccess({ ... }) 형태인 경우 data 필드 추출
+      let subscriptionData;
+      if (response.data && response.data.success === true && response.data.data) {
+        subscriptionData = response.data.data;
+      } else {
+        subscriptionData = response.data;
       }
-    } else {
-      console.log('비인증 사용자: 1개 페이지로 설정');
+
+      console.log('구독 데이터 수신:', JSON.stringify(subscriptionData, null, 2));
+
+      // 구독 데이터 검증 및 필드 호환성 보장
+      const normalizedSubscription = {
+        ...defaultSubscription,
+        ...subscriptionData,
+        // 활성 여부 필드 동기화 (is_subscribed 또는 active)
+        active: subscriptionData.active || subscriptionData.is_subscribed || false,
+        is_subscribed: subscriptionData.is_subscribed || subscriptionData.active || false,
+        // 만료일 필드 동기화 (expiresAt 또는 subscribed_until)
+        expiresAt: subscriptionData.expiresAt || subscriptionData.subscribed_until || null,
+        subscribed_until: subscriptionData.subscribed_until || subscriptionData.expiresAt || null
+      };
+
+      // features 객체가 없으면 기본값 사용
+      if (!normalizedSubscription.features) {
+        normalizedSubscription.features = defaultSubscription.features;
+      }
+
+      // features_array 필드가 없으면 기본값 사용
+      if (!normalizedSubscription.features_array) {
+        normalizedSubscription.features_array = defaultSubscription.features_array;
+      }
+
+      return normalizedSubscription;
+    } catch (error) {
+      console.error('구독 정보 조회 중 오류 발생:', error);
+      return defaultSubscription;
     }
-
-    // 구성 파일 업데이트 - subscribedUntil을 항상 문자열로 변환
-    const subscriptionSettings = {
-      isAuthenticated,
-      isSubscribed,
-      subscribedUntil: subscribedUntil ? subscribedUntil.toString() : '',
-      pageGroups
-    };
-
-    console.log('최종 구독 설정:', subscriptionSettings);
-    config.set('subscription', subscriptionSettings);
-
-    console.log(`Page group settings updated: authenticated=${isAuthenticated}, subscribed=${isSubscribed}, pages=${pageGroups}`);
-
-    return {
-      success: true,
-      isAuthenticated,
-      isSubscribed,
-      subscribedUntil,
-      pageGroups,
-      authError
-    };
-  } catch (error) {
-    console.error('페이지 그룹 설정 업데이트 실패:', error);
-    // 오류 시에도 기본 설정으로 응답
-    return {
-      success: true,
-      isAuthenticated: !!currentToken,
-      isSubscribed: false,
-      subscribedUntil: '',
-      pageGroups: currentToken ? 3 : 1,
-      error: error.message || 'Unknown error updating page group settings'
-    };
-  }
+  }, options);
 }
 
 /**
- * 인증 코드를 토큰으로 교환하고 구독 상태를 업데이트합니다
+ * 인증 코드를 토큰으로 교환하고 구독 정보를 업데이트합니다
  * @param {string} code - OAuth 인증 코드
- * @returns {Promise<Object>} 토큰 교환 및 구독 업데이트 결과
+ * @returns {Promise<Object>} 처리 결과
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   try {
-    console.log('인증 코드 처리 및 구독 업데이트 시작');
-
-    // 1. 먼저 토큰 교환
-    console.log('1단계: 코드를 토큰으로 교환');
+    // 토큰 교환
     const tokenResult = await exchangeCodeForToken(code);
-
     if (!tokenResult.success) {
-      console.error('토큰 교환 실패:', tokenResult.error);
       return tokenResult;
     }
 
-    console.log('토큰 교환 성공, 토큰 받음');
+    // 구독 정보 가져오기
+    try {
+      const subscription = await fetchSubscription();
+      console.log('구독 정보 조회 성공');
 
-    // 토큰이 잘 저장되었는지 한번 더 확인
-    if (!currentToken) {
-      console.log('현재 메모리에 토큰이 없어 저장소에서 확인');
-      currentToken = await getStoredToken();
+      // 구독 정보를 config에 저장
+      await updatePageGroupSettings(subscription);
 
-      if (!currentToken) {
-        console.error('토큰이 제대로 저장되지 않음! 오류 반환');
-        return {
-          success: false,
-          error: '인증 토큰 저장에 실패했습니다.'
-        };
-      }
-    }
-
-    // 2. 지연을 두고 페이지 그룹 설정 업데이트
-    console.log('2단계: 페이지 그룹 설정 업데이트 (약간의 지연 후)');
-
-    // 서버에 구독 정보가 반영될 시간을 확보하기 위해 잠시 지연
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // 구독 정보 및 페이지 그룹 설정 업데이트
-    const updateResult = await updatePageGroupSettings();
-    console.log('페이지 그룹 설정 업데이트 결과:', updateResult);
-
-    // 페이지 그룹 설정이 실패해도 토큰은 이미 획득했으므로 성공으로 처리
-    const response = {
-      success: true,
-      isAuthenticated: true,
-      isSubscribed: updateResult.isSubscribed || false,
-      subscribedUntil: updateResult.subscribedUntil || '',
-      pageGroups: updateResult.pageGroups || 3 // 최소 기본값
-    };
-
-    console.log('최종 응답:', response);
-    return response;
-  } catch (error) {
-    console.error('인증 코드 처리 중 예외 발생:', error);
-
-    // 토큰은 얻었지만 구독 업데이트 과정에서 오류 발생
-    // 그래도 인증은 성공했으므로 인증 성공으로 처리
-    if (currentToken) {
-      console.log('토큰은 있으므로 기본 인증 사용자로 처리');
       return {
         success: true,
-        isAuthenticated: true,
-        isSubscribed: false,
-        pageGroups: 3,
-        warning: '인증은 성공했지만 구독 정보 처리 중 오류가 발생했습니다.'
+        subscription
+      };
+    } catch (subError) {
+      console.error('구독 정보 조회 실패:', subError);
+
+      // 토큰 교환은 성공했으므로 성공으로 처리하고 경고만 함
+      return {
+        success: true,
+        warning: '로그인은 성공했으나 구독 정보를 가져오지 못했습니다.',
+        error_details: subError.message
       };
     }
-
-    // 정말 치명적인 오류
+  } catch (error) {
+    console.error('인증 코드 교환 및 구독 업데이트 중 오류 발생:', error);
     return {
       success: false,
       error: error.message || '인증 처리 중 오류가 발생했습니다.',
       details: error.stack
     };
+  }
+}
+
+/**
+ * URI 프로토콜 핸들러를 등록합니다 (toast-app:// 프로토콜)
+ * @returns {void}
+ */
+function registerProtocolHandler() {
+  if (process.platform === 'darwin' || process.platform === 'win32') {
+    app.setAsDefaultProtocolClient('toast-app');
+  }
+}
+
+/**
+ * 유효한 액세스 토큰이 있는지 확인합니다
+ * @returns {Promise<boolean>} 토큰이 있으면 true
+ */
+async function hasValidToken() {
+  try {
+    const token = currentToken || await getStoredToken();
+    return !!token;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
+}
+
+/**
+ * 현재 액세스 토큰을 가져옵니다
+ * @returns {Promise<string|null>} 액세스 토큰 또는 null
+ */
+async function getAccessToken() {
+  return currentToken || await getStoredToken();
+}
+
+/**
+ * 구독 정보에 따라 페이지 그룹 설정을 업데이트합니다
+ * @param {Object} subscription - 구독 정보
+ * @returns {Promise<void>}
+ */
+async function updatePageGroupSettings(subscription) {
+  try {
+    const config = createConfigStore();
+
+    // 활성 상태 및 구독 여부 확인
+    const isActive = subscription.active || subscription.is_subscribed || false;
+    const isVip = subscription.isVip || false;
+
+    // 페이지 그룹 수 계산
+    let pageGroups = PAGE_GROUPS.ANONYMOUS;
+    if (isActive || isVip) {
+      if (subscription.plan === 'premium' || subscription.plan === 'pro' || isVip) {
+        pageGroups = PAGE_GROUPS.PREMIUM;
+      } else {
+        pageGroups = PAGE_GROUPS.AUTHENTICATED;
+      }
+    } else if (subscription.userId && subscription.userId !== 'anonymous') {
+      // 비활성 사용자지만 로그인은 된 경우
+      pageGroups = PAGE_GROUPS.AUTHENTICATED;
+    }
+
+    // 구독 정보 저장
+    // subscribedUntil 값이 항상 문자열인지 확인
+    let subscribedUntilStr = '';
+    if (subscription.subscribed_until) {
+      subscribedUntilStr = String(subscription.subscribed_until);
+    } else if (subscription.expiresAt) {
+      subscribedUntilStr = String(subscription.expiresAt);
+    }
+
+    config.set('subscription', {
+      isAuthenticated: true,
+      isSubscribed: isActive,
+      plan: subscription.plan || 'free',
+      subscribedUntil: subscribedUntilStr,
+      pageGroups: subscription.features?.page_groups || pageGroups,
+      isVip: isVip,
+      additionalFeatures: {
+        advancedActions: subscription.features?.advanced_actions || false,
+        cloudSync: subscription.features?.cloud_sync || false
+      }
+    });
+
+    console.log('구독 설정 업데이트 완료:', {
+      isAuthenticated: true,
+      isSubscribed: isActive,
+      plan: subscription.plan || 'free',
+      pageGroups: subscription.features?.page_groups || pageGroups
+    });
+  } catch (error) {
+    console.error('페이지 그룹 설정 업데이트 오류:', error);
+    throw error;
   }
 }
 
