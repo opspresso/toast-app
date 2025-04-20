@@ -7,6 +7,108 @@
     <link rel="icon" href="assets/icons/icon.png">
     <link rel="stylesheet" href="styles.css">
     <meta name="description" content="Comprehensive user guide for Toast App, a customizable shortcut launcher for macOS and Windows.">
+    <style>
+        .doc-content {
+            padding: 2rem 0;
+        }
+
+        .doc-sidebar {
+            position: sticky;
+            top: 100px;
+        }
+
+        .doc-main {
+            max-width: 800px;
+        }
+
+        .doc-toc {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .doc-toc h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        .doc-toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .doc-toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        .doc-toc a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .doc-toc a:hover {
+            color: var(--primary-color);
+        }
+
+        .doc-nav {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        section {
+            margin-bottom: 3rem;
+            padding-top: 1rem;
+        }
+
+        section h2 {
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 2rem;
+        }
+
+        section h3 {
+            margin-top: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        section ul, section ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-light);
+        }
+
+        section li {
+            margin-bottom: 0.8rem;
+        }
+
+        code {
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            border: 1px solid var(--code-border);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .doc-sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav id="main-nav">
@@ -23,11 +125,10 @@
                 </svg>
             </button>
             <ul class="nav-links">
-                <li><a href="index.html#features">Features</a></li>
-                <li><a href="index.html#installation">Installation</a></li>
-                <li><a href="index.html#usage">Usage</a></li>
-                <li><a href="index.html#documentation">Documentation</a></li>
-                <li><a href="index.html#download">Download</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#documentation">Documentation</a></li>
                 <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
             </ul>
         </div>
@@ -69,6 +170,515 @@
             </div>
 
             <div class="doc-main">
+                <section id="installation">
+                    <h2>1. Installation</h2>
+
+                    <h3>System Requirements</h3>
+                    <ul>
+                        <li><strong>macOS</strong>: 10.14 (Mojave) or later</li>
+                        <li><strong>Windows</strong>: Windows 10 or later</li>
+                        <li><strong>Disk Space</strong>: 100 MB for installation</li>
+                        <li><strong>Memory</strong>: 512 MB RAM minimum, 1 GB recommended</li>
+                    </ul>
+
+                    <h3>Installation Steps</h3>
+
+                    <h4>macOS</h4>
+                    <ol>
+                        <li>Download the latest <code>Toast-App-x.x.x.dmg</code> file from the <a href="https://github.com/opspresso/toast-app/releases" target="_blank">releases page</a>.</li>
+                        <li>Open the DMG file and drag Toast App to your Applications folder.</li>
+                        <li>Open Toast App from your Applications folder.</li>
+                        <li>If you see a security warning, go to System Preferences > Security & Privacy and click "Open Anyway".</li>
+                    </ol>
+
+                    <h4>Windows</h4>
+                    <ol>
+                        <li>Download the latest <code>Toast-App-Setup-x.x.x.exe</code> file from the <a href="https://github.com/opspresso/toast-app/releases" target="_blank">releases page</a>.</li>
+                        <li>Run the installer and follow the on-screen instructions.</li>
+                        <li>Toast App will start automatically after installation.</li>
+                    </ol>
+                </section>
+
+                <section id="getting-started">
+                    <h2>2. Getting Started</h2>
+
+                    <p>When you first launch Toast App, you'll see a welcome screen that guides you through the initial setup:</p>
+
+                    <ol>
+                        <li><strong>Set Global Hotkey</strong>: Choose a keyboard shortcut to trigger Toast App (default: Alt+Space).</li>
+                        <li><strong>Launch at Login</strong>: Choose whether to start Toast App automatically when you log in.</li>
+                        <li><strong>Default Buttons</strong>: Toast App comes with a few default buttons to get you started.</li>
+                    </ol>
+
+                    <p>After completing the initial setup, Toast App will run in the background with an icon in your system tray (Windows) or menu bar (macOS).</p>
+                </section>
+
+                <section id="using-toast-app">
+                    <h2>3. Using Toast App</h2>
+
+                    <h3>Opening the Toast Popup</h3>
+                    <p>Press the global hotkey (default: Alt+Space) to open the Toast popup window. The popup will appear at the position specified in your settings (default: center of the screen).</p>
+
+                    <h3>Using Buttons</h3>
+                    <p>The Toast popup displays your configured buttons. You can:</p>
+                    <ul>
+                        <li><strong>Click a button</strong> with your mouse to execute its action.</li>
+                        <li><strong>Press the shortcut key</strong> shown on the button to execute its action.</li>
+                        <li><strong>Use arrow keys</strong> to navigate between buttons and press Enter to execute.</li>
+                    </ul>
+
+                    <h3>Navigating Pages</h3>
+                    <p>Toast App organizes buttons into pages for better organization:</p>
+                    <ul>
+                        <li>Use the <strong>number keys (1-9)</strong> to switch between pages.</li>
+                        <li>Click on the <strong>page tabs</strong> at the top of the popup.</li>
+                        <li>Each page can contain up to 15 buttons (in a 5x3 grid by default).</li>
+                    </ul>
+
+                    <h3>Searching</h3>
+                    <p>If you have many buttons, you can use the search bar at the top of the Toast popup:</p>
+                    <ol>
+                        <li>Start typing to search for buttons by name or shortcut.</li>
+                        <li>The button list will filter as you type.</li>
+                        <li>Press Enter to execute the first matching button.</li>
+                    </ol>
+
+                    <h3>Closing the Toast Popup</h3>
+                    <p>The Toast popup will close automatically after:</p>
+                    <ul>
+                        <li>Executing an action (if "Hide after action" is enabled)</li>
+                        <li>Clicking outside the popup (if "Hide on blur" is enabled)</li>
+                        <li>Pressing the Escape key (if "Hide on Escape" is enabled)</li>
+                    </ul>
+                    <p>You can also click the X button in the top-right corner to close the popup.</p>
+                </section>
+
+                <section id="configuring-buttons">
+                    <h2>4. Configuring Buttons</h2>
+
+                    <h3>Accessing Settings</h3>
+                    <p>To configure buttons and other settings:</p>
+                    <ol>
+                        <li>Right-click the Toast App icon in your system tray or menu bar.</li>
+                        <li>Select "Settings" from the context menu.</li>
+                    </ol>
+
+                    <h3>Adding a Button</h3>
+                    <ol>
+                        <li>In the Settings window, go to the "Buttons" tab.</li>
+                        <li>Click the "Add Button" button.</li>
+                        <li>In the dialog that appears, configure your button:
+                            <ul>
+                                <li><strong>Name</strong>: The display name of the button.</li>
+                                <li><strong>Shortcut Key</strong>: A single key to trigger the button (e.g., T, B, C).</li>
+                                <li><strong>Icon</strong>: An emoji or icon name to display on the button.</li>
+                                <li><strong>Action Type</strong>: Choose the type of action (see <a href="#action-types">Action Types</a>).</li>
+                                <li><strong>Action Parameters</strong>: Configure the parameters for the selected action type.</li>
+                            </ul>
+                        </li>
+                        <li>Click "Save" to add the button.</li>
+                    </ol>
+
+                    <h3>Editing a Button</h3>
+                    <ol>
+                        <li>In the Settings window, go to the "Buttons" tab.</li>
+                        <li>Find the button you want to edit in the list.</li>
+                        <li>Click the "Edit" button next to it.</li>
+                        <li>Modify the button configuration in the dialog.</li>
+                        <li>Click "Save" to update the button.</li>
+                    </ol>
+                    <p>Alternatively, you can use Settings Mode for quicker editing (see <a href="#settings-mode">Settings Mode</a>).</p>
+
+                    <h3>Deleting a Button</h3>
+                    <ol>
+                        <li>In the Settings window, go to the "Buttons" tab.</li>
+                        <li>Find the button you want to delete in the list.</li>
+                        <li>Click the "Delete" button next to it.</li>
+                        <li>Confirm the deletion when prompted.</li>
+                    </ol>
+
+                    <h3>Testing a Button</h3>
+                    <p>When configuring a button, you can test it before saving:</p>
+                    <ol>
+                        <li>Configure the button parameters.</li>
+                        <li>Click the "Test Action" button in the dialog.</li>
+                        <li>The action will be executed and you'll see the result.</li>
+                    </ol>
+                </section>
+
+                <section id="managing-pages">
+                    <h2>5. Managing Pages</h2>
+
+                    <p>Toast App supports organizing your buttons into multiple pages, making it easier to group related actions.</p>
+
+                    <h3>Viewing Pages</h3>
+                    <ul>
+                        <li>When the Toast popup is open, you can see the page tabs at the top.</li>
+                        <li>Each page has a number shortcut (1-9) for quick access.</li>
+                        <li>Page limits depend on your account status:
+                            <ul>
+                                <li><strong>Free Users</strong>: Limited to 1 page</li>
+                                <li><strong>Authenticated Users</strong>: Can create up to 3 pages</li>
+                                <li><strong>Subscribers</strong>: Can create up to 9 pages</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Adding a Page</h3>
+                    <ol>
+                        <li>Open the Toast popup using your global hotkey.</li>
+                        <li>Enter Settings Mode by clicking the gear icon (⚙️) or pressing the comma (,) key.</li>
+                        <li>Click the "+" tab at the top of the popup.</li>
+                        <li>Enter a name for the new page.</li>
+                        <li>Click "Save" to create the page.</li>
+                    </ol>
+                    <p>Alternatively, in the Settings window:</p>
+                    <ol>
+                        <li>Go to the "Buttons" tab.</li>
+                        <li>Click the "Manage Pages" button.</li>
+                        <li>Click "Add Page".</li>
+                        <li>Enter a name for the new page.</li>
+                        <li>Click "Save".</li>
+                    </ol>
+
+                    <h3>Renaming a Page</h3>
+                    <ol>
+                        <li>Open the Toast popup and enter Settings Mode.</li>
+                        <li>Right-click on the page tab you want to rename.</li>
+                        <li>Select "Rename Page" from the context menu.</li>
+                        <li>Enter a new name.</li>
+                        <li>Click "Save".</li>
+                    </ol>
+
+                    <h3>Deleting a Page</h3>
+                    <ol>
+                        <li>Open the Toast popup and enter Settings Mode.</li>
+                        <li>Right-click on the page tab you want to delete.</li>
+                        <li>Select "Delete Page" from the context menu.</li>
+                        <li>Confirm the deletion when prompted.</li>
+                    </ol>
+
+                    <h3>Reordering Pages</h3>
+                    <ol>
+                        <li>Open the Toast popup and enter Settings Mode.</li>
+                        <li>Drag and drop page tabs to reorder them.</li>
+                    </ol>
+                </section>
+
+                <section id="action-types">
+                    <h2>6. Action Types</h2>
+
+                    <p>Toast App supports several types of actions:</p>
+
+                    <h3>Execute Command</h3>
+                    <p>Executes a shell command on your system.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><strong>Command</strong>: The shell command to execute.</li>
+                        <li><strong>Working Directory</strong> (optional): The directory in which to run the command.</li>
+                        <li><strong>Run in Terminal</strong>: Whether to run the command in a terminal window.</li>
+                    </ul>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li><code>echo "Hello world!"</code> - Prints a message</li>
+                        <li><code>open -a "Google Chrome"</code> (macOS) or <code>start chrome</code> (Windows) - Opens Chrome</li>
+                        <li><code>ls -la</code> (macOS/Linux) or <code>dir</code> (Windows) - Lists files in the current directory</li>
+                    </ul>
+
+                    <h3>Open URL/File</h3>
+                    <p>Opens a URL in your default browser or a file/folder with its associated application.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><strong>URL or File Path</strong>: The URL or file path to open.</li>
+                        <li><strong>Application</strong> (optional): The application to use for opening.</li>
+                    </ul>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li><code>https://www.google.com</code> - Opens Google in your default browser</li>
+                        <li><code>/path/to/document.pdf</code> - Opens a PDF file</li>
+                        <li><code>/path/to/folder</code> - Opens a folder in your file explorer</li>
+                    </ul>
+
+                    <h3>Keyboard Shortcut</h3>
+                    <p>Simulates pressing a keyboard shortcut.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><strong>Keys</strong>: The keyboard shortcut to simulate (e.g., Ctrl+C, Alt+Tab).</li>
+                    </ul>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li><code>Ctrl+C</code> - Simulates copying</li>
+                        <li><code>Alt+Tab</code> - Simulates switching windows</li>
+                        <li><code>Cmd+Space</code> (macOS) - Simulates opening Spotlight</li>
+                    </ul>
+
+                    <h3>Custom Script</h3>
+                    <p>Executes a custom script in various languages.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><strong>Script Type</strong>: The language of the script (JavaScript, AppleScript, PowerShell, Bash).</li>
+                        <li><strong>Script</strong>: The script content.</li>
+                    </ul>
+                    <p><strong>Examples:</strong></p>
+                    <ul>
+                        <li>JavaScript: <code>console.log("Hello from JavaScript!");</code></li>
+                        <li>AppleScript (macOS): <code>tell application "Finder" to open home</code></li>
+                        <li>PowerShell (Windows): <code>Get-Process | Sort-Object CPU -Descending | Select-Object -First 5</code></li>
+                        <li>Bash (macOS/Linux): <code>for i in {1..5}; do echo $i; done</code></li>
+                    </ul>
+
+                    <h3>Action Chain</h3>
+                    <p>Executes a series of actions in sequence.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><strong>Actions</strong>: List of actions to execute in order.</li>
+                        <li><strong>Stop on Error</strong>: Whether to stop execution if an action fails.</li>
+                    </ul>
+                    <p><strong>Example:</strong></p>
+                    <ul>
+                        <li>First action: Open a specific folder</li>
+                        <li>Second action: Launch an application</li>
+                        <li>Third action: Execute a keyboard shortcut</li>
+                    </ul>
+                    <p>To configure a chain action:</p>
+                    <ol>
+                        <li>Select "Action Chain" as the action type.</li>
+                        <li>Click "Add Action" to add actions to the chain.</li>
+                        <li>Configure each action as you would normally.</li>
+                        <li>Use the up/down arrows to reorder actions.</li>
+                        <li>Toggle "Stop on Error" to control error handling.</li>
+                    </ol>
+                </section>
+
+                <section id="appearance-settings">
+                    <h2>7. Appearance Settings</h2>
+
+                    <h3>Theme</h3>
+                    <p>Choose the visual theme for Toast App:</p>
+                    <ul>
+                        <li><strong>System</strong>: Follows your system's light/dark mode setting.</li>
+                        <li><strong>Light</strong>: Always uses the light theme.</li>
+                        <li><strong>Dark</strong>: Always uses the dark theme.</li>
+                    </ul>
+
+                    <h3>Position</h3>
+                    <p>Choose where the Toast popup appears on your screen:</p>
+                    <ul>
+                        <li><strong>Center</strong>: In the center of the screen.</li>
+                        <li><strong>Top</strong>: At the top center of the screen.</li>
+                        <li><strong>Bottom</strong>: At the bottom center of the screen.</li>
+                        <li><strong>Cursor</strong>: Near your cursor position.</li>
+                    </ul>
+
+                    <h3>Size</h3>
+                    <p>Choose the size of the Toast popup:</p>
+                    <ul>
+                        <li><strong>Small</strong>: 350x400 pixels.</li>
+                        <li><strong>Medium</strong>: 400x500 pixels.</li>
+                        <li><strong>Large</strong>: 500x600 pixels.</li>
+                    </ul>
+
+                    <h3>Opacity</h3>
+                    <p>Adjust the transparency of the Toast popup using the slider (0.1 to 1.0).</p>
+
+                    <h3>Button Layout</h3>
+                    <p>Choose how buttons are arranged in the Toast popup:</p>
+                    <ul>
+                        <li><strong>Grid</strong>: Buttons arranged in a grid (default).</li>
+                        <li><strong>List</strong>: Buttons arranged in a vertical list.</li>
+                    </ul>
+                </section>
+
+                <section id="advanced-settings">
+                    <h2>8. Advanced Settings</h2>
+
+                    <h3>Launch at Login</h3>
+                    <p>Enable this option to start Toast App automatically when you log in to your computer.</p>
+
+                    <h3>Hide After Action</h3>
+                    <p>Enable this option to automatically hide the Toast popup after executing an action.</p>
+
+                    <h3>Hide on Blur</h3>
+                    <p>Enable this option to automatically hide the Toast popup when it loses focus.</p>
+
+                    <h3>Hide on Escape</h3>
+                    <p>Enable this option to hide the Toast popup when you press the Escape key.</p>
+
+                    <h3>Show in Taskbar</h3>
+                    <p>Enable this option to show the Toast popup in the taskbar/dock.</p>
+                </section>
+
+                <section id="keyboard-shortcuts">
+                    <h2>9. Keyboard Shortcuts</h2>
+
+                    <h3>Global Shortcuts</h3>
+                    <ul>
+                        <li><strong>Global Hotkey</strong> (default: Alt+Space): Open the Toast popup.</li>
+                    </ul>
+
+                    <h3>Toast Popup Shortcuts</h3>
+                    <ul>
+                        <li><strong>Arrow Keys</strong>: Navigate between buttons.</li>
+                        <li><strong>Enter</strong>: Execute the selected button.</li>
+                        <li><strong>Escape</strong>: Close the Toast popup (if enabled).</li>
+                        <li><strong>Button Shortcuts</strong>: Press the shortcut key shown on a button to execute it.</li>
+                        <li><strong>Number Keys (1-9)</strong>: Switch between pages.</li>
+                        <li><strong>Comma (,)</strong>: Toggle Settings Mode.</li>
+                        <li><strong>Plus (+)</strong>: Add a new page (in Settings Mode).</li>
+                        <li><strong>Minus (-)</strong>: Delete the current page (in Settings Mode).</li>
+                    </ul>
+
+                    <h3>Settings Window Shortcuts</h3>
+                    <ul>
+                        <li><strong>Ctrl+S</strong> (Windows) or <strong>Cmd+S</strong> (macOS): Save settings.</li>
+                        <li><strong>Escape</strong>: Cancel and close the settings window.</li>
+                    </ul>
+                </section>
+
+                <section id="settings-mode">
+                    <h2>10. Settings Mode</h2>
+
+                    <p>Settings Mode allows you to quickly edit buttons directly from the Toast popup.</p>
+
+                    <h3>Entering Settings Mode</h3>
+                    <p>There are two ways to enter Settings Mode:</p>
+                    <ol>
+                        <li>Click the gear icon (⚙️) in the lower-right corner of the Toast popup.</li>
+                        <li>Press the comma (,) key when the Toast popup is open.</li>
+                    </ol>
+
+                    <h3>Editing Buttons in Settings Mode</h3>
+                    <p>When in Settings Mode:</p>
+                    <ol>
+                        <li>Click on any button to edit it.</li>
+                        <li>A dialog will appear with the button's current settings.</li>
+                        <li>Modify the settings as needed.</li>
+                        <li>Click "Save" to update the button.</li>
+                    </ol>
+
+                    <h3>Managing Pages in Settings Mode</h3>
+                    <p>In Settings Mode, you can:</p>
+                    <ul>
+                        <li>Click the "+" tab to add a new page.</li>
+                        <li>Right-click on a page tab for options (Rename, Delete).</li>
+                        <li>Drag page tabs to reorder them.</li>
+                    </ul>
+
+                    <h3>Exiting Settings Mode</h3>
+                    <p>To exit Settings Mode:</p>
+                    <ol>
+                        <li>Click the gear icon (⚙️) again.</li>
+                        <li>Press the comma (,) key again.</li>
+                        <li>Press the Escape key.</li>
+                    </ol>
+                </section>
+
+                <section id="importing-and-exporting">
+                    <h2>11. Importing and Exporting</h2>
+
+                    <h3>Exporting Configuration</h3>
+                    <p>To export your configuration:</p>
+                    <ol>
+                        <li>In the Settings window, go to the "Buttons" tab.</li>
+                        <li>Click the "Export" button.</li>
+                        <li>Choose a location to save the configuration file.</li>
+                        <li>Click "Save".</li>
+                    </ol>
+                    <p>The exported file contains all your pages, buttons, and settings, making it easy to back up or transfer your configuration.</p>
+
+                    <h3>Importing Configuration</h3>
+                    <p>To import a configuration:</p>
+                    <ol>
+                        <li>In the Settings window, go to the "Buttons" tab.</li>
+                        <li>Click the "Import" button.</li>
+                        <li>Select a configuration file to import.</li>
+                        <li>Click "Open".</li>
+                        <li>Choose whether to replace or merge with your existing configuration.</li>
+                    </ol>
+                </section>
+
+                <section id="auto-updates">
+                    <h2>12. Auto-Updates</h2>
+
+                    <p>Toast App includes an automatic update system to ensure you always have the latest features and bug fixes.</p>
+
+                    <h3>Update Process</h3>
+                    <p>By default, Toast App automatically checks for updates when it starts:</p>
+                    <ol>
+                        <li>If an update is available, it will be downloaded in the background.</li>
+                        <li>Once downloaded, you'll be notified that an update is ready to install.</li>
+                        <li>You can choose to install the update immediately or later.</li>
+                        <li>If you choose "Later", the update will be installed the next time you restart the app.</li>
+                    </ol>
+
+                    <h3>Manual Update Check</h3>
+                    <p>To manually check for updates:</p>
+                    <ol>
+                        <li>Right-click the Toast App icon in your system tray or menu bar.</li>
+                        <li>Select "Check for Updates" from the context menu.</li>
+                    </ol>
+
+                    <h3>Update Settings</h3>
+                    <p>You can configure update behavior in the Advanced settings:</p>
+                    <ol>
+                        <li>In the Settings window, go to the "Advanced" tab.</li>
+                        <li>Find the "Updates" section.</li>
+                        <li>Configure the following options:
+                            <ul>
+                                <li><strong>Automatically check for updates</strong>: Enable/disable automatic update checks.</li>
+                                <li><strong>Download updates automatically</strong>: Enable/disable automatic download of updates.</li>
+                                <li><strong>Update channel</strong>: Choose between stable releases or beta versions.</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </section>
+
+                <section id="troubleshooting">
+                    <h2>13. Troubleshooting</h2>
+
+                    <h3>Toast App Won't Start</h3>
+                    <ul>
+                        <li>Check if Toast App is already running in the background.</li>
+                        <li>Try restarting your computer.</li>
+                        <li>Reinstall Toast App.</li>
+                    </ul>
+
+                    <h3>Global Hotkey Doesn't Work</h3>
+                    <ul>
+                        <li>Check if the hotkey is already used by another application.</li>
+                        <li>Try setting a different hotkey in the settings.</li>
+                        <li>Restart Toast App after changing the hotkey.</li>
+                    </ul>
+
+                    <h3>Actions Don't Execute</h3>
+                    <ul>
+                        <li>Check if the action parameters are correct.</li>
+                        <li>Test the action in the button editor.</li>
+                        <li>Check your system permissions.</li>
+                    </ul>
+
+                    <h3>Toast Popup Doesn't Appear</h3>
+                    <ul>
+                        <li>Check if Toast App is running (look for the icon in your system tray or menu bar).</li>
+                        <li>Try pressing the global hotkey again.</li>
+                        <li>Check if the Toast window is off-screen (try changing the position setting).</li>
+                    </ul>
+
+                    <h3>Buttons Not Working</h3>
+                    <ul>
+                        <li>Check that the button's action is configured correctly.</li>
+                        <li>Try using the keyboard shortcut instead of clicking.</li>
+                        <li>Test the button in Settings Mode.</li>
+                    </ul>
+
+                    <h3>Pages Not Switching</h3>
+                    <ul>
+                        <li>Make sure you have multiple pages configured.</li>
+                        <li>Try clicking the page tabs instead of using keyboard shortcuts.</li>
+                        <li>Check if your subscription allows for multiple pages.</li>
+                    </ul>
+                </section>
+
                 <section id="faq">
                     <h2>14. FAQ</h2>
 
@@ -85,7 +695,13 @@
                     <p>There is no hard limit on the number of buttons you can add per page. However, for better performance and usability we recommend keeping the number of buttons reasonable (under 15 per page).</p>
 
                     <h3>How many pages can I create?</h3>
-                    <p>Free users can create up to 3 pages. Subscribers can create up to 9 pages. This limit helps to maintain performance and encourages upgrading to the premium version.</p>
+                    <p>Page limits depend on your account status:</p>
+                    <ul>
+                        <li><strong>Free Users</strong>: Limited to 1 page</li>
+                        <li><strong>Authenticated Users</strong>: Can create up to 3 pages after logging in</li>
+                        <li><strong>Subscribers</strong>: Can create up to 9 pages with an active subscription</li>
+                    </ul>
+                    <p>These limits help maintain application performance and provide incentive to authenticate and subscribe for additional functionality.</p>
 
                     <h3>Can I use multiple global hotkeys?</h3>
                     <p>Currently Toast App supports a single global hotkey to open the popup. However, you can use button shortcuts to quickly access specific actions once the popup is open.</p>

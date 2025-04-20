@@ -256,11 +256,10 @@
                 </svg>
             </button>
             <ul class="nav-links">
-                <li><a href="index.html#features">Features</a></li>
-                <li><a href="index.html#installation">Installation</a></li>
-                <li><a href="index.html#usage">Usage</a></li>
-                <li><a href="index.html#documentation">Documentation</a></li>
-                <li><a href="index.html#download">Download</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#documentation">Documentation</a></li>
                 <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
             </ul>
         </div>
@@ -269,44 +268,43 @@
     <div class="documentation-container">
         <a href="index.html" class="return-home btn btn-outline">← Back to Home</a>
 
-        <h1 class="fadeIn">Toast App Configuration Schema</h1>
+        <h1 class="fadeIn">Toast App Configuration Guide</h1>
 
-        <p class="fadeIn delay-1">This document outlines the configuration schema for Toast App, detailing all available options and their formats. The configuration file is stored as JSON and can be edited directly or through the Settings UI.</p>
+        <p class="fadeIn delay-1">This document explains how Toast App stores your settings and what each configuration option means. While most users won't need to edit the configuration file directly, understanding these options can help you get the most out of Toast App.</p>
 
         <div class="table-of-contents">
             <h2>Table of Contents</h2>
             <ol>
                 <li><a href="#configuration-overview">Configuration Overview</a></li>
-                <li><a href="#file-location">File Location</a></li>
-                <li><a href="#top-level-properties">Top-Level Properties</a></li>
-                <li><a href="#pages-schema">Pages Schema</a></li>
-                <li><a href="#buttons-schema">Buttons Schema</a></li>
-                <li><a href="#action-schemas">Action Schemas</a></li>
-                <li><a href="#appearance-schema">Appearance Schema</a></li>
-                <li><a href="#advanced-settings-schema">Advanced Settings Schema</a></li>
+                <li><a href="#file-location">Configuration File Location</a></li>
+                <li><a href="#global-settings">Global Settings</a></li>
+                <li><a href="#pages-and-buttons">Pages and Buttons</a></li>
+                <li><a href="#button-actions">Button Actions</a></li>
+                <li><a href="#appearance-settings">Appearance Settings</a></li>
+                <li><a href="#advanced-settings">Advanced Settings</a></li>
+                <li><a href="#subscription-settings">Subscription Settings</a></li>
+                <li><a href="#backup-and-restore">Backup and Restore</a></li>
                 <li><a href="#example-configuration">Example Configuration</a></li>
-                <li><a href="#version-history">Version History</a></li>
             </ol>
         </div>
 
         <div class="schema-section" id="configuration-overview">
             <h2>Configuration Overview</h2>
-            <p>Toast App's configuration is stored as a JSON file, which defines all user preferences, buttons, pages, and application behavior. The configuration can be edited directly using a text editor or through the Settings UI in the application.</p>
+            <p>Toast App stores your settings in a JSON file. The file contains all your preferences, button configurations, and appearance settings. While Toast App's Settings window provides an easy way to change most options, some advanced users might want to edit the configuration file directly.</p>
 
-            <p>The configuration follows a hierarchical structure:</p>
+            <p>The configuration file includes:</p>
             <ul>
-                <li>Top-level properties define global settings like the global hotkey.</li>
-                <li>The <code>pages</code> array defines groups of buttons, each with its own settings.</li>
-                <li>Each page contains a <code>buttons</code> array with individual button definitions.</li>
-                <li>Buttons define their actions, which vary based on the action type.</li>
-                <li>The <code>appearance</code> object controls UI settings.</li>
-                <li>The <code>advanced</code> object contains system behavior settings.</li>
+                <li>Your global hotkey (the keyboard shortcut that opens Toast App)</li>
+                <li>Your pages and buttons</li>
+                <li>Visual appearance settings (theme, position, size)</li>
+                <li>Advanced behavior settings (auto-launch, hiding behavior)</li>
+                <li>Subscription information</li>
             </ul>
         </div>
 
         <div class="schema-section" id="file-location">
-            <h2>File Location</h2>
-            <p>The configuration file is stored in a platform-specific location:</p>
+            <h2>Configuration File Location</h2>
+            <p>The configuration file is stored in a different location depending on your operating system:</p>
 
             <h3>macOS</h3>
             <pre><code>~/Library/Application Support/toast-app/config.json</code></pre>
@@ -314,326 +312,312 @@
             <h3>Windows</h3>
             <pre><code>%APPDATA%\toast-app\config.json</code></pre>
 
-            <p>The file is created automatically with default values when Toast App is first launched. If the file becomes corrupted or is deleted, Toast App will generate a new configuration file with default values.</p>
+            <h3>Linux</h3>
+            <pre><code>~/.config/toast-app/config.json</code></pre>
+
+            <p>The file is automatically created when you first launch Toast App. If the file is accidentally deleted or corrupted, Toast App will create a new file with default settings.</p>
         </div>
 
-        <div class="schema-section" id="top-level-properties">
-            <h2>Top-Level Properties</h2>
+        <div class="schema-section" id="global-settings">
+            <h2>Global Settings</h2>
+            <p>These settings affect the overall behavior of Toast App.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">globalHotkey</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The global keyboard shortcut that triggers the Toast popup. Must be a valid Electron accelerator string.</p>
+                <p class="config-property-description">The keyboard shortcut that triggers Toast App from anywhere on your computer.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>"Alt+Space"</code>
                 </div>
-                <p>Valid examples:</p>
+                <p>Examples of valid hotkeys:</p>
                 <ul>
-                    <li><code>"Alt+Space"</code></li>
-                    <li><code>"Ctrl+Shift+T"</code></li>
-                    <li><code>"CommandOrControl+P"</code></li>
+                    <li><code>"Alt+Space"</code> - Press Alt and Space together</li>
+                    <li><code>"Ctrl+Shift+T"</code> - Press Ctrl, Shift, and T together</li>
+                    <li><code>"CommandOrControl+P"</code> - Press Command (Mac) or Control (Windows) and P together</li>
                 </ul>
+                <p>Note: If your chosen hotkey conflicts with another application, you'll need to choose a different one.</p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
-                    <h3 class="config-property-name">pages</h3>
-                    <span class="config-property-type">Array</span>
-                    <span class="config-property-required">Required</span>
+                    <h3 class="config-property-name">firstLaunchCompleted</h3>
+                    <span class="config-property-type">Boolean</span>
                 </div>
-                <p class="config-property-description">An array of page objects, each defining a set of buttons.</p>
+                <p class="config-property-description">Indicates whether you've completed the initial setup process. This is set automatically and you generally don't need to change it.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
-                    <code>[]</code>
-                </div>
-                <p>See <a href="#pages-schema">Pages Schema</a> for details on page object structure.</p>
-            </div>
-
-            <div class="config-property">
-                <div class="config-property-header">
-                    <h3 class="config-property-name">appearance</h3>
-                    <span class="config-property-type">Object</span>
-                    <span class="config-property-optional">Optional</span>
-                </div>
-                <p class="config-property-description">Object containing appearance settings for the Toast UI.</p>
-                <div class="config-property-default">
-                    <h4>Default Value:</h4>
-                    <code>{ "theme": "system", "position": "center", "size": "medium" }</code>
-                </div>
-                <p>See <a href="#appearance-schema">Appearance Schema</a> for details on appearance object structure.</p>
-            </div>
-
-            <div class="config-property">
-                <div class="config-property-header">
-                    <h3 class="config-property-name">advanced</h3>
-                    <span class="config-property-type">Object</span>
-                    <span class="config-property-optional">Optional</span>
-                </div>
-                <p class="config-property-description">Object containing advanced settings for Toast App behavior.</p>
-                <div class="config-property-default">
-                    <h4>Default Value:</h4>
-                    <code>{ "launchAtLogin": true, "hideAfterAction": true, "hideOnBlur": true, "hideOnEscape": true }</code>
-                </div>
-                <p>See <a href="#advanced-settings-schema">Advanced Settings Schema</a> for details on advanced object structure.</p>
-            </div>
-
-            <div class="config-property">
-                <div class="config-property-header">
-                    <h3 class="config-property-name">version</h3>
-                    <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
-                </div>
-                <p class="config-property-description">The version of the configuration schema. This is used for automatic config migration when the schema changes between app versions.</p>
-                <div class="config-property-default">
-                    <h4>Default Value:</h4>
-                    <code>"1.0.0"</code>
+                    <code>false</code>
                 </div>
             </div>
         </div>
 
-        <div class="schema-section" id="pages-schema">
-            <h2>Pages Schema</h2>
-            <p>Each page object in the <code>pages</code> array defines a set of buttons that can be accessed through tab navigation in the Toast popup.</p>
+        <div class="schema-section" id="pages-and-buttons">
+            <h2>Pages and Buttons</h2>
+            <p>Toast App organizes buttons into pages, allowing you to group related actions together.</p>
+
+            <h3>Pages</h3>
+            <p>Each page has the following properties:</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">name</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The display name of the page. This is shown in the page tabs.</p>
+                <p class="config-property-description">The name of the page, shown in the tab at the top of the Toast popup.</p>
+                <p>Example: <code>"Applications"</code>, <code>"Development"</code>, <code>"Web Links"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">shortcut</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The keyboard shortcut to access this page when the Toast popup is open. Typically a single number (1-9).</p>
+                <p class="config-property-description">The keyboard shortcut to switch to this page (typically a number from 1-9).</p>
+                <p>Example: <code>"1"</code>, <code>"2"</code>, <code>"3"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">buttons</h3>
                     <span class="config-property-type">Array</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">An array of button objects for this page.</p>
-                <div class="config-property-default">
-                    <h4>Default Value:</h4>
-                    <code>[]</code>
-                </div>
-                <p>See <a href="#buttons-schema">Buttons Schema</a> for details on button object structure.</p>
+                <p class="config-property-description">A list of buttons that appear on this page.</p>
             </div>
 
-            <div class="config-property">
-                <div class="config-property-header">
-                    <h3 class="config-property-name">icon</h3>
-                    <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
-                </div>
-                <p class="config-property-description">An icon for the page tab. Can be an emoji or a named icon.</p>
-            </div>
-        </div>
-
-        <div class="schema-section" id="buttons-schema">
-            <h2>Buttons Schema</h2>
-            <p>Each button object in a page's <code>buttons</code> array defines an action that can be triggered from the Toast popup.</p>
+            <h3>Buttons</h3>
+            <p>Each button has the following properties:</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">name</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The display name of the button. This is shown on the button in the Toast popup.</p>
+                <p class="config-property-description">The name of the button, shown on the button in the Toast popup.</p>
+                <p>Example: <code>"Terminal"</code>, <code>"Chrome"</code>, <code>"Slack"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">shortcut</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The keyboard shortcut to trigger this button when the Toast popup is open. Typically a single letter.</p>
+                <p class="config-property-description">The keyboard shortcut to trigger this button (typically a single letter or symbol).</p>
+                <p>Example: <code>"T"</code>, <code>"C"</code>, <code>"S"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">icon</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">An icon for the button. Can be an emoji or a named icon.</p>
+                <p class="config-property-description">An emoji or icon to display on the button.</p>
+                <p>Example: <code>"⌨️"</code>, <code>"🌐"</code>, <code>"📁"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">action</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The type of action to perform. Must be one of: "exec", "open", "shortcut", "script".</p>
+                <p class="config-property-description">The type of action this button performs. Must be one of: "exec", "open", "shortcut", "script", or "chain".</p>
             </div>
 
-            <p>Additional properties depend on the <code>action</code> type. See <a href="#action-schemas">Action Schemas</a> for details.</p>
+            <p>Each button also includes additional properties depending on its action type. See <a href="#button-actions">Button Actions</a> for details.</p>
         </div>
 
-        <div class="schema-section" id="action-schemas">
-            <h2>Action Schemas</h2>
-            <p>Different action types require different additional properties in the button object.</p>
+        <div class="schema-section" id="button-actions">
+            <h2>Button Actions</h2>
+            <p>Toast App supports several types of actions for buttons. Each action type requires different additional properties.</p>
 
-            <h3>Exec Action</h3>
-            <p>The "exec" action executes a shell command.</p>
+            <h3>Execute Command (exec)</h3>
+            <p>Runs a shell command on your computer.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">command</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
                 <p class="config-property-description">The shell command to execute.</p>
+                <p>Example: <code>"open -a Terminal"</code> (macOS) or <code>"start cmd"</code> (Windows)</p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
-                    <h3 class="config-property-name">workingDirectory</h3>
+                    <h3 class="config-property-name">workingDir</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The directory in which to execute the command.</p>
-                <div class="config-property-default">
-                    <h4>Default Value:</h4>
-                    <code>User's home directory</code>
-                </div>
+                <p class="config-property-description">The directory in which to run the command (optional).</p>
+                <p>Example: <code>"~/Documents"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">runInTerminal</h3>
                     <span class="config-property-type">Boolean</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">Whether to run the command in a terminal window.</p>
+                <p class="config-property-description">Whether to run the command in a visible terminal window (optional).</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>false</code>
                 </div>
             </div>
 
-            <h3>Open Action</h3>
-            <p>The "open" action opens a URL or file.</p>
+            <h3>Open URL/File (open)</h3>
+            <p>Opens a URL in your default browser or a file/folder with its associated application.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">url</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The URL or file path to open.</p>
+                <p class="config-property-description">The URL to open in a browser.</p>
+                <p>Example: <code>"https://www.google.com"</code></p>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">path</h3>
+                    <span class="config-property-type">String</span>
+                </div>
+                <p class="config-property-description">The file or folder path to open.</p>
+                <p>Example: <code>"~/Documents"</code> or <code>"/path/to/document.pdf"</code></p>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">application</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The application to use for opening the URL or file. If not specified, the system default application will be used.</p>
+                <p class="config-property-description">The specific application to use for opening (optional).</p>
+                <p>Example: <code>"Firefox"</code> or <code>"Microsoft Word"</code></p>
             </div>
 
-            <h3>Shortcut Action</h3>
-            <p>The "shortcut" action simulates pressing a keyboard shortcut.</p>
+            <h3>Keyboard Shortcut (shortcut)</h3>
+            <p>Simulates pressing a keyboard shortcut.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
-                    <h3 class="config-property-name">keys</h3>
+                    <h3 class="config-property-name">keyShortcut</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
-                <p class="config-property-description">The keyboard shortcut to simulate (e.g., "Ctrl+C", "Alt+Tab", "Cmd+Space").</p>
+                <p class="config-property-description">The keyboard shortcut to simulate.</p>
+                <p>Example: <code>"Ctrl+C"</code>, <code>"Alt+Tab"</code>, <code>"Cmd+Space"</code></p>
             </div>
 
-            <h3>Script Action</h3>
-            <p>The "script" action executes a custom script.</p>
-
-            <div class="config-property">
-                <div class="config-property-header">
-                    <h3 class="config-property-name">scriptType</h3>
-                    <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
-                </div>
-                <p class="config-property-description">The type of script. Must be one of: "javascript", "applescript" (macOS only), "powershell" (Windows only), "bash" (macOS/Linux only).</p>
-            </div>
+            <h3>Custom Script (script)</h3>
+            <p>Executes a custom script in various languages.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">script</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-required">Required</span>
                 </div>
                 <p class="config-property-description">The script content to execute.</p>
             </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">scriptType</h3>
+                    <span class="config-property-type">String</span>
+                </div>
+                <p class="config-property-description">The language of the script. Must be one of: "javascript", "applescript" (macOS only), "powershell" (Windows only), or "bash" (macOS/Linux only).</p>
+            </div>
+
+            <h3>Action Chain (chain)</h3>
+            <p>Executes multiple actions in sequence.</p>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">actions</h3>
+                    <span class="config-property-type">Array</span>
+                </div>
+                <p class="config-property-description">A list of actions to execute in sequence.</p>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">stopOnError</h3>
+                    <span class="config-property-type">Boolean</span>
+                </div>
+                <p class="config-property-description">Whether to stop executing actions if one fails.</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>true</code>
+                </div>
+            </div>
         </div>
 
-        <div class="schema-section" id="appearance-schema">
-            <h2>Appearance Schema</h2>
-            <p>The <code>appearance</code> object defines visual settings for the Toast UI.</p>
+        <div class="schema-section" id="appearance-settings">
+            <h2>Appearance Settings</h2>
+            <p>These settings control how Toast App looks and behaves visually.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">theme</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The visual theme to use. Must be one of: "system" (follow OS setting), "light", "dark".</p>
+                <p class="config-property-description">The visual theme for Toast App.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>"system"</code>
                 </div>
+                <p>Options:</p>
+                <ul>
+                    <li><code>"light"</code> - Always use light theme</li>
+                    <li><code>"dark"</code> - Always use dark theme</li>
+                    <li><code>"system"</code> - Follow your system's light/dark mode setting</li>
+                </ul>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">position</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The position of the Toast popup on the screen. Must be one of: "center", "top", "bottom", "cursor".</p>
+                <p class="config-property-description">Where the Toast popup appears on your screen.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>"center"</code>
                 </div>
+                <p>Options:</p>
+                <ul>
+                    <li><code>"center"</code> - Center of the screen</li>
+                    <li><code>"top"</code> - Top center of the screen</li>
+                    <li><code>"bottom"</code> - Bottom center of the screen</li>
+                    <li><code>"cursor"</code> - Near your mouse cursor</li>
+                </ul>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">size</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The size of the Toast popup. Must be one of: "small", "medium", "large".</p>
+                <p class="config-property-description">The size of the Toast popup window.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>"medium"</code>
                 </div>
+                <p>Options:</p>
+                <ul>
+                    <li><code>"small"</code> - 350x400 pixels</li>
+                    <li><code>"medium"</code> - 400x500 pixels</li>
+                    <li><code>"large"</code> - 500x600 pixels</li>
+                </ul>
             </div>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">opacity</h3>
                     <span class="config-property-type">Number</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The opacity of the Toast popup. Must be a number between 0.1 and 1.0.</p>
+                <p class="config-property-description">The transparency of the Toast popup (0.1 to 1.0, where 1.0 is fully opaque).</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
-                    <code>1.0</code>
+                    <code>0.95</code>
                 </div>
             </div>
 
@@ -641,27 +625,42 @@
                 <div class="config-property-header">
                     <h3 class="config-property-name">buttonLayout</h3>
                     <span class="config-property-type">String</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">The layout of buttons in the Toast popup. Must be one of: "grid", "list".</p>
+                <p class="config-property-description">How buttons are arranged in the Toast popup.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>"grid"</code>
                 </div>
+                <p>Options:</p>
+                <ul>
+                    <li><code>"grid"</code> - Buttons arranged in a grid (default)</li>
+                    <li><code>"list"</code> - Buttons arranged in a vertical list</li>
+                </ul>
             </div>
         </div>
 
-        <div class="schema-section" id="advanced-settings-schema">
-            <h2>Advanced Settings Schema</h2>
-            <p>The <code>advanced</code> object defines system behavior settings for Toast App.</p>
+        <div class="schema-section" id="advanced-settings">
+            <h2>Advanced Settings</h2>
+            <p>These settings control Toast App's behavior.</p>
 
             <div class="config-property">
                 <div class="config-property-header">
                     <h3 class="config-property-name">launchAtLogin</h3>
                     <span class="config-property-type">Boolean</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">Whether to start Toast App automatically when the user logs in.</p>
+                <p class="config-property-description">Whether Toast App starts automatically when you log in to your computer.</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>false</code>
+                </div>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">hideAfterAction</h3>
+                    <span class="config-property-type">Boolean</span>
+                </div>
+                <p class="config-property-description">Whether the Toast popup closes automatically after you execute an action.</p>
                 <div class="config-property-default">
                     <h4>Default Value:</h4>
                     <code>true</code>
@@ -670,10 +669,263 @@
 
             <div class="config-property">
                 <div class="config-property-header">
-                    <h3 class="config-property-name">hideAfterAction</h3>
+                    <h3 class="config-property-name">hideOnBlur</h3>
                     <span class="config-property-type">Boolean</span>
-                    <span class="config-property-optional">Optional</span>
                 </div>
-                <p class="config-property-description">Whether to hide the Toast popup after executing an action.</p>
+                <p class="config-property-description">Whether the Toast popup closes when it loses focus (e.g., when you click elsewhere).</p>
                 <div class="config-property-default">
-                    <h4>
+                    <h4>Default Value:</h4>
+                    <code>true</code>
+                </div>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">hideOnEscape</h3>
+                    <span class="config-property-type">Boolean</span>
+                </div>
+                <p class="config-property-description">Whether the Toast popup closes when you press the Escape key.</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>true</code>
+                </div>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">showInTaskbar</h3>
+                    <span class="config-property-type">Boolean</span>
+                </div>
+                <p class="config-property-description">Whether the Toast App icon appears in the taskbar/dock when the popup is open.</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>false</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="schema-section" id="subscription-settings">
+            <h2>Subscription Settings</h2>
+            <p>These settings relate to your Toast App subscription status.</p>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">isSubscribed</h3>
+                    <span class="config-property-type">Boolean</span>
+                </div>
+                <p class="config-property-description">Whether you have an active subscription.</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>false</code>
+                </div>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">subscribedUntil</h3>
+                    <span class="config-property-type">String</span>
+                </div>
+                <p class="config-property-description">The date until which your subscription is valid (ISO format).</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>""</code>
+                </div>
+            </div>
+
+            <div class="config-property">
+                <div class="config-property-header">
+                    <h3 class="config-property-name">pageGroups</h3>
+                    <span class="config-property-type">Number</span>
+                </div>
+                <p class="config-property-description">The number of page groups you can create based on your subscription level.</p>
+                <div class="config-property-default">
+                    <h4>Default Value:</h4>
+                    <code>1</code>
+                </div>
+                <p>Page limit by subscription:</p>
+                <ul>
+                    <li>Free users: 1 page</li>
+                    <li>Authenticated users: 3 pages</li>
+                    <li>Subscribers: 9 pages</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="schema-section" id="backup-and-restore">
+            <h2>Backup and Restore</h2>
+            <p>You can back up and restore your Toast App configuration to transfer settings between computers or recover from issues.</p>
+
+            <h3>Exporting Configuration</h3>
+            <p>To export your configuration:</p>
+            <ol>
+                <li>Open the Settings window in Toast App</li>
+                <li>Go to the Advanced tab</li>
+                <li>Click "Export Configuration"</li>
+                <li>Choose where to save the configuration file</li>
+            </ol>
+
+            <h3>Importing Configuration</h3>
+            <p>To import a configuration:</p>
+            <ol>
+                <li>Open the Settings window in Toast App</li>
+                <li>Go to the Advanced tab</li>
+                <li>Click "Import Configuration"</li>
+                <li>Select the configuration file to import</li>
+                <li>Choose whether to replace or merge with your existing configuration</li>
+            </ol>
+
+            <h3>Automatic Backups</h3>
+            <p>Toast App automatically creates a backup of your configuration before making changes. The backup is stored in the same location as your configuration file with a <code>.backup</code> extension.</p>
+        </div>
+
+        <div class="schema-section" id="example-configuration">
+            <h2>Example Configuration</h2>
+            <p>Here's an example of a complete configuration file:</p>
+
+            <pre><code>{
+  "globalHotkey": "Alt+Space",
+  "pages": [
+    {
+      "name": "Applications",
+      "shortcut": "1",
+      "buttons": [
+        {
+          "name": "Terminal",
+          "shortcut": "T",
+          "icon": "⌨️",
+          "action": "exec",
+          "command": "open -a Terminal"
+        },
+        {
+          "name": "Browser",
+          "shortcut": "B",
+          "icon": "🌐",
+          "action": "open",
+          "url": "https://www.google.com"
+        },
+        {
+          "name": "Documents",
+          "shortcut": "D",
+          "icon": "📁",
+          "action": "exec",
+          "command": "open ~/Documents"
+        }
+      ]
+    },
+    {
+      "name": "Development",
+      "shortcut": "2",
+      "buttons": [
+        {
+          "name": "VS Code",
+          "shortcut": "V",
+          "icon": "💻",
+          "action": "exec",
+          "command": "open -a 'Visual Studio Code'"
+        },
+        {
+          "name": "GitHub",
+          "shortcut": "G",
+          "icon": "🐙",
+          "action": "open",
+          "url": "https://github.com"
+        },
+        {
+          "name": "Copy Path",
+          "shortcut": "C",
+          "icon": "📋",
+          "action": "shortcut",
+          "keyShortcut": "Cmd+Shift+C"
+        }
+      ]
+    }
+  ],
+  "appearance": {
+    "theme": "system",
+    "position": "center",
+    "size": "medium",
+    "opacity": 0.95,
+    "buttonLayout": "grid"
+  },
+  "advanced": {
+    "launchAtLogin": true,
+    "hideAfterAction": true,
+    "hideOnBlur": true,
+    "hideOnEscape": true,
+    "showInTaskbar": false
+  },
+  "subscription": {
+    "isSubscribed": false,
+    "subscribedUntil": "",
+    "pageGroups": 1
+  },
+  "firstLaunchCompleted": true
+}</code></pre>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Toast App. MIT License.</p>
+            <ul class="footer-links">
+                <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
+                <li><a href="CONTRIBUTING.html">Contributing</a></li>
+                <li><a href="CODE_OF_CONDUCT.html">Code of Conduct</a></li>
+                <li><a href="SECURITY.html">Security</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
+
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+            });
+
+            // Navigation scroll effect
+            const nav = document.getElementById('main-nav');
+
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    nav.classList.add('nav-scrolled');
+                } else {
+                    nav.classList.remove('nav-scrolled');
+                }
+            });
+
+            // Smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+
+                        // Close mobile menu if it's open
+                        if (navLinks.classList.contains('active')) {
+                            navLinks.classList.remove('active');
+                        }
+                    }
+                });
+            });
+
+            // Simple animation for the content
+            document.querySelectorAll('.schema-section').forEach((element, index) => {
+                element.classList.add('fadeIn');
+                element.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+    </script>
+</body>
+</html>

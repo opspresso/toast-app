@@ -278,11 +278,10 @@
                 </svg>
             </button>
             <ul class="nav-links">
-                <li><a href="index.html#features">Features</a></li>
-                <li><a href="index.html#installation">Installation</a></li>
-                <li><a href="index.html#usage">Usage</a></li>
-                <li><a href="index.html#documentation">Documentation</a></li>
-                <li><a href="index.html#download">Download</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#usage">Usage</a></li>
+                <li><a href="#documentation">Documentation</a></li>
                 <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
             </ul>
         </div>
@@ -293,498 +292,418 @@
 
         <h1 class="fadeIn">Toast App API Documentation</h1>
 
-        <p class="fadeIn delay-1">This document provides comprehensive information about the internal APIs of Toast App. These APIs are used by the application itself and can be useful for developers who want to extend or modify Toast App's functionality.</p>
+        <p class="fadeIn delay-1">This document provides information about Toast App's internal structure and functionality. While primarily intended for developers who want to extend Toast App, this documentation can also help users understand how the application works.</p>
 
         <div class="table-of-contents">
             <h2>Table of Contents</h2>
             <ol>
                 <li><a href="#introduction">Introduction</a></li>
-                <li><a href="#config-manager-api">Config Manager API</a></li>
-                <li><a href="#window-manager-api">Window Manager API</a></li>
-                <li><a href="#shortcut-manager-api">Shortcut Manager API</a></li>
-                <li><a href="#executor-api">Executor API</a></li>
-                <li><a href="#tray-manager-api">Tray Manager API</a></li>
-                <li><a href="#ipc-api">IPC API</a></li>
-                <li><a href="#theme-engine-api">Theme Engine API</a></li>
-                <li><a href="#platform-api">Platform API</a></li>
+                <li><a href="#config-module">Configuration Module</a></li>
+                <li><a href="#executor-module">Executor Module</a></li>
+                <li><a href="#shortcuts-module">Shortcuts Module</a></li>
+                <li><a href="#tray-module">Tray Module</a></li>
+                <li><a href="#windows-module">Windows Module</a></li>
+                <li><a href="#action-modules">Action Modules</a></li>
+                <li><a href="#data-structures">Data Structures</a></li>
                 <li><a href="#error-handling">Error Handling</a></li>
+                <li><a href="#platform-specifics">Platform-Specific Behaviors</a></li>
             </ol>
         </div>
 
         <div class="api-section" id="introduction">
             <h2>Introduction</h2>
-            <p>Toast App's internal architecture follows a modular design with well-defined APIs between components. This approach allows for flexibility, maintainability, and extensibility.</p>
+            <p>Toast App is built on a modular architecture with clear separation between different components. This documentation explains how these components work together to provide the app's functionality.</p>
 
-            <p>The APIs are divided into several modules, each responsible for a specific aspect of the application:</p>
+            <p>The app consists of several key modules:</p>
             <ul>
-                <li><strong>Config Manager:</strong> Handles application configuration loading, validation, and persistence.</li>
-                <li><strong>Window Manager:</strong> Controls the application windows (Toast popup, settings, etc.).</li>
-                <li><strong>Shortcut Manager:</strong> Registers and handles global keyboard shortcuts.</li>
-                <li><strong>Executor:</strong> Executes actions triggered by buttons (commands, URLs, shortcuts, scripts).</li>
-                <li><strong>Tray Manager:</strong> Manages the system tray/menu bar icon and context menu.</li>
-                <li><strong>IPC:</strong> Facilitates communication between main and renderer processes.</li>
-                <li><strong>Theme Engine:</strong> Applies visual themes to the UI based on user preferences.</li>
-                <li><strong>Platform:</strong> Provides platform-specific functionality abstraction.</li>
+                <li><strong>Configuration Module:</strong> Manages all user settings and preferences</li>
+                <li><strong>Executor Module:</strong> Handles execution of various actions (commands, URLs, shortcuts, scripts)</li>
+                <li><strong>Shortcuts Module:</strong> Manages global keyboard shortcuts</li>
+                <li><strong>Tray Module:</strong> Controls the system tray/menu bar icon</li>
+                <li><strong>Windows Module:</strong> Manages application windows (Toast popup, Settings)</li>
+                <li><strong>Action Modules:</strong> Specialized modules for each action type</li>
+            </ul>
+
+            <p>Understanding these modules can help you better use Toast App and troubleshoot any issues that may arise.</p>
+        </div>
+
+        <div class="api-section" id="config-module">
+            <h2>Configuration Module</h2>
+            <p>The Configuration Module handles how Toast App stores and manages your settings. All of your preferences, including button configurations, appearance settings, and other options, are managed by this module.</p>
+
+            <h3>Configuration Structure</h3>
+            <p>Your configuration is stored in a structured format that includes:</p>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">Configuration Schema</h3>
+                </div>
+                <p>The primary configuration elements include:</p>
+
+                <ul>
+                    <li><strong>globalHotkey:</strong> Your keyboard shortcut to open Toast App (default: Alt+Space)</li>
+                    <li><strong>pages:</strong> Collection of pages containing your buttons</li>
+                    <li><strong>appearance:</strong> Visual settings including theme, position, size, opacity, and button layout</li>
+                    <li><strong>advanced:</strong> Additional settings like launch at login, hiding behavior, etc.</li>
+                    <li><strong>subscription:</strong> Subscription status and related settings</li>
+                </ul>
+
+                <div class="example-section">
+                    <h4>Key Default Settings</h4>
+<pre><code>// Default appearance settings
+{
+  theme: 'system',        // Options: 'light', 'dark', 'system'
+  position: 'center',     // Options: 'center', 'top', 'bottom', 'cursor'
+  size: 'medium',         // Options: 'small', 'medium', 'large'
+  opacity: 0.95,          // Range: 0.1 to 1.0
+  buttonLayout: 'grid'    // Options: 'grid', 'list'
+}
+
+// Default advanced settings
+{
+  launchAtLogin: false,   // Whether to start at login
+  hideAfterAction: true,  // Whether to hide after executing an action
+  hideOnBlur: true,       // Whether to hide when focus is lost
+  hideOnEscape: true,     // Whether to hide when Escape is pressed
+  showInTaskbar: false    // Whether to show in taskbar/dock
+}</code></pre>
+                </div>
+            </div>
+
+            <h3>Configuration Storage</h3>
+            <p>Your settings are stored in:</p>
+            <ul>
+                <li><strong>macOS:</strong> <code>~/Library/Application Support/toast-app/config.json</code></li>
+                <li><strong>Windows:</strong> <code>%APPDATA%\toast-app\config.json</code></li>
+            </ul>
+            <p>You can manually back up this file to save your configuration or transfer it to another computer.</p>
+        </div>
+
+        <div class="api-section" id="executor-module">
+            <h2>Executor Module</h2>
+            <p>The Executor Module is responsible for running actions when you click buttons. It determines what happens when you activate a button in Toast App.</p>
+
+            <h3>Key Functions</h3>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">Action Execution</h3>
+                </div>
+                <p>When you click a button, the executor:</p>
+                <ol>
+                    <li>Identifies the action type (command, URL, shortcut, script, or chain)</li>
+                    <li>Validates the action parameters</li>
+                    <li>Executes the appropriate action handler</li>
+                    <li>Returns the result (success or failure)</li>
+                </ol>
+
+                <div class="example-section">
+                    <h4>Supported Action Types</h4>
+                    <ul>
+                        <li><strong>exec:</strong> Runs a shell command on your computer</li>
+                        <li><strong>open:</strong> Opens a URL, file, or folder</li>
+                        <li><strong>shortcut:</strong> Simulates pressing a keyboard shortcut</li>
+                        <li><strong>script:</strong> Runs a custom script in JavaScript, AppleScript, PowerShell, or Bash</li>
+                        <li><strong>chain:</strong> Executes multiple actions in sequence</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="shortcuts-module">
+            <h2>Shortcuts Module</h2>
+            <p>The Shortcuts Module handles global keyboard shortcuts that work across your entire computer, not just within Toast App. The primary shortcut is the one that opens the Toast popup (default: Alt+Space).</p>
+
+            <h3>Key Functions</h3>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">Global Shortcut Management</h3>
+                </div>
+                <p>The shortcuts module provides:</p>
+                <ul>
+                    <li>Registration of global keyboard shortcuts</li>
+                    <li>Toggling the Toast window visibility</li>
+                    <li>Positioning the Toast window based on your settings</li>
+                    <li>Handling shortcut registration conflicts</li>
+                </ul>
+
+                <div class="example-section">
+                    <h4>Position Options</h4>
+                    <ul>
+                        <li><strong>center:</strong> Center of your screen</li>
+                        <li><strong>top:</strong> Top center of your screen</li>
+                        <li><strong>bottom:</strong> Bottom center of your screen</li>
+                        <li><strong>cursor:</strong> Near your mouse cursor</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="tray-module">
+            <h2>Tray Module</h2>
+            <p>The Tray Module manages the system tray icon (Windows) or menu bar icon (macOS) that gives you quick access to Toast App functions.</p>
+
+            <h3>Key Functions</h3>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">Tray Icon & Menu</h3>
+                </div>
+                <p>The tray module provides:</p>
+                <ul>
+                    <li>Creating the system tray/menu bar icon</li>
+                    <li>Building the context menu with app options</li>
+                    <li>Handling menu item clicks</li>
+                </ul>
+
+                <div class="example-section">
+                    <h4>Default Menu Options</h4>
+                    <ul>
+                        <li>Show Toast: Opens the Toast popup</li>
+                        <li>Settings: Opens the settings window</li>
+                        <li>Check for Updates: Checks for app updates</li>
+                        <li>Quit: Exits the application</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="windows-module">
+            <h2>Windows Module</h2>
+            <p>The Windows Module manages application windows, including the Toast popup and the Settings window. It controls how these windows appear, behave, and respond to user interactions.</p>
+
+            <h3>Key Functions</h3>
+
+            <div class="api-method">
+                <div class="api-method-header">
+                    <h3 class="api-method-name">Window Management</h3>
+                </div>
+                <p>The windows module provides:</p>
+                <ul>
+                    <li>Creating the Toast popup and Settings windows</li>
+                    <li>Setting up window event handlers</li>
+                    <li>Showing and hiding windows</li>
+                    <li>Applying your appearance settings</li>
+                </ul>
+
+                <div class="example-section">
+                    <h4>Window Size Options</h4>
+                    <ul>
+                        <li><strong>small:</strong> 350x400 pixels</li>
+                        <li><strong>medium:</strong> 400x500 pixels</li>
+                        <li><strong>large:</strong> 500x600 pixels</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-section" id="action-modules">
+            <h2>Action Modules</h2>
+            <p>Toast App includes specialized modules for each type of action you can assign to buttons. These modules handle the specific requirements of different action types.</p>
+
+            <h3>Exec Action</h3>
+            <p>Executes shell commands on your computer.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>command</code>: The shell command to execute</li>
+                        <li><code>workingDir</code> (optional): The directory to run the command in</li>
+                        <li><code>runInTerminal</code> (optional): Whether to run in a terminal window</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Open Action</h3>
+            <p>Opens URLs, files, and folders.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>url</code> or <code>path</code>: The URL or file/folder path to open</li>
+                        <li><code>application</code> (optional): Specific application to use for opening</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Shortcut Action</h3>
+            <p>Simulates keyboard shortcuts.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>keys</code>: The keyboard shortcut to simulate (e.g., "Ctrl+C", "Alt+Tab")</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Script Action</h3>
+            <p>Executes custom scripts in various languages.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>script</code>: The script content</li>
+                        <li><code>scriptType</code>: Language (javascript, applescript, powershell, bash)</li>
+                        <li><code>scriptParams</code> (optional): Parameters to pass to the script</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Chain Action</h3>
+            <p>Executes multiple actions in sequence.</p>
+            <ul>
+                <li><strong>Parameters:</strong>
+                    <ul>
+                        <li><code>actions</code>: Array of actions to execute in sequence</li>
+                        <li><code>stopOnError</code> (optional): Whether to stop if an action fails</li>
+                    </ul>
+                </li>
             </ul>
         </div>
 
-        <div class="api-section" id="config-manager-api">
-            <h2>Config Manager API</h2>
-            <p>The Config Manager module handles the loading, validation, and saving of Toast App's configuration.</p>
+        <div class="api-section" id="data-structures">
+            <h2>Data Structures</h2>
+            <p>Understanding the structure of pages and buttons can help you customize Toast App more effectively.</p>
 
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">getConfig(key, defaultValue)</h3>
-                    <span class="api-method-module">ConfigManager</span>
-                </div>
-                <p>Retrieves a specific configuration value by key.</p>
-
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">key</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">String</span></td>
-                            <td class="param-description">The configuration key to retrieve. Can be a nested path using dot notation (e.g., 'appearance.theme').</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="param-name">defaultValue</span>
-                                <span class="param-optional">Optional</span>
-                            </td>
-                            <td><span class="param-type">Any</span></td>
-                            <td class="param-description">The default value to return if the key doesn't exist in the configuration.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">Any</span> - The configuration value for the specified key, or the default value if the key doesn't exist.</p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Get the global hotkey
-const hotkey = ConfigManager.getConfig('globalHotkey', 'Alt+Space');
-
-// Get a nested configuration value
-const theme = ConfigManager.getConfig('appearance.theme', 'system');</code></pre>
-                </div>
-            </div>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">setConfig(key, value)</h3>
-                    <span class="api-method-module">ConfigManager</span>
-                </div>
-                <p>Sets a specific configuration value by key.</p>
-
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">key</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">String</span></td>
-                            <td class="param-description">The configuration key to set. Can be a nested path using dot notation.</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="param-name">value</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">Any</span></td>
-                            <td class="param-description">The value to assign to the specified key.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">void</span></p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Set the global hotkey
-ConfigManager.setConfig('globalHotkey', 'Ctrl+Space');
-
-// Set a nested configuration value
-ConfigManager.setConfig('appearance.theme', 'dark');</code></pre>
-                </div>
-            </div>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">saveConfig()</h3>
-                    <span class="api-method-module">ConfigManager</span>
-                </div>
-                <p>Saves the current configuration to disk.</p>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">Boolean</span> - True if the save was successful, false otherwise.</p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Save changes to the configuration
-const saved = ConfigManager.saveConfig();
-if (saved) {
-    console.log('Configuration saved successfully.');
-} else {
-    console.error('Failed to save configuration.');
+            <h3>Page Structure</h3>
+            <div class="example-section">
+<pre><code>{
+  name: "Applications",       // Display name of the page
+  shortcut: "1",              // Keyboard shortcut to access the page (1-9)
+  buttons: [                  // Array of button objects
+    // Button objects go here
+  ]
 }</code></pre>
-                </div>
-            </div>
-        </div>
-
-        <div class="api-section" id="window-manager-api">
-            <h2>Window Manager API</h2>
-            <p>The Window Manager module handles the creation, display, and management of application windows.</p>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">showToast()</h3>
-                    <span class="api-method-module">WindowManager</span>
-                </div>
-                <p>Shows the Toast popup window at the configured position.</p>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">BrowserWindow</span> - The Electron BrowserWindow instance for the Toast popup.</p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Show the Toast popup
-const toastWindow = WindowManager.showToast();</code></pre>
-                </div>
             </div>
 
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">hideToast()</h3>
-                    <span class="api-method-module">WindowManager</span>
-                </div>
-                <p>Hides the Toast popup window.</p>
+            <h3>Button Structure</h3>
+            <div class="example-section">
+<pre><code>{
+  name: "Terminal",           // Display name of the button
+  shortcut: "T",              // Keyboard shortcut (single character)
+  icon: "⌨️",                 // Emoji or icon
+  action: "exec",             // Action type (exec, open, shortcut, script, chain)
 
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">void</span></p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Hide the Toast popup
-WindowManager.hideToast();</code></pre>
-                </div>
-            </div>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">showSettings()</h3>
-                    <span class="api-method-module">WindowManager</span>
-                </div>
-                <p>Shows the Settings window.</p>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">BrowserWindow</span> - The Electron BrowserWindow instance for the Settings window.</p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Show the Settings window
-const settingsWindow = WindowManager.showSettings();</code></pre>
-                </div>
-            </div>
-        </div>
-
-        <div class="api-section" id="shortcut-manager-api">
-            <h2>Shortcut Manager API</h2>
-            <p>The Shortcut Manager module handles global keyboard shortcuts and their registration.</p>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">registerGlobalShortcut(accelerator, callback)</h3>
-                    <span class="api-method-module">ShortcutManager</span>
-                </div>
-                <p>Registers a global keyboard shortcut.</p>
-
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">accelerator</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">String</span></td>
-                            <td class="param-description">The keyboard shortcut to register (e.g., 'Alt+Space', 'Ctrl+Shift+P').</td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="param-name">callback</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">Function</span></td>
-                            <td class="param-description">The function to call when the shortcut is triggered.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">Boolean</span> - True if the shortcut was registered successfully, false otherwise.</p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Register a global shortcut to show the Toast popup
-const registered = ShortcutManager.registerGlobalShortcut('Alt+Space', () => {
-    WindowManager.showToast();
-});
-
-if (!registered) {
-    console.error('Failed to register global shortcut.');
+  // Additional properties based on action type:
+  command: "open -a Terminal", // For exec action
+  url: "https://example.com",  // For open action
+  keys: "Ctrl+C",              // For shortcut action
+  script: "console.log('Hello');", // For script action
+  scriptType: "javascript",    // For script action
+  actions: [],                 // For chain action (array of actions)
+  stopOnError: true            // For chain action
 }</code></pre>
-                </div>
-            </div>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">unregisterGlobalShortcut(accelerator)</h3>
-                    <span class="api-method-module">ShortcutManager</span>
-                </div>
-                <p>Unregisters a global keyboard shortcut.</p>
-
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">accelerator</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">String</span></td>
-                            <td class="param-description">The keyboard shortcut to unregister.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">void</span></p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Unregister the global shortcut
-ShortcutManager.unregisterGlobalShortcut('Alt+Space');</code></pre>
-                </div>
             </div>
         </div>
 
-        <div class="api-section" id="executor-api">
-            <h2>Executor API</h2>
-            <p>The Executor module handles the execution of actions triggered by buttons.</p>
+        <div class="api-section" id="error-handling">
+            <h2>Error Handling</h2>
+            <p>Toast App includes robust error handling to ensure that problems with one button or action don't affect the entire application.</p>
 
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">executeAction(action)</h3>
-                    <span class="api-method-module">Executor</span>
-                </div>
-                <p>Executes a specified action.</p>
+            <h3>Error Response Structure</h3>
+            <p>When an action fails, Toast App provides a structured error message that includes:</p>
+            <ul>
+                <li>Success indicator (false in case of errors)</li>
+                <li>User-friendly error message</li>
+                <li>Detailed error information (for troubleshooting)</li>
+            </ul>
 
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">action</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">Object</span></td>
-                            <td class="param-description">
-                                The action to execute, containing:
-                                <ul>
-                                    <li><code>type</code>: The action type ('exec', 'open', 'shortcut', 'script').</li>
-                                    <li>Additional parameters specific to the action type.</li>
-                                </ul>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <h3>Common Error Scenarios</h3>
+            <ul>
+                <li><strong>Command Execution Errors:</strong> Invalid commands, permission issues, or command not found</li>
+                <li><strong>URL Opening Errors:</strong> Invalid URLs, network issues, or missing applications</li>
+                <li><strong>Shortcut Errors:</strong> Invalid shortcut formats or unsupported key combinations</li>
+                <li><strong>Script Errors:</strong> Syntax errors, runtime errors, or unsupported script types</li>
+                <li><strong>Chain Action Errors:</strong> Errors in individual actions within the chain</li>
+            </ul>
 
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">Promise&lt;Object&gt;</span> - A promise that resolves with the result of the action or rejects with an error.</p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Execute a command action
-Executor.executeAction({
-    type: 'exec',
-    command: 'echo "Hello, world!"',
-    workingDirectory: process.cwd(),
-    runInTerminal: false
-}).then(result => {
-    console.log('Command output:', result.output);
-}).catch(error => {
-    console.error('Command execution failed:', error.message);
-});
-
-// Open a URL action
-Executor.executeAction({
-    type: 'open',
-    url: 'https://www.google.com'
-});
-
-// Execute a keyboard shortcut action
-Executor.executeAction({
-    type: 'shortcut',
-    keys: 'Ctrl+C'
-});</code></pre>
-                </div>
-            </div>
+            <p>When you encounter errors, check the error message for specific guidance on how to fix the issue.</p>
         </div>
 
-        <div class="api-section" id="tray-manager-api">
-            <h2>Tray Manager API</h2>
-            <p>The Tray Manager module handles the system tray/menu bar icon and context menu.</p>
+        <div class="api-section" id="platform-specifics">
+            <h2>Platform-Specific Behaviors</h2>
+            <p>Toast App works on both macOS and Windows, but there are some platform-specific behaviors to be aware of.</p>
 
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">createTray()</h3>
-                    <span class="api-method-module">TrayManager</span>
-                </div>
-                <p>Creates and shows the system tray/menu bar icon with a context menu.</p>
+            <h3>macOS Specifics</h3>
+            <ul>
+                <li><strong>Menu Bar Integration:</strong> Uses macOS menu bar instead of system tray</li>
+                <li><strong>AppleScript Support:</strong> Allows execution of AppleScript in custom script buttons</li>
+                <li><strong>Keyboard Modifiers:</strong> Uses Command (⌘) instead of Ctrl for keyboard shortcuts</li>
+                <li><strong>File Paths:</strong> Uses Unix-style paths with forward slashes (/)</li>
+            </ul>
 
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">Tray</span> - The Electron Tray instance.</p>
-                </div>
+            <h3>Windows Specifics</h3>
+            <ul>
+                <li><strong>System Tray:</strong> Uses Windows system tray for the application icon</li>
+                <li><strong>PowerShell Support:</strong> Allows execution of PowerShell scripts</li>
+                <li><strong>Keyboard Modifiers:</strong> Uses Ctrl instead of Command for keyboard shortcuts</li>
+                <li><strong>File Paths:</strong> Uses Windows-style paths with backslashes (\)</li>
+            </ul>
 
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Create the system tray icon
-const tray = TrayManager.createTray();</code></pre>
-                </div>
-            </div>
-
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">updateContextMenu(template)</h3>
-                    <span class="api-method-module">TrayManager</span>
-                </div>
-                <p>Updates the context menu of the system tray/menu bar icon.</p>
-
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">template</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">Array&lt;Object&gt;</span></td>
-                            <td class="param-description">The template for the context menu items.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="return-section">
-                    <h4>Returns</h4>
-                    <p><span class="param-type">void</span></p>
-                </div>
-
-                <div class="example-section">
-                    <h4>Example</h4>
-<pre><code>// Update the context menu
-TrayManager.updateContextMenu([
-    { label: 'Show Toast', click: () => WindowManager.showToast() },
-    { label: 'Settings', click: () => WindowManager.showSettings() },
-    { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() }
-]);</code></pre>
-                </div>
-            </div>
+            <p>Toast App automatically adapts to the platform you're using, so you generally don't need to worry about these differences. However, they're important to know if you're creating complex buttons or scripts.</p>
         </div>
+    </div>
 
-        <div class="api-section" id="ipc-api">
-            <h2>IPC API</h2>
-            <p>The IPC module facilitates communication between the main and renderer processes.</p>
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Toast App. MIT License.</p>
+            <ul class="footer-links">
+                <li><a href="https://github.com/opspresso/toast-app" target="_blank">GitHub</a></li>
+                <li><a href="CONTRIBUTING.html">Contributing</a></li>
+                <li><a href="CODE_OF_CONDUCT.html">Code of Conduct</a></li>
+                <li><a href="SECURITY.html">Security</a></li>
+            </ul>
+        </div>
+    </footer>
 
-            <div class="api-method">
-                <div class="api-method-header">
-                    <h3 class="api-method-name">on(channel, listener)</h3>
-                    <span class="api-method-module">IPC</span>
-                </div>
-                <p>Registers a listener for IPC messages on a specific channel.</p>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const navLinks = document.querySelector('.nav-links');
 
-                <h4>Parameters</h4>
-                <table class="api-param-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span class="param-name">channel</span>
-                                <span class="param-required">Required</span>
-                            </td>
-                            <td><span class="param-type">
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+            });
+
+            // Navigation scroll effect
+            const nav = document.getElementById('main-nav');
+
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    nav.classList.add('nav-scrolled');
+                } else {
+                    nav.classList.remove('nav-scrolled');
+                }
+            });
+
+            // Smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+
+                        // Close mobile menu if it's open
+                        if (navLinks.classList.contains('active')) {
+                            navLinks.classList.remove('active');
+                        }
+                    }
+                });
+            });
+
+            // Simple animation for the content
+            document.querySelectorAll('.api-section').forEach((element, index) => {
+                element.classList.add('fadeIn');
+                element.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+    </script>
+</body>
+</html>
