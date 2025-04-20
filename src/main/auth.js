@@ -336,16 +336,20 @@ async function exchangeCodeForToken(code) {
  */
 async function refreshAccessToken() {
   try {
+    console.log('토큰 리프레시 프로세스 시작');
+
     // 리프레시 토큰 가져오기
     const refreshToken = currentRefreshToken || await getStoredRefreshToken();
 
     if (!refreshToken) {
-      console.error('No refresh token available');
+      console.error('리프레시 토큰이 없음');
       return {
         success: false,
         error: 'No refresh token available'
       };
     }
+
+    console.log('리프레시 토큰 존재, 교환 시도 중');
 
     // 토큰 갱신 요청 데이터 준비
     const data = new URLSearchParams();
@@ -354,27 +358,74 @@ async function refreshAccessToken() {
     data.append('client_id', CLIENT_ID);
     data.append('client_secret', CLIENT_SECRET);
 
-    // 토큰 갱신 요청
-    const response = await axios.post(OAUTH_TOKEN_URL, data, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+    // 요청 데이터 로깅 (민감 정보 제외)
+    console.log('토큰 리프레시 요청:', {
+      url: OAUTH_TOKEN_URL,
+      grant_type: 'refresh_token',
+      client_id: CLIENT_ID
     });
 
-    const { access_token, refresh_token } = response.data;
+    // 401 리프레시 실패 시에도 토큰 초기화 없이 진행
+    try {
+      // 토큰 갱신 요청
+      const response = await axios.post(OAUTH_TOKEN_URL, data, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
 
-    // 새 토큰 저장
-    await storeToken(access_token);
+      console.log('토큰 갱신 응답 상태:', response.status);
+      const { access_token, refresh_token } = response.data;
 
-    // 새 리프레시 토큰 저장 (있는 경우)
-    if (refresh_token) {
-      await storeRefreshToken(refresh_token);
+      if (!access_token) {
+        console.error('응답에 액세스 토큰 누락');
+        return {
+          success: false,
+          error: 'No access token in response'
+        };
+      }
+
+      console.log('새 액세스 토큰 수신:', access_token.substring(0, 10) + '...');
+
+      // 새 토큰 저장
+      currentToken = access_token; // 먼저 메모리에 저장
+      await storeToken(access_token);
+      console.log('새 액세스 토큰 저장 완료');
+
+      // 새 리프레시 토큰 저장 (있는 경우)
+      if (refresh_token) {
+        currentRefreshToken = refresh_token; // 먼저 메모리에 저장
+        await storeRefreshToken(refresh_token);
+        console.log('새 리프레시 토큰 저장 완료');
+      }
+
+      return { success: true };
+    } catch (tokenRequestError) {
+      console.error('토큰 갱신 요청 실패:', tokenRequestError.message);
+      console.log('상태 코드:', tokenRequestError.response?.status);
+
+      if (tokenRequestError.response?.status === 401) {
+        console.log('리프레시 토큰이 만료되었습니다. 재로그인 필요');
+
+        // 리프레시 토큰 만료 시 인증에 실패했지만 기존 토큰은 유지
+        // (기본 기능 계속 사용 가능하도록)
+      }
+
+      const errorMessage = tokenRequestError.response?.data?.error ||
+                         tokenRequestError.message ||
+                         'Unknown error during token refresh';
+
+      console.log('오류 메시지:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage
+      };
     }
-
-    return { success: true };
   } catch (error) {
-    console.error('Failed to refresh access token:', error);
-    const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+    console.error('토큰 리프레시 과정 중 예외 발생:', error);
+
+    // 치명적인 오류이지만 앱 실행은 유지
+    const errorMessage = error.message || 'Unknown error in refresh token process';
     return {
       success: false,
       error: errorMessage
@@ -442,9 +493,18 @@ async function getAuthHeaders() {
 /**
  * 인증이 필요한 API 호출을 처리하는 함수
  * @param {Function} apiCall - API 호출 함수
+ * @param {Object} options - 옵션
+ * @param {boolean} options.allowUnauthenticated - 인증 실패 시 기본값 반환 허용
+ * @param {Object} options.defaultValue - 인증 실패 시 반환할 기본값
  * @returns {Promise<any>} API 응답
  */
-async function authenticatedRequest(apiCall) {
+async function authenticatedRequest(apiCall, options = {}) {
+  const {
+    allowUnauthenticated = false,
+    defaultValue = null,
+    isSubscriptionRequest = false
+  } = options;
+
   // 인증된 API 요청 준비 및 토큰 상태 확인
   if (!currentToken) {
     const storedToken = await getStoredToken();
@@ -453,6 +513,13 @@ async function authenticatedRequest(apiCall) {
       currentToken = storedToken;
     } else {
       console.error('액세스 토큰이 없음: 메모리와 안전 저장소 모두 확인 실패');
+
+      // 인증 허용 설정이면 기본값 반환
+      if (allowUnauthenticated && defaultValue) {
+        console.log('인증 없이 기본값 반환');
+        return defaultValue;
+      }
+
       return {
         error: {
           code: 'NO_TOKEN',
@@ -461,6 +528,15 @@ async function authenticatedRequest(apiCall) {
       };
     }
   }
+
+  // 구독 API에 대한 기본 응답
+  const defaultSubscriptionResponse = {
+    active: false,
+    plan: 'free',
+    status: 'active',
+    features: ['basic_shortcuts', 'standard_actions'],
+    expiresAt: null
+  };
 
   try {
     // API 호출 시도
@@ -474,85 +550,85 @@ async function authenticatedRequest(apiCall) {
     if (error.response && error.response.status === 401) {
       console.log('401 오류 발생, 토큰 문제 감지');
 
-      // 구독 API 요청이라면 미구독 사용자로 처리
-      if (error.config && error.config.url && error.config.url.includes('/users/subscription')) {
+      // 구독 API 요청이거나 isSubscriptionRequest 플래그가 설정된 경우
+      if (isSubscriptionRequest ||
+          (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
         console.log('구독 API 401 응답을 기본 인증 사용자로 처리');
         // 기본 구독 정보 반환 (인증은 되었으나 구독은 없음)
-        return {
-          active: false,
-          plan: 'free',
-          expiresAt: null,
-          features: []
-        };
+        return defaultSubscriptionResponse;
       }
 
-      // 다른 API 요청은 토큰 갱신 시도
+      // 토큰 갱신 시도
+      console.log('토큰 갱신 시도 시작');
+      let refreshSuccess = false;
+
       try {
-        console.log('토큰 갱신 시도 시작');
-        // 토큰 갱신 시도
         const refreshResult = await refreshAccessToken();
+        refreshSuccess = refreshResult.success;
 
-        if (refreshResult.success) {
+        if (refreshSuccess) {
           console.log('토큰 갱신 성공, API 재호출');
-          // 갱신된 토큰으로 API 호출 재시도
-          return await apiCall();
-        } else {
-          // 토큰 갱신 실패 시 구독 API면 기본 응답 반환
-          if (error.config && error.config.url && error.config.url.includes('/users/subscription')) {
-            console.log('토큰 갱신 실패했지만 구독 API이므로 기본 응답 반환');
-            return {
-              active: false,
-              plan: 'free',
-              expiresAt: null,
-              features: []
-            };
-          }
+          try {
+            // 갱신된 토큰으로 API 호출 재시도
+            return await apiCall();
+          } catch (retryError) {
+            console.error('토큰 갱신 후 API 재호출 실패:', retryError.message);
 
-          // 그 외 API는 오류 리턴
-          console.error('토큰 갱신 실패:', refreshResult.error);
-          return {
-            error: {
-              code: 'AUTH_ERROR',
-              message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
-              originalError: refreshResult.error
+            // 재시도 실패 시 구독 API라면 기본 응답 반환
+            if (isSubscriptionRequest ||
+                (retryError.config && retryError.config.url &&
+                 retryError.config.url.includes('/users/subscription'))) {
+              console.log('재시도 실패했지만 구독 API이므로 기본 응답 반환');
+              return defaultSubscriptionResponse;
             }
-          };
+
+            // 그 외 API는 오류 전파
+            throw retryError;
+          }
         }
+
+        // 토큰 갱신 실패
+        console.error('토큰 갱신 실패:', refreshResult.error);
       } catch (refreshError) {
         console.error('토큰 갱신 중 예외 발생:', refreshError);
-
-        // 구독 API면 기본 응답 반환
-        if (error.config && error.config.url && error.config.url.includes('/users/subscription')) {
-          console.log('토큰 갱신 중 오류가 있지만 구독 API이므로 기본 응답 반환');
-          return {
-            active: false,
-            plan: 'free',
-            expiresAt: null,
-            features: []
-          };
-        }
-
-        // 그 외 API는 오류 객체 반환
-        return {
-          error: {
-            code: 'AUTH_ERROR',
-            message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
-            originalError: refreshError.message
-          }
-        };
       }
+
+      // 토큰 갱신에 실패했거나 예외가 발생한 경우
+
+      // 구독 API 요청이거나 unAuthenticated 허용 설정이면 기본값 반환
+      if (isSubscriptionRequest ||
+          (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
+        console.log('토큰 갱신 실패했지만 구독 API이므로 기본 응답 반환');
+        return defaultSubscriptionResponse;
+      }
+
+      if (allowUnauthenticated && defaultValue) {
+        console.log('토큰 갱신 실패, 기본값으로 응답');
+        return defaultValue;
+      }
+
+      // 그 외 API는 오류 객체 반환
+      return {
+        error: {
+          code: 'AUTH_ERROR',
+          message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
+          originalError: refreshSuccess ? '토큰 갱신 후 API 호출 실패' : '토큰 갱신 실패'
+        }
+      };
     }
 
     // 구독 API에 대한 모든 유형의 오류 처리
-    if (error.config && error.config.url && error.config.url.includes('/users/subscription')) {
+    if (isSubscriptionRequest ||
+        (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
       console.log('구독 API 일반 오류를 기본 인증 사용자로 처리');
       // 기본 구독 정보 반환 (인증은 되었으나 구독은 없음)
-      return {
-        active: false,
-        plan: 'free',
-        expiresAt: null,
-        features: []
-      };
+      return defaultSubscriptionResponse;
+    }
+
+    // allowUnauthenticated 설정이면 기본값 반환
+    if (allowUnauthenticated && defaultValue) {
+      console.log('오류 발생, 기본값으로 응답');
+      return defaultValue;
     }
 
     // 다른 오류는 자세한 오류 객체로 반환
@@ -585,95 +661,68 @@ async function fetchUserProfile() {
  * @returns {Promise<Object>} 구독 정보
  */
 async function fetchSubscription() {
-  try {
-    // 인증이 안된 경우 바로 기본 구독 정보 반환
-    if (!currentToken && !(await getStoredToken())) {
-      console.log('토큰 없음: 기본 무료 구독 정보 반환');
-      return {
-        active: false,
-        plan: 'free',
-        status: 'active',
-        features: ['basic_shortcuts', 'standard_actions'],
-        expiresAt: null
-      };
-    }
+  // 기본 구독 정보 (인증 실패나 오류 발생 시 사용)
+  const defaultSubscription = {
+    active: false,
+    plan: 'free',
+    status: 'active',
+    features: ['basic_shortcuts', 'standard_actions'],
+    expiresAt: null,
+    isVip: false
+  };
 
-    // 헤더 가져오기 시도
-    let headers;
-    try {
-      headers = await getAuthHeaders();
-    } catch (error) {
-      console.error('인증 헤더 가져오기 실패:', error);
-      // 헤더 가져오기 실패 시 기본 구독 정보 반환
-      return {
-        active: false,
-        plan: 'free',
-        status: 'active',
-        features: ['basic_shortcuts', 'standard_actions'],
-        expiresAt: null
-      };
-    }
-
-    console.log('구독 정보 API 호출 시작:', USER_SUBSCRIPTION_URL);
-    console.log('인증 헤더:', headers.Authorization ? 'Bearer 토큰 포함됨' : '토큰 없음');
-
-    // 구독 정보 API 호출
-    try {
-      const response = await axios.get(USER_SUBSCRIPTION_URL, { headers });
-      console.log('구독 정보 API 호출 성공, 상태:', response.status);
-      console.log('구독 정보:', response.data ? response.data.success : 'no data');
-      return response.data;
-    } catch (error) {
-      console.log('구독 정보 API 호출 실패:', error.response?.status || error.message);
-
-      // 오류 응답이 있는 경우 로그
-      if (error.response) {
-        console.log('오류 응답 상태:', error.response.status);
-        console.log('오류 데이터:', error.response.data || 'no data');
-      }
-
-      // 401 오류는 인증 실패로 처리, 하지만 기본 구독 정보 반환
-      if (error.response && error.response.status === 401) {
-        console.log('401 인증 오류, 기본 인증 사용자로 처리');
-
-        // 토큰 갱신 시도
-        try {
-          console.log('토큰 갱신 시도...');
-          const refreshed = await refreshAccessToken();
-          if (refreshed.success) {
-            console.log('토큰 갱신 성공, 구독 API 재요청');
-            // 갱신된 토큰으로 다시 시도
-            const newHeaders = await getAuthHeaders();
-            const retryResponse = await axios.get(USER_SUBSCRIPTION_URL, { headers: newHeaders });
-            return retryResponse.data;
-          } else {
-            console.log('토큰 갱신 실패, 기본 정보 사용');
-          }
-        } catch (refreshError) {
-          console.log('토큰 갱신 중 오류:', refreshError.message);
-        }
-      }
-
-      // 기본 구독 정보 반환
-      return {
-        active: false,
-        plan: 'free',
-        status: 'active',
-        features: ['basic_shortcuts', 'standard_actions'],
-        expiresAt: null
-      };
-    }
-  } catch (error) {
-    console.error('구독 정보 처리 중 예외 발생:', error);
-    // 최종 폴백 - 어떤 오류가 발생해도 기본 구독 정보 반환
-    return {
-      active: false,
-      plan: 'free',
-      status: 'active',
-      features: ['basic_shortcuts', 'standard_actions'],
-      expiresAt: null
-    };
+  // 인증이 안된 경우 바로 기본 구독 정보 반환
+  if (!currentToken && !(await getStoredToken())) {
+    console.log('토큰 없음: 기본 무료 구독 정보 반환');
+    return defaultSubscription;
   }
+
+  // authenticatedRequest 함수 사용하여 API 호출 (오류 처리 내장)
+  return authenticatedRequest(async () => {
+    const headers = await getAuthHeaders();
+    console.log('구독 정보 API 호출:', USER_SUBSCRIPTION_URL);
+
+    const response = await axios.get(USER_SUBSCRIPTION_URL, { headers });
+    console.log('구독 정보 API 응답 상태:', response.status);
+
+    if (!response.data) {
+      console.log('응답에 데이터 없음');
+      return defaultSubscription;
+    }
+
+    // API 포맷: { success: true, data: {...} }
+    if (response.data.success === false) {
+      console.log('API 오류 응답:', response.data.error);
+      return defaultSubscription;
+    }
+
+    // 실제 구독 데이터는 response.data.data에 있음
+    const subscriptionData = response.data.data || response.data;
+    console.log('구독 정보 수신:', subscriptionData.plan || 'unknown',
+                'VIP:', subscriptionData.isVip || false);
+
+    // VIP이거나 활성화된 구독이 있는 경우 페이지 그룹 수를 9로 설정
+    const isActive = subscriptionData.active === true;
+    const isVip = subscriptionData.isVip === true;
+    const isPremium = isActive &&
+                     (subscriptionData.plan === 'premium' ||
+                      subscriptionData.plan === 'pro' ||
+                      isVip);
+
+    if (isPremium) {
+      console.log('프리미엄 또는 VIP 사용자 구독 혜택 적용');
+      subscriptionData.pageGroups = 9;
+    } else {
+      console.log('일반 인증 사용자 기본 혜택 적용');
+      subscriptionData.pageGroups = 3;
+    }
+
+    return subscriptionData;
+  }, {
+    allowUnauthenticated: true,
+    defaultValue: defaultSubscription,
+    isSubscriptionRequest: true
+  });
 }
 
 /**
