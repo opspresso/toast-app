@@ -869,7 +869,8 @@ async function updatePageGroupSettings() {
           isSubscribed = true;
 
           // subscribed_until 또는 expiresAt 필드 확인
-          subscribedUntil = subscription.subscribed_until || subscription.expiresAt || '';
+          // subscribedUntil 값이 항상 문자열이 되도록 보장
+          subscribedUntil = (subscription.subscribed_until || subscription.expiresAt || '').toString();
 
           // page_groups 필드가 있으면 사용, 없으면 구독자에게 9페이지 제공
           if (subscription.features && subscription.features.page_groups) {
@@ -891,11 +892,11 @@ async function updatePageGroupSettings() {
       console.log('비인증 사용자: 1개 페이지로 설정');
     }
 
-    // 구성 파일 업데이트
+    // 구성 파일 업데이트 - subscribedUntil을 항상 문자열로 변환
     const subscriptionSettings = {
       isAuthenticated,
       isSubscribed,
-      subscribedUntil,
+      subscribedUntil: subscribedUntil ? subscribedUntil.toString() : '',
       pageGroups
     };
 
