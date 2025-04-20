@@ -416,6 +416,12 @@ function addNewPage() {
  * @param {KeyboardEvent} event - Keyboard event
  */
 function handleKeyDown(event) {
+  // 모달이 열려있을 때는 단축키를 무시합니다 (ESC 키 제외)
+  if (buttonEditModal.classList.contains('show')) {
+    // ESC 키는 모달 닫기용으로만 사용 (이미 별도 이벤트 리스너에서 처리됨)
+    return;
+  }
+
   switch (event.key) {
     case 'ArrowUp':
       event.preventDefault();
