@@ -29,8 +29,8 @@ const USER_PROFILE_URL = `${API_BASE_URL}/user/profile`;
 const USER_SUBSCRIPTION_URL = `${API_BASE_URL}/user/subscription`;
 
 // OAuth 설정
-const CLIENT_ID = process.env.TOAST_APP_CLIENT_ID || 'toast-app-client';
-const CLIENT_SECRET = process.env.TOAST_APP_CLIENT_SECRET || 'toast-app-secret';
+const CLIENT_ID = process.env.CLIENT_ID || 'toast-app-client';
+const CLIENT_SECRET = process.env.CLIENT_SECRET || 'toast-app-secret';
 const REDIRECT_URI = 'toast-app://auth';
 
 // 토큰 저장소 (메모리)
