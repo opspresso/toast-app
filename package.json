@@ -68,7 +68,9 @@
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
-      "target": "dmg",
+      "target": [
+        "dmg"
+      ],
       "icon": "assets/icons/icon.icns",
       "arch": [
         "universal"
