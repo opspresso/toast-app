@@ -26,8 +26,12 @@ exports.default = async function notarizing(context) {
   console.log('Notarizing app...');
   console.log('App output directory:', appOutDir);
 
-  // 디버깅을 위해 packager.appInfo 객체 출력
-  console.log('App Info:', JSON.stringify(packager.appInfo, null, 2));
+  // 필요한 앱 정보만 추출하여 로그로 출력
+  console.log('App Info (selected properties):');
+  console.log('- productName:', packager.appInfo.productName);
+  console.log('- id:', packager.appInfo.id);
+  console.log('- name:', packager.appInfo.name);
+  console.log('- version:', packager.appInfo.version);
 
   // package.json의 build 설정에서 정보 가져오기
   const appName = packager.appInfo.productName || 'Toast';
@@ -40,24 +44,44 @@ exports.default = async function notarizing(context) {
   const appPath = `${appOutDir}/${appName}.app`;
   console.log('App path for notarization:', appPath);
 
+  // 코드 서명이 비활성화되어 있어도 공증 진행
+  if (process.env.CSC_IDENTITY_AUTO_DISCOVERY === 'false' || process.env.CSC_IDENTITY === 'null') {
+    console.log('Warning: Code signing is disabled, but proceeding with notarization anyway');
+  }
+
+  let fs;
+  try {
+    fs = require('fs');
+  } catch (error) {
+    console.error('Failed to require fs module:', error);
+    console.log('Skipping notarization due to fs module error');
+    return;
+  }
+
   try {
     // 앱 경로가 존재하는지 확인
-    const fs = require('fs');
     if (!fs.existsSync(appPath)) {
       console.error(`Error: App path does not exist: ${appPath}`);
-      console.log('Available files in output directory:', fs.readdirSync(appOutDir));
 
-      // 실제 앱 경로 찾기 시도
-      const possibleAppPaths = fs.readdirSync(appOutDir).filter(file => file.endsWith('.app'));
-      if (possibleAppPaths.length > 0) {
-        const actualAppPath = `${appOutDir}/${possibleAppPaths[0]}`;
-        console.log(`Found possible app path: ${actualAppPath}`);
-        console.log(`Using this path instead of: ${appPath}`);
-        appPath = actualAppPath;
-      } else {
-        console.error('No .app files found in output directory');
-        // 공증을 건너뛰지만 빌드는 계속 진행
-        console.log('Skipping notarization due to missing app file');
+      try {
+        console.log('Available files in output directory:', fs.readdirSync(appOutDir));
+
+        // 실제 앱 경로 찾기 시도
+        const possibleAppPaths = fs.readdirSync(appOutDir).filter(file => file.endsWith('.app'));
+        if (possibleAppPaths.length > 0) {
+          const actualAppPath = `${appOutDir}/${possibleAppPaths[0]}`;
+          console.log(`Found possible app path: ${actualAppPath}`);
+          console.log(`Using this path instead of: ${appPath}`);
+          appPath = actualAppPath;
+        } else {
+          console.error('No .app files found in output directory');
+          // 공증을 건너뛰지만 빌드는 계속 진행
+          console.log('Skipping notarization due to missing app file');
+          return;
+        }
+      } catch (dirError) {
+        console.error('Error reading output directory:', dirError);
+        console.log('Skipping notarization due to directory read error');
         return;
       }
     }
@@ -116,8 +140,14 @@ exports.default = async function notarizing(context) {
     if (error.stdout) console.error('Error stdout:', error.stdout);
     if (error.stderr) console.error('Error stderr:', error.stderr);
 
-    // 공증 실패를 무시하고 빌드 계속 진행 (선택 사항)
-    console.log('Continuing build process despite notarization failure');
-    // throw error; // 주석 처리하여 오류를 무시하고 계속 진행
+    // 개발 환경에서만 오류를 무시하고 계속 진행
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development environment detected. Continuing build process despite notarization failure.');
+      return;
+    }
+
+    // 공증 실패 시 오류를 다시 던져 빌드 프로세스 중단
+    console.error('Notarization is required. Build process will be terminated due to notarization failure.');
+    throw error;
   }
 };
