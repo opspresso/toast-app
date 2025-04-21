@@ -953,20 +953,43 @@ async function updatePageGroupSettings(subscription) {
       pageGroups = PAGE_GROUPS.AUTHENTICATED;
     }
 
-    // 구독 정보 저장
-    // subscribedUntil 값이 항상 문자열인지 확인
+    // subscribedUntil 값 처리 - 항상 문자열로 변환
     let subscribedUntilStr = '';
-    if (subscription.subscribed_until) {
-      subscribedUntilStr = String(subscription.subscribed_until);
-    } else if (subscription.expiresAt) {
-      subscribedUntilStr = String(subscription.expiresAt);
+    try {
+      if (subscription.subscribed_until) {
+        // 명시적으로 문자열로 변환하고 유효한 문자열인지 확인
+        subscribedUntilStr = typeof subscription.subscribed_until === 'string'
+          ? subscription.subscribed_until
+          : String(subscription.subscribed_until);
+      } else if (subscription.expiresAt) {
+        // 명시적으로 문자열로 변환하고 유효한 문자열인지 확인
+        subscribedUntilStr = typeof subscription.expiresAt === 'string'
+          ? subscription.expiresAt
+          : String(subscription.expiresAt);
+      }
+
+      // 값이 undefined나 null이면 빈 문자열로 설정
+      if (subscribedUntilStr === 'undefined' || subscribedUntilStr === 'null') {
+        subscribedUntilStr = '';
+      }
+    } catch (error) {
+      console.error('subscribedUntil 값 변환 오류:', error);
+      subscribedUntilStr = ''; // 오류 발생 시 빈 문자열로 설정
     }
 
+    console.log('구독 정보 저장 전 확인:', {
+      plan: subscription.plan || 'free',
+      subscribedUntil: subscribedUntilStr,
+      subscribedUntilType: typeof subscribedUntilStr,
+      pageGroups: subscription.features?.page_groups || pageGroups
+    });
+
+    // 안전하게 구독 정보 저장
     config.set('subscription', {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
-      subscribedUntil: subscribedUntilStr,
+      subscribedUntil: subscribedUntilStr, // 안전하게 문자열로 변환된 값
       pageGroups: subscription.features?.page_groups || pageGroups,
       isVip: isVip,
       additionalFeatures: {

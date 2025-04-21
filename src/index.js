@@ -20,6 +20,8 @@ const { registerGlobalShortcuts, unregisterGlobalShortcuts } = require('./main/s
 const { createTray, destroyTray } = require('./main/tray');
 const { createToastWindow, createSettingsWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
 const { setupIpcHandlers } = require('./main/ipc');
+const authManager = require('./main/auth-manager');
+const auth = require('./main/auth');
 
 // Prevent multiple instances of the app
 if (!app.requestSingleInstanceLock()) {
@@ -61,6 +63,54 @@ function initialize() {
 
   // Set up IPC handlers
   setupIpcHandlers(windows);
+
+  // 인증 관리자 초기화 (클라우드 동기화 포함)
+  authManager.initialize(windows);
+
+  // 프로토콜 핸들러 등록 (auth 모듈의 함수 호출)
+  auth.registerProtocolHandler();
+
+  // URL 프로토콜 요청 처리 함수 설정
+  global.handleProtocolRequest = (url) => {
+    console.log('프로토콜 요청 처리:', url);
+
+    // URL에서 인증 코드 직접 추출
+    if (url.startsWith('toast-app://auth')) {
+      try {
+        const urlObj = new URL(url);
+        const code = urlObj.searchParams.get('code');
+        const error = urlObj.searchParams.get('error');
+
+        console.log('프로토콜에서 코드 추출:', code ? '있음' : '없음');
+
+        if (error) {
+          console.error('인증 오류 파라미터:', error);
+          authManager.notifyLoginError(error);
+          return;
+        }
+
+        if (!code) {
+          console.error('인증 코드가 URL에 없습니다');
+          authManager.notifyLoginError('인증 코드가 없습니다');
+          return;
+        }
+
+        // 추출한 코드를 직접 authManager에 전달
+        console.log('인증 코드 교환 시작:', code.substring(0, 6) + '...');
+        authManager.exchangeCodeForTokenAndUpdateSubscription(code).then(result => {
+          console.log('인증 코드 교환 결과:', result.success ? '성공' : '실패');
+        }).catch(err => {
+          console.error('인증 코드 교환 오류:', err);
+          authManager.notifyLoginError(err.message || '인증 처리 중 오류가 발생했습니다');
+        });
+      } catch (error) {
+        console.error('URL 파싱 오류:', error);
+        authManager.notifyLoginError(error.message || 'URL 처리 중 오류가 발생했습니다');
+      }
+    } else {
+      console.log('인증 URL이 아닌 프로토콜 요청:', url);
+    }
+  };
 
   // Set quitting flag on app
   app.isQuitting = false;

@@ -452,6 +452,24 @@ function setupIpcHandlers(windows) {
     return await authManager.getAccessToken();
   });
 
+  // 클라우드 동기화 관련 핸들러
+
+  // 동기화 가능 여부 확인
+  ipcMain.handle('is-cloud-sync-enabled', async () => {
+    const cloudSync = require('./cloud-sync');
+    return await cloudSync.isCloudSyncEnabled();
+  });
+
+  // 수동 동기화 요청
+  ipcMain.handle('sync-settings', async (event, action) => {
+    return await authManager.syncSettings(action);
+  });
+
+  // 동기화 설정 업데이트
+  ipcMain.handle('update-sync-settings', async (event, enabled) => {
+    return authManager.updateSyncSettings(enabled);
+  });
+
   // URL 외부 브라우저에서 열기
   ipcMain.handle('open-url', async (event, url) => {
     try {
