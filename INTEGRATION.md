@@ -212,7 +212,7 @@ async function initiateLogin() {
     storeStateParam(state);
 
     // 인증 URL 구성
-    const authUrl = new URL(`${API_HOST}/api/oauth/authorize`);
+    const authUrl = new URL(`${TOAST_URL}/api/oauth/authorize`);
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', CLIENT_ID);
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI);

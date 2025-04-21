@@ -44,7 +44,6 @@ const PAGE_GROUPS = {
 
 console.log('API 엔드포인트 설정:', {
   TOAST_URL,
-  API_HOST,
   API_BASE_URL,
   USER_SUBSCRIPTION_URL
 });
