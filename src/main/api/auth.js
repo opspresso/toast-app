@@ -11,11 +11,17 @@ const {
   ENDPOINTS,
   createApiClient,
   getAuthHeaders,
-  authenticatedRequest
+  authenticatedRequest,
+  clearTokens
 } = require('./client');
 
 // 인증 관련 상수
 const REDIRECT_URI = 'toast-app://auth';
+
+// 로그아웃 상태 추적
+let isLoggedOut = false;
+let logoutTimestamp = 0;
+const LOGOUT_COOLDOWN_MS = 5000; // 로그아웃 후 5초 동안 인증 요청 방지
 
 // 상태 저장소 (CSRF 보호용)
 const stateStore = new Store({
@@ -30,9 +36,16 @@ const stateStore = new Store({
  */
 function storeStateParam(state) {
   try {
+    // 로그아웃 상태에서는 상태 저장 방지
+    if (isInLogoutCooldown()) {
+      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+      return false;
+    }
+
     stateStore.set('oauth-state', state);
     stateStore.set('state-created-at', Date.now());
     console.log('Auth state stored:', state);
+    return true;
   } catch (error) {
     console.error('Failed to store state parameter:', error);
     throw error;
@@ -66,17 +79,49 @@ function retrieveStoredState() {
 }
 
 /**
+ * 로그아웃 상태에서 인증 요청 냉각기간 중인지 확인
+ * @returns {boolean} 냉각기간 중이면 true
+ */
+function isInLogoutCooldown() {
+  if (!isLoggedOut) return false;
+
+  const elapsed = Date.now() - logoutTimestamp;
+  if (elapsed > LOGOUT_COOLDOWN_MS) {
+    // 냉각기간이 지나면 플래그 초기화
+    isLoggedOut = false;
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * 로그인 프로세스를 시작합니다 (OAuth 인증 페이지 열기)
  * @param {string} clientId - OAuth 클라이언트 ID
  * @returns {Promise<Object>} 로그인 프로세스 시작 결과 {url: string, state: string}
  */
 function initiateLogin(clientId) {
   try {
+    // 로그아웃 상태에서는 인증 요청 거부
+    if (isInLogoutCooldown()) {
+      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+      return {
+        success: false,
+        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+      };
+    }
+
     // 상태 값은 CSRF 공격 방지를 위해 사용됨
     const state = uuidv4();
 
     // 상태 값 저장
-    storeStateParam(state);
+    const stored = storeStateParam(state);
+    if (!stored) {
+      return {
+        success: false,
+        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+      };
+    }
 
     // 인증 URL 구성
     const authUrl = new URL(ENDPOINTS.OAUTH_AUTHORIZE);
@@ -115,6 +160,15 @@ function initiateLogin(clientId) {
  */
 async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   try {
+    // 로그아웃 상태에서는 토큰 교환 거부
+    if (isInLogoutCooldown()) {
+      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+      return {
+        success: false,
+        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+      };
+    }
+
     console.log('인증 코드를 토큰으로 교환 시작:', code.substring(0, 8) + '...');
 
     const apiClient = createApiClient();
@@ -153,6 +207,9 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       };
     }
 
+    // 로그인 성공 시 로그아웃 상태 초기화
+    isLoggedOut = false;
+
     return {
       success: true,
       access_token,
@@ -181,6 +238,16 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
  */
 async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
   try {
+    // 로그아웃 상태에서는 토큰 갱신 거부
+    if (isInLogoutCooldown()) {
+      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+      return {
+        success: false,
+        error: '로그아웃 후 잠시 후에 다시 시도해주세요.',
+        code: 'LOGOUT_COOLDOWN'
+      };
+    }
+
     console.log('토큰 리프레시 프로세스 시작');
 
     if (!refreshToken) {
@@ -283,6 +350,16 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
 async function handleAuthRedirect({ url, onCodeExchange }) {
   try {
     console.log('Processing auth redirect:', url);
+
+    // 로그아웃 상태에서는 리디렉션 처리 거부
+    if (isInLogoutCooldown()) {
+      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+      return {
+        success: false,
+        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+      };
+    }
+
     const urlObj = new URL(url);
 
     // 인증 코드 추출
@@ -351,6 +428,17 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
  * @returns {Promise<Object>} 사용자 프로필 정보
  */
 async function fetchUserProfile(onUnauthorized) {
+  // 로그아웃 상태에서는 프로필 정보 요청 거부
+  if (isInLogoutCooldown()) {
+    console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+    return {
+      error: {
+        code: 'LOGOUT_COOLDOWN',
+        message: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+      }
+    };
+  }
+
   return authenticatedRequest(async () => {
     const headers = getAuthHeaders();
     console.log('프로필 API 호출:', ENDPOINTS.USER_PROFILE);
@@ -374,6 +462,17 @@ async function fetchUserProfile(onUnauthorized) {
  * @returns {Promise<Object>} 구독 정보
  */
 async function fetchSubscription(onUnauthorized) {
+  // 로그아웃 상태에서는 구독 정보 요청 거부
+  if (isInLogoutCooldown()) {
+    console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+    return {
+      error: {
+        code: 'LOGOUT_COOLDOWN',
+        message: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+      }
+    };
+  }
+
   // 구독 API에 대한 기본 응답 (인증 실패나 오류 발생 시 사용)
   const defaultSubscription = {
     id: 'sub_free_anonymous',
@@ -459,11 +558,40 @@ async function fetchSubscription(onUnauthorized) {
   }, options);
 }
 
+/**
+ * 로그아웃 처리 (서버 호출 없이 로컬 토큰만 초기화)
+ * @returns {Promise<Object>} 로그아웃 결과
+ */
+async function logout() {
+  try {
+    // 메모리에서 토큰 초기화 (서버 호출 없음)
+    clearTokens();
+    console.log('메모리 토큰 초기화 완료');
+
+    // 로그아웃 상태 설정
+    isLoggedOut = true;
+    logoutTimestamp = Date.now();
+    console.log(`로그아웃 후 ${LOGOUT_COOLDOWN_MS/1000}초 동안 인증 요청이 제한됩니다.`);
+
+    return {
+      success: true,
+      message: '로그아웃 성공'
+    };
+  } catch (error) {
+    console.error('로그아웃 중 오류 발생:', error);
+    return {
+      success: false,
+      error: error.message || '로그아웃 중 오류가 발생했습니다'
+    };
+  }
+}
+
 module.exports = {
   initiateLogin,
   exchangeCodeForToken,
   refreshAccessToken,
   handleAuthRedirect,
   fetchUserProfile,
-  fetchSubscription
+  fetchSubscription,
+  logout
 };
