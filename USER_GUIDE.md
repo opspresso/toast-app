@@ -14,10 +14,11 @@ Welcome to Toast App a customizable shortcut launcher for macOS and Windows. Thi
 8. [Advanced Settings](#advanced-settings)
 9. [Keyboard Shortcuts](#keyboard-shortcuts)
 10. [Settings Mode](#settings-mode)
-11. [Importing and Exporting](#importing-and-exporting)
-12. [Auto-Updates](#auto-updates)
-13. [Troubleshooting](#troubleshooting)
-14. [FAQ](#faq)
+11. [Cloud Sync](#cloud-sync)
+12. [Importing and Exporting](#importing-and-exporting)
+13. [Auto-Updates](#auto-updates)
+14. [Troubleshooting](#troubleshooting)
+15. [FAQ](#faq)
 
 ## Installation
 
@@ -433,6 +434,77 @@ To exit Settings Mode:
 2. Press the comma (,) key again.
 3. Press the Escape key.
 
+## Cloud Sync
+
+Toast App now supports cloud synchronization of your settings, allowing you to maintain consistent button configurations across multiple devices.
+
+### Cloud Sync Overview
+
+Cloud sync enables you to:
+- Automatically synchronize your button configurations (pages) across multiple devices
+- Maintain consistent theme and appearance settings
+- Seamlessly transition between different computers with the same setup
+
+### How Cloud Sync Works
+
+1. When you make changes to your button configurations or settings, they are automatically uploaded to the Toast Web server
+2. When you log in on another device, these settings are automatically downloaded and applied
+3. The system intelligently resolves conflicts by using the most recent changes
+
+### Enabling Cloud Sync
+
+To use cloud synchronization:
+
+1. You must have an active subscription or be an authenticated user
+2. In the Settings window, go to the "Account" tab
+3. Click "Log In" to authenticate with your Toast Web account
+4. Once logged in, cloud sync is automatically enabled
+
+### Controlling Cloud Sync
+
+You can manage cloud sync in the Advanced settings:
+
+1. In the Settings window, go to the "Advanced" tab
+2. Find the "Cloud Sync" section
+3. Toggle "Enable Cloud Synchronization" to turn the feature on or off
+4. Use the "Sync Now" button to manually trigger synchronization
+
+### What Gets Synchronized
+
+The following settings are synchronized across your devices:
+
+- **Pages and Buttons**: Your complete button configurations, including all pages, buttons, and their actions
+- **Theme Settings**: Your preferred theme (light/dark/system)
+- **Language Settings**: Your language preference
+
+Personal settings like window position, opacity, and launch-at-login are not synchronized as they are typically specific to each device.
+
+### Manual Sync Actions
+
+You can perform manual synchronization actions if needed:
+
+1. **Upload Settings**: Force your current settings to be uploaded to the cloud
+2. **Download Settings**: Force download the latest settings from the cloud
+3. **Resolve Conflicts**: Automatically determine which settings are the most recent and apply them
+
+To access these options, go to Settings > Advanced > Cloud Sync and click the dropdown menu next to "Sync Now".
+
+### Sync Status Indicators
+
+Toast App provides feedback about sync status:
+- A green checkmark indicates settings are in sync
+- A spinning icon indicates synchronization in progress
+- A red exclamation mark indicates a sync error
+
+### Troubleshooting Sync Issues
+
+If you encounter sync issues:
+
+1. Check your internet connection
+2. Verify that you're logged in (Settings > Account)
+3. Try manual synchronization (Settings > Advanced > Cloud Sync > Sync Now)
+4. If problems persist, you can reset sync by logging out and back in
+
 ## Importing and Exporting
 
 ### Exporting Configuration
@@ -533,7 +605,14 @@ Toast App is primarily designed for macOS and Windows but limited Linux support 
 
 ### Can I sync my configuration across devices?
 
-Currently Toast App doesn't support cloud synchronization. However you can manually export your configuration from one device and import it on another.
+Yes! Toast App now supports cloud synchronization of your settings. With an active subscription or authenticated account, your button configurations and settings are automatically synchronized across all your devices.
+
+To use this feature:
+1. Log in to your Toast Web account (Settings > Account)
+2. Make changes on one device, and they'll automatically sync to your other devices
+3. See the [Cloud Sync](#cloud-sync) section for more details
+
+If you prefer manual control, you can still export your configuration from one device and import it on another.
 
 ### Can I create custom themes?
 
