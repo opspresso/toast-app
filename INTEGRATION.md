@@ -932,7 +932,257 @@ function handleAuthError(error) {
 * **로그 관리**: 인증 관련 이벤트는 적절히 로깅하되, 민감한 정보는 로그에 포함시키지 않아야 합니다.
 * **에러 처리**: 사용자에게 보여주는 오류 메시지에 민감한 정보나 기술적 세부사항을 포함시키지 않아야 합니다.
 
+## 설정 동기화
+
+Toast-App의 설정을 Toast-Web과 동기화하여 사용자가 여러 기기에서 일관된 경험을 유지할 수 있습니다.
+
+### 설정 동기화 원리
+
+```mermaid
+sequenceDiagram
+    participant ToastApp
+    participant ToastWeb
+    participant Database
+
+    ToastApp->>ToastApp: 사용자 설정 변경
+    ToastApp->>ToastWeb: 설정 업데이트 요청 (API 호출)
+    ToastWeb->>Database: 설정 저장
+    ToastWeb->>ToastApp: 응답 (저장된 설정)
+
+    alt 새 기기에서 로그인
+        ToastApp->>ToastWeb: 인증 및 설정 조회 요청
+        ToastWeb->>Database: 설정 조회
+        ToastWeb->>ToastApp: 저장된 설정 전송
+        ToastApp->>ToastApp: 로컬 설정 업데이트
+    end
+```
+
+### 설정 동기화 구현
+
+```javascript
+/**
+ * 로컬 설정을 웹 서버에 동기화
+ * @param {Store} config - 설정 저장소 인스턴스
+ * @returns {Promise<boolean>} 동기화 성공 여부
+ */
+async function syncSettingsToWeb(config) {
+  try {
+    // 현재 인증이 유효한지 확인
+    const hasToken = await auth.hasValidToken();
+    if (!hasToken) {
+      console.log('설정 동기화를 위한 인증 토큰이 없습니다');
+      return false;
+    }
+
+    // 현재 액세스 토큰 가져오기
+    const token = await auth.getAccessToken();
+    if (!token) {
+      console.error('액세스 토큰을 가져오지 못했습니다');
+      return false;
+    }
+
+    // 서버에 보낼 설정 데이터 준비
+    // 민감하지 않고 동기화가 필요한 설정만 포함
+    const settingsToSync = {
+      // 테마 설정
+      theme: config.get('appearance.theme'),
+
+      // 알림 설정
+      notifications: {
+        email: true, // 기본값
+        app: true,   // 기본값
+        subscriptionReminders: true, // 기본값
+        paymentReminders: true       // 기본값
+      },
+
+      // 언어 설정
+      language: config.get('language', 'ko'),
+
+      // 페이지 설정 (버튼 구성)
+      pages: config.get('pages', [])
+    };
+
+    // API 호출하여 설정 업데이트
+    const response = await axios.put(
+      `${TOAST_URL}/api/users/settings`,
+      settingsToSync,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // 응답 처리
+    if (response.status === 200 && response.data.success) {
+      console.log('웹 서버에 설정 동기화 성공:', response.data.data);
+      return true;
+    } else {
+      console.error('웹 서버 설정 동기화 실패:', response.data.error || '알 수 없는 오류');
+      return false;
+    }
+  } catch (error) {
+    console.error('설정 동기화 중 오류 발생:', error);
+    return false;
+  }
+}
+
+/**
+ * 웹 서버에서 설정 가져와 로컬에 적용
+ * @param {Store} config - 설정 저장소 인스턴스
+ * @returns {Promise<boolean>} 동기화 성공 여부
+ */
+async function syncSettingsFromWeb(config) {
+  try {
+    // 현재 인증이 유효한지 확인
+    const hasToken = await auth.hasValidToken();
+    if (!hasToken) {
+      console.log('설정 동기화를 위한 인증 토큰이 없습니다');
+      return false;
+    }
+
+    // 현재 액세스 토큰 가져오기
+    const token = await auth.getAccessToken();
+    if (!token) {
+      console.error('액세스 토큰을 가져오지 못했습니다');
+      return false;
+    }
+
+    // 서버에서 설정 가져오기
+    const response = await axios.get(
+      `${TOAST_URL}/api/users/settings`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // 응답 처리
+    if (response.status === 200 && response.data.success) {
+      const webSettings = response.data.data;
+
+      // 테마 설정 적용 (웹 설정에 있는 경우만)
+      if (webSettings.theme) {
+        config.set('appearance.theme', webSettings.theme);
+      }
+
+      // 언어 설정 적용 (웹 설정에 있는 경우만)
+      if (webSettings.language) {
+        config.set('language', webSettings.language);
+      }
+
+      // 페이지(버튼) 설정 적용 - 가장 중요한 동기화 대상
+      if (webSettings.pages && Array.isArray(webSettings.pages)) {
+        config.set('pages', webSettings.pages);
+        console.log('페이지(버튼) 설정 동기화 완료: ', webSettings.pages.length + '개 페이지');
+      }
+
+      console.log('웹 서버에서 설정 가져오기 성공');
+      return true;
+    } else {
+      console.error('웹 서버 설정 가져오기 실패:', response.data.error || '알 수 없는 오류');
+      return false;
+    }
+  } catch (error) {
+    console.error('웹 설정 동기화 중 오류 발생:', error);
+    return false;
+  }
+}
+```
+
+### 설정 동기화 이벤트 처리
+
+```javascript
+// src/main/config.js 확장
+
+// 설정 변경 감지 및 동기화
+function setupConfigSync(config) {
+  // 마지막 동기화 시간을 저장할 변수
+  let lastSyncTime = Date.now();
+
+  // 디바운스 타이머를 저장할 변수
+  let syncTimer = null;
+
+  // 설정 변경 감지 이벤트 리스너
+  config.onDidChange('appearance.theme', (newValue, oldValue) => {
+    // 변경이 없거나, 서버에서 설정을 가져온 직후에는 동기화 불필요
+    if (newValue === oldValue || Date.now() - lastSyncTime < 2000) {
+      return;
+    }
+
+    // 디바운스 처리: 마지막 변경 후 3초 후에 동기화
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      syncSettingsToWeb(config)
+        .then(success => {
+          if (success) {
+            console.log('테마 설정 동기화 완료');
+          }
+        });
+    }, 3000);
+  });
+
+  // 언어 설정 변경 감지
+  config.onDidChange('language', (newValue, oldValue) => {
+    if (newValue === oldValue || Date.now() - lastSyncTime < 2000) {
+      return;
+    }
+
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      syncSettingsToWeb(config)
+        .then(success => {
+          if (success) {
+            console.log('언어 설정 동기화 완료');
+          }
+        });
+    }, 3000);
+  });
+
+  // 페이지(버튼) 설정 변경 감지 - 가장 중요한 동기화 대상
+  config.onDidChange('pages', (newValue, oldValue) => {
+    if (Date.now() - lastSyncTime < 2000) {
+      return;
+    }
+
+    // 버튼 설정 변경은 즉시 동기화 필요성이 높음 (1초 디바운스)
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      console.log('페이지(버튼) 설정 변경 감지, 동기화 시작...');
+      syncSettingsToWeb(config)
+        .then(success => {
+          if (success) {
+            console.log('페이지(버튼) 설정 동기화 완료');
+          }
+        });
+    }, 1000); // 디바운스 시간을 짧게 설정
+  });
+}
+
+// 로그인 성공 시 웹에서 설정 가져오기
+authManager.on('login-success', () => {
+  const config = createConfigStore();
+  syncSettingsFromWeb(config)
+    .then(success => {
+      if (success) {
+        console.log('로그인 후 웹 설정 동기화 완료');
+        lastSyncTime = Date.now(); // 동기화 시간 갱신
+      }
+    });
+});
+```
+
 ## 변경 내역
+
+### 2025-04-21 업데이트
+- 설정 동기화 기능 추가 (앱 설정을 웹에 저장하고 불러오는 기능)
+- **페이지(버튼) 설정 동기화 구현** - 사용자의 버튼 구성을 기기 간 동기화
+- 테마, 언어 등 사용자 선호 설정 동기화 지원
+- 설정 변경 감지 및 자동 동기화 구현
+- 로그인 시 웹에서 설정 자동 로드 기능
 
 ### 2025-04-20 업데이트
 - 구독 상태와 만료일 필드 일관성 개선 (active/is_subscribed, expiresAt/subscribed_until)

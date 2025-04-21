@@ -587,7 +587,7 @@ function updateUserButton() {
       img.style.borderRadius = '50%';
 
       // Handle image load error
-      img.onerror = function() {
+      img.onerror = function () {
         // Use initials as fallback if image load fails
         const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
         userButton.textContent = initials;
@@ -629,13 +629,13 @@ function updateProfileDisplay() {
       img.alt = 'Profile image';
 
       // Handle image load error
-      img.onerror = function() {
+      img.onerror = function () {
         // Replace with initials if image load fails
         profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || 'User');
       };
 
       // Apply effect when image load completes
-      img.onload = function() {
+      img.onload = function () {
         img.style.opacity = 1;
       };
 
@@ -1256,7 +1256,7 @@ function createButtonElement(button) {
     const img = document.createElement('img');
     img.src = faviconUrl;
     img.alt = button.name || 'Button icon';
-    img.onerror = function() {
+    img.onerror = function () {
       // Use default icon if favicon load fails
       iconElement.textContent = '🌐';
     };
@@ -1270,7 +1270,7 @@ function createButtonElement(button) {
     const img = document.createElement('img');
     img.src = button.icon;
     img.alt = button.name || 'Button icon';
-    img.onerror = function() {
+    img.onerror = function () {
       // Replace with default icon if image load fails
       iconElement.textContent = '🔘';
     };

@@ -229,7 +229,7 @@ function updateProfileDisplay(profile) {
     img.alt = 'Profile';
 
     // Handle image load error
-    img.onerror = function() {
+    img.onerror = function () {
       // Use initials as fallback if image load fails
       const initials = getInitials(profile.name || profile.display_name || 'User');
       userAvatar.textContent = initials;
