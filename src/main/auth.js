@@ -6,17 +6,19 @@
  */
 
 const { app, shell } = require('electron');
-const keytar = require('keytar');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 const { createConfigStore } = require('./config');
 
 // API 공용 모듈 불러오기
 const { client, auth: apiAuth } = require('./api');
 
-// 보안 상수
-const AUTH_SERVICE_NAME = 'toast-app';
-const AUTH_ACCOUNT = 'user';
+// 토큰 저장 파일 경로 설정
+const USER_DATA_PATH = app.getPath('userData');
+const TOKEN_FILE_PATH = path.join(USER_DATA_PATH, 'auth-tokens.json');
+
+// 토큰 키 상수
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 
@@ -57,72 +59,141 @@ async function initializeTokensFromStorage() {
 }
 
 /**
- * 인증 토큰을 안전한 저장소에서 가져옵니다
+ * 로컬 파일에서 토큰 데이터를 읽습니다
+ * @returns {Object|null} 토큰 데이터 객체 또는 null
+ */
+function readTokenFile() {
+  try {
+    if (!fs.existsSync(TOKEN_FILE_PATH)) {
+      return null;
+    }
+
+    const data = fs.readFileSync(TOKEN_FILE_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('토큰 파일 읽기 오류:', error);
+    return null;
+  }
+}
+
+/**
+ * 토큰 데이터를 로컬 파일에 저장합니다
+ * @param {Object} tokenData - 저장할 토큰 데이터 객체
+ * @returns {boolean} 저장 성공 여부
+ */
+function writeTokenFile(tokenData) {
+  try {
+    const dirPath = path.dirname(TOKEN_FILE_PATH);
+
+    // 디렉토리가 없으면 생성
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    // 파일에 JSON 형태로 저장
+    fs.writeFileSync(TOKEN_FILE_PATH, JSON.stringify(tokenData, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('토큰 파일 저장 오류:', error);
+    return false;
+  }
+}
+
+/**
+ * 인증 토큰을 로컬 파일에서 가져옵니다
  * @returns {Promise<string|null>} 저장된 토큰이나 없으면 null
  */
 async function getStoredToken() {
   try {
-    return await keytar.getPassword(AUTH_SERVICE_NAME, TOKEN_KEY);
+    const tokenData = readTokenFile();
+    return tokenData ? tokenData[TOKEN_KEY] : null;
   } catch (error) {
-    console.error('Failed to get token from secure storage:', error);
+    console.error('로컬 파일에서 토큰 가져오기 실패:', error);
     return null;
   }
 }
 
 /**
- * 리프레시 토큰을 안전한 저장소에서 가져옵니다
+ * 리프레시 토큰을 로컬 파일에서 가져옵니다
  * @returns {Promise<string|null>} 저장된 리프레시 토큰이나 없으면 null
  */
 async function getStoredRefreshToken() {
   try {
-    return await keytar.getPassword(AUTH_SERVICE_NAME, REFRESH_TOKEN_KEY);
+    const tokenData = readTokenFile();
+    return tokenData ? tokenData[REFRESH_TOKEN_KEY] : null;
   } catch (error) {
-    console.error('Failed to get refresh token from secure storage:', error);
+    console.error('로컬 파일에서 리프레시 토큰 가져오기 실패:', error);
     return null;
   }
 }
 
 /**
- * 토큰을 안전한 저장소에 저장합니다
+ * 토큰을 로컬 파일에 저장합니다
  * @param {string} token - 저장할 인증 토큰
  * @returns {Promise<void>}
  */
 async function storeToken(token) {
   try {
+    // 클라이언트에 토큰 설정
     client.setAccessToken(token);
-    await keytar.setPassword(AUTH_SERVICE_NAME, TOKEN_KEY, token);
+
+    // 기존 토큰 데이터 읽기
+    const tokenData = readTokenFile() || {};
+
+    // 새 토큰 저장
+    tokenData[TOKEN_KEY] = token;
+
+    // 파일에 저장
+    if (!writeTokenFile(tokenData)) {
+      throw new Error('토큰 파일 저장 실패');
+    }
   } catch (error) {
-    console.error('Failed to store token in secure storage:', error);
+    console.error('토큰 저장 실패:', error);
     throw error;
   }
 }
 
 /**
- * 리프레시 토큰을 안전한 저장소에 저장합니다
+ * 리프레시 토큰을 로컬 파일에 저장합니다
  * @param {string} refreshToken - 저장할 리프레시 토큰
  * @returns {Promise<void>}
  */
 async function storeRefreshToken(refreshToken) {
   try {
+    // 클라이언트에 리프레시 토큰 설정
     client.setRefreshToken(refreshToken);
-    await keytar.setPassword(AUTH_SERVICE_NAME, REFRESH_TOKEN_KEY, refreshToken);
+
+    // 기존 토큰 데이터 읽기
+    const tokenData = readTokenFile() || {};
+
+    // 새 리프레시 토큰 저장
+    tokenData[REFRESH_TOKEN_KEY] = refreshToken;
+
+    // 파일에 저장
+    if (!writeTokenFile(tokenData)) {
+      throw new Error('리프레시 토큰 파일 저장 실패');
+    }
   } catch (error) {
-    console.error('Failed to store refresh token in secure storage:', error);
+    console.error('리프레시 토큰 저장 실패:', error);
     throw error;
   }
 }
 
 /**
- * 토큰과 리프레시 토큰을 안전한 저장소에서 삭제합니다
+ * 토큰과 리프레시 토큰을 로컬 파일에서 삭제합니다
  * @returns {Promise<void>}
  */
 async function clearTokens() {
   try {
+    // 클라이언트 토큰 초기화
     client.clearTokens();
-    await keytar.deletePassword(AUTH_SERVICE_NAME, TOKEN_KEY);
-    await keytar.deletePassword(AUTH_SERVICE_NAME, REFRESH_TOKEN_KEY);
+
+    // 토큰 파일이 존재하면 삭제
+    if (fs.existsSync(TOKEN_FILE_PATH)) {
+      fs.unlinkSync(TOKEN_FILE_PATH);
+    }
   } catch (error) {
-    console.error('Failed to clear tokens from secure storage:', error);
+    console.error('토큰 삭제 실패:', error);
     throw error;
   }
 }

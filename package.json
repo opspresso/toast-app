@@ -38,7 +38,6 @@
     "dotenv": "^16.5.0",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.6.2",
-    "keytar": "^7.9.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
