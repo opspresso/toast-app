@@ -20,18 +20,15 @@ const AUTH_ACCOUNT = 'user';
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 
-// OAuth 설정
+// ENV
 const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
 const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
+const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
 
 // API 엔드포인트
-const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
-// 개발 환경에서 로컬 URL 사용 가능하도록 설정
-const isLocal = NODE_ENV === 'development' && getEnv('USE_LOCAL_API', 'false') === 'true';
-const API_HOST = isLocal ? 'http://localhost:3000' : TOAST_URL;
-const API_BASE_URL = `${API_HOST}/api`;
+const API_BASE_URL = `${TOAST_URL}/api`;
 const OAUTH_AUTHORIZE_URL = `${API_BASE_URL}/oauth/authorize`;
 const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`;
 const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`;
