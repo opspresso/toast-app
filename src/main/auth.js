@@ -22,13 +22,14 @@ const REFRESH_TOKEN_KEY = 'refresh-token';
 
 // OAuth 설정
 const { getEnv } = require('./config/env');
-const CLIENT_ID = getEnv('CLIENT_ID', process.env.NODE_ENV === 'production' ? '' : 'toast-app-client');
-const CLIENT_SECRET = getEnv('CLIENT_SECRET', process.env.NODE_ENV === 'production' ? '' : 'toast-app-secret');
+const NODE_ENV = getEnv('NODE_ENV', 'development');
+const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
+const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
 
 // API 엔드포인트
 const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
 // 개발 환경에서 로컬 URL 사용 가능하도록 설정
-const isLocal = process.env.NODE_ENV === 'development' && getEnv('USE_LOCAL_API', 'false') === 'true';
+const isLocal = NODE_ENV === 'development' && getEnv('USE_LOCAL_API', 'false') === 'true';
 const API_HOST = isLocal ? 'http://localhost:3000' : TOAST_URL;
 const API_BASE_URL = `${API_HOST}/api`;
 const OAUTH_AUTHORIZE_URL = `${API_BASE_URL}/oauth/authorize`;
@@ -439,8 +440,8 @@ async function refreshAccessToken() {
       }
 
       const errorMessage = tokenRequestError.response?.data?.error ||
-                         tokenRequestError.message ||
-                         'Unknown error during token refresh';
+        tokenRequestError.message ||
+        'Unknown error during token refresh';
 
       console.log('오류 메시지:', errorMessage);
       return {
@@ -587,7 +588,7 @@ async function authenticatedRequest(apiCall, options = {}) {
 
       // 구독 API 요청이거나 isSubscriptionRequest 플래그가 설정된 경우
       if (isSubscriptionRequest ||
-          (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
+        (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
         console.log('구독 API 401 응답을 기본 인증 사용자로 처리');
         // 기본 구독 정보 반환 (인증은 되었으나 구독은 없음)
         return {
@@ -617,8 +618,8 @@ async function authenticatedRequest(apiCall, options = {}) {
 
             // 재시도 실패 시 구독 API라면 기본 응답 반환
             if (isSubscriptionRequest ||
-                (retryError.config && retryError.config.url &&
-                 retryError.config.url.includes('/users/subscription'))) {
+              (retryError.config && retryError.config.url &&
+                retryError.config.url.includes('/users/subscription'))) {
               console.log('재시도 실패했지만 구독 API이므로 기본 응답 반환');
               return {
                 ...defaultSubscriptionResponse,
@@ -655,7 +656,7 @@ async function authenticatedRequest(apiCall, options = {}) {
 
       // 구독 API 요청이거나 unAuthenticated 허용 설정이면 기본값 반환
       if (isSubscriptionRequest ||
-          (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
+        (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
         console.log('토큰 갱신 실패했지만 구독 API이므로 기본 응답 반환');
         return {
           ...defaultSubscriptionResponse,
@@ -684,7 +685,7 @@ async function authenticatedRequest(apiCall, options = {}) {
 
     // 구독 API에 대한 모든 유형의 오류 처리
     if (isSubscriptionRequest ||
-        (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
+      (error.config && error.config.url && error.config.url.includes('/users/subscription'))) {
       console.log('구독 API 일반 오류를 기본 인증 사용자로 처리');
       // 기본 구독 정보 반환 (인증은 되었으나 구독은 없음)
       return {

@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.2.8-1",
+  "version": "v0.2.8-2",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -8,7 +8,6 @@
     "dev": "NODE_ENV=development electron .",
     "dev:win": "set NODE_ENV=development && electron .",
     "build": "electron-builder",
-    "build:skip-notarize": "electron-builder --mac --skip-notarization",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
     "test": "jest",
@@ -46,7 +45,7 @@
     "electron": "^35.1.5",
     "electron-builder": "^24.13.3",
     "electron-builder-notarize": "^1.5.2",
-    "@electron/notarize": "^2.2.0",
+    "@electron/notarize": "^3.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "jest": "^29.7.0",
@@ -63,16 +62,17 @@
       "assets/**/*",
       "package.json"
     ],
+    "afterSign": "electron-builder-notarize",
     "mac": {
       "category": "public.app-category.productivity",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
+      "gatekeeperAssess": false,
+      "hardenedRuntime": true,
+      "icon": "assets/icons/icon.icns",
       "target": [
         "dmg"
-      ],
-      "icon": "assets/icons/icon.icns"
+      ]
     },
     "win": {
       "target": [
