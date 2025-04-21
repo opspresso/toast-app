@@ -105,9 +105,11 @@ exports.default = async function notarizing(context) {
         return;
       }
 
+      // @electron/notarize 3.0.1 버전에서는 appleApiIssuer 속성이 필요합니다
       notarizeOptions.appleApiKey = {
         keyId: API_KEY_ID,
         issuerId: API_KEY_ISSUER_ID,
+        appleApiIssuer: API_KEY_ISSUER_ID, // issuerId와 동일한 값 사용
         keyPath
       };
     }
