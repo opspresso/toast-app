@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.2.8-12",
+  "version": "v0.2.8-13",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -62,7 +62,6 @@
       "assets/**/*",
       "package.json"
     ],
-    "afterSign": "./notarize.js",
     "mac": {
       "category": "public.app-category.productivity",
       "entitlements": "entitlements.mac.plist",
