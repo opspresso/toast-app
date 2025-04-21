@@ -460,34 +460,14 @@ async function refreshAccessToken() {
 }
 
 /**
- * 로그아웃 처리 (토큰 무효화)
+ * 로그아웃 처리 (클라이언트 측에서만 토큰 삭제)
  * @returns {Promise<boolean>} 로그아웃 성공 여부
  */
 async function logout() {
   try {
-    const token = currentToken || await getStoredToken();
-
-    if (token) {
-      // 토큰 무효화 요청
-      try {
-        const data = new URLSearchParams();
-        data.append('token', token);
-        data.append('client_id', CLIENT_ID);
-        data.append('client_secret', CLIENT_SECRET);
-
-        await axios.post(OAUTH_REVOKE_URL, data, {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        });
-      } catch (revokeError) {
-        console.error('Failed to revoke token:', revokeError);
-        // 토큰 무효화에 실패하더라도 계속 진행
-      }
-    }
-
-    // 로컬 토큰 삭제
+    // 서버 호출 없이 로컬 토큰만 삭제
     await clearTokens();
+    console.log('로컬 토큰 삭제 완료');
 
     return true;
   } catch (error) {
