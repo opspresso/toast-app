@@ -154,6 +154,8 @@ function createSettingsWindow(config) {
 
   // Show window when it's ready
   windows.settings.once('ready-to-show', () => {
+    // Position the settings window on the same display as the toast window
+    positionSettingsWindowOnToastDisplay(windows.settings);
     windows.settings.show();
   });
 
@@ -207,6 +209,44 @@ function hideToastWindow() {
 }
 
 /**
+ * Position the Settings window on the same display as the Toast window
+ * @param {BrowserWindow} settingsWindow - Settings window
+ */
+function positionSettingsWindowOnToastDisplay(settingsWindow) {
+  if (!settingsWindow) {
+    return;
+  }
+
+  const { screen } = require('electron');
+
+  // Get the toast window display if it exists and is visible
+  let targetDisplay;
+  if (windows.toast && !windows.toast.isDestroyed() && windows.toast.isVisible()) {
+    // Get the toast window position
+    const toastPosition = windows.toast.getPosition();
+    // Find the display containing the toast window
+    targetDisplay = screen.getDisplayNearestPoint({ x: toastPosition[0], y: toastPosition[1] });
+  } else {
+    // Fallback to the cursor's current display if toast window is not available
+    const cursorPosition = screen.getCursorScreenPoint();
+    targetDisplay = screen.getDisplayNearestPoint(cursorPosition);
+  }
+
+  // Get the settings window size
+  const windowBounds = settingsWindow.getBounds();
+
+  // Get the target display work area
+  const displayWorkArea = targetDisplay.workArea;
+
+  // Center the settings window on the target display
+  const x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
+  const y = displayWorkArea.y + Math.round((displayWorkArea.height - windowBounds.height) / 2);
+
+  // Set the window position
+  settingsWindow.setPosition(x, y);
+}
+
+/**
  * Show the Settings window
  * @param {Object} config - Configuration store
  */
@@ -215,7 +255,9 @@ function showSettingsWindow(config) {
   if (!windows.settings || windows.settings.isDestroyed()) {
     createSettingsWindow(config);
   } else {
-    // Otherwise, show and focus it
+    // Position the settings window on the same display as the toast window
+    positionSettingsWindowOnToastDisplay(windows.settings);
+    // Show and focus it
     windows.settings.show();
     windows.settings.focus();
   }
@@ -243,5 +285,6 @@ module.exports = {
   hideToastWindow,
   showSettingsWindow,
   closeAllWindows,
-  windows
+  windows,
+  positionSettingsWindowOnToastDisplay
 };
