@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.2.8-8",
+  "version": "v0.2.8-9",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -72,7 +72,9 @@
       "icon": "assets/icons/icon.icns",
       "target": [
         "dmg"
-      ]
+      ],
+      "identity": null,
+      "type": "distribution"
     },
     "win": {
       "target": [
@@ -93,6 +95,5 @@
     "provider": "github",
     "owner": "opspresso",
     "repo": "toast-app"
-  },
-  "packageManager": "pnpm@10.6.3+sha512.bb45e34d50a9a76e858a95837301bfb6bd6d35aea2c5d52094fa497a467c43f5c440103ce2511e9e0a2f89c3d6071baac3358fc68ac6fb75e2ceb3d2736065e6"
+  }
 }
