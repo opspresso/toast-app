@@ -71,7 +71,7 @@ Toast-App은 OAuth 2.0의 Authorization Code Flow를 사용합니다:
 
 Toast-App은 환경 변수를 통해 클라이언트 ID와 시크릿을 관리합니다. 개발 환경에서는 `.env.local` 파일을 통해 이러한 변수를 설정합니다.
 
-```
+```bash
 # .env.example 파일 예시
 CLIENT_ID=
 CLIENT_SECRET=
@@ -80,7 +80,7 @@ TOAST_URL=https://web.toast.sh
 
 1. 프로젝트 루트에 `.env.local` 파일을 생성합니다:
 
-```
+```bash
 # .env.local 파일 예시
 CLIENT_ID=your-client-id
 CLIENT_SECRET=your-client-secret

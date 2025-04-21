@@ -193,6 +193,14 @@ async function initiateLogin() {
     authUrl.searchParams.append('scope', 'profile subscription');
     authUrl.searchParams.append('state', state);
 
+    // 인증 URL 로깅
+    console.log('====== 인증 요청 정보 ======');
+    console.log('TOAST_URL:', TOAST_URL);
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('OAUTH_AUTHORIZE_URL:', OAUTH_AUTHORIZE_URL);
+    console.log('인증 요청 전체 URL:', authUrl.toString());
+    console.log('==========================');
+
     // 기본 브라우저에서 인증 페이지 열기
     await shell.openExternal(authUrl.toString());
 
