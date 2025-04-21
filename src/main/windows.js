@@ -180,29 +180,6 @@ function setupSettingsWindowEvents(settingsWindow) {
 }
 
 /**
- * 영문 키보드 입력소스 활성화 (OS별 처리)
- */
-function activateEnglishKeyboard() {
-  const { exec } = require('child_process');
-
-  if (process.platform === 'darwin') {
-    // macOS에서 영문 키보드 활성화
-    exec('osascript -e \'tell application "System Events" to keystroke space using {control down, command down}\'', (error) => {
-      if (error) {
-        console.error('영문 키보드 전환 실패:', error);
-      }
-    });
-  } else if (process.platform === 'win32') {
-    // Windows에서 영문 키보드 활성화 (US 영문)
-    exec('powershell -command "$wshell = New-Object -ComObject WScript.Shell; $wshell.SendKeys(\'%{SHIFT}\');"', (error) => {
-      if (error) {
-        console.error('영문 키보드 전환 실패:', error);
-      }
-    });
-  }
-}
-
-/**
  * Show the Toast window
  * @param {Object} config - Configuration store
  */
@@ -214,9 +191,6 @@ function showToastWindow(config) {
 
   // Position the window
   positionToastWindow(windows.toast, config);
-
-  // 영문 키보드 입력소스 활성화
-  activateEnglishKeyboard();
 
   // Show and focus the window
   windows.toast.show();

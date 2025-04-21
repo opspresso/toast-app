@@ -354,11 +354,6 @@ function createSettingsWindow(config)
 function setupSettingsWindowEvents(settingsWindow)
 
 /**
- * Activate English keyboard input source (platform-specific)
- */
-function activateEnglishKeyboard()
-
-/**
  * Show the Toast window
  * @param {Object} config - Configuration store
  */
@@ -405,9 +400,6 @@ showToastWindow(config);
 
 // Hide the Toast window
 hideToastWindow();
-
-// Activate English keyboard for input
-activateEnglishKeyboard();
 ```
 
 ### IPC Module (`src/main/ipc.js`)

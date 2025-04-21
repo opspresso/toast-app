@@ -49,7 +49,7 @@ When you first launch Toast App you'll see a welcome screen that guides you thro
 
 1. **Set Global Hotkey**: Choose a keyboard shortcut to trigger Toast App (default: Alt+Space).
 2. **Launch at Login**: Choose whether to start Toast App automatically when you log in.
-3. **Default Buttons**: Toast App comes with a few default buttons to get you started.
+3. **Default Buttons**: Toast App comes with a set of default buttons to get you started. These are organized in a standard keyboard layout (QWERTY) for easy access.
 
 After completing the initial setup Toast App will run in the background with an icon in your system tray (Windows) or menu bar (macOS).
 
@@ -138,6 +138,57 @@ When configuring a button you can test it before saving:
 1. Configure the button parameters.
 2. Click the "Test Action" button in the dialog.
 3. The action will be executed and you'll see the result.
+
+### Default Buttons
+
+Toast App comes with a set of default buttons organized in a standard keyboard layout (QWERTY) for easy access. These buttons are automatically added to your first page when you start the app for the first time.
+
+#### Default Button Layout
+
+The default buttons are arranged in three rows, matching the top three rows of a standard QWERTY keyboard:
+
+1. **Top Row (QWERT)**:
+   - **Q**: Toast - Opens the Toast Web website in the default browser (https://web.toast.sh)
+   - **W**: VSCode - Opens Visual Studio Code
+   - **E**:
+   - **R**:
+   - **T**: iTerm - Opens the system iTerm app
+
+2. **Middle Row (ASDFG)**:
+   - **A**: App Store - Opens the system App Store
+   - **S**:
+   - **D**: Dictionary - Opens the system Dictionary app
+   - **F**: Finder - Opens the system file explorer (Finder on macOS, Explorer on Windows)
+   - **G**: GitHub - Opens GitHub website in the default browser
+
+3. **Bottom Row (ZXCVB)**:
+   - **Z**: Zoom - Opens Zoom
+   - **X**: Mail - Opens the system Mail app
+   - **C**: Calendar - Opens the system Calendar app
+   - **V**:
+   - **B**:
+
+#### Platform-Specific Commands
+
+The default buttons use platform-specific commands to ensure they work correctly on both macOS and Windows:
+
+- On **macOS**, commands typically use the `open -a "Application Name"` format
+- On **Windows**, commands use either `start application` or specific protocol handlers like `ms-photos:`
+
+For example, the VSCode button uses:
+- `open -a "Visual Studio Code"` on macOS
+- `start code` on Windows
+
+#### Customizing Default Buttons
+
+You can modify any of the default buttons to better suit your needs:
+
+1. Enter Settings Mode by clicking the gear icon (⚙️) or pressing the comma (,) key
+2. Click on any default button to edit its properties
+3. Change the name, icon, action type, or command as needed
+4. Click "Save" to update the button
+
+If you want to restore the default buttons after making changes, you can reset your configuration in the Advanced settings tab.
 
 ## Managing Pages
 

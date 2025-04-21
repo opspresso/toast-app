@@ -48,6 +48,7 @@ const urlInputGroup = document.getElementById('url-input-group');
 const scriptInputGroup = document.getElementById('script-input-group');
 const shortcutInputGroup = document.getElementById('shortcut-input-group');
 const applicationInputGroup = document.getElementById('application-input-group');
+
 // Define default button set
 const defaultButtons = [
   // qwert row
