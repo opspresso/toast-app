@@ -1,4 +1,4 @@
-const { notarize } = require('electron-builder-notarize');
+const { notarize } = require('@electron/notarize');
 
 exports.default = async function notarizing(context) {
   const { electronPlatformName, appOutDir } = context;
@@ -24,16 +24,23 @@ exports.default = async function notarizing(context) {
   }
 
   console.log('Notarizing app...');
+  console.log('App output directory:', appOutDir);
 
-  const appName = context.packager.appInfo.productFilename;
-  const appBundleId = context.packager.appInfo.id;
+  // 앱 이름과 번들 ID를 직접 지정
+  const appName = 'Toast';
+  const appBundleId = 'com.opspresso.toast-app';
+
+  // 앱 경로 구성
+  const appPath = `${appOutDir}/${appName}.app`;
+  console.log('App path for notarization:', appPath);
 
   try {
     // API 키 방식 (권장)
     if (API_KEY_ID && API_KEY_ISSUER_ID) {
       await notarize({
         appBundleId,
-        appPath: `${appOutDir}/${appName}.app`,
+        appPath: appPath,
+        tool: 'notarytool',
         appleApiKey: {
           keyId: API_KEY_ID,
           issuerId: API_KEY_ISSUER_ID,
@@ -45,7 +52,8 @@ exports.default = async function notarizing(context) {
     else if (APPLE_ID && APPLE_TEAM_ID && APPLE_APP_SPECIFIC_PASSWORD) {
       await notarize({
         appBundleId,
-        appPath: `${appOutDir}/${appName}.app`,
+        appPath: appPath,
+        tool: 'notarytool',
         appleId: APPLE_ID,
         appleIdPassword: APPLE_APP_SPECIFIC_PASSWORD,
         teamId: APPLE_TEAM_ID
