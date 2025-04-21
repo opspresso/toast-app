@@ -148,25 +148,25 @@ Toast App comes with a set of default buttons organized in a standard keyboard l
 The default buttons are arranged in three rows, matching the top three rows of a standard QWERTY keyboard:
 
 1. **Top Row (QWERT)**:
-   - **Q**: Toast - Opens the Toast Web website in the default browser (https://web.toast.sh)
-   - **W**: VSCode - Opens Visual Studio Code
+   - **Q**: Toast - Opens the Toast Website in the default browser (https://web.toast.sh)
+   - **W**:
    - **E**:
    - **R**:
    - **T**: iTerm - Opens the system iTerm app
 
 2. **Middle Row (ASDFG)**:
    - **A**: App Store - Opens the system App Store
-   - **S**:
+   - **S**: Slack - Opens the system Slack app
    - **D**: Dictionary - Opens the system Dictionary app
    - **F**: Finder - Opens the system file explorer (Finder on macOS, Explorer on Windows)
    - **G**: GitHub - Opens GitHub website in the default browser
 
 3. **Bottom Row (ZXCVB)**:
-   - **Z**: Zoom - Opens Zoom
+   - **Z**: Zoom - Opens Zoom app
    - **X**: Mail - Opens the system Mail app
    - **C**: Calendar - Opens the system Calendar app
-   - **V**:
-   - **B**:
+   - **V**: VSCode - Opens Visual Studio Code
+   - **B**: Chrome - Opens the system Chrome browser
 
 #### Platform-Specific Commands
 

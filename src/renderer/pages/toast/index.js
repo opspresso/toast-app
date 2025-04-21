@@ -53,39 +53,39 @@ const applicationInputGroup = document.getElementById('application-input-group')
 const defaultButtons = [
   // qwert row
   {
-    name: 'VSCode',
+    name: 'Toast',
     shortcut: 'Q',
-    icon: 'https://code.visualstudio.com/favicon.ico',
-    action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
+    icon: 'https://web.toast.sh/favicon.ico',
+    action: 'open',
+    url: 'https://web.toast.sh'
   },
   {
-    name: 'Photos',
+    name: 'Empty',
     shortcut: 'W',
-    icon: '🖼️',
+    icon: '➕',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Photos' : 'start ms-photos:'
+    command: ''
   },
   {
-    name: 'Notes',
+    name: 'Empty',
     shortcut: 'E',
-    icon: '📝',
+    icon: '➕',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Notes' : 'start onenote:'
+    command: ''
   },
   {
-    name: 'Maps',
+    name: 'Empty',
     shortcut: 'R',
-    icon: '🗺️',
+    icon: '➕',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Maps' : 'start bingmaps:'
+    command: ''
   },
   {
-    name: 'Messages',
+    name: 'iTerm',
     shortcut: 'T',
-    icon: '💬',
+    icon: '⌨️',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Messages' : 'start ms-chat:'
+    command: window.toast?.platform === 'darwin' ? 'open -a "iTerm"' : 'start cmd'
   },
   // asdfg row
   {
@@ -96,11 +96,11 @@ const defaultButtons = [
     command: window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
   },
   {
-    name: 'Spotify',
+    name: 'Slack',
     shortcut: 'S',
-    icon: '🎧',
+    icon: 'https://slack.com/favicon.ico',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Spotify' : 'start spotify:'
+    command: window.toast?.platform === 'darwin' ? 'open -a Slack' : 'start slack:'
   },
   {
     name: 'Dictionary',
@@ -127,37 +127,37 @@ const defaultButtons = [
   {
     name: 'Zoom',
     shortcut: 'Z',
-    icon: '📹',
+    icon: 'https://zoom.us/favicon.ico',
     action: 'exec',
     command: window.toast?.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
   },
   {
-    name: 'Excel',
+    name: 'Mail',
     shortcut: 'X',
-    icon: '📊',
+    icon: '✉️',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "Microsoft Excel"' : 'start excel'
+    command: window.toast?.platform === 'darwin' ? 'open -a Mail' : 'start outlookmail:'
   },
   {
-    name: 'Calculator',
+    name: 'Calendar',
     shortcut: 'C',
-    icon: '🧮',
+    icon: '📅',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Calculator' : 'calc'
+    command: window.toast?.platform === 'darwin' ? 'open -a Calendar' : 'start outlookcal:'
   },
   {
-    name: 'Video Player',
+    name: 'VSCode',
     shortcut: 'V',
-    icon: '🎬',
+    icon: 'https://code.visualstudio.com/favicon.ico',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "QuickTime Player"' : 'start wmplayer'
+    command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
   },
   {
-    name: 'Brave',
+    name: 'Chrome',
     shortcut: 'B',
-    icon: '🦁',
+    icon: 'https://www.google.com/chrome/static/images/chrome-logo-m100.svg',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "Brave Browser"' : 'start brave'
+    command: window.toast?.platform === 'darwin' ? 'open -a "Google Chrome"' : 'start chrome'
   }
 ];
 
