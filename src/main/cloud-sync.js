@@ -3,30 +3,17 @@
  *
  * 이 모듈은 Toast-App의 설정(페이지와 버튼 정보 등)을 Toast-Web 서버와 동기화합니다.
  * 사용자가 페이지를 추가/삭제하거나 버튼을 수정할 때 변경사항을 감지하고 서버에 업로드합니다.
+ * 공용 API 모듈을 사용하여 구현되었습니다.
  */
 
-const axios = require('axios');
-const { getEnv } = require('./config/env');
-const os = require('os');
+// API 공용 모듈 불러오기
+const { sync: apiSync } = require('./api');
 const { createConfigStore } = require('./config');
-
-// 환경 변수로부터 서버 URL 가져오기
-const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
-const SETTINGS_API_URL = `${TOAST_URL}/api/users/settings`;
 
 // 동기화 관련 상수
 const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
 let syncTimer = null;
-let lastSyncTime = 0;
-let isSyncing = false;
 let syncEnabled = true;
-
-// 마지막 동기화 상태 정보
-let lastSyncStatus = {
-  success: false,
-  timestamp: 0,
-  error: null
-};
 
 // 전역 참조 저장
 let configStore = null;
@@ -42,15 +29,13 @@ function initCloudSync() {
 
   // 페이지 설정 변경 감지
   const unsubscribePages = configStore.onDidChange('pages', async (newValue, oldValue) => {
+    // ==========================================
+    // 시점 2-4: 페이지 추가/삭제 및 버튼 수정 시 클라우드 싱크
+    // ==========================================
+
     // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 스킵
     if (!syncEnabled) {
       console.log('동기화 비활성화됨, 설정 변경 무시');
-      return;
-    }
-
-    // 설정이 서버에서 다운로드된 경우 다시 업로드하지 않음 (루프 방지)
-    if (Date.now() - lastSyncTime < 1000) {
-      console.log('다운로드한 설정 감지됨, 동기화 스킵');
       return;
     }
 
@@ -61,12 +46,65 @@ function initCloudSync() {
       return;
     }
 
-    console.log('페이지 설정 변경 감지됨, 동기화 예약...');
+    // 변경 유형 감지 (페이지 추가, 삭제, 버튼 수정)
+    let changeType = '알 수 없는 변경';
+    let changeDetails = '';
+
+    if (Array.isArray(newValue) && Array.isArray(oldValue)) {
+      // 시점 2: 페이지 추가 감지
+      if (newValue.length > oldValue.length) {
+        changeType = '페이지 추가';
+        const addedPages = newValue.filter(page =>
+          !oldValue.some(oldPage => oldPage.id === page.id)
+        );
+        if (addedPages.length > 0) {
+          changeDetails = `추가된 페이지: ${addedPages.map(p => p.name).join(', ')}`;
+        }
+      }
+      // 시점 3: 페이지 삭제 감지
+      else if (newValue.length < oldValue.length) {
+        changeType = '페이지 삭제';
+        const removedPages = oldValue.filter(page =>
+          !newValue.some(newPage => newPage.id === page.id)
+        );
+        if (removedPages.length > 0) {
+          changeDetails = `삭제된 페이지: ${removedPages.map(p => p.name).join(', ')}`;
+        }
+      }
+      // 시점 4: 버튼 수정 감지 (페이지 수는 같지만 내용이 다름)
+      else if (newValue.length === oldValue.length) {
+        changeType = '버튼 수정';
+
+        // 수정된 페이지 찾기
+        const modifiedPageIndexes = [];
+        for (let i = 0; i < newValue.length; i++) {
+          const newPage = newValue[i];
+          const oldPage = oldValue[i];
+
+          // 페이지 내용 비교 (버튼 개수 또는 버튼 내용 변경 확인)
+          if (JSON.stringify(newPage) !== JSON.stringify(oldPage)) {
+            modifiedPageIndexes.push(i);
+          }
+        }
+
+        if (modifiedPageIndexes.length > 0) {
+          changeDetails = `수정된 페이지: ${modifiedPageIndexes.map(idx => newValue[idx].name).join(', ')}`;
+        }
+      }
+    }
+
+    console.log(`페이지 설정 변경 감지됨 (${changeType}): ${changeDetails}, 동기화 예약...`);
 
     // 디바운스 처리: 연속적인 변경이 있을 경우 마지막 변경 후 2초 후에 동기화
     clearTimeout(syncTimer);
     syncTimer = setTimeout(async () => {
-      await uploadSettings();
+      console.log(`변경 유형 '${changeType}'에 대한 설정 업로드 시작...`);
+      const result = await uploadSettings();
+      if (result.success) {
+        console.log(`'${changeType}' 변경에 대한 클라우드 동기화 성공!`);
+      } else {
+        console.error(`'${changeType}' 변경에 대한 클라우드 동기화 실패:`, result.error);
+      }
     }, SYNC_DEBOUNCE_MS);
   });
 
@@ -83,7 +121,7 @@ function initCloudSync() {
       syncEnabled = false;
       console.log('클라우드 동기화 비활성화됨');
     },
-    getLastSyncStatus: () => ({ ...lastSyncStatus }),
+    getLastSyncStatus: () => apiSync.getLastSyncStatus(),
     syncAfterLogin: async () => {
       console.log('로그인 후 클라우드 동기화 수행 중...');
       // 로그인 후에는 기본적으로 다운로드 우선 (서버 데이터 우선)
@@ -91,15 +129,7 @@ function initCloudSync() {
     },
     manualSync: async (action = 'resolve') => {
       console.log(`수동 동기화 요청: ${action}`);
-      if (action === 'upload') {
-        return await uploadSettings();
-      } else if (action === 'download') {
-        return await downloadSettings();
-      } else {
-        // 'resolve' - 가장 최신 데이터 사용 (기본 동작)
-        // 여기서는 간단하게 다운로드 우선으로 구현
-        return await downloadSettings();
-      }
+      return await syncSettings(action);
     }
   };
 }
@@ -126,23 +156,17 @@ function updateCloudSyncSettings(enabled) {
  * @returns {Promise<boolean>} 동기화 가능 여부
  */
 async function isCloudSyncEnabled() {
+  if (!authManagerRef) {
+    console.log('인증 관리자 참조가 없습니다.');
+    return false;
+  }
+
+  // 공용 모듈을 사용하여 동기화 가능 여부 확인
   try {
-    if (!authManagerRef) {
-      return false;
-    }
-
-    // 인증 여부 확인
-    const isAuthenticated = await authManagerRef.hasValidToken();
-    if (!isAuthenticated) {
-      return false;
-    }
-
-    // 구독 정보 확인
-    const subscription = configStore.get('subscription') || {};
-    const features = subscription.features || {};
-
-    // cloud_sync 기능이 활성화되어 있는지 확인
-    return features.cloud_sync === true;
+    return await apiSync.isCloudSyncEnabled({
+      hasValidToken: authManagerRef.hasValidToken,
+      configStore
+    });
   } catch (error) {
     console.error('동기화 가능 여부 확인 오류:', error);
     return false;
@@ -154,74 +178,32 @@ async function isCloudSyncEnabled() {
  * @returns {Promise<Object>} 업로드 결과
  */
 async function uploadSettings() {
-  // 동기화 비활성화 상태면 스킵
+  console.log('설정 업로드 시작...');
+
+  // 동기화가 비활성화 상태면 스킵
   if (!syncEnabled) {
     console.log('클라우드 동기화 비활성화됨, 업로드 스킵');
     return { success: false, error: 'Cloud sync disabled' };
   }
 
-  // 이미 동기화 중이면 스킵
-  if (isSyncing) {
-    console.log('이미 동기화 중, 요청 스킵됨');
-    return { success: false, error: 'Already syncing' };
+  if (!authManagerRef) {
+    console.log('인증 관리자 참조가 없습니다.');
+    return { success: false, error: '인증 관리자 초기화되지 않음' };
   }
 
-  isSyncing = true;
-
+  // 공용 모듈을 사용하여 설정 업로드
   try {
-    if (!authManagerRef) {
-      throw new Error('인증 관리자가 초기화되지 않음');
-    }
-
-    // 액세스 토큰 가져오기
-    const token = await authManagerRef.getAccessToken();
-    if (!token) {
-      throw new Error('액세스 토큰을 가져올 수 없음');
-    }
-
-    // 페이지 설정 가져오기
-    const pages = configStore.get('pages') || [];
-    const deviceInfo = getDeviceInfo();
-
-    // 서버에 설정 업로드
-    console.log(`서버에 ${pages.length}개 페이지 설정 업로드 중...`);
-
-    const response = await axios.put(SETTINGS_API_URL, {
-      pages,
-      lastSyncedDevice: deviceInfo,
-      lastSyncedAt: Date.now()
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+    return await apiSync.uploadSettings({
+      hasValidToken: authManagerRef.hasValidToken,
+      onUnauthorized: refreshToken,
+      configStore
     });
-
-    // 동기화 완료 시간 기록
-    lastSyncTime = Date.now();
-    lastSyncStatus = {
-      success: true,
-      timestamp: lastSyncTime,
-      error: null
-    };
-
-    console.log('페이지 설정 업로드 성공:', response.data);
-    return { success: true, data: response.data };
   } catch (error) {
-    console.error('페이지 설정 업로드 오류:', error);
-
-    lastSyncStatus = {
-      success: false,
-      timestamp: Date.now(),
-      error: error.message || '알 수 없는 오류'
-    };
-
+    console.error('설정 업로드 오류:', error);
     return {
       success: false,
       error: error.message || '알 수 없는 오류'
     };
-  } finally {
-    isSyncing = false;
   }
 }
 
@@ -230,88 +212,79 @@ async function uploadSettings() {
  * @returns {Promise<Object>} 다운로드 결과
  */
 async function downloadSettings() {
-  // 동기화 비활성화 상태면 스킵
+  console.log('설정 다운로드 시작...');
+
+  // 동기화가 비활성화 상태면 스킵
   if (!syncEnabled) {
     console.log('클라우드 동기화 비활성화됨, 다운로드 스킵');
     return { success: false, error: 'Cloud sync disabled' };
   }
 
-  // 이미 동기화 중이면 스킵
-  if (isSyncing) {
-    console.log('이미 동기화 중, 다운로드 스킵됨');
-    return { success: false, error: 'Already syncing' };
+  if (!authManagerRef) {
+    console.log('인증 관리자 참조가 없습니다.');
+    return { success: false, error: '인증 관리자 초기화되지 않음' };
   }
 
-  isSyncing = true;
-
+  // 공용 모듈을 사용하여 설정 다운로드
   try {
-    if (!authManagerRef) {
-      throw new Error('인증 관리자가 초기화되지 않음');
-    }
-
-    // 액세스 토큰 가져오기
-    const token = await authManagerRef.getAccessToken();
-    if (!token) {
-      throw new Error('액세스 토큰을 가져올 수 없음');
-    }
-
-    // 서버에서 설정 다운로드
-    console.log('서버에서 설정 다운로드 중...');
-
-    const response = await axios.get(SETTINGS_API_URL, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+    return await apiSync.downloadSettings({
+      hasValidToken: authManagerRef.hasValidToken,
+      onUnauthorized: refreshToken,
+      configStore
     });
-
-    const settings = response.data;
-
-    // 유효성 검사
-    if (!settings || !settings.data || !Array.isArray(settings.data.pages)) {
-      throw new Error('유효하지 않은 설정 데이터');
-    }
-
-    // 서버에서 받은 페이지 설정을 로컬에 적용
-    lastSyncTime = Date.now();
-    configStore.set('pages', settings.data.pages);
-
-    lastSyncStatus = {
-      success: true,
-      timestamp: lastSyncTime,
-      error: null
-    };
-
-    console.log('설정 다운로드 성공:', settings);
-    return { success: true, data: settings };
   } catch (error) {
     console.error('설정 다운로드 오류:', error);
-
-    lastSyncStatus = {
-      success: false,
-      timestamp: Date.now(),
-      error: error.message || '알 수 없은 오류'
-    };
-
     return {
       success: false,
       error: error.message || '알 수 없는 오류'
     };
-  } finally {
-    isSyncing = false;
   }
 }
 
 /**
- * 현재 장치 정보 가져오기
- * @returns {string} 장치 정보 문자열
+ * 토큰 갱신 콜백 함수
+ * @returns {Promise<Object>} 토큰 갱신 결과
  */
-function getDeviceInfo() {
-  const platform = process.platform;
-  const hostname = os.hostname();
-  const username = os.userInfo().username;
+async function refreshToken() {
+  try {
+    // authManager를 통해 토큰 갱신
+    if (authManagerRef && typeof authManagerRef.refreshAccessToken === 'function') {
+      return await authManagerRef.refreshAccessToken();
+    }
+    return { success: false, error: '토큰 갱신 함수가 없음' };
+  } catch (error) {
+    return { success: false, error: error.message || '토큰 갱신 오류' };
+  }
+}
 
-  return `${platform}-${hostname}-${username}`;
+/**
+ * 수동 동기화 수행
+ * @param {string} action - 동기화 액션 ('upload', 'download', 'resolve')
+ * @returns {Promise<Object>} 동기화 결과
+ */
+async function syncSettings(action = 'resolve') {
+  console.log(`수동 동기화 요청: ${action}`);
+
+  if (!authManagerRef) {
+    console.log('인증 관리자 참조가 없습니다.');
+    return { success: false, error: '인증 관리자 초기화되지 않음' };
+  }
+
+  // 공용 모듈을 사용하여 수동 동기화 수행
+  try {
+    return await apiSync.manualSync({
+      action,
+      hasValidToken: authManagerRef.hasValidToken,
+      onUnauthorized: refreshToken,
+      configStore
+    });
+  } catch (error) {
+    console.error('수동 동기화 오류:', error);
+    return {
+      success: false,
+      error: error.message || '알 수 없는 오류'
+    };
+  }
 }
 
 module.exports = {

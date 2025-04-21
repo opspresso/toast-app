@@ -3,10 +3,12 @@
  *
  * 설정 창과 토스트 창 간의 인증 상태 동기화를 위한 모듈입니다.
  * 로그인/로그아웃 처리를 중앙화하고 양쪽 창에 이벤트를 전송합니다.
+ * 공용 API 모듈을 사용하여 구현되었습니다.
  */
 
 const auth = require('./auth');
 const cloudSync = require('./cloud-sync');
+const { createConfigStore } = require('./config');
 
 // 창 참조 저장
 let windows = null;
@@ -26,7 +28,8 @@ function initialize(windowsRef) {
   // authManager 참조 설정 - 순환 참조를 피하기 위해 필요한 메서드만 포함한 객체 전달
   cloudSync.setAuthManager({
     getAccessToken,
-    hasValidToken
+    hasValidToken,
+    refreshAccessToken: () => auth.refreshAccessToken()
   });
 }
 
@@ -87,21 +90,72 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         console.log('구독 플랜:', userPlan);
         console.log('VIP 상태:', isVip ? 'VIP 사용자' : '일반 사용자');
         console.log('=======================');
+
+        // ==========================================
+        // 시점 1: 사용자 로그인 성공 시 클라우드 싱크
+        // ==========================================
         console.log('로그인 성공 후 클라우드 동기화 시작');
 
-        // cloud_sync 기능 상태 확인 및 설정
-        const hasSyncFeature = result.subscription?.features?.cloud_sync === true;
+        // 1. cloud_sync 기능 상태 확인 및 설정
+        let hasSyncFeature = false;
+
+        // features 객체가 있는지 확인
+        if (result.subscription?.features && typeof result.subscription.features === 'object') {
+          hasSyncFeature = result.subscription.features.cloud_sync === true;
+          console.log('구독 정보의 features에서 cloud_sync 기능 확인:', hasSyncFeature);
+        }
+        // features_array 배열에서 확인 (대체 방법)
+        else if (Array.isArray(result.subscription?.features_array)) {
+          hasSyncFeature = result.subscription.features_array.includes('cloud_sync');
+          console.log('구독 정보의 features_array에서 cloud_sync 기능 확인:', hasSyncFeature);
+        }
+        // 구독자는 기본적으로 cloud_sync 가능
+        else if (result.subscription?.isSubscribed === true ||
+                 result.subscription?.active === true ||
+                 result.subscription?.is_subscribed === true) {
+          hasSyncFeature = true;
+          console.log('구독 상태가 활성화되어 있어 cloud_sync 기능 활성화');
+        }
+
+        // 구독 정보에 cloud_sync 기능 강제 추가 (디버깅용)
+        if (result.subscription && typeof result.subscription === 'object') {
+          // 기존 구독 정보 복사
+          const updatedSubscription = { ...result.subscription };
+
+          // features 객체가 없으면 생성
+          if (!updatedSubscription.features || typeof updatedSubscription.features !== 'object') {
+            updatedSubscription.features = {};
+          }
+
+          // cloud_sync 기능 설정
+          updatedSubscription.features.cloud_sync = hasSyncFeature;
+
+          // 설정 저장소에 업데이트된 구독 정보 저장
+          const config = createConfigStore();
+          config.set('subscription', updatedSubscription);
+          console.log('업데이트된 구독 정보 저장됨:', JSON.stringify(updatedSubscription));
+        }
+
+        console.log('클라우드 동기화 기능 상태 설정:', hasSyncFeature);
         cloudSync.updateCloudSyncSettings(hasSyncFeature);
 
-        // 페이지 설정 동기화 시작
-        syncManager.syncAfterLogin().then(syncResult => {
-          console.log('로그인 후 클라우드 동기화 결과:', syncResult);
+        // 2. 서버에서 최신 데이터 다운로드 (서버 데이터 우선)
+        if (hasSyncFeature) {
+          console.log('클라우드 동기화 기능이 활성화되어 있습니다. 서버에서 설정 가져오는 중...');
+          // 페이지 설정 동기화 시작
+          syncManager.syncAfterLogin().then(syncResult => {
+            console.log('로그인 후 클라우드 동기화 결과:', syncResult);
 
-          if (syncResult) {
-            // 설정 동기화 성공 시 양쪽 창에 알림
-            notifySettingsSynced();
-          }
-        });
+            if (syncResult && syncResult.success) {
+              // 설정 동기화 성공 시 양쪽 창에 알림
+              notifySettingsSynced();
+            } else {
+              console.log('로그인 후 동기화 실패:', syncResult?.error || '알 수 없는 오류');
+            }
+          });
+        } else {
+          console.log('클라우드 동기화 기능이 비활성화되어 있습니다. 구독 상태를 확인하세요.');
+        }
       }
     } else {
       notifyLoginError(result.error || 'Unknown error');
@@ -180,6 +234,14 @@ async function fetchUserProfile() {
  */
 async function fetchSubscription() {
   return await auth.fetchSubscription();
+}
+
+/**
+ * 토큰 갱신
+ * @returns {Promise<Object>} 갱신 결과
+ */
+async function refreshAccessToken() {
+  return await auth.refreshAccessToken();
 }
 
 /**
@@ -305,11 +367,12 @@ async function syncSettings(action = 'resolve') {
 
     const result = await syncManager.manualSync(action);
 
-    if (result) {
+    if (result && result.success) {
       notifySettingsSynced();
+      return true;
     }
 
-    return result;
+    return false;
   } catch (error) {
     console.error('수동 동기화 오류:', error);
     return false;
@@ -371,6 +434,7 @@ module.exports = {
   fetchSubscription,
   getAccessToken,
   hasValidToken,
+  refreshAccessToken,
   notifyLoginSuccess,
   notifyLoginError,
   notifyLogout,
