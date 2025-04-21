@@ -431,7 +431,7 @@ function hideLoginLoadingScreen() {
  * Show user profile modal
  */
 async function showUserProfile() {
-  // Fetch user profile information if not available
+  // 사용자가 로그인되어 있지 않은 경우
   if (!userProfile || !userSubscription) {
     try {
       showStatus('Fetching user information...', 'info');
@@ -440,23 +440,56 @@ async function showUserProfile() {
       const result = await fetchUserProfileAndSubscription();
       hideLoginLoadingScreen();
 
+      // 사용자 정보를 가져오지 못한 경우 로그인 프로세스 시작
       if (!result.profile || !result.subscription) {
-        // Execute login if user information doesn't exist
-        initiateSignIn();
+        // 로그인 화면 표시 전에 프로필 정보 초기화
+        updateProfileDisplay();
+
+        // 로그인 모달 표시
+        profileModal.classList.add('show');
+        window.toast.setModalOpen(true);
+
+        // 로그인 버튼 텍스트 변경
+        if (logoutButton) {
+          logoutButton.textContent = 'Login';
+
+          // 일시적으로 이벤트 리스너 교체
+          const originalHandler = logoutButton.onclick;
+          logoutButton.onclick = () => {
+            // 모달 닫기
+            hideProfileModal();
+
+            // 로그인 프로세스 시작
+            setTimeout(() => {
+              initiateSignIn();
+
+              // 원래 이벤트 리스너 복원
+              logoutButton.textContent = 'Logout';
+              logoutButton.onclick = originalHandler;
+            }, 300);
+          };
+        }
+
         return;
       }
     } catch (error) {
       hideLoginLoadingScreen();
       showStatus('Failed to fetch user information. Please login again.', 'error');
-      initiateSignIn();
+
+      // 오류 발생 시에도 프로필 정보 초기화
+      updateProfileDisplay();
+
+      // 로그인 모달 표시
+      profileModal.classList.add('show');
+      window.toast.setModalOpen(true);
       return;
     }
   }
 
-  // Fill profile information
+  // 프로필 정보 업데이트
   updateProfileDisplay();
 
-  // Show modal
+  // 모달 표시
   profileModal.classList.add('show');
   window.toast.setModalOpen(true);
 }
@@ -510,10 +543,11 @@ function updateUserButton() {
  * Update profile display
  */
 function updateProfileDisplay() {
-  if (userProfile) {
-    // Profile image (avatar)
-    profileAvatar.innerHTML = '';
+  // 프로필 이미지 초기화
+  profileAvatar.innerHTML = '';
 
+  if (userProfile) {
+    // 사용자 프로필이 있는 경우
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       const img = document.createElement('img');
       img.src = userProfile.profile_image || userProfile.avatar || userProfile.image;
@@ -541,13 +575,22 @@ function updateProfileDisplay() {
     // Set name and email
     profileName.textContent = userProfile.name || userProfile.display_name || 'User';
     profileEmail.textContent = userProfile.email || '';
-
-    // Update user button
-    updateUserButton();
+  } else {
+    // 사용자 프로필이 없는 경우 (로그아웃 상태)
+    profileAvatar.innerHTML = '👤';
+    profileName.textContent = 'Guest User';
+    profileEmail.textContent = 'Not logged in';
   }
 
+  // 항상 사용자 버튼 UI 업데이트
+  updateUserButton();
+
+  // 구독 정보 초기화
+  subscriptionStatus.className = 'subscription-value subscription-status-inactive';
+  subscriptionPlan.className = 'subscription-value';
+
   if (userSubscription) {
-    // Subscription status and plan (displayed in one line)
+    // 구독 정보가 있는 경우
     const isActive = userSubscription.active || userSubscription.is_subscribed || false;
     subscriptionStatus.textContent = isActive ? 'Active' : 'Inactive';
     subscriptionStatus.className = 'subscription-value ' + (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
@@ -566,7 +609,12 @@ function updateProfileDisplay() {
     // Page group information is saved but not displayed
     const pageGroups = userSubscription.features?.page_groups || '1';
     subscriptionPages.textContent = pageGroups;
-    // Already set display: none in HTML
+  } else {
+    // 구독 정보가 없는 경우 (로그아웃 상태)
+    subscriptionStatus.textContent = 'Inactive';
+    subscriptionPlan.textContent = 'FREE';
+    subscriptionExpiry.textContent = 'None';
+    subscriptionPages.textContent = '1';
   }
 }
 
@@ -647,6 +695,9 @@ async function handleLogout() {
       userProfile = null;
       userSubscription = null;
       isSubscribed = false;
+
+      // Update user button UI to reflect logged out state
+      updateUserButton();
 
       // Get current settings (for backup)
       const currentAppearance = await window.toast.getConfig('appearance') || {};
