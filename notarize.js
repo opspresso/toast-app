@@ -1,7 +1,7 @@
 const { notarize } = require('@electron/notarize');
 
 exports.default = async function notarizing(context) {
-  const { electronPlatformName, appOutDir } = context;
+  const { electronPlatformName, appOutDir, packager } = context;
 
   // macOS 플랫폼에서만 공증 진행
   if (electronPlatformName !== 'darwin') {
@@ -26,9 +26,15 @@ exports.default = async function notarizing(context) {
   console.log('Notarizing app...');
   console.log('App output directory:', appOutDir);
 
-  // 앱 이름과 번들 ID를 직접 지정
-  const appName = 'Toast';
-  const appBundleId = 'com.opspresso.toast-app';
+  // 디버깅을 위해 packager.appInfo 객체 출력
+  console.log('App Info:', JSON.stringify(packager.appInfo, null, 2));
+
+  // package.json의 build 설정에서 정보 가져오기
+  const appName = packager.appInfo.productName || 'Toast';
+  const appBundleId = packager.appInfo.id || 'com.opspresso.toast-app';
+
+  console.log('App name:', appName);
+  console.log('App bundle ID:', appBundleId);
 
   // 앱 경로 구성
   const appPath = `${appOutDir}/${appName}.app`;
