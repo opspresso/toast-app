@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.2.3",
+  "version": "v0.2.4",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -44,6 +44,7 @@
   "devDependencies": {
     "electron": "^35.1.5",
     "electron-builder": "^24.13.3",
+    "electron-builder-notarize": "^1.5.2",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "jest": "^29.7.0",
@@ -60,6 +61,7 @@
       "assets/**/*",
       "package.json"
     ],
+    "afterSign": "electron-builder-notarize",
     "mac": {
       "category": "public.app-category.productivity",
       "hardenedRuntime": true,

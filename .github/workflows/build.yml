@@ -33,9 +33,8 @@ jobs:
           echo "TOAST_URL=${{ secrets.TOAST_URL }}" >> src/main/config/.env
           echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> src/main/config/.env
 
-      # macOS에서만 인증서 설정
-      - name: Setup macOS certificates 🔑
-        if: matrix.os == 'macos-latest'
+      - name: Prepare for app notarization 🔑
+        if: startsWith(matrix.os, 'macos')
         run: |
           mkdir -p ~/private_keys/
           echo '${{ secrets.API_KEY_SECRET }}' > ~/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8
