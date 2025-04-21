@@ -445,6 +445,16 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // 로그아웃 및 페이지 그룹 설정 초기화
+  ipcMain.handle('logoutAndResetPageGroups', async () => {
+    try {
+      return await auth.logoutAndResetPageGroups();
+    } catch (error) {
+      console.error('Error in logoutAndResetPageGroups:', error);
+      return false;
+    }
+  });
+
   // 사용자 프로필 정보 가져오기
   ipcMain.handle('fetch-user-profile', async () => {
     try {
