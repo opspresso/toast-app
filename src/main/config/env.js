@@ -7,7 +7,6 @@
 const path = require('path');
 const dotenv = require('dotenv');
 const fs = require('fs');
-const { app } = require('electron');
 
 /**
  * 환경 변수를 로드합니다.
