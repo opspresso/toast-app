@@ -55,7 +55,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
 
-      - name: Upload artifacts �
+      - name: Upload artifacts 🚚
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-artifacts
@@ -74,7 +74,7 @@ jobs:
       - name: Checkout code 🛎️
         uses: actions/checkout@v4
 
-      - name: Download all artifacts 📥
+      - name: Download all artifacts 🚚
         uses: actions/download-artifact@v4
         with:
           path: artifacts
