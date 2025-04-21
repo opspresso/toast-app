@@ -75,19 +75,25 @@ function positionToastWindow(toastWindow, config) {
     return;
   }
 
-  // If config is not provided, get it from the window
+  const { screen } = require('electron');
+
+  // Get the cursor position to find which display the cursor is on
+  const cursorPosition = screen.getCursorScreenPoint();
+
+  // Get the display where the cursor is currently located
+  const currentDisplay = screen.getDisplayNearestPoint(cursorPosition);
+
+  // Get the window size
+  const windowBounds = toastWindow.getBounds();
+
+  // If config is not provided, default to center position on current display
   if (!config) {
-    const { screen } = require('electron');
+    // Get the current display work area
+    const displayWorkArea = currentDisplay.workArea;
 
-    // Get the window size
-    const windowBounds = toastWindow.getBounds();
-
-    // Get the screen size
-    const displayBounds = screen.getPrimaryDisplay().workAreaSize;
-
-    // Default to center position
-    let x = Math.round((displayBounds.width - windowBounds.width) / 2);
-    let y = Math.round((displayBounds.height - windowBounds.height) / 2);
+    // Default to center position on current display
+    let x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
+    let y = displayWorkArea.y + Math.round((displayWorkArea.height - windowBounds.height) / 2);
 
     // Set the window position
     toastWindow.setPosition(x, y);
@@ -96,39 +102,34 @@ function positionToastWindow(toastWindow, config) {
 
   // Get position setting from config
   const position = config.get('appearance.position') || 'center';
-  const { screen } = require('electron');
 
-  // Get the window size
-  const windowBounds = toastWindow.getBounds();
-
-  // Get the screen size
-  const displayBounds = screen.getPrimaryDisplay().workAreaSize;
+  // Get the current display work area
+  const displayWorkArea = currentDisplay.workArea;
 
   // Calculate position based on setting
   let x, y;
 
   switch (position) {
     case 'top':
-      x = Math.round((displayBounds.width - windowBounds.width) / 2);
-      y = 20;
+      x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
+      y = displayWorkArea.y + 20;
       break;
     case 'bottom':
-      x = Math.round((displayBounds.width - windowBounds.width) / 2);
-      y = displayBounds.height - windowBounds.height - 20;
+      x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
+      y = displayWorkArea.y + displayWorkArea.height - windowBounds.height - 20;
       break;
     case 'cursor':
-      const cursorPosition = screen.getCursorScreenPoint();
       x = cursorPosition.x - Math.round(windowBounds.width / 2);
       y = cursorPosition.y - 10;
 
       // Ensure the window is within the screen bounds
-      x = Math.max(0, Math.min(x, displayBounds.width - windowBounds.width));
-      y = Math.max(0, Math.min(y, displayBounds.height - windowBounds.height));
+      x = Math.max(displayWorkArea.x, Math.min(x, displayWorkArea.x + displayWorkArea.width - windowBounds.width));
+      y = Math.max(displayWorkArea.y, Math.min(y, displayWorkArea.y + displayWorkArea.height - windowBounds.height));
       break;
     case 'center':
     default:
-      x = Math.round((displayBounds.width - windowBounds.width) / 2);
-      y = Math.round((displayBounds.height - windowBounds.height) / 2);
+      x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
+      y = displayWorkArea.y + Math.round((displayWorkArea.height - windowBounds.height) / 2);
       break;
   }
 
