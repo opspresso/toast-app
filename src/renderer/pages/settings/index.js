@@ -203,9 +203,7 @@ async function fetchUserProfile() {
       authState.profile = profile;
 
       // Update UI with profile information
-      userAvatar.src = profile.avatar_url || '';
-      userName.textContent = profile.name || 'User';
-      userEmail.textContent = profile.email || '';
+      updateProfileDisplay(profile);
     }
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
@@ -214,6 +212,53 @@ async function fetchUserProfile() {
       handleTokenExpired();
     }
   }
+}
+
+/**
+ * Update profile display with user information
+ * @param {Object} profile - User profile information
+ */
+function updateProfileDisplay(profile) {
+  // Clear previous content
+  userAvatar.innerHTML = '';
+
+  if (profile.avatar_url || profile.profile_image || profile.avatar || profile.image) {
+    // If profile image exists
+    const img = document.createElement('img');
+    img.src = profile.avatar_url || profile.profile_image || profile.avatar || profile.image;
+    img.alt = 'Profile';
+
+    // Handle image load error
+    img.onerror = function() {
+      // Use initials as fallback if image load fails
+      const initials = getInitials(profile.name || profile.display_name || 'User');
+      userAvatar.textContent = initials;
+    };
+
+    userAvatar.appendChild(img);
+  } else {
+    // Display initials if no image available
+    const initials = getInitials(profile.name || profile.display_name || 'User');
+    userAvatar.textContent = initials;
+  }
+
+  // Set name and email
+  userName.textContent = profile.name || profile.display_name || 'User';
+  userEmail.textContent = profile.email || '';
+}
+
+/**
+ * Extract initials from user name
+ * @param {string} name - User name
+ * @returns {string} - Initials (up to 2 characters)
+ */
+function getInitials(name) {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
 }
 
 /**
