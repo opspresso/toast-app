@@ -46,11 +46,43 @@ jobs:
           mac_certs: ${{ secrets.APPLE_CERTIFICATE_BASE64_DIST }}
           mac_certs_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          build_script_name: "build:skip-notarize"
         env:
           # macOS notarization API key
           API_KEY_ID: ${{ secrets.API_KEY_ID }}
           API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}
           # Additional notarization variables
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+
+      - name: Notarize macOS app 🔐
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Notarizing macOS app..."
+          if [ -n "$API_KEY_ID" ] && [ -n "$API_KEY_ISSUER_ID" ]; then
+            # API 키 방식 (권장)
+            npx @electron/notarize --appPath dist/mac-arm64/Toast.app \
+              --appBundleId com.opspresso.toast-app \
+              --tool notarytool \
+              --appleApiKey $HOME/private_keys/AuthKey_$API_KEY_ID.p8 \
+              --appleApiKeyId $API_KEY_ID \
+              --appleApiIssuer $API_KEY_ISSUER_ID
+          elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_TEAM_ID" ] && [ -n "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
+            # Apple ID 방식 (대체)
+            npx @electron/notarize --appPath dist/mac-arm64/Toast.app \
+              --appBundleId com.opspresso.toast-app \
+              --tool notarytool \
+              --appleId $APPLE_ID \
+              --appleIdPassword $APPLE_APP_SPECIFIC_PASSWORD \
+              --teamId $APPLE_TEAM_ID
+          else
+            echo "Error: No notarization credentials provided"
+            exit 1
+          fi
+        env:
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
