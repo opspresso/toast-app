@@ -934,7 +934,7 @@ function handleAuthError(error) {
 
 ## 설정 동기화
 
-Toast-App의 설정을 Toast-Web과 동기화하여 사용자가 여러 기기에서 일관된 경험을 유지할 수 있습니다.
+Toast-App의 설정을 Toast-Web과 동기화하여 사용자가 여러 기기에서 일관된 경험을 유지할 수 있습니다. **이 기능은 인증된 사용자만 사용할 수 있습니다.**
 
 ### 설정 동기화 원리
 
@@ -955,6 +955,235 @@ sequenceDiagram
         ToastWeb->>ToastApp: 저장된 설정 전송
         ToastApp->>ToastApp: 로컬 설정 업데이트
     end
+```
+
+### 클라우드 동기화 모듈
+
+Toast-App은 `cloud-sync.js` 모듈을 통해 설정 동기화를 구현합니다. 이 모듈은 다음과 같은 주요 기능을 제공합니다:
+
+1. **자동 설정 동기화**: 사용자가 설정을 변경하면 자동으로 서버에 업로드
+2. **로그인 시 동기화**: 사용자가 로그인하면 서버에서 설정을 다운로드
+3. **충돌 해결**: 로컬 설정과 서버 설정 간 충돌 해결
+4. **동기화 상태 모니터링**: 동기화 성공/실패 상태 추적
+
+#### 클라우드 동기화 모듈 아키텍처
+
+```mermaid
+graph TD
+    A[cloud-sync.js] --> B[isCloudSyncEnabled]
+    A --> C[uploadSettings]
+    A --> D[downloadSettings]
+    A --> E[resolveConflicts]
+    A --> F[syncAfterLogin]
+    A --> G[setupSettingsSync]
+    C --> H[auth.js]
+    D --> H
+    E --> C
+    E --> D
+    F --> E
+    G --> C
+```
+
+#### 주요 함수
+
+| 함수 | 설명 |
+|------|------|
+| `isCloudSyncEnabled()` | 클라우드 동기화 가능 여부 확인 (인증 상태, 구독 기능 등) |
+| `uploadSettings()` | 로컬 설정을 서버에 업로드 |
+| `downloadSettings()` | 서버 설정을 로컬로 다운로드 |
+| `resolveConflicts()` | 로컬과 서버 간 설정 충돌 해결 |
+| `syncAfterLogin()` | 로그인 성공 후 동기화 실행 |
+| `manualSync(action)` | 수동 동기화 액션 실행 (upload/download/resolve) |
+
+#### 동기화 데이터 구조
+
+Toast-App은 다음 설정 데이터를 웹 서버와 동기화합니다:
+
+```javascript
+// 서버에 보낼 설정 데이터 예시
+const settingsToSync = {
+  // 테마 설정
+  theme: 'dark', // 또는 'light', 'system'
+
+  // 페이지(버튼) 설정 - 가장 중요한 동기화 데이터
+  pages: [
+    {
+      id: 'page1',
+      name: '기본',
+      buttons: [
+        {
+          id: 'btn1',
+          name: '웹사이트 열기',
+          key: 'q',
+          action: {
+            type: 'url',
+            data: 'https://example.com'
+          }
+        },
+        // ... 더 많은 버튼
+      ]
+    },
+    // ... 더 많은 페이지
+  ],
+
+  // 동기화 메타데이터
+  lastSyncedDevice: 'toast-app-macbook-12345',
+  lastSyncedAt: 1682123456789
+};
+```
+
+#### 사용자 계정 정보 로깅
+
+동기화 프로세스 중에는 계정 정보가 로깅되어 문제 해결 및 디버깅에 도움을 줍니다:
+
+```javascript
+// 로그인 시 계정 정보 로깅 예시
+console.log('====== 계정 정보 ======');
+console.log('사용자 이메일:', userEmail);
+console.log('사용자 이름:', userName);
+console.log('구독 플랜:', userPlan);
+console.log('VIP 상태:', isVip ? 'VIP 사용자' : '일반 사용자');
+console.log('=======================');
+```
+
+#### 구현 예시: 설정 업로드
+
+```javascript
+/**
+ * 페이지 설정을 서버로 업로드
+ * @returns {Promise<boolean>} 동기화 성공 여부
+ */
+async function uploadSettings() {
+  try {
+    // 동기화 가능 여부 확인 (인증 상태 체크)
+    if (!await isCloudSyncEnabled()) {
+      console.log('클라우드 동기화가 비활성화되어 있어 업로드하지 않습니다.');
+      return false;
+    }
+
+    // 진행 중인 동기화가 있으면 중복 방지
+    if (isSyncing) {
+      console.log('이미 동기화가 진행 중입니다.');
+      return false;
+    }
+
+    isSyncing = true;
+
+    // 액세스 토큰 가져오기 (인증 필수)
+    const token = await auth.getAccessToken();
+    if (!token) {
+      console.error('액세스 토큰을 가져오지 못했습니다.');
+      isSyncing = false;
+      return false;
+    }
+
+    // 계정 정보 로깅
+    try {
+      const userProfile = await auth.fetchUserProfile();
+      const subscription = await auth.fetchSubscription();
+
+      console.log('====== 동기화 계정 정보 ======');
+      console.log('사용자 이메일:', userProfile?.email || subscription?.userId || 'unknown');
+      console.log('사용자 이름:', userProfile?.name || 'unknown user');
+      console.log('구독 플랜:', subscription?.plan || 'free');
+      console.log('구독 상태:', subscription?.active ? '활성' : '비활성');
+      console.log('==============================');
+    } catch (error) {
+      console.log('계정 정보 로깅 중 오류:', error.message);
+    }
+
+    const config = createConfigStore();
+
+    // 서버에 보낼 설정 데이터 준비
+    const settingsToSync = {
+      // 테마 설정
+      theme: config.get('appearance.theme'),
+
+      // 페이지(버튼) 설정 - 가장 중요한 동기화 데이터
+      pages: config.get('pages', []),
+
+      // 동기화 메타데이터
+      lastSyncedDevice: deviceId,
+      lastSyncedAt: Date.now()
+    };
+
+    console.log(`설정 업로드 시작: ${settingsToSync.pages.length}개 페이지`);
+
+    // 서버로 설정 업로드
+    const response = await axios.put(
+      USER_SETTINGS_URL,
+      settingsToSync,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // 응답 처리
+    if (response.status === 200 && response.data.success) {
+      console.log('설정 업로드 성공:', response.data.data);
+
+      // 동기화 성공 시간 업데이트
+      config.set('cloudSync.lastSyncedAt', Date.now());
+      lastSyncTime = Date.now();
+
+      isSyncing = false;
+      return true;
+    } else {
+      console.error('설정 업로드 실패:', response.data.error || '알 수 없는 오류');
+      isSyncing = false;
+      return false;
+    }
+  } catch (error) {
+    console.error('설정 업로드 중 오류 발생:', error);
+    isSyncing = false;
+    return false;
+  }
+}
+```
+
+#### 설정 변경 감지 및 자동 동기화
+
+```javascript
+/**
+ * 설정 변경 감지 및 동기화 설정
+ * @param {object} config - 설정 저장소 인스턴스
+ * @returns {Function} 설정 변경 감지 해제 함수
+ */
+function setupSettingsSync(config) {
+  // 페이지 설정 변경 감지
+  const unsubscribePages = config.onDidChange('pages', async (newValue, oldValue) => {
+    // 설정 변경이 서버에서 다운로드한 것이면 다시 업로드하지 않음
+    if (Date.now() - lastSyncTime < 2000) {
+      return;
+    }
+
+    // 동기화 가능 여부 확인
+    const canSync = await isCloudSyncEnabled();
+    if (!canSync) {
+      return;
+    }
+
+    console.log('페이지 설정 변경 감지, 동기화 예약...');
+
+    // 디바운스 처리: 마지막 변경 후 2초 후에 동기화
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+      await uploadSettings();
+    }, 2000);
+  });
+
+  // 설정 정리 함수 반환
+  return () => {
+    unsubscribePages();
+    if (syncTimer) {
+      clearTimeout(syncTimer);
+      syncTimer = null;
+    }
+  };
+}
 ```
 
 ### 설정 동기화 구현
@@ -1177,12 +1406,19 @@ authManager.on('login-success', () => {
 
 ## 변경 내역
 
+### 2025-04-22 업데이트
+- 토큰 교환 과정 오류 처리 개선
+- 계정 정보 로깅 추가로 디버깅 용이성 향상
+- 동기화 상태 진단 로직 추가
+- 자세한 설정 동기화 프로세스 문서화
+
 ### 2025-04-21 업데이트
 - 설정 동기화 기능 추가 (앱 설정을 웹에 저장하고 불러오는 기능)
 - **페이지(버튼) 설정 동기화 구현** - 사용자의 버튼 구성을 기기 간 동기화
 - 테마, 언어 등 사용자 선호 설정 동기화 지원
 - 설정 변경 감지 및 자동 동기화 구현
 - 로그인 시 웹에서 설정 자동 로드 기능
+- `cloud-sync.js` 모듈 추가로 동기화 기능 캡슐화
 
 ### 2025-04-20 업데이트
 - 구독 상태와 만료일 필드 일관성 개선 (active/is_subscribed, expiresAt/subscribed_until)
