@@ -23,6 +23,11 @@ let isLoggedOut = false;
 let logoutTimestamp = 0;
 const LOGOUT_COOLDOWN_MS = 5000; // 로그아웃 후 5초 동안 인증 요청 방지
 
+// 로그인 진행 상태 추적
+let isLoginInProgress = false;
+let loginStartTimestamp = 0;
+const LOGIN_TIMEOUT_MS = 60000; // 로그인 최대 1분 제한
+
 // 상태 저장소 (CSRF 보호용)
 const stateStore = new Store({
   name: 'auth-state',
@@ -96,6 +101,40 @@ function isInLogoutCooldown() {
 }
 
 /**
+ * 현재 로그인 진행 중인지 확인
+ * @returns {boolean} 로그인 중이면 true
+ */
+function isLoginProcessActive() {
+  if (!isLoginInProgress) return false;
+
+  // 로그인 제한 시간 확인
+  const elapsed = Date.now() - loginStartTimestamp;
+  if (elapsed > LOGIN_TIMEOUT_MS) {
+    // 제한 시간이 지나면 로그인 상태 초기화
+    isLoginInProgress = false;
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * 로그인 진행 상태 설정
+ * @param {boolean} status - 활성화(true) 또는 비활성화(false)
+ */
+function setLoginInProgress(status) {
+  isLoginInProgress = status;
+
+  if (status) {
+    // 로그인 시작 시간 기록
+    loginStartTimestamp = Date.now();
+    console.log('로그인 진행 시작');
+  } else {
+    console.log('로그인 진행 종료');
+  }
+}
+
+/**
  * 로그인 프로세스를 시작합니다 (OAuth 인증 페이지 열기)
  * @param {string} clientId - OAuth 클라이언트 ID
  * @returns {Promise<Object>} 로그인 프로세스 시작 결과 {url: string, state: string}
@@ -136,6 +175,9 @@ function initiateLogin(clientId) {
     console.log('인증 요청 전체 URL:', authUrl.toString());
     console.log('==========================');
 
+    // 로그인 진행 상태 활성화
+    setLoginInProgress(true);
+
     return {
       success: true,
       url: authUrl.toString(),
@@ -143,6 +185,10 @@ function initiateLogin(clientId) {
     };
   } catch (error) {
     console.error('Failed to initiate login:', error);
+
+    // 오류 발생 시 로그인 상태 초기화
+    setLoginInProgress(false);
+
     return {
       success: false,
       error: error.message || 'Unknown error'
@@ -201,6 +247,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
 
     if (!access_token) {
       console.error('서버에서 액세스 토큰을 반환하지 않음!');
+      setLoginInProgress(false); // 로그인 상태 초기화
       return {
         success: false,
         error: 'No access token returned from server'
@@ -209,6 +256,9 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
 
     // 로그인 성공 시 로그아웃 상태 초기화
     isLoggedOut = false;
+
+    // 로그인 진행 상태 종료
+    setLoginInProgress(false);
 
     return {
       success: true,
@@ -219,6 +269,9 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   } catch (error) {
     console.error('토큰 교환 중 오류 발생:', error);
     console.error('상세 오류 정보:', error.response?.data || '상세 정보 없음');
+
+    // 오류 발생 시 로그인 상태 초기화
+    setLoginInProgress(false);
 
     return {
       success: false,
@@ -354,6 +407,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
     // 로그아웃 상태에서는 리디렉션 처리 거부
     if (isInLogoutCooldown()) {
       console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
+      setLoginInProgress(false); // 로그인 상태 초기화
       return {
         success: false,
         error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
@@ -372,12 +426,14 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
     // action 파라미터가 있는 경우 특별 처리
     if (action === 'reload_auth') {
       console.log('Auth reload action detected');
+      setLoginInProgress(false); // 로그인 상태 초기화
       return { success: true, action: 'reload_auth', token };
     }
 
     // 오류 파라미터가 있는 경우
     if (error) {
       console.error('Auth error from server:', error);
+      setLoginInProgress(false); // 로그인 상태 초기화
       return {
         success: false,
         error: error || 'Unknown error'
@@ -387,6 +443,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
     // 코드가 없는 경우
     if (!code) {
       console.error('No auth code in redirect URL');
+      setLoginInProgress(false); // 로그인 상태 초기화
       return {
         success: false,
         error: 'Missing authorization code'
@@ -397,6 +454,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
     const storedState = retrieveStoredState();
     if (!storedState || state !== storedState) {
       console.error('State mismatch. Possible CSRF attack');
+      setLoginInProgress(false); // 로그인 상태 초기화
       return {
         success: false,
         error: 'state_mismatch',
@@ -409,12 +467,16 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       return await onCodeExchange(code);
     }
 
+    // 콜백이 없는 경우에는 여기서 로그인 상태 초기화
+    setLoginInProgress(false);
+
     return {
       success: true,
       code
     };
   } catch (error) {
     console.error('Failed to handle auth redirect:', error);
+    setLoginInProgress(false); // 로그인 상태 초기화
     return {
       success: false,
       error: error.message || 'Unknown error'
@@ -570,6 +632,7 @@ async function logout() {
 
     // 로그아웃 상태 설정
     isLoggedOut = true;
+    isLoginInProgress = false; // 로그인 진행 중이었다면 취소
     logoutTimestamp = Date.now();
     console.log(`로그아웃 후 ${LOGOUT_COOLDOWN_MS/1000}초 동안 인증 요청이 제한됩니다.`);
 
@@ -593,5 +656,6 @@ module.exports = {
   handleAuthRedirect,
   fetchUserProfile,
   fetchSubscription,
-  logout
+  logout,
+  isLoginProcessActive // 로그인 진행 중인지 확인하는 함수 외부로 노출
 };

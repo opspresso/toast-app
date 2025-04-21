@@ -8,6 +8,7 @@ const { BrowserWindow, app } = require('electron');
 const path = require('path');
 const { positionToastWindow } = require('./shortcuts');
 const { isModalOpened } = require('./ipc');
+const { isLoginProcessActive } = require('./api/auth'); // 로그인 상태 체크 함수 가져오기
 
 // Store window references to prevent garbage collection
 const windows = {
@@ -97,6 +98,14 @@ function setupToastWindowEvents(toastWindow, config) {
   toastWindow.on('blur', () => {
     const hideOnBlur = config.get('advanced.hideOnBlur');
 
+    // 로그인 진행 중인지 확인
+    const loginInProgress = isLoginProcessActive();
+
+    if (loginInProgress) {
+      console.log('로그인 요청 중에는 창을 닫지 않습니다.');
+      return;
+    }
+
     // 모달이 열려있지 않고 hideOnBlur 설정이 활성화된 경우에만 창 숨김
     if (hideOnBlur !== false && !isModalOpened()) {
       // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
@@ -107,6 +116,15 @@ function setupToastWindowEvents(toastWindow, config) {
 
   // Prevent window from being destroyed, just hide it
   toastWindow.on('close', (event) => {
+    // 로그인 진행 중인지 확인
+    const loginInProgress = isLoginProcessActive();
+
+    if (loginInProgress) {
+      console.log('로그인 요청 중에는 창을 닫지 않습니다.');
+      event.preventDefault();
+      return;
+    }
+
     if (!app.isQuitting) {
       event.preventDefault();
       toastWindow.hide();
@@ -175,6 +193,18 @@ function createSettingsWindow(config) {
  * @param {BrowserWindow} settingsWindow - Settings window
  */
 function setupSettingsWindowEvents(settingsWindow) {
+  // 창 닫기 시도 시 로그인 진행 중인지 확인
+  settingsWindow.on('close', (event) => {
+    // 로그인 진행 중인지 확인
+    const loginInProgress = isLoginProcessActive();
+
+    if (loginInProgress) {
+      console.log('로그인 요청 중에는 창을 닫지 않습니다.');
+      event.preventDefault();
+      return;
+    }
+  });
+
   // Handle window close
   settingsWindow.on('closed', () => {
     windows.settings = null;
@@ -203,6 +233,14 @@ function showToastWindow(config) {
  * Hide the Toast window
  */
 function hideToastWindow() {
+  // 로그인 진행 중인지 확인
+  const loginInProgress = isLoginProcessActive();
+
+  if (loginInProgress) {
+    console.log('로그인 요청 중에는 창을 숨기지 않습니다.');
+    return;
+  }
+
   if (windows.toast && !windows.toast.isDestroyed() && windows.toast.isVisible()) {
     windows.toast.hide();
   }
