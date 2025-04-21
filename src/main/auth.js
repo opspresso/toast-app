@@ -21,6 +21,7 @@ const TOKEN_FILE_PATH = path.join(USER_DATA_PATH, 'auth-tokens.json');
 // 토큰 키 상수
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
+const TOKEN_EXPIRES_KEY = 'token-expires-at';
 
 // ENV
 const { getEnv } = require('./config/env');
@@ -128,11 +129,87 @@ async function getStoredRefreshToken() {
 }
 
 /**
- * 토큰을 로컬 파일에 저장합니다
- * @param {string} token - 저장할 인증 토큰
+ * 토큰 만료 시간 저장
+ * @param {number} expiresAt - 토큰 만료 시간 (밀리초)
  * @returns {Promise<void>}
  */
-async function storeToken(token) {
+async function storeTokenExpiry(expiresAt) {
+  try {
+    // 기존 토큰 데이터 읽기
+    const tokenData = readTokenFile() || {};
+
+    // 만료 시간 저장
+    tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
+
+    // 파일에 저장
+    if (!writeTokenFile(tokenData)) {
+      throw new Error('토큰 만료 시간 저장 실패');
+    }
+  } catch (error) {
+    console.error('토큰 만료 시간 저장 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 저장된 토큰 만료 시간 가져오기
+ * @returns {Promise<number|null>} 저장된 토큰 만료 시간 또는 null
+ */
+async function getStoredTokenExpiry() {
+  try {
+    const tokenData = readTokenFile();
+    return tokenData ? tokenData[TOKEN_EXPIRES_KEY] : null;
+  } catch (error) {
+    console.error('토큰 만료 시간 가져오기 실패:', error);
+    return null;
+  }
+}
+
+/**
+ * 토큰이 만료되었는지 확인
+ * @returns {Promise<boolean>} 토큰이 만료되었으면 true
+ */
+async function isTokenExpired() {
+  try {
+    const expiresAt = await getStoredTokenExpiry();
+
+    if (!expiresAt) {
+      // 만료 시간이 없으면 만료된 것으로 간주
+      return true;
+    }
+
+    // 현재 시간과 비교하여 만료 여부 확인
+    const now = Date.now();
+    const isExpired = now >= expiresAt;
+
+    // 만료 30초 전부터는 만료된 것으로 간주 (안전 마진)
+    const safetyMargin = 30 * 1000; // 30초
+    const isNearExpiry = now >= (expiresAt - safetyMargin);
+
+    if (isNearExpiry) {
+      console.log('토큰이 곧 만료됨 또는 이미 만료됨');
+      return true;
+    }
+
+    // 토큰이 유효한 경우 남은 시간 로깅
+    const remainingMinutes = Math.floor((expiresAt - now) / (60 * 1000));
+    console.log(`현재 토큰 유효 시간: 약 ${remainingMinutes}분 남음`);
+
+    return false;
+  } catch (error) {
+    console.error('토큰 만료 확인 오류:', error);
+    // 오류 발생 시 안전하게 만료된 것으로 간주
+    return true;
+  }
+}
+
+/**
+ * 토큰을 로컬 파일에 저장합니다
+ * @param {string} token - 저장할 인증 토큰
+ * @param {number} expiresIn - 토큰 만료 시간(초)
+ * @returns {Promise<void>}
+ */
+async function storeToken(token, expiresIn = 3600) {
   try {
     // 클라이언트에 토큰 설정
     client.setAccessToken(token);
@@ -143,10 +220,16 @@ async function storeToken(token) {
     // 새 토큰 저장
     tokenData[TOKEN_KEY] = token;
 
+    // 만료 시간 계산 및 저장
+    const expiresAt = Date.now() + (expiresIn * 1000);
+    tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
+
     // 파일에 저장
     if (!writeTokenFile(tokenData)) {
       throw new Error('토큰 파일 저장 실패');
     }
+
+    console.log(`토큰 저장 완료, 만료 시간: ${new Date(expiresAt).toLocaleString()}`);
   } catch (error) {
     console.error('토큰 저장 실패:', error);
     throw error;
@@ -306,8 +389,8 @@ async function exchangeCodeForToken(code) {
     // 토큰 저장
     const { access_token, refresh_token, expires_in } = tokenResult;
 
-    // 안전한 저장소에 토큰 저장
-    await storeToken(access_token);
+    // 안전한 저장소에 토큰과 만료 시간 저장
+    await storeToken(access_token, expires_in || 3600);
     console.log('액세스 토큰 저장 완료');
 
     // 리프레시 토큰 저장 (있는 경우)
@@ -336,6 +419,11 @@ async function exchangeCodeForToken(code) {
   }
 }
 
+// 토큰 갱신 제한 설정
+const TOKEN_REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5분 동안 갱신 요청 제한
+let lastTokenRefresh = 0;
+let isRefreshing = false;
+
 /**
  * 리프레시 토큰을 사용하여 새 액세스 토큰을 얻습니다
  * @returns {Promise<object>} 토큰 새로고침 결과 (success: boolean, error?: string)
@@ -344,52 +432,84 @@ async function refreshAccessToken() {
   try {
     console.log('토큰 리프레시 프로세스 시작');
 
-    // 리프레시 토큰 가져오기
-    const refreshToken = client.getRefreshToken() || await getStoredRefreshToken();
+    // 쓰로틀링: 마지막 갱신 요청 이후 일정 시간이 지나지 않았으면 스킵
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastTokenRefresh;
 
-    if (!refreshToken) {
-      console.error('리프레시 토큰이 없음');
-      return {
-        success: false,
-        error: 'No refresh token available',
-        code: 'NO_REFRESH_TOKEN'
-      };
+    if (timeSinceLastRefresh < TOKEN_REFRESH_COOLDOWN_MS && lastTokenRefresh > 0) {
+      console.log(`최근에 토큰 갱신 시도 중 (${Math.floor(timeSinceLastRefresh / 1000)}초 전). 중복 요청 방지를 위해 스킵합니다.`);
+      return { success: true, throttled: true };
     }
 
-    console.log('리프레시 토큰 존재, 교환 시도 중');
+    // 이미 갱신 중인지 확인
+    if (isRefreshing) {
+      console.log('토큰 갱신이 이미 진행 중입니다. 중복 요청 방지.');
+      return { success: false, error: 'Token refresh already in progress', code: 'REFRESH_IN_PROGRESS' };
+    }
 
-    // 공용 모듈을 통해 리프레시 토큰 교환
-    const refreshResult = await apiAuth.refreshAccessToken({
-      refreshToken,
-      clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET
-    });
+    // 갱신 상태 설정
+    isRefreshing = true;
+    lastTokenRefresh = now;
 
-    if (!refreshResult.success) {
-      // 실패 시 401 오류이면 토큰 초기화
-      if (refreshResult.code === 'SESSION_EXPIRED') {
-        await clearTokens();
-        console.log('만료된 토큰 초기화 완료');
+    try {
+      // 토큰이 실제로 만료되었는지 확인
+      const isExpired = await isTokenExpired();
+      if (!isExpired) {
+        console.log('토큰이 아직 유효합니다. 갱신이 필요하지 않습니다.');
+        return { success: true, refreshNeeded: false };
       }
 
-      return refreshResult;
+      // 리프레시 토큰 가져오기
+      const refreshToken = client.getRefreshToken() || await getStoredRefreshToken();
+
+      if (!refreshToken) {
+        console.error('리프레시 토큰이 없음');
+        return {
+          success: false,
+          error: 'No refresh token available',
+          code: 'NO_REFRESH_TOKEN'
+        };
+      }
+
+      console.log('리프레시 토큰 존재, 교환 시도 중');
+
+      // 공용 모듈을 통해 리프레시 토큰 교환
+      const refreshResult = await apiAuth.refreshAccessToken({
+        refreshToken,
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET
+      });
+
+      if (!refreshResult.success) {
+        // 실패 시 401 오류이면 토큰 초기화
+        if (refreshResult.code === 'SESSION_EXPIRED') {
+          await clearTokens();
+          console.log('만료된 토큰 초기화 완료');
+        }
+
+        return refreshResult;
+      }
+
+      // 성공 시 새 토큰 저장
+      const { access_token, refresh_token, expires_in } = refreshResult;
+
+      await storeToken(access_token, expires_in || 3600);
+      console.log('새 액세스 토큰 저장 완료');
+
+      // 새 리프레시 토큰 저장 (있는 경우)
+      if (refresh_token) {
+        await storeRefreshToken(refresh_token);
+        console.log('새 리프레시 토큰 저장 완료');
+      }
+
+      return { success: true };
+    } finally {
+      // 갱신 상태 초기화
+      isRefreshing = false;
     }
-
-    // 성공 시 새 토큰 저장
-    const { access_token, refresh_token } = refreshResult;
-
-    await storeToken(access_token);
-    console.log('새 액세스 토큰 저장 완료');
-
-    // 새 리프레시 토큰 저장 (있는 경우)
-    if (refresh_token) {
-      await storeRefreshToken(refresh_token);
-      console.log('새 리프레시 토큰 저장 완료');
-    }
-
-    return { success: true };
   } catch (error) {
     console.error('토큰 리프레시 과정 중 예외 발생:', error);
+    isRefreshing = false; // 오류 발생 시에도 상태 초기화
 
     // 치명적인 오류이지만 앱 실행은 유지
     const errorMessage = error.message || 'Unknown error in refresh token process';
@@ -524,12 +644,23 @@ function registerProtocolHandler() {
 
 /**
  * 유효한 액세스 토큰이 있는지 확인합니다
- * @returns {Promise<boolean>} 토큰이 있으면 true
+ * @returns {Promise<boolean>} 토큰이 유효하면 true
  */
 async function hasValidToken() {
   try {
     const token = client.getAccessToken() || await getStoredToken();
-    return !!token;
+    if (!token) {
+      return false;
+    }
+
+    // 토큰이 있으면 만료 여부도 확인
+    const isExpired = await isTokenExpired();
+    if (isExpired) {
+      console.log('토큰이 만료되었습니다. 갱신이 필요합니다.');
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.error('Token validation error:', error);
     return false;
