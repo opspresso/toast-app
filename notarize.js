@@ -90,7 +90,7 @@ exports.default = async function notarizing(context) {
     const notarizeOptions = {
       appBundleId,
       appPath,
-      tool: 'notarytool',
+      // @electron/notarize 2.2.0 버전에서는 tool 속성이 지원되지 않을 수 있음
     };
 
     // API 키 방식 (권장)
@@ -105,13 +105,9 @@ exports.default = async function notarizing(context) {
         return;
       }
 
-      // @electron/notarize 3.0.1 버전에서는 appleApiIssuer 속성이 필요합니다
-      notarizeOptions.appleApiKey = {
-        keyId: API_KEY_ID,
-        issuerId: API_KEY_ISSUER_ID,
-        appleApiIssuer: API_KEY_ISSUER_ID, // issuerId와 동일한 값 사용
-        keyPath
-      };
+      // 공식 문서에 따른 속성 구조 사용
+      notarizeOptions.appleApiKey = keyPath; // API 키 파일의 경로
+      notarizeOptions.appleApiIssuer = API_KEY_ISSUER_ID; // 발급자 ID
     }
     // Apple ID 방식 (대체)
     else if (APPLE_ID && APPLE_TEAM_ID && APPLE_APP_SPECIFIC_PASSWORD) {
