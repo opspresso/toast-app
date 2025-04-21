@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.2.2",
+  "version": "v0.2.3",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -66,11 +66,11 @@
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "icon": "assets/icons/icon.icns"
+      "target": "dmg",
+      "icon": "assets/icons/icon.icns",
+      "arch": [
+        "universal"
+      ]
     },
     "win": {
       "target": [
