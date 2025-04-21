@@ -34,7 +34,7 @@ jobs:
           echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> src/main/config/.env
 
       - name: Prepare for app notarization 🔑
-        if: startsWith(matrix.os, 'macos')
+        if: matrix.os == 'macos-latest'
         run: |
           mkdir -p ~/private_keys/
           echo '${{ secrets.API_KEY_SECRET }}' > ~/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8
