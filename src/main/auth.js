@@ -225,6 +225,43 @@ async function handleAuthRedirect(url) {
     const code = urlObj.searchParams.get('code');
     const state = urlObj.searchParams.get('state');
     const error = urlObj.searchParams.get('error');
+    const token = urlObj.searchParams.get('token');
+    const userId = urlObj.searchParams.get('userId');
+    const action = urlObj.searchParams.get('action');
+
+    // action 파라미터가 있는 경우 특별 처리
+    if (action === 'reload_auth') {
+      console.log('Auth reload action detected');
+
+      // 토큰이 있는지 확인
+      if (!token) {
+        console.error('No token provided for auth reload');
+        return {
+          success: false,
+          error: 'Missing token for auth reload'
+        };
+      }
+
+      // 현재 인증 상태 확인
+      const hasToken = await hasValidToken();
+
+      if (hasToken) {
+        // 이미 인증된 상태라면 구독 정보만 다시 가져옴
+        console.log('Already authenticated, refreshing subscription info');
+        const subscription = await fetchSubscription();
+        await updatePageGroupSettings(subscription);
+
+        return {
+          success: true,
+          message: 'Authentication refreshed',
+          subscription
+        };
+      } else {
+        // 인증되지 않은 상태라면 로그인 프로세스 시작
+        console.log('Not authenticated, initiating login process');
+        return await initiateLogin();
+      }
+    }
 
     // 오류 파라미터가 있는 경우
     if (error) {

@@ -336,6 +336,47 @@ function setupEventListeners() {
     }
   });
 
+  // 인증 관련 이벤트 리스너 설정
+  if (window.toast.onLoginSuccess) {
+    window.toast.onLoginSuccess((data) => {
+      console.log('Login success:', data);
+      isSubscribed = data.isSubscribed;
+
+      // 사용자 정보 업데이트
+      fetchUserProfileAndSubscription()
+        .then(() => {
+          showStatus('Login successful', 'success');
+        })
+        .catch(error => {
+          console.error('Error updating user information after login:', error);
+        });
+    });
+  }
+
+  if (window.toast.onLoginError) {
+    window.toast.onLoginError((data) => {
+      console.error('Login error:', data);
+      showStatus(`Login failed: ${data.message || data.error || 'Unknown error'}`, 'error');
+    });
+  }
+
+  if (window.toast.onAuthReloadSuccess) {
+    window.toast.onAuthReloadSuccess((data) => {
+      console.log('Auth reload success:', data);
+
+      // 구독 정보 업데이트
+      if (data.subscription) {
+        userSubscription = data.subscription;
+        isSubscribed = data.subscription.active || data.subscription.is_subscribed || false;
+
+        // 사용자 버튼 UI 업데이트
+        updateUserButton();
+      }
+
+      showStatus(data.message || 'Authentication refreshed', 'success');
+    });
+  }
+
   // Exit edit mode before window hides
   window.addEventListener('before-window-hide', () => {
     if (isSettingsMode) {

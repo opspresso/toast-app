@@ -40,6 +40,9 @@ function setupIpcHandlers(windows) {
     // auth.js의 handleAuthRedirect 함수로 인증 URL 처리
     if (url.startsWith('toast-app://auth')) {
       try {
+        const urlObj = new URL(url);
+        const action = urlObj.searchParams.get('action');
+
         const result = await auth.handleAuthRedirect(url);
 
         // 처리 결과를 설정 창으로 전달
@@ -50,11 +53,19 @@ function setupIpcHandlers(windows) {
         // 로그인 결과를 토스트 창에도 알림
         if (windows.toast && !windows.toast.isDestroyed()) {
           if (result.success) {
-            windows.toast.webContents.send('login-success', {
-              isAuthenticated: result.isAuthenticated,
-              isSubscribed: result.isSubscribed,
-              pageGroups: result.pageGroups
-            });
+            // reload_auth 액션인 경우 특별 메시지 전송
+            if (action === 'reload_auth') {
+              windows.toast.webContents.send('auth-reload-success', {
+                subscription: result.subscription,
+                message: '인증 정보가 새로고침되었습니다.'
+              });
+            } else {
+              windows.toast.webContents.send('login-success', {
+                isAuthenticated: true,
+                isSubscribed: result.subscription?.active || result.subscription?.is_subscribed || false,
+                pageGroups: result.subscription?.features?.page_groups || 3
+              });
+            }
           } else {
             windows.toast.webContents.send('login-error', {
               error: result.error,

@@ -103,6 +103,28 @@ const { contextBridge, ipcRenderer } = require('electron');
       return () => {
         ipcRenderer.removeListener('config-updated', callback);
       };
+    },
+
+    // 인증 관련 이벤트 리스너
+    onLoginSuccess: (callback) => {
+      ipcRenderer.on('login-success', (event, data) => callback(data));
+      return () => {
+        ipcRenderer.removeListener('login-success', callback);
+      };
+    },
+
+    onLoginError: (callback) => {
+      ipcRenderer.on('login-error', (event, data) => callback(data));
+      return () => {
+        ipcRenderer.removeListener('login-error', callback);
+      };
+    },
+
+    onAuthReloadSuccess: (callback) => {
+      ipcRenderer.on('auth-reload-success', (event, data) => callback(data));
+      return () => {
+        ipcRenderer.removeListener('auth-reload-success', callback);
+      };
     }
   }
 );
