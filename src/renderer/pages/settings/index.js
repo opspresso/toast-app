@@ -454,8 +454,8 @@ async function handleLogin() {
  */
 async function handleLogout() {
   try {
-    // Call the main process to log out
-    await window.settings.logout();
+    // Call the main process to log out (로컬에서만 로그아웃)
+    await window.settings.logoutAndResetPageGroups();
 
     // Update UI
     updateAuthStateUI(false);
@@ -594,6 +594,39 @@ function setupEventListeners() {
       if (code) {
         handleAuthCode(code);
       }
+    }
+  });
+
+  // 로그인 성공 이벤트 리스너
+  window.addEventListener('login-success', (event) => {
+    console.log('Login success event received in settings window:', event.detail);
+    // 로그인 성공 시 사용자 데이터 로드 및 UI 업데이트
+    loadUserDataAndUpdateUI();
+  });
+
+  // 로그인 오류 이벤트 리스너
+  window.addEventListener('login-error', (event) => {
+    console.error('Login error event received in settings window:', event.detail);
+    // 로그인 오류 시 UI 업데이트
+    updateAuthStateUI(false);
+    alert(`Login failed: ${event.detail.message || event.detail.error || 'Unknown error'}`);
+  });
+
+  // 로그아웃 성공 이벤트 리스너
+  window.addEventListener('logout-success', (event) => {
+    console.log('Logout success event received in settings window');
+    // 로그아웃 성공 시 UI 업데이트
+    updateAuthStateUI(false);
+  });
+
+  // 인증 상태 변경 이벤트 리스너
+  window.addEventListener('auth-state-changed', (event) => {
+    console.log('Auth state changed event received in settings window:', event.detail);
+
+    // 인증 상태 변경 유형에 따라 처리
+    if (event.detail.type === 'auth-reload') {
+      // 인증 정보 새로고침 시 사용자 데이터 로드 및 UI 업데이트
+      loadUserDataAndUpdateUI();
     }
   });
 }

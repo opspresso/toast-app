@@ -120,6 +120,20 @@ const { contextBridge, ipcRenderer } = require('electron');
       };
     },
 
+    onLogoutSuccess: (callback) => {
+      ipcRenderer.on('logout-success', (event, data) => callback(data));
+      return () => {
+        ipcRenderer.removeListener('logout-success', callback);
+      };
+    },
+
+    onAuthStateChanged: (callback) => {
+      ipcRenderer.on('auth-state-changed', (event, data) => callback(data));
+      return () => {
+        ipcRenderer.removeListener('auth-state-changed', callback);
+      };
+    },
+
     onAuthReloadSuccess: (callback) => {
       ipcRenderer.on('auth-reload-success', (event, data) => callback(data));
       return () => {

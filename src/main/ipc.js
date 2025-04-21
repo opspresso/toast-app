@@ -13,6 +13,7 @@ const fs = require('fs');
 const { dialog, shell } = require('electron');
 const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortcuts');
 const auth = require('./auth');
+const authManager = require('./auth-manager');
 
 // 버튼 편집 모달 상태 추적
 let isModalOpen = false;
@@ -30,6 +31,9 @@ function isModalOpened() {
  * @param {Object} windows - Object containing application windows
  */
 function setupIpcHandlers(windows) {
+  // 인증 관리자 초기화 (창 참조 전달)
+  authManager.initialize(windows);
+
   // URL 프로토콜 핸들러 등록 (OAuth 리디렉션 처리)
   auth.registerProtocolHandler();
 
@@ -50,37 +54,27 @@ function setupIpcHandlers(windows) {
           windows.settings.webContents.send('auth-result', result);
         }
 
-        // 로그인 결과를 토스트 창에도 알림
-        if (windows.toast && !windows.toast.isDestroyed()) {
-          if (result.success) {
-            // reload_auth 액션인 경우 특별 메시지 전송
-            if (action === 'reload_auth') {
-              windows.toast.webContents.send('auth-reload-success', {
-                subscription: result.subscription,
-                message: '인증 정보가 새로고침되었습니다.'
-              });
-            } else {
-              windows.toast.webContents.send('login-success', {
-                isAuthenticated: true,
-                isSubscribed: result.subscription?.active || result.subscription?.is_subscribed || false,
-                pageGroups: result.subscription?.features?.page_groups || 3
-              });
-            }
-          } else {
-            windows.toast.webContents.send('login-error', {
-              error: result.error,
-              message: result.message || '인증에 실패했습니다.'
+        // 로그인 성공 시 auth-manager를 통해 양쪽 창에 알림
+        if (result.success) {
+          // reload_auth 액션인 경우 특별 메시지 전송
+          if (action === 'reload_auth') {
+            authManager.notifyAuthStateChange({
+              type: 'auth-reload',
+              subscription: result.subscription,
+              message: '인증 정보가 새로고침되었습니다.'
             });
+          } else {
+            // 일반 로그인 성공 알림
+            authManager.notifyLoginSuccess(result.subscription);
           }
+        } else {
+          // 로그인 실패 알림
+          authManager.notifyLoginError(result.error || 'Unknown error');
         }
       } catch (error) {
         console.error('Error handling auth redirect:', error);
-        // 오류 발생 시 설정 창에 알림
-        if (windows.settings && !windows.settings.isDestroyed()) {
-          windows.settings.webContents.send('auth-error', {
-            error: error.message || 'Unknown error'
-          });
-        }
+        // 오류 발생 시 알림
+        authManager.notifyLoginError(error.message || 'Unknown error');
       }
     } else if (windows.settings && !windows.settings.isDestroyed()) {
       // 기타 프로토콜 데이터 전달
@@ -425,119 +419,37 @@ function setupIpcHandlers(windows) {
 
   // 로그인 프로세스 시작
   ipcMain.handle('initiate-login', async () => {
-    try {
-      return await auth.initiateLogin();
-    } catch (error) {
-      console.error('Error initiating login:', error);
-      return false;
-    }
+    return await authManager.initiateLogin();
   });
 
   // 인증 코드로 토큰 교환
   ipcMain.handle('exchange-code-for-token', async (event, code) => {
-    try {
-      return await auth.exchangeCodeForToken(code);
-    } catch (error) {
-      console.error('Error exchanging code for token:', error);
-      return {
-        success: false,
-        error: error.message || 'Failed to exchange code for token'
-      };
-    }
+    return await authManager.exchangeCodeForToken(code);
   });
 
   // 로그아웃
   ipcMain.handle('logout', async () => {
-    try {
-      return await auth.logout();
-    } catch (error) {
-      console.error('Error logging out:', error);
-      return false;
-    }
+    return await authManager.logout();
   });
 
   // 로그아웃 및 페이지 그룹 설정 초기화
   ipcMain.handle('logoutAndResetPageGroups', async () => {
-    try {
-      return await auth.logoutAndResetPageGroups();
-    } catch (error) {
-      console.error('Error in logoutAndResetPageGroups:', error);
-      return false;
-    }
+    return await authManager.logoutAndResetPageGroups();
   });
 
   // 사용자 프로필 정보 가져오기
   ipcMain.handle('fetch-user-profile', async () => {
-    try {
-      return await auth.fetchUserProfile();
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-
-      // 인증 관련 오류인지 확인
-      if (error.message && error.message.includes('Authentication failed')) {
-        // 유저에게 재로그인을 요청하는 상세 오류 반환
-        return {
-          success: false,
-          error: {
-            code: 'AUTH_ERROR',
-            message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
-            originalError: error.message
-          }
-        };
-      }
-
-      // 그 외 오류는 일반 오류로 처리
-      return {
-        success: false,
-        error: {
-          code: 'FETCH_ERROR',
-          message: '사용자 프로필 정보를 가져오는 중 오류가 발생했습니다.',
-          originalError: error.message
-        }
-      };
-    }
+    return await authManager.fetchUserProfile();
   });
 
   // 구독 정보 가져오기
   ipcMain.handle('fetch-subscription', async () => {
-    try {
-      return await auth.fetchSubscription();
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-
-      // 인증 관련 오류인지 확인
-      if (error.message && error.message.includes('Authentication failed')) {
-        // 유저에게 재로그인을 요청하는 상세 오류 반환
-        return {
-          success: false,
-          error: {
-            code: 'AUTH_ERROR',
-            message: '인증 세션이 만료되었습니다. 다시 로그인해 주세요.',
-            originalError: error.message
-          }
-        };
-      }
-
-      // 그 외 오류는 일반 오류로 처리
-      return {
-        success: false,
-        error: {
-          code: 'FETCH_ERROR',
-          message: '구독 정보를 가져오는 중 오류가 발생했습니다.',
-          originalError: error.message
-        }
-      };
-    }
+    return await authManager.fetchSubscription();
   });
 
   // 현재 인증 토큰 반환
   ipcMain.handle('get-auth-token', async () => {
-    try {
-      return await auth.getAccessToken();
-    } catch (error) {
-      console.error('Error getting auth token:', error);
-      return null;
-    }
+    return await authManager.getAccessToken();
   });
 
   // URL 외부 브라우저에서 열기

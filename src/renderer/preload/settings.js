@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld(
     initiateLogin: () => ipcRenderer.invoke('initiate-login'),
     exchangeCodeForToken: (code) => ipcRenderer.invoke('exchange-code-for-token', code),
     logout: () => ipcRenderer.invoke('logout'),
+    logoutAndResetPageGroups: () => ipcRenderer.invoke('logoutAndResetPageGroups'),
     fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
     fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
     getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
@@ -71,5 +72,33 @@ ipcRenderer.on('protocol-data', (event, url) => {
   // 프로토콜 데이터 수신 시 이벤트 발생
   window.dispatchEvent(new CustomEvent('protocol-data', {
     detail: url
+  }));
+});
+
+// 로그인 성공 이벤트 핸들러
+ipcRenderer.on('login-success', (event, data) => {
+  window.dispatchEvent(new CustomEvent('login-success', {
+    detail: data
+  }));
+});
+
+// 로그인 오류 이벤트 핸들러
+ipcRenderer.on('login-error', (event, data) => {
+  window.dispatchEvent(new CustomEvent('login-error', {
+    detail: data
+  }));
+});
+
+// 로그아웃 성공 이벤트 핸들러
+ipcRenderer.on('logout-success', (event, data) => {
+  window.dispatchEvent(new CustomEvent('logout-success', {
+    detail: data
+  }));
+});
+
+// 인증 상태 변경 이벤트 핸들러
+ipcRenderer.on('auth-state-changed', (event, data) => {
+  window.dispatchEvent(new CustomEvent('auth-state-changed', {
+    detail: data
   }));
 });

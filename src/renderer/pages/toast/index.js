@@ -360,6 +360,40 @@ function setupEventListeners() {
     });
   }
 
+  if (window.toast.onLogoutSuccess) {
+    window.toast.onLogoutSuccess((data) => {
+      console.log('Logout success event received in toast window');
+
+      // 로그아웃 성공 시 UI 업데이트
+      userProfile = null;
+      userSubscription = null;
+      isSubscribed = false;
+
+      // 사용자 버튼 UI 업데이트
+      updateUserButton();
+
+      showStatus('Logged out successfully', 'success');
+    });
+  }
+
+  if (window.toast.onAuthStateChanged) {
+    window.toast.onAuthStateChanged((data) => {
+      console.log('Auth state changed event received in toast window:', data);
+
+      // 인증 상태 변경 유형에 따라 처리
+      if (data.type === 'auth-reload') {
+        // 인증 정보 새로고침 시 사용자 데이터 로드 및 UI 업데이트
+        fetchUserProfileAndSubscription()
+          .then(() => {
+            showStatus(data.message || 'Authentication refreshed', 'success');
+          })
+          .catch(error => {
+            console.error('Error updating user information after auth reload:', error);
+          });
+      }
+    });
+  }
+
   if (window.toast.onAuthReloadSuccess) {
     window.toast.onAuthReloadSuccess((data) => {
       console.log('Auth reload success:', data);
