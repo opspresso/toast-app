@@ -30,8 +30,9 @@ jobs:
         run: |
           echo "CLIENT_ID=${{ secrets.TOAST_CLIENT_ID }}" >> src/main/config/.env
           echo "CLIENT_SECRET=${{ secrets.TOAST_CLIENT_SECRET }}" >> src/main/config/.env
-          echo "TOAST_URL=${{ secrets.TOAST_URL }}" >> src/main/config/.env
           echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> src/main/config/.env
+          echo "TOAST_URL=${{ secrets.TOAST_URL }}" >> src/main/config/.env
+          echo "TOKEN_EXPIRES_IN=${{ secrets.TOKEN_EXPIRES_IN }}" >> src/main/config/.env
 
       - name: Prepare for app notarization 🔑
         if: matrix.os == 'macos-latest'

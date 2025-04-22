@@ -28,6 +28,7 @@ const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
 const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
+const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '3600'), 10); // 기본값 1시간, 환경변수에서 재정의 가능
 
 // 공통 상수 임포트
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
@@ -216,9 +217,16 @@ async function storeToken(token, expiresIn = 3600) {
     // 새 토큰 저장
     tokenData[TOKEN_KEY] = token;
 
-    // 만료 시간 계산 및 저장
-    const expiresAt = Date.now() + (expiresIn * 1000);
-    tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
+  // 만료 시간 계산 및 저장
+  let expiresAt;
+  if (expiresIn <= 0) {
+    // 음수 값이나 0은 무제한 만료 시간으로 처리 (아주 먼 미래 날짜 사용)
+    expiresAt = 8640000000000000; // JavaScript에서 지원하는 최대 날짜 (약 2억7천만년)
+    console.log('토큰 만료 시간이 무제한으로 설정되었습니다.');
+  } else {
+    expiresAt = Date.now() + (expiresIn * 1000);
+  }
+  tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
 
     // 파일에 저장
     if (!writeTokenFile(tokenData)) {
@@ -386,8 +394,9 @@ async function exchangeCodeForToken(code) {
     const { access_token, refresh_token, expires_in } = tokenResult;
 
     // 안전한 저장소에 토큰과 만료 시간 저장
-    await storeToken(access_token, expires_in || 3600);
-    console.log('액세스 토큰 저장 완료');
+    // 환경변수에 설정된 TOKEN_EXPIRES_IN 값 우선 사용, 없으면 서버 응답값, 모두 없으면 기본값 3600(1시간)
+    await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
+    console.log(`액세스 토큰 저장 완료 (만료 기간: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + '시간' : expires_in ? expires_in/3600 + '시간' : '1시간'})`);
 
     // 리프레시 토큰 저장 (있는 경우)
     if (refresh_token) {
@@ -489,8 +498,9 @@ async function refreshAccessToken() {
       // 성공 시 새 토큰 저장
       const { access_token, refresh_token, expires_in } = refreshResult;
 
-      await storeToken(access_token, expires_in || 3600);
-      console.log('새 액세스 토큰 저장 완료');
+      // 환경변수에 설정된 TOKEN_EXPIRES_IN 값 우선 사용, 없으면 서버 응답값, 모두 없으면 기본값 3600(1시간)
+      await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
+      console.log(`새 액세스 토큰 저장 완료 (만료 기간: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + '시간' : expires_in ? expires_in/3600 + '시간' : '1시간'})`);
 
       // 새 리프레시 토큰 저장 (있는 경우)
       if (refresh_token) {
