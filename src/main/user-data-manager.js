@@ -105,9 +105,10 @@ function deleteFile(filePath) {
 /**
  * 사용자 프로필 및 구독 정보 가져오기
  * @param {boolean} forceRefresh - 강제 갱신 여부 (true: API 호출, false: 파일 우선)
+ * @param {Object} [profileDataInput] - 이미 가져온 프로필 정보 (중복 API 호출 방지용)
  * @returns {Promise<Object>} 사용자 프로필 및 구독 정보
  */
-async function getUserProfile(forceRefresh = false) {
+async function getUserProfile(forceRefresh = false, profileDataInput = null) {
   try {
     console.log(`사용자 프로필 정보 가져오기 (강제 갱신: ${forceRefresh ? '예' : '아니오'})`);
 
@@ -123,7 +124,30 @@ async function getUserProfile(forceRefresh = false) {
       return DEFAULT_ANONYMOUS;
     }
 
-    // 1. 로컬 파일 확인 (강제 갱신이 아닌 경우)
+    // 1. 전달받은 프로필 정보가 있는 경우 (API 중복 호출 방지)
+    if (profileDataInput && !profileDataInput.error) {
+      console.log('전달받은, 프로필 정보 사용 (API 중복 호출 방지)');
+
+      // 인증 상태 추가
+      profileDataInput.is_authenticated = true;
+      profileDataInput.isAuthenticated = true;
+
+      // 로그 추가
+      console.log('프로필 정보 처리:', {
+        name: profileDataInput.name || '이름 없음',
+        email: profileDataInput.email || '이메일 없음',
+        hasSubscription: profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
+        plan: profileDataInput.subscription?.plan || 'free'
+      });
+
+      // 파일에 저장
+      writeToFile(PROFILE_FILE_PATH, profileDataInput);
+      console.log('프로필 정보 파일에 저장 완료');
+
+      return profileDataInput;
+    }
+
+    // 2. 로컬 파일 확인 (강제 갱신이 아닌 경우)
     if (!forceRefresh && fileExists(PROFILE_FILE_PATH)) {
       const profileData = readFromFile(PROFILE_FILE_PATH);
       if (profileData) {
@@ -149,7 +173,7 @@ async function getUserProfile(forceRefresh = false) {
       }
     }
 
-    // 2. API에서 프로필 조회
+    // 3. API에서 프로필 조회
     console.log('API에서 프로필 정보 조회 중...');
     const profileData = await authManagerRef.fetchUserProfile();
 
@@ -167,7 +191,7 @@ async function getUserProfile(forceRefresh = false) {
       return null;
     }
 
-    // 3. 성공적으로 조회한 경우 인증 상태를 명시적으로 추가하고 파일에 저장
+    // 4. 성공적으로 조회한 경우 인증 상태를 명시적으로 추가하고 파일에 저장
     if (profileData && !profileData.error) {
       // 인증 상태 추가 (is_authenticated와 isAuthenticated 모두 설정)
       profileData.is_authenticated = true;

@@ -92,16 +92,12 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
     if (result.success) {
       notifyLoginSuccess(result.subscription);
 
-      // 1. Get and save user profile information
+      // 1. 로그인 성공 시 한 번만 프로필 정보 가져오기
       console.log('Getting user profile information after successful login');
       const userProfile = await auth.fetchUserProfile();
 
-      // Save profile information through user data manager
+      // 구독 정보 로깅
       if (userProfile) {
-        await userDataManager.getUserProfile(true); // Call in force refresh mode to save API results to file
-        console.log('User profile information saved successfully');
-
-        // Log subscription information
         const userEmail = userProfile.email || result.subscription?.userId || 'unknown';
         const userName = userProfile.name || result.subscription?.name || 'unknown user';
         const userPlan = result.subscription?.plan || 'free';
@@ -115,31 +111,10 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         console.log('=========================');
       }
 
-      // 2. Get and save user settings
-      console.log('Getting user settings after successful login');
-      const userSettings = await getUserSettings(true); // Call in force refresh mode
-
-      if (userSettings) {
-        console.log('User settings saved successfully');
-      }
-
-      // 3. Send authentication state change notification (including profile and settings)
-      notifyAuthStateChange({
-        isAuthenticated: true,
-        profile: userProfile || null,
-        settings: userSettings || null
-      });
-      console.log('Authentication state change notification sent');
-
-      // 4. Perform cloud synchronization
+      // 2. 클라우드 동기화 기능 설정
+      let hasSyncFeature = false;
       if (syncManager) {
-        // ==========================================
-        // Point 1: Cloud sync after user login success
-        // ==========================================
         console.log('Starting cloud synchronization after successful login');
-
-        // 1. Check and set cloud_sync feature status
-        let hasSyncFeature = false;
 
         // 디버깅 정보 추가
         console.log('서브스크립션 정보 전체:', JSON.stringify(result.subscription || {}));
@@ -183,31 +158,63 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
         console.log('Cloud synchronization feature status set:', hasSyncFeature);
         cloudSync.updateCloudSyncSettings(hasSyncFeature);
+      }
 
-        // 2. Download latest data from server (server data takes priority)
-        if (hasSyncFeature) {
-          console.log('Cloud synchronization feature is enabled. Getting settings from server...');
-          // Start page settings synchronization
-          syncManager.syncAfterLogin().then(syncResult => {
+      // 3. 통합된 동기화 처리 - 프로필과 설정 정보를 한 번에 처리
+      const syncPromise = new Promise(async (resolve) => {
+        try {
+          // 프로필 정보를 파일에 저장 (API 호출 중복 방지)
+          if (userProfile) {
+            await userDataManager.getUserProfile(true, userProfile); // API 결과를 직접 전달하여 중복 호출 방지
+            console.log('User profile information saved successfully');
+          }
+
+          // 사용자 설정 정보 가져오기
+          console.log('Getting user settings after successful login');
+          const userSettings = await getUserSettings(true);
+
+          if (userSettings) {
+            console.log('User settings saved successfully');
+          }
+
+          // 인증 상태 변경 알림 전송 (프로필 및 설정 포함)
+          notifyAuthStateChange({
+            isAuthenticated: true,
+            profile: userProfile || null,
+            settings: userSettings || null
+          });
+          console.log('Authentication state change notification sent');
+
+          // 클라우드 동기화 실행
+          if (syncManager && hasSyncFeature) {
+            console.log('Cloud synchronization feature is enabled. Getting settings from server...');
+
+            // 동기화 실행 및 결과 처리
+            const syncResult = await syncManager.syncAfterLogin();
             console.log('Cloud synchronization result after login:', syncResult);
 
             if (syncResult && syncResult.success) {
-              // Notify both windows when settings sync is successful
+              // 동기화 성공 시 알림
               notifySettingsSynced();
             } else {
               console.log('Synchronization failed after login:', syncResult?.error || 'Unknown error');
             }
-          });
-        } else {
-          console.log('Cloud synchronization feature is disabled. Please check your subscription status.');
-        }
+          } else {
+            console.log('Cloud synchronization feature is disabled. Please check your subscription status.');
+          }
 
-        // 3. User data management (save profile and settings information)
-        console.log('Starting user data management');
-        userDataManager.syncAfterLogin().then(dataResult => {
-          console.log('User data synchronization result after login:', dataResult ? 'Success' : 'Failure');
-        });
-      }
+          resolve(true);
+        } catch (err) {
+          console.error('Error during synchronization:', err);
+          resolve(false);
+        }
+      });
+
+      // 백그라운드에서 동기화 처리
+      syncPromise.then((success) => {
+        console.log('Login synchronization process completed:', success ? 'successfully' : 'with errors');
+      });
+
     } else {
       notifyLoginError(result.error || 'Unknown error');
     }
