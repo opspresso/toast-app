@@ -35,7 +35,7 @@ const DEFAULT_ANONYMOUS = {
   id: 'anonymous',
   email: 'anonymous@user.com',
   name: 'Guest User',
-  image: 'https://web.toast.sh/logo192.png',
+  image: 'https://app.toast.sh/logo192.png',
   slug: 'guest',
   is_authenticated: false,
   created_at: new Date().toISOString(),

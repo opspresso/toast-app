@@ -182,7 +182,7 @@ Example configuration:
 
 ## Integration with Toast Web
 
-Toast App integrates with [Toast Web](https://web.toast.sh) for user authentication and subscription management. This integration enables:
+Toast App integrates with [Toast Web](https://app.toast.sh) for user authentication and subscription management. This integration enables:
 
 - User account creation and authentication
 - Subscription management for premium features
@@ -191,7 +191,7 @@ Toast App integrates with [Toast Web](https://web.toast.sh) for user authenticat
 
 For developers working on Toast App, refer to [INTEGRATION_WITH_TOAST_WEB.md](docs/INTEGRATION_WITH_TOAST_WEB.md) for detailed integration documentation.
 
-Users can create an account and manage their subscription at [https://web.toast.sh](https://web.toast.sh).
+Users can create an account and manage their subscription at [https://app.toast.sh](https://app.toast.sh).
 
 ## Documentation
 

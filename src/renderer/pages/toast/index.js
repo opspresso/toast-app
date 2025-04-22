@@ -55,9 +55,9 @@ const defaultButtons = [
   {
     name: 'Toast',
     shortcut: 'Q',
-    icon: 'https://web.toast.sh/favicon.ico',
+    icon: 'https://app.toast.sh/favicon.ico',
     action: 'open',
-    url: 'https://web.toast.sh'
+    url: 'https://app.toast.sh'
   },
   {
     name: 'Empty',

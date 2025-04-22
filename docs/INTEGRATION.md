@@ -60,7 +60,7 @@ sequenceDiagram
 
 ```http
 GET /api/users/settings HTTP/1.1
-Host: web.toast.sh
+Host: app.toast.sh
 Authorization: Bearer ACCESS_TOKEN
 ```
 
@@ -79,7 +79,7 @@ Authorization: Bearer ACCESS_TOKEN
 
 ```http
 PUT /api/users/settings HTTP/1.1
-Host: web.toast.sh
+Host: app.toast.sh
 Authorization: Bearer ACCESS_TOKEN
 Content-Type: application/json
 

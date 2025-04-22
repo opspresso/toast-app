@@ -149,7 +149,7 @@ Toast App comes with a set of default buttons organized in a standard keyboard l
 The default buttons are arranged in three rows, matching the top three rows of a standard QWERTY keyboard:
 
 1. **Top Row (QWERT)**:
-   - **Q**: Toast - Opens the Toast Website in the default browser (https://web.toast.sh)
+   - **Q**: Toast - Opens the Toast Website in the default browser (https://app.toast.sh)
    - **W**:
    - **E**:
    - **R**:

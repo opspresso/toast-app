@@ -9,7 +9,7 @@ const { getEnv } = require('../config/env');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // 기본 URL 및 엔드포인트 설정
-const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
+const TOAST_URL = getEnv('TOAST_URL', 'https://app.toast.sh');
 const API_BASE_URL = `${TOAST_URL}/api`;
 
 // API 엔드포인트
