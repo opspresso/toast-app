@@ -206,7 +206,6 @@ Comprehensive documentation is available in the repository:
 - [Technical Requirements](TECHNICAL_REQUIREMENTS.md) - Technical specifications and requirements
 - [Development Roadmap](DEVELOPMENT_ROADMAP.md) - Future development plans
 - [Testing Strategy](TESTING_STRATEGY.md) - Testing approach and methodologies
-- [Integration with Toast Web](docs/INTEGRATION_WITH_TOAST_WEB.md) - Guide for integrating with Toast Web
 
 ## Project Structure
 

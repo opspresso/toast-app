@@ -272,7 +272,7 @@ Each action in the chain can be any of the supported action types (exec, open, s
 }
 ```
 
-The subscription section contains information about the user's subscription status. Free users are limited to 3 pages while subscribed users can create up to 9 pages.
+The subscription section contains information about the user's subscription status, which is now obtained through the profile API. Free users are limited to 3 pages while subscribed users can create up to 9 pages.
 
 ### First Launch Completed
 

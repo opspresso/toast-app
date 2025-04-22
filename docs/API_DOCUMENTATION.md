@@ -113,6 +113,7 @@ const schema = {
   }
   subscription: {
     type: 'object'
+    /* 참고: 구독 정보는 이제 /users/profile API에서 통합적으로 제공됩니다. */
     properties: {
       isSubscribed: {
         type: 'boolean'
