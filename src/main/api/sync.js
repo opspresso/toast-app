@@ -101,16 +101,23 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
 
   try {
     // 유효한 데이터 확인
-    if (!directData || !Array.isArray(directData.pages)) {
+    if (!directData) {
+      console.error('업로드할 유효한 데이터가 없습니다');
+      throw new Error('Invalid data');
+    }
+
+    // data.pages 또는 pages 구조 모두 지원
+    const pagesData = directData.data?.pages || directData.pages;
+    if (!Array.isArray(pagesData)) {
       console.error('업로드할 유효한 페이지 데이터가 없습니다');
       throw new Error('Invalid pages data');
     }
 
-    console.log(`서버에 ${directData.pages.length}개 페이지 설정 업로드 중...`);
+    console.log(`서버에 ${pagesData.length}개 페이지 설정 업로드 중...`);
 
     // 업로드 전 데이터 로깅
-    if (directData.pages.length > 0) {
-      console.log(`첫 번째 페이지 ID: ${directData.pages[0].id}, 이름: ${directData.pages[0].name}`);
+    if (pagesData.length > 0) {
+      console.log(`첫 번째 페이지 이름: ${pagesData[0].name}`);
     }
 
     // API 요청
