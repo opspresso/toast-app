@@ -43,12 +43,33 @@ sequenceDiagram
 
 ## 동기화 이벤트
 
-다음과 같은 경우에 설정 동기화가 발생합니다:
+설정 동기화는 다음과 같은 특정 타이밍에 발생합니다:
 
-1. **로그인 후 자동 동기화**: 로그인 직후에는 서버에서 최신 설정을 자동으로 다운로드합니다.
-2. **페이지 추가/삭제**: 사용자가 페이지를 추가하거나 삭제할 때 변경사항을 서버에 업로드합니다.
-3. **버튼 수정**: 사용자가 버튼을 수정할 때 변경사항을 서버에 업로드합니다.
-4. **주기적 동기화**: 설정된 간격(예: 15분)마다 자동으로 동기화를 시도합니다.
+### 서버에서 다운로드하는 시점
+1. **로그인 성공 시**: 사용자가 로그인에 성공하면 즉시 서버에서 최신 설정을 다운로드합니다.
+   ```javascript
+   // 로그인 후 설정 다운로드 예시
+   async function handleLoginSuccess() {
+     try {
+       await downloadSettings();
+       console.log('로그인 후 설정 다운로드 완료');
+     } catch (error) {
+       console.error('설정 다운로드 실패:', error);
+     }
+   }
+   ```
+
+### 서버로 업로드하는 시점
+1. **페이지 추가 시**: 사용자가 새 페이지를 추가하면 변경사항을 즉시 서버에 업로드합니다.
+2. **페이지 삭제 시**: 사용자가 페이지를 삭제하면 변경사항을 즉시 서버에 업로드합니다.
+3. **버튼 수정 시**: 사용자가 버튼을 추가, 수정 또는 삭제하면 변경사항을 서버에 업로드합니다.
+
+각 변경은 디바운싱을 통해 최적화됩니다. 여러 빠른 변경이 연속해서 발생할 경우, 마지막 변경 후 2초 후에 한 번만 동기화합니다.
+
+### 추가 동기화 시점
+1. **주기적 동기화**: 설정된 간격(15분)마다 자동으로 동기화를 시도합니다.
+2. **앱 시작 시**: 사용자가 이미 로그인된 상태에서 앱을 시작할 때 동기화합니다.
+3. **네트워크 복구 시**: 오프라인 상태에서 온라인 상태로 전환될 때 동기화를 시도합니다.
 
 ## 설정 다운로드 API
 
@@ -148,8 +169,59 @@ Toast-App은 사용자 프로필, 구독 정보, 설정 등을 로컬 파일로 
 |--------|------|------|
 | `auth-tokens.json` | 인증 토큰 정보 | 액세스 토큰, 리프레시 토큰, 만료 시간 |
 | `user-profile.json` | 사용자 프로필 정보 | 이름, 이메일, 아바타, 구독 정보 등 |
-| `user-settings.json` | 사용자 설정 정보 | 페이지 구성, 테마, 단축키 등 |
+| `user-settings.json` | 사용자 설정 정보 | 페이지 구성, 테마, 단축키, 타임스탬프 등 |
 | `config.json` | 앱 구성 정보 | 일반 설정, 창 크기, 위치 등 |
+
+### 타임스탬프 관리
+
+모든 로컬 설정 파일에는 타임스탬프 정보가 포함되어 동기화 시 충돌을 방지하고 최신 데이터를 식별합니다:
+
+```javascript
+// 설정 저장 시 타임스탬프 추가 예시
+function saveSettings(settingsData) {
+  // 현재 시간을 타임스탬프로 추가
+  const dataWithTimestamp = {
+    ...settingsData,
+    lastModifiedAt: Date.now(),
+    lastModifiedDevice: getDeviceIdentifier()
+  };
+
+  return writeToFile(SETTINGS_FILE_PATH, dataWithTimestamp);
+}
+
+// 설정 로드 시 타임스탬프 확인 예시
+function loadSettings() {
+  const settingsData = readFromFile(SETTINGS_FILE_PATH);
+
+  if (settingsData && !settingsData.lastModifiedAt) {
+    // 타임스탬프가 없는 경우 현재 시간으로 추가
+    settingsData.lastModifiedAt = Date.now();
+    settingsData.lastModifiedDevice = getDeviceIdentifier();
+    writeToFile(SETTINGS_FILE_PATH, settingsData);
+  }
+
+  return settingsData;
+}
+```
+
+타임스탬프는 다음과 같은 용도로 사용됩니다:
+
+1. **변경 감지**: 로컬 설정과 서버 설정의 변경 시점을 비교하여 최신 버전 식별
+2. **충돌 해결**: 여러 기기에서 동시에 변경이 발생한 경우, 타임스탬프를 기준으로 병합 또는 우선순위 결정
+3. **동기화 최적화**: 마지막 동기화 이후 변경이 없는 경우 불필요한 네트워크 요청 방지
+
+```json
+// user-settings.json 예시
+{
+  "pages": [...],
+  "appearance": {
+    "theme": "dark"
+  },
+  "lastModifiedAt": 1682932134590,
+  "lastModifiedDevice": "macbook-pro-m1",
+  "lastSyncedAt": 1682932134590
+}
+```
 
 ### 파일 관리 모듈
 
