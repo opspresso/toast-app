@@ -30,7 +30,7 @@ const closeProfileButton = document.getElementById('close-profile-button');
 
 // Modal related DOM elements
 const buttonEditModal = document.getElementById('button-edit-modal');
-const closeModalButton = document.querySelector('.close-modal');
+const closeButtonEdit = document.getElementById('close-button-edit');
 const saveButtonEdit = document.getElementById('save-button-edit');
 const cancelButtonEdit = document.getElementById('cancel-button-edit');
 const editButtonNameInput = document.getElementById('edit-button-name');
@@ -1469,16 +1469,10 @@ function executeButton(button) {
  * Initialize modal and set up event listeners
  */
 function setupModalEventListeners() {
-  // Modal close button (X button)
-  if (closeModalButton) {
-    closeModalButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      closeButtonEditModal();
-    });
-  } else {
-    console.error('Close button not found.');
-  }
+  // Close button edit
+  closeButtonEdit.addEventListener('click', () => {
+    closeButtonEditModal();
+  });
 
   // Cancel button
   cancelButtonEdit.addEventListener('click', () => {
