@@ -214,6 +214,13 @@ function setupIpcHandlers(windows) {
         Object.keys(value).forEach(k => {
           config.set(k, value[k]);
         });
+      } else if (key === 'subscription' && typeof value === 'object') {
+        // sanitizeSubscription 함수를 사용하여 객체 정리
+        const { sanitizeSubscription } = require('./config');
+        const subscriptionValue = sanitizeSubscription(value);
+
+        // 정리된 subscription 객체 저장
+        config.set(key, subscriptionValue);
       } else {
         // Set specific key
         config.set(key, value);
@@ -223,10 +230,14 @@ function setupIpcHandlers(windows) {
       if (windows.toast && !windows.toast.isDestroyed()) {
         // If entire settings or specific section is updated
         if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages') {
+          // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
+          const { sanitizeSubscription } = require('./config');
+          const subscription = sanitizeSubscription(config.get('subscription'));
+
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: config.get('subscription')
+            subscription: subscription
           });
         }
 
@@ -290,10 +301,14 @@ function setupIpcHandlers(windows) {
 
         // Immediately notify toast window when settings change
         if (windows.toast && !windows.toast.isDestroyed()) {
+          // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
+          const { sanitizeSubscription } = require('./config');
+          const subscription = sanitizeSubscription(config.get('subscription'));
+
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: config.get('subscription')
+            subscription: subscription
           });
 
           // Update toast window appearance if appearance settings change
@@ -330,10 +345,14 @@ function setupIpcHandlers(windows) {
 
       // Send change notification to toast window after settings reset
       if (windows.toast && !windows.toast.isDestroyed()) {
+        // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
+        const { sanitizeSubscription } = require('./config');
+        const subscription = sanitizeSubscription(config.get('subscription'));
+
         windows.toast.webContents.send('config-updated', {
           pages: config.get('pages'),
           appearance: config.get('appearance'),
-          subscription: config.get('subscription')
+          subscription: subscription
         });
       }
 

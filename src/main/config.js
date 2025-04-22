@@ -226,10 +226,57 @@ function exportConfig(config, filePath) {
   }
 }
 
+/**
+ * Ensure subscription object has correct types according to schema
+ * @param {Object} subscription - Subscription object to validate/fix
+ * @returns {Object} - Subscription object with correct types
+ */
+function sanitizeSubscription(subscription) {
+  // 없거나 객체가 아닌 경우 기본값 반환
+  if (!subscription || typeof subscription !== 'object') {
+    return schema.subscription.default;
+  }
+
+  const result = { ...subscription };
+
+  // boolean 타입 필드 정리
+  result.isSubscribed = Boolean(result.isSubscribed);
+  result.isAuthenticated = Boolean(result.isAuthenticated);
+
+  // subscribedUntil 필드는 반드시 문자열이어야 함
+  if (result.subscribedUntil !== undefined) {
+    if (typeof result.subscribedUntil === 'string') {
+      // 이미 문자열이면 그대로 사용
+    } else if (result.subscribedUntil instanceof Date) {
+      // Date 객체인 경우 ISO 문자열로 변환
+      result.subscribedUntil = result.subscribedUntil.toISOString();
+    } else if (typeof result.subscribedUntil === 'number') {
+      // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
+      result.subscribedUntil = new Date(result.subscribedUntil).toISOString();
+    } else {
+      // 기타 타입은 빈 문자열로 설정
+      result.subscribedUntil = '';
+    }
+  } else {
+    // undefined인 경우 빈 문자열로 설정
+    result.subscribedUntil = '';
+  }
+
+  // pageGroups 필드는 숫자여야 함
+  if (result.pageGroups !== undefined) {
+    result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
+  } else {
+    result.pageGroups = schema.subscription.properties.pageGroups.default;
+  }
+
+  return result;
+}
+
 module.exports = {
+  schema,
   createConfigStore,
   resetToDefaults,
   importConfig,
   exportConfig,
-  schema
+  sanitizeSubscription
 };
