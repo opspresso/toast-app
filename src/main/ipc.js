@@ -8,12 +8,12 @@
 const { ipcMain } = require('electron');
 const { executeAction, validateAction } = require('./executor');
 const config = require('./config').createConfigStore();
-const path = require('path');
-const fs = require('fs');
+const os = require('os');
 const { dialog, shell } = require('electron');
 const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortcuts');
 const auth = require('./auth');
 const authManager = require('./auth-manager');
+const userDataManager = require('./user-data-manager');
 
 // Track button edit modal state
 let isModalOpen = false;
@@ -27,12 +27,26 @@ function isModalOpened() {
 }
 
 /**
+ * Function to get device identifier
+ * @returns {string} Device identifier
+ */
+function getDeviceIdentifier() {
+  const platform = process.platform;
+  const hostname = os.hostname();
+  const username = os.userInfo().username;
+  return `${platform}-${hostname}-${username}`;
+}
+
+/**
  * Set up IPC handlers
  * @param {Object} windows - Object containing application windows
  */
 function setupIpcHandlers(windows) {
   // Initialize authentication manager (pass window references)
   authManager.initialize(windows);
+
+  // Initialize user data manager (pass window references)
+  userDataManager.initialize(windows);
 
   // Register URL protocol handler (OAuth redirection handling)
   auth.registerProtocolHandler();
@@ -56,15 +70,15 @@ function setupIpcHandlers(windows) {
 
         // Notify both windows through auth-manager on login success
         if (result.success) {
-        // Send special message if action is reload_auth
-        if (action === 'reload_auth') {
-          authManager.notifyAuthStateChange({
-            type: 'auth-reload',
-            subscription: result.subscription,
-            message: 'Authentication information has been refreshed.'
-          });
-        } else {
-          // Regular login success notification
+          // Send special message if action is reload_auth
+          if (action === 'reload_auth') {
+            authManager.notifyAuthStateChange({
+              type: 'auth-reload',
+              subscription: result.subscription,
+              message: 'Authentication information has been refreshed.'
+            });
+          } else {
+            // Regular login success notification
             authManager.notifyLoginSuccess(result.subscription);
           }
         } else {
@@ -480,54 +494,39 @@ function setupIpcHandlers(windows) {
 
   // Check if synchronization is possible
   ipcMain.handle('is-cloud-sync-enabled', async () => {
-    const cloudSync = require('./cloud-sync');
-    return await cloudSync.isCloudSyncEnabled();
+    // const cloudSync = require('./cloud-sync');
+    // return await cloudSync.isCloudSyncEnabled();
+    return true;
   });
 
   // Get sync status
   ipcMain.handle('get-sync-status', async () => {
-    try {
-      const cloudSync = require('./cloud-sync');
-      const syncManager = cloudSync.initCloudSync();
-      return syncManager.getCurrentStatus();
-    } catch (error) {
-      console.error('Error getting sync status:', error);
-      return {
-        enabled: false,
-        online: false,
-        deviceId: null,
-        lastSyncTime: 0
-      };
-    }
-  });
-
-  // Set cloud sync enabled/disabled
-  ipcMain.handle('set-cloud-sync-enabled', async (event, enabled) => {
-    try {
-      const cloudSync = require('./cloud-sync');
-
-      // Update cloud sync settings
-      cloudSync.updateCloudSyncSettings(enabled);
-
-      return {
-        success: true,
-        enabled: enabled
-      };
-    } catch (error) {
-      console.error('Error setting cloud sync enabled:', error);
-      return {
-        success: false,
-        error: error.message || 'Unknown error',
-        enabled: false
-      };
-    }
+    // try {
+    //   const cloudSync = require('./cloud-sync');
+    //   const syncManager = cloudSync.initCloudSync();
+    //   return syncManager.getCurrentStatus();
+    // } catch (error) {
+    //   console.error('Error getting sync status:', error);
+    //   return {
+    //     enabled: false,
+    //     online: false,
+    //     deviceId: null,
+    //     lastSyncTime: 0
+    //   };
+    // }
+    return {
+      enabled: false,
+      online: false,
+      deviceId: getDeviceIdentifier(),
+      lastSyncTime: Date.now()
+    };
   });
 
   // Manual sync (upload, download, resolve)
   ipcMain.handle('manual-sync', async (event, action) => {
     try {
       const cloudSync = require('./cloud-sync');
-      const syncManager = cloudSync.initCloudSync();
+      const syncManager = cloudSync.initCloudSync(authManager, userDataManager);
 
       // Validate action
       if (!['upload', 'download', 'resolve'].includes(action)) {
@@ -544,16 +543,6 @@ function setupIpcHandlers(windows) {
         error: error.message || 'Unknown error'
       };
     }
-  });
-
-  // Manual synchronization request (legacy)
-  ipcMain.handle('sync-settings', async (event, action) => {
-    return await authManager.syncSettings(action);
-  });
-
-  // Update synchronization settings (legacy)
-  ipcMain.handle('update-sync-settings', async (event, enabled) => {
-    return authManager.updateSyncSettings(enabled);
   });
 
   // Open URL in external browser

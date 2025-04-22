@@ -47,28 +47,10 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
     let hasSyncFeature = false;
 
     // 다양한 구독 정보 형식 지원
-    if (subscription.features && typeof subscription.features === 'object') {
-      hasSyncFeature = subscription.features.cloud_sync === true;
-    } else if (Array.isArray(subscription.features_array)) {
-      hasSyncFeature = subscription.features_array.includes('cloud_sync');
-    } else if (subscription.isSubscribed === true ||
+    if (subscription.isSubscribed === true ||
       subscription.active === true ||
       subscription.is_subscribed === true) {
       hasSyncFeature = true;
-    }
-
-    // additionalFeatures 체크 (설정 페이지에서 저장하는 형식)
-    if (!hasSyncFeature && subscription.additionalFeatures && typeof subscription.additionalFeatures === 'object') {
-      hasSyncFeature = subscription.additionalFeatures.cloudSync === true;
-    }
-
-    // 기존 구독 정보에서 구독 상태가 true인 경우 (최후의 수단으로 확인)
-    if (!hasSyncFeature && subscription.plan && (
-      subscription.plan.toLowerCase().includes('premium') ||
-      subscription.plan.toLowerCase().includes('pro')
-    )) {
-      hasSyncFeature = true;
-      console.log('Plan-based cloud sync permission granted');
     }
 
     console.log('클라우드 동기화 기능 활성화 여부:', hasSyncFeature);

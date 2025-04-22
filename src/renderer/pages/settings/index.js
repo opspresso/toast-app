@@ -125,6 +125,8 @@ function applyTheme(theme) {
  * Initialize UI with config values
  */
 function initializeUI() {
+  console.log('initializeUI 호출');
+
   // General settings
   globalHotkeyInput.value = config.globalHotkey || '';
   launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
@@ -150,6 +152,8 @@ function initializeUI() {
  * Initialize Cloud Sync UI
  */
 function initializeCloudSyncUI() {
+  console.log('initializeCloudSyncUI 호출');
+
   try {
     // Cloud Sync enabled/disabled
     const cloudSyncEnabled = config.cloudSync?.enabled !== false;
@@ -157,6 +161,7 @@ function initializeCloudSyncUI() {
 
     // Get current sync status
     window.settings.getSyncStatus().then(status => {
+      console.log('getSyncStatus 호출 결과:', status);
       updateSyncStatusUI(status);
     }).catch(error => {
       console.error('Error getting sync status:', error);
@@ -268,27 +273,25 @@ function updateSyncStatusUI(status) {
   // Enable/disable buttons based on status
   let hasCloudSyncPermission = false;
 
-  // Check subscription in various formats
-  if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
-    hasCloudSyncPermission = authState.subscription.features.cloud_sync === true;
-  } else if (Array.isArray(authState.subscription?.features_array)) {
-    hasCloudSyncPermission = authState.subscription.features_array.includes('cloud_sync');
-  } else if (
-    authState.subscription?.isSubscribed === true ||
-    authState.subscription?.active === true ||
-    authState.subscription?.is_subscribed === true
-  ) {
-    hasCloudSyncPermission = true;
-  }
+  // // Check subscription in various formats
+  // if (
+  //   authState.subscription?.isSubscribed === true ||
+  //   authState.subscription?.active === true ||
+  //   authState.subscription?.is_subscribed === true
+  // ) {
+  //   hasCloudSyncPermission = true;
+  // }
 
   const canUseCloudSync = hasCloudSyncPermission;
+
+  console.log('canUseCloudSync:', canUseCloudSync);
 
   enableCloudSyncCheckbox.disabled = !hasCloudSyncPermission;
   enableCloudSyncCheckbox.checked = status.enabled;
 
-  manualSyncUploadButton.disabled = !canUseCloudSync || !status.enabled;
-  manualSyncDownloadButton.disabled = !canUseCloudSync || !status.enabled;
-  manualSyncResolveButton.disabled = !canUseCloudSync || !status.enabled;
+  // manualSyncUploadButton.disabled = !canUseCloudSync || !status.enabled;
+  // manualSyncDownloadButton.disabled = !canUseCloudSync || !status.enabled;
+  // manualSyncResolveButton.disabled = !canUseCloudSync || !status.enabled;
 }
 
 /**
@@ -1092,28 +1095,28 @@ async function handleCloudSyncToggle() {
     // Show loading state
     setLoading(syncLoading, true);
 
-  // Check if user has subscription permission
-  let hasCloudSyncPermission = false;
+    // Check if user has subscription permission
+    let hasCloudSyncPermission = false;
 
-  // Check subscription in various formats
-  if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
-    hasCloudSyncPermission = authState.subscription.features.cloud_sync === true;
-  } else if (Array.isArray(authState.subscription?.features_array)) {
-    hasCloudSyncPermission = authState.subscription.features_array.includes('cloud_sync');
-  } else if (
-    authState.subscription?.isSubscribed === true ||
-    authState.subscription?.active === true ||
-    authState.subscription?.is_subscribed === true
-  ) {
-    hasCloudSyncPermission = true;
-  }
+    // Check subscription in various formats
+    if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
+      hasCloudSyncPermission = authState.subscription.features.cloud_sync === true;
+    } else if (Array.isArray(authState.subscription?.features_array)) {
+      hasCloudSyncPermission = authState.subscription.features_array.includes('cloud_sync');
+    } else if (
+      authState.subscription?.isSubscribed === true ||
+      authState.subscription?.active === true ||
+      authState.subscription?.is_subscribed === true
+    ) {
+      hasCloudSyncPermission = true;
+    }
 
-  if (!hasCloudSyncPermission) {
-    alert('클라우드 동기화 기능은 Premium 구독이 필요합니다.');
-    enableCloudSyncCheckbox.checked = false;
-    setLoading(syncLoading, false);
-    return;
-  }
+    if (!hasCloudSyncPermission) {
+      alert('클라우드 동기화 기능은 Premium 구독이 필요합니다.');
+      enableCloudSyncCheckbox.checked = false;
+      setLoading(syncLoading, false);
+      return;
+    }
 
     // Enable/disable cloud sync
     const enabled = enableCloudSyncCheckbox.checked;
@@ -1147,15 +1150,31 @@ async function handleCloudSyncToggle() {
 }
 
 /**
+ * Disable manual sync buttons
+ */
+function manualSyncDisabled() {
+  manualSyncUploadButton.disabled = true;
+  manualSyncDownloadButton.disabled = true;
+  manualSyncResolveButton.disabled = true;
+}
+
+/**
+ * Enable manual sync buttons
+ */
+function manualSyncEnabled() {
+  manualSyncUploadButton.disabled = false;
+  manualSyncDownloadButton.disabled = false;
+  manualSyncResolveButton.disabled = false;
+}
+
+/**
  * Handle manual sync upload
  */
 async function handleManualSyncUpload() {
   try {
     // Show loading state
     setLoading(syncLoading, true);
-    manualSyncUploadButton.disabled = true;
-    manualSyncDownloadButton.disabled = true;
-    manualSyncResolveButton.disabled = true;
+    manualSyncDisabled();
 
     // Upload settings to server
     const result = await window.settings.manualSync('upload');
@@ -1170,6 +1189,7 @@ async function handleManualSyncUpload() {
     // Show message
     if (result.success) {
       alert('설정이 서버에 성공적으로 업로드되었습니다.');
+      manualSyncEnabled();
     } else {
       throw new Error(result.error || '업로드 실패');
     }
@@ -1195,9 +1215,7 @@ async function handleManualSyncDownload() {
   try {
     // Show loading state
     setLoading(syncLoading, true);
-    manualSyncUploadButton.disabled = true;
-    manualSyncDownloadButton.disabled = true;
-    manualSyncResolveButton.disabled = true;
+    manualSyncDisabled();
 
     // Confirm download (will overwrite local settings)
     if (!confirm('서버에서 설정을 다운로드하면 로컬 설정을 덮어쓰게 됩니다. 계속하시겠습니까?')) {
@@ -1222,6 +1240,7 @@ async function handleManualSyncDownload() {
     // Show message
     if (result.success) {
       alert('설정이 서버에서 성공적으로 다운로드되었습니다.');
+      manualSyncEnabled();
 
       // Reload config
       const newConfig = await window.settings.getConfig();
@@ -1254,9 +1273,7 @@ async function handleManualSyncResolve() {
   try {
     // Show loading state
     setLoading(syncLoading, true);
-    manualSyncUploadButton.disabled = true;
-    manualSyncDownloadButton.disabled = true;
-    manualSyncResolveButton.disabled = true;
+    manualSyncDisabled();
 
     // Confirm conflict resolution
     if (!confirm('로컬 설정과 서버 설정 간의 충돌을 해결합니다. 타임스탬프를 기준으로 최신 설정이 적용됩니다. 계속하시겠습니까?')) {
@@ -1281,6 +1298,7 @@ async function handleManualSyncResolve() {
     // Show message
     if (result.success) {
       alert('설정 충돌이 성공적으로 해결되었습니다.');
+      manualSyncEnabled();
 
       // Reload config
       const newConfig = await window.settings.getConfig();

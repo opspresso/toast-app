@@ -7,7 +7,6 @@
  */
 
 const auth = require('./auth');
-const cloudSync = require('./cloud-sync');
 const userDataManager = require('./user-data-manager');
 const { createConfigStore } = require('./config');
 const { client } = require('./api');
@@ -25,16 +24,6 @@ let syncManager = null;
 function initialize(windowsRef) {
   windows = windowsRef;
 
-  // Initialize cloud synchronization
-  syncManager = cloudSync.initCloudSync();
-
-  // Set authManager reference - pass an object containing only the necessary methods to avoid circular references
-  cloudSync.setAuthManager({
-    getAccessToken,
-    hasValidToken,
-    refreshAccessToken: () => auth.refreshAccessToken()
-  });
-
   // Initialize user data manager
   userDataManager.initialize(client, {
     getAccessToken,
@@ -42,9 +31,6 @@ function initialize(windowsRef) {
     fetchUserProfile: () => auth.fetchUserProfile(),
     fetchSubscription: () => auth.fetchSubscription()
   });
-
-  // Set user data manager reference in cloud synchronization module
-  cloudSync.setUserDataManager(userDataManager);
 }
 
 /**
