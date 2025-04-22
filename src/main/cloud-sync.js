@@ -317,11 +317,13 @@ async function uploadSettings() {
 
     // 업로드할 데이터 구성
     const uploadData = {
-      advanced,
-      appearance,
-      lastSyncedAt: timestamp,
-      lastSyncedDevice: state.deviceId,
-      pages,
+      data: {
+        advanced,
+        appearance,
+        lastSyncedAt: timestamp,
+        lastSyncedDevice: state.deviceId,
+        pages,
+      }
     };
 
     console.log(`서버에 ${pages.length}개 페이지 설정 업로드 중`);
@@ -386,10 +388,12 @@ async function downloadSettings() {
   try {
     state.isSyncing = true;
 
+    // 데이터 형식을 일관되게 맞추기 위해 빈 객체 전달
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore
+      configStore,
+      directData: {} // 빈 객체를 전달해도 API에서는 GET 요청이므로 무시됨
     });
 
     if (result.success) {
@@ -441,11 +445,12 @@ async function syncSettings(action = 'resolve') {
       // 1. 현재 로컬 설정 가져오기
       const localSettings = await userDataManager.getUserSettings();
 
-      // 2. 서버 설정 다운로드
+      // 2. 서버 설정 다운로드 - data 객체 형식으로 일관화
       const serverResult = await apiSync.downloadSettings({
         hasValidToken: authManager.hasValidToken,
         onUnauthorized: authManager.refreshAccessToken,
-        configStore
+        configStore,
+        directData: {} // 빈 객체를 전달해도 API에서는 GET 요청이므로 무시됨
       });
 
       if (!serverResult.success) {
