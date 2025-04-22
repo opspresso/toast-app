@@ -43,7 +43,7 @@ jobs:
       - name: Build/release Electron app 📦
         uses: samuelmeuli/action-electron-builder@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GHP_TOKEN }}
           mac_certs: ${{ secrets.APPLE_CERTIFICATE_BASE64_DEV }}
           mac_certs_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -84,7 +84,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
@@ -100,7 +100,7 @@ jobs:
       - name: Create Release in Releases Repo 🚀
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
         with:
           repository: opspresso/toast-dist
           tag_name: ${{ github.ref_name }}
