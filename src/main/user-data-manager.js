@@ -337,6 +337,47 @@ function updateSettings(settings) {
 }
 
 /**
+ * 동기화 메타데이터만 업데이트
+ * @param {Object} metadata - 업데이트할 메타데이터
+ * @returns {boolean} 업데이트 성공 여부
+ */
+function updateSyncMetadata(metadata) {
+  try {
+    if (!metadata) {
+      console.error('업데이트할 메타데이터가 없음');
+      return false;
+    }
+
+    // 현재 설정 파일 읽기
+    const currentSettings = readFromFile(SETTINGS_FILE_PATH) || {};
+
+    // 메타데이터만 업데이트
+    const updatedSettings = {
+      ...currentSettings,
+      // 타임스탬프 정보 업데이트
+      lastSyncedAt: metadata.lastSyncedAt || currentSettings.lastSyncedAt,
+      lastModifiedAt: metadata.lastModifiedAt || currentSettings.lastModifiedAt,
+      lastSyncedDevice: metadata.lastSyncedDevice || currentSettings.lastSyncedDevice,
+      lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice
+    };
+
+    // 파일에 저장
+    const result = writeToFile(SETTINGS_FILE_PATH, updatedSettings);
+
+    if (result) {
+      console.log('동기화 메타데이터 업데이트 성공');
+      return true;
+    } else {
+      console.error('동기화 메타데이터 업데이트 실패');
+      return false;
+    }
+  } catch (error) {
+    console.error('동기화 메타데이터 업데이트 오류:', error);
+    return false;
+  }
+}
+
+/**
  * 주기적인 프로필 갱신 시작
  */
 function startProfileRefresh() {
@@ -518,6 +559,7 @@ module.exports = {
   getUserProfile,
   getUserSettings,
   updateSettings,
+  updateSyncMetadata,
   syncAfterLogin,
   cleanupOnLogout,
   startProfileRefresh,

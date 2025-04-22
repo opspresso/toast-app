@@ -303,14 +303,10 @@ async function uploadSettings() {
   }
 
   try {
-    // 사용자 설정 파일에서 데이터 가져오기
-    const settings = await userDataManager.getUserSettings();
-    if (!settings) {
-      return { success: false, error: 'Settings not found' };
-    }
-
-    // 필요한 데이터 추출
-    const pages = Array.isArray(settings.pages) ? settings.pages : [];
+    // configStore에서 직접 데이터 추출
+    const advanced = configStore.get('advanced');
+    const appearance = configStore.get('appearance');
+    const pages = configStore.get('pages') || [];
 
     if (pages.length === 0) {
       console.warn('업로드할 페이지 데이터가 없습니다');
@@ -321,11 +317,11 @@ async function uploadSettings() {
 
     // 업로드할 데이터 구성
     const uploadData = {
-      pages,
-      lastSyncedDevice: state.deviceId,
+      advanced,
+      appearance,
       lastSyncedAt: timestamp,
-      appearance: configStore.get('appearance'),
-      advanced: configStore.get('advanced')
+      lastSyncedDevice: state.deviceId,
+      pages,
     };
 
     console.log(`서버에 ${pages.length}개 페이지 설정 업로드 중`);
@@ -335,21 +331,20 @@ async function uploadSettings() {
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
       configStore,
-      directData: uploadData
+      directData: uploadData,
     });
 
     // 성공 시 마지막 동기화 시간 업데이트
     if (result.success) {
       state.lastSyncTime = timestamp;
 
-      // 설정 파일 업데이트
-      const updatedSettings = {
-        ...settings,
-        lastSyncedAt: timestamp
-      };
+      // 동기화 메타데이터만 업데이트
+      userDataManager.updateSyncMetadata({
+        lastSyncedAt: timestamp,
+        lastSyncedDevice: state.deviceId
+      });
 
-      userDataManager.updateSettings(updatedSettings);
-      console.log('설정 업로드 성공 및 마지막 동기화 시간 업데이트 완료');
+      console.log('설정 업로드 성공 및 동기화 메타데이터 업데이트 완료');
     }
 
     return result;
@@ -400,23 +395,15 @@ async function downloadSettings() {
     if (result.success) {
       state.lastSyncTime = getCurrentTimestamp();
 
-      // 사용자 설정 파일 업데이트
-      try {
-        const currentSettings = await userDataManager.getUserSettings();
-        const timestamp = getCurrentTimestamp();
+      // 동기화 메타데이터만 업데이트
+      const timestamp = getCurrentTimestamp();
+      userDataManager.updateSyncMetadata({
+        lastSyncedAt: timestamp,
+        lastModifiedAt: timestamp,
+        lastModifiedDevice: state.deviceId
+      });
 
-        if (currentSettings) {
-          const updatedSettings = {
-            ...currentSettings,
-            lastSyncedAt: timestamp
-          };
-
-          userDataManager.updateSettings(updatedSettings);
-          console.log('설정 다운로드 성공 및 마지막 동기화 시간 업데이트 완료');
-        }
-      } catch (error) {
-        console.error('설정 파일 업데이트 오류:', error);
-      }
+      console.log('설정 다운로드 성공 및 동기화 메타데이터 업데이트 완료');
     }
 
     return result;
@@ -568,28 +555,17 @@ function setupConfigListeners() {
 
     console.log(`페이지 설정 변경 감지됨 (${changeType})`);
 
-    // 사용자 설정 파일 업데이트
-    try {
-      const currentSettings = await userDataManager.getUserSettings();
+    // 메타데이터만 업데이트
+    const timestamp = getCurrentTimestamp();
+    userDataManager.updateSyncMetadata({
+      lastModifiedAt: timestamp,
+      lastModifiedDevice: state.deviceId
+    });
 
-      if (currentSettings) {
-        const timestamp = getCurrentTimestamp();
-        const updatedSettings = {
-          ...currentSettings,
-          pages: newValue,
-          lastModifiedAt: timestamp,
-          lastModifiedDevice: state.deviceId
-        };
+    console.log('설정 파일 메타데이터 업데이트 완료');
 
-        userDataManager.updateSettings(updatedSettings);
-        console.log('설정 파일에 페이지 데이터 업데이트 완료');
-      }
-
-      // 동기화 예약
-      scheduleSync(changeType);
-    } catch (error) {
-      console.error('설정 파일 업데이트 오류:', error);
-    }
+    // 동기화 예약
+    scheduleSync(changeType);
   });
 
   // 외관 설정 변경 감지
@@ -600,28 +576,17 @@ function setupConfigListeners() {
 
     console.log('외관 설정 변경 감지됨');
 
-    // 사용자 설정 파일 업데이트
-    try {
-      const currentSettings = await userDataManager.getUserSettings();
+    // 메타데이터만 업데이트
+    const timestamp = getCurrentTimestamp();
+    userDataManager.updateSyncMetadata({
+      lastModifiedAt: timestamp,
+      lastModifiedDevice: state.deviceId
+    });
 
-      if (currentSettings) {
-        const timestamp = getCurrentTimestamp();
-        const updatedSettings = {
-          ...currentSettings,
-          appearance: newValue,
-          lastModifiedAt: timestamp,
-          lastModifiedDevice: state.deviceId
-        };
+    console.log('설정 파일 메타데이터 업데이트 완료');
 
-        userDataManager.updateSettings(updatedSettings);
-        console.log('설정 파일에 외관 설정 업데이트 완료');
-      }
-
-      // 동기화 예약
-      scheduleSync('외관 설정 변경');
-    } catch (error) {
-      console.error('설정 파일 업데이트 오류:', error);
-    }
+    // 동기화 예약
+    scheduleSync('외관 설정 변경');
   });
 
   // 고급 설정 변경 감지
@@ -632,28 +597,17 @@ function setupConfigListeners() {
 
     console.log('고급 설정 변경 감지됨');
 
-    // 사용자 설정 파일 업데이트
-    try {
-      const currentSettings = await userDataManager.getUserSettings();
+    // 메타데이터만 업데이트
+    const timestamp = getCurrentTimestamp();
+    userDataManager.updateSyncMetadata({
+      lastModifiedAt: timestamp,
+      lastModifiedDevice: state.deviceId
+    });
 
-      if (currentSettings) {
-        const timestamp = getCurrentTimestamp();
-        const updatedSettings = {
-          ...currentSettings,
-          advanced: newValue,
-          lastModifiedAt: timestamp,
-          lastModifiedDevice: state.deviceId
-        };
+    console.log('설정 파일 메타데이터 업데이트 완료');
 
-        userDataManager.updateSettings(updatedSettings);
-        console.log('설정 파일에 고급 설정 업데이트 완료');
-      }
-
-      // 동기화 예약
-      scheduleSync('고급 설정 변경');
-    } catch (error) {
-      console.error('설정 파일 업데이트 오류:', error);
-    }
+    // 동기화 예약
+    scheduleSync('고급 설정 변경');
   });
 }
 
