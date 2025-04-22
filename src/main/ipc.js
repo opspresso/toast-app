@@ -460,12 +460,74 @@ function setupIpcHandlers(windows) {
     return await cloudSync.isCloudSyncEnabled();
   });
 
-  // Manual synchronization request
+  // Get sync status
+  ipcMain.handle('get-sync-status', async () => {
+    try {
+      const cloudSync = require('./cloud-sync');
+      const syncManager = cloudSync.initCloudSync();
+      return syncManager.getCurrentStatus();
+    } catch (error) {
+      console.error('Error getting sync status:', error);
+      return {
+        enabled: false,
+        online: false,
+        deviceId: null,
+        lastSyncTime: 0
+      };
+    }
+  });
+
+  // Set cloud sync enabled/disabled
+  ipcMain.handle('set-cloud-sync-enabled', async (event, enabled) => {
+    try {
+      const cloudSync = require('./cloud-sync');
+
+      // Update cloud sync settings
+      cloudSync.updateCloudSyncSettings(enabled);
+
+      return {
+        success: true,
+        enabled: enabled
+      };
+    } catch (error) {
+      console.error('Error setting cloud sync enabled:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error',
+        enabled: false
+      };
+    }
+  });
+
+  // Manual sync (upload, download, resolve)
+  ipcMain.handle('manual-sync', async (event, action) => {
+    try {
+      const cloudSync = require('./cloud-sync');
+      const syncManager = cloudSync.initCloudSync();
+
+      // Validate action
+      if (!['upload', 'download', 'resolve'].includes(action)) {
+        throw new Error(`Invalid sync action: ${action}`);
+      }
+
+      // Perform manual sync action
+      const result = await syncManager.manualSync(action);
+      return result;
+    } catch (error) {
+      console.error(`Error performing manual sync (${action}):`, error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
+    }
+  });
+
+  // Manual synchronization request (legacy)
   ipcMain.handle('sync-settings', async (event, action) => {
     return await authManager.syncSettings(action);
   });
 
-  // Update synchronization settings
+  // Update synchronization settings (legacy)
   ipcMain.handle('update-sync-settings', async (event, enabled) => {
     return authManager.updateSyncSettings(enabled);
   });

@@ -22,6 +22,7 @@
           <li data-tab="general" class="active">General</li>
           <li data-tab="appearance">Appearance</li>
           <li data-tab="account">Account & Subscription</li>
+          <li data-tab="cloud-sync">Cloud Sync</li>
           <li data-tab="advanced">Advanced</li>
         </ul>
       </div>
@@ -147,16 +148,6 @@
               </div>
             </div>
           </div>
-
-          <div class="settings-group">
-            <h3>Premium Features</h3>
-            <ul class="feature-list">
-              <li>Up to 9 pages of shortcuts (Free: 3 pages)</li>
-              <li>Advanced actions and scripting</li>
-              <li>Cloud sync across multiple devices</li>
-              <li>Priority support</li>
-            </ul>
-          </div>
         </div>
 
         <!-- Advanced Tab -->
@@ -198,6 +189,49 @@
           <div class="settings-group actions-group">
             <button id="reset-settings" class="danger-button">Reset to Defaults</button>
             <p class="help-text">Reset all settings to their default values.</p>
+          </div>
+        </div>
+
+        <!-- Cloud Sync Tab -->
+        <div id="cloud-sync" class="settings-tab">
+          <h2>Cloud Sync</h2>
+
+          <!-- Sync Status -->
+          <div id="sync-status-section" class="settings-group">
+            <div class="subscription-container">
+              <div class="subscription-details">
+                <div class="subscription-status">
+                  <span id="sync-status-badge" class="badge">비활성화</span>
+                  <span id="sync-status-text">Cloud Sync 상태</span>
+                </div>
+                <p id="last-synced-time">마지막 동기화: -</p>
+                <p id="sync-device-info">현재 장치: -</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sync Controls -->
+          <div class="settings-group">
+            <h3>동기화 설정</h3>
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="enable-cloud-sync">
+                클라우드 동기화 활성화
+              </label>
+              <p class="help-text">여러 기기에서 설정과 페이지를 동기화합니다. Premium 구독 필요.</p>
+            </div>
+
+            <div class="settings-group">
+              <div class="subscription-actions">
+                <button id="manual-sync-upload" class="primary-button">서버에 업로드</button>
+                <button id="manual-sync-download" class="primary-button">서버에서 다운로드</button>
+                <button id="manual-sync-resolve" class="secondary-button">충돌 해결</button>
+              </div>
+              <div id="sync-loading" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>동기화 중...</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

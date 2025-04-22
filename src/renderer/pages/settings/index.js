@@ -46,6 +46,17 @@ const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');
 const showInTaskbarCheckbox = document.getElementById('show-in-taskbar');
 const resetSettingsButton = document.getElementById('reset-settings');
 
+// DOM Elements - Cloud Sync
+const syncStatusBadge = document.getElementById('sync-status-badge');
+const syncStatusText = document.getElementById('sync-status-text');
+const lastSyncedTime = document.getElementById('last-synced-time');
+const syncDeviceInfo = document.getElementById('sync-device-info');
+const enableCloudSyncCheckbox = document.getElementById('enable-cloud-sync');
+const manualSyncUploadButton = document.getElementById('manual-sync-upload');
+const manualSyncDownloadButton = document.getElementById('manual-sync-download');
+const manualSyncResolveButton = document.getElementById('manual-sync-resolve');
+const syncLoading = document.getElementById('sync-loading');
+
 // DOM Elements - Main Buttons
 const saveButton = document.getElementById('save-button');
 const cancelButton = document.getElementById('cancel-button');
@@ -130,6 +141,29 @@ function initializeUI() {
   hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
   hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
   showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
+
+  // Cloud Sync settings
+  initializeCloudSyncUI();
+}
+
+/**
+ * Initialize Cloud Sync UI
+ */
+function initializeCloudSyncUI() {
+  try {
+    // Cloud Sync enabled/disabled
+    const cloudSyncEnabled = config.cloudSync?.enabled !== false;
+    enableCloudSyncCheckbox.checked = cloudSyncEnabled;
+
+    // Get current sync status
+    window.settings.getSyncStatus().then(status => {
+      updateSyncStatusUI(status);
+    }).catch(error => {
+      console.error('Error getting sync status:', error);
+    });
+  } catch (error) {
+    console.error('Error initializing Cloud Sync UI:', error);
+  }
 }
 
 /**
@@ -168,6 +202,13 @@ function updateAuthStateUI(isLoggedIn) {
     loginSection.classList.add('hidden');
     profileSection.classList.remove('hidden');
     subscriptionSection.classList.remove('hidden');
+
+    // Update Cloud Sync UI as well (will only show if user has permission)
+    window.settings.getSyncStatus().then(status => {
+      updateSyncStatusUI(status);
+    }).catch(error => {
+      console.error('Error getting sync status:', error);
+    });
   } else {
     // Show login section, hide profile and subscription sections
     loginSection.classList.remove('hidden');
@@ -183,7 +224,75 @@ function updateAuthStateUI(isLoggedIn) {
     subscriptionStatus.textContent = '-';
     subscriptionExpiry.textContent = '-';
     subscriptionFeatures.textContent = '-';
+
+    // Disable Cloud Sync UI
+    disableCloudSyncUI();
   }
+}
+
+/**
+ * Update Cloud Sync status UI
+ * @param {Object} status - Cloud Sync status object
+ */
+function updateSyncStatusUI(status) {
+  if (!status) {
+    disableCloudSyncUI();
+    return;
+  }
+
+  // Update sync status badge
+  if (status.enabled) {
+    syncStatusBadge.textContent = status.isOnline ? '활성화' : '오프라인';
+    syncStatusBadge.className = status.isOnline ? 'badge premium' : 'badge warning';
+  } else {
+    syncStatusBadge.textContent = '비활성화';
+    syncStatusBadge.className = 'badge secondary';
+  }
+
+  // Update sync status text
+  syncStatusText.textContent = status.enabled
+    ? (status.isOnline ? '클라우드 동기화 활성화' : '네트워크 연결 대기 중')
+    : '클라우드 동기화 비활성화';
+
+  // Update last synced time
+  const lastSyncTime = status.timestamp ? new Date(status.timestamp) : null;
+  lastSyncedTime.textContent = lastSyncTime
+    ? `마지막 동기화: ${lastSyncTime.toLocaleString('ko-KR')}`
+    : '마지막 동기화: 아직 동기화되지 않음';
+
+  // Update device info
+  syncDeviceInfo.textContent = status.deviceId
+    ? `현재 장치: ${status.deviceId}`
+    : '현재 장치: 알 수 없음';
+
+  // Enable/disable buttons based on status
+  const hasCloudSyncPermission = authState.subscription?.features?.cloud_sync;
+  const canUseCloudSync = status.isOnline && hasCloudSyncPermission;
+
+  enableCloudSyncCheckbox.disabled = !hasCloudSyncPermission;
+  enableCloudSyncCheckbox.checked = status.enabled;
+
+  manualSyncUploadButton.disabled = !canUseCloudSync || !status.enabled;
+  manualSyncDownloadButton.disabled = !canUseCloudSync || !status.enabled;
+  manualSyncResolveButton.disabled = !canUseCloudSync || !status.enabled;
+}
+
+/**
+ * Disable Cloud Sync UI
+ */
+function disableCloudSyncUI() {
+  syncStatusBadge.textContent = '비활성화';
+  syncStatusBadge.className = 'badge secondary';
+  syncStatusText.textContent = '클라우드 동기화 비활성화';
+  lastSyncedTime.textContent = '마지막 동기화: -';
+  syncDeviceInfo.textContent = '현재 장치: -';
+
+  enableCloudSyncCheckbox.checked = false;
+  enableCloudSyncCheckbox.disabled = true;
+
+  manualSyncUploadButton.disabled = true;
+  manualSyncDownloadButton.disabled = true;
+  manualSyncResolveButton.disabled = true;
 }
 
 /**
@@ -352,10 +461,27 @@ function updateSubscriptionUI(subscription) {
  * @param {Object} subscription - Subscription information
  */
 function saveSubscriptionToConfig(subscription) {
+  // subscribedUntil은 문자열이어야 함
+  let subscribedUntilStr = null;
+  if (subscription.subscribed_until) {
+    // 날짜 객체인 경우 ISO 문자열로 변환
+    if (subscription.subscribed_until instanceof Date) {
+      subscribedUntilStr = subscription.subscribed_until.toISOString();
+    }
+    // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
+    else if (typeof subscription.subscribed_until === 'number') {
+      subscribedUntilStr = new Date(subscription.subscribed_until).toISOString();
+    }
+    // 이미 문자열인 경우 그대로 사용
+    else if (typeof subscription.subscribed_until === 'string') {
+      subscribedUntilStr = subscription.subscribed_until;
+    }
+  }
+
   const subscriptionConfig = {
     isSubscribed: subscription.is_subscribed,
     plan: subscription.plan,
-    subscribedUntil: subscription.subscribed_until,
+    subscribedUntil: subscribedUntilStr,
     pageGroups: subscription.features?.page_groups || 1,
     additionalFeatures: {
       advancedActions: subscription.features?.advanced_actions || false,
@@ -561,6 +687,12 @@ function setupEventListeners() {
   showInTaskbarCheckbox.addEventListener('change', markUnsavedChanges);
 
   resetSettingsButton.addEventListener('click', confirmResetSettings);
+
+  // Cloud Sync settings
+  enableCloudSyncCheckbox.addEventListener('change', handleCloudSyncToggle);
+  manualSyncUploadButton.addEventListener('click', handleManualSyncUpload);
+  manualSyncDownloadButton.addEventListener('click', handleManualSyncDownload);
+  manualSyncResolveButton.addEventListener('click', handleManualSyncResolve);
 
   // Main buttons
   saveButton.addEventListener('click', saveSettings);
@@ -905,4 +1037,212 @@ async function confirmCancel() {
  */
 function markUnsavedChanges() {
   unsavedChanges = true;
+}
+
+/**
+ * Handle Cloud Sync toggle
+ */
+async function handleCloudSyncToggle() {
+  try {
+    // Show loading state
+    setLoading(syncLoading, true);
+
+    // Check if user has subscription permission
+    const hasCloudSyncPermission = authState.subscription?.features?.cloud_sync;
+    if (!hasCloudSyncPermission) {
+      alert('클라우드 동기화 기능은 Premium 구독이 필요합니다.');
+      enableCloudSyncCheckbox.checked = false;
+      setLoading(syncLoading, false);
+      return;
+    }
+
+    // Enable/disable cloud sync
+    const enabled = enableCloudSyncCheckbox.checked;
+
+    // Update cloud sync configuration
+    await window.settings.setCloudSyncEnabled(enabled);
+
+    // Update UI based on new status
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Show message
+    alert(enabled ? '클라우드 동기화가 활성화되었습니다.' : '클라우드 동기화가 비활성화되었습니다.');
+  } catch (error) {
+    console.error('Cloud sync toggle error:', error);
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Show error message
+    alert(`클라우드 동기화 설정 오류: ${error.message || '알 수 없는 오류'}`);
+
+    // Reset checkbox to current state
+    window.settings.getSyncStatus().then(status => {
+      enableCloudSyncCheckbox.checked = status.enabled;
+    });
+  }
+}
+
+/**
+ * Handle manual sync upload
+ */
+async function handleManualSyncUpload() {
+  try {
+    // Show loading state
+    setLoading(syncLoading, true);
+    manualSyncUploadButton.disabled = true;
+    manualSyncDownloadButton.disabled = true;
+    manualSyncResolveButton.disabled = true;
+
+    // Upload settings to server
+    const result = await window.settings.manualSync('upload');
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Update UI based on new status
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Show message
+    if (result.success) {
+      alert('설정이 서버에 성공적으로 업로드되었습니다.');
+    } else {
+      throw new Error(result.error || '업로드 실패');
+    }
+  } catch (error) {
+    console.error('Manual sync upload error:', error);
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Re-enable buttons
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Show error message
+    alert(`설정 업로드 오류: ${error.message || '알 수 없는 오류'}`);
+  }
+}
+
+/**
+ * Handle manual sync download
+ */
+async function handleManualSyncDownload() {
+  try {
+    // Show loading state
+    setLoading(syncLoading, true);
+    manualSyncUploadButton.disabled = true;
+    manualSyncDownloadButton.disabled = true;
+    manualSyncResolveButton.disabled = true;
+
+    // Confirm download (will overwrite local settings)
+    if (!confirm('서버에서 설정을 다운로드하면 로컬 설정을 덮어쓰게 됩니다. 계속하시겠습니까?')) {
+      setLoading(syncLoading, false);
+
+      // Re-enable buttons
+      const status = await window.settings.getSyncStatus();
+      updateSyncStatusUI(status);
+      return;
+    }
+
+    // Download settings from server
+    const result = await window.settings.manualSync('download');
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Update UI based on new status
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Show message
+    if (result.success) {
+      alert('설정이 서버에서 성공적으로 다운로드되었습니다.');
+
+      // Reload config
+      const newConfig = await window.settings.getConfig();
+      config = newConfig;
+
+      // Update UI to reflect new settings
+      initializeUI();
+    } else {
+      throw new Error(result.error || '다운로드 실패');
+    }
+  } catch (error) {
+    console.error('Manual sync download error:', error);
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Re-enable buttons
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Show error message
+    alert(`설정 다운로드 오류: ${error.message || '알 수 없는 오류'}`);
+  }
+}
+
+/**
+ * Handle manual sync resolve
+ */
+async function handleManualSyncResolve() {
+  try {
+    // Show loading state
+    setLoading(syncLoading, true);
+    manualSyncUploadButton.disabled = true;
+    manualSyncDownloadButton.disabled = true;
+    manualSyncResolveButton.disabled = true;
+
+    // Confirm conflict resolution
+    if (!confirm('로컬 설정과 서버 설정 간의 충돌을 해결합니다. 타임스탬프를 기준으로 최신 설정이 적용됩니다. 계속하시겠습니까?')) {
+      setLoading(syncLoading, false);
+
+      // Re-enable buttons
+      const status = await window.settings.getSyncStatus();
+      updateSyncStatusUI(status);
+      return;
+    }
+
+    // Resolve conflicts
+    const result = await window.settings.manualSync('resolve');
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Update UI based on new status
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Show message
+    if (result.success) {
+      alert('설정 충돌이 성공적으로 해결되었습니다.');
+
+      // Reload config
+      const newConfig = await window.settings.getConfig();
+      config = newConfig;
+
+      // Update UI to reflect new settings
+      initializeUI();
+    } else {
+      throw new Error(result.error || '충돌 해결 실패');
+    }
+  } catch (error) {
+    console.error('Manual sync resolve error:', error);
+
+    // Hide loading state
+    setLoading(syncLoading, false);
+
+    // Re-enable buttons
+    const status = await window.settings.getSyncStatus();
+    updateSyncStatusUI(status);
+
+    // Show error message
+    alert(`설정 충돌 해결 오류: ${error.message || '알 수 없는 오류'}`);
+  }
 }

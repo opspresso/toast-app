@@ -52,7 +52,12 @@ contextBridge.exposeInMainWorld(
 
     // System information
     getPlatform: () => process.platform,
-    getVersion: () => ipcRenderer.invoke('get-app-version')
+    getVersion: () => ipcRenderer.invoke('get-app-version'),
+
+    // Cloud Sync
+    getSyncStatus: () => ipcRenderer.invoke('get-sync-status'),
+    setCloudSyncEnabled: (enabled) => ipcRenderer.invoke('set-cloud-sync-enabled', enabled),
+    manualSync: (action) => ipcRenderer.invoke('manual-sync', action)
   }
 );
 
