@@ -660,7 +660,7 @@ function updateUserButton() {
       };
 
       // 이미지 로드 성공 시 로그
-      img.onload = function() {
+      img.onload = function () {
         console.log('프로필 이미지 로드 성공');
       };
 
@@ -1020,28 +1020,48 @@ function showCurrentPageButtons() {
 function addNewPage() {
   const pageNumber = pages.length + 1;
 
-  // Check authentication status
-  if (!userProfile) {
-    // Unauthenticated users are limited to 1 page only
-    if (pageNumber > 1) {
-      showStatus('Unauthenticated users can only use 1 page. Please login.', 'error');
-      // Prompt login
-      setTimeout(() => {
-        showUserProfile(); // Show login modal
-      }, 1500);
-      return;
+  console.log('새 페이지 추가 요청, 구독 정보:', {
+    userProfile: userProfile ? '있음' : '없음',
+    isSubscribed: isSubscribed,
+    pageGroups: userSubscription?.features?.page_groups || 1
+  });
+
+  // 허용된 최대 페이지 수 계산
+  let maxPages = 1; // 기본값: 익명 사용자는 1 페이지만 허용
+
+  if (userProfile && userProfile.is_authenticated !== false) {
+    // 인증된 사용자
+    if (isSubscribed || (userSubscription && (userSubscription.active || userSubscription.is_subscribed))) {
+      // 구독 중인 사용자
+      maxPages = userSubscription?.features?.page_groups || 9; // 구독자 기본값: 9 페이지
+      console.log('구독 사용자: 최대 페이지 수 =', maxPages);
+    } else {
+      // 인증되었지만 구독하지 않은 사용자
+      maxPages = userSubscription?.features?.page_groups || 3; // 인증된 무료 사용자 기본값: 3 페이지
+      console.log('인증된 무료 사용자: 최대 페이지 수 =', maxPages);
     }
   } else {
-    // Free authenticated users are limited to 3 pages
-    if (pageNumber > 3 && !isSubscribed) {
-      showStatus('Free users can only use up to 3 pages. Subscribe to add more pages.', 'error');
-      return;
-    }
+    console.log('익명 사용자: 최대 페이지 수 =', maxPages);
   }
 
-  // Maximum 9 pages limit (for subscribed users)
-  if (pageNumber > 9) {
-    showStatus('Maximum of 9 pages allowed.', 'error');
+  // 현재 페이지 수가 최대 페이지 수보다 많은지 확인
+  if (pageNumber > maxPages) {
+    if (!userProfile || userProfile.is_authenticated === false) {
+      showStatus(`익명 사용자는 ${maxPages}개의 페이지만 사용할 수 있습니다. 로그인하세요.`, 'error');
+      // 로그인 프롬프트
+      setTimeout(() => {
+        showUserProfile(); // 로그인 모달 표시
+      }, 1500);
+    } else {
+      // 인증된 사용자
+      if (isSubscribed || (userSubscription && (userSubscription.active || userSubscription.is_subscribed))) {
+        // 구독 중인 사용자
+        showStatus(`최대 ${maxPages}개의 페이지만 사용할 수 있습니다.`, 'error');
+      } else {
+        // 인증되었지만 구독하지 않은 사용자
+        showStatus(`무료 사용자는 최대 ${maxPages}개의 페이지만 사용할 수 있습니다. 구독하세요.`, 'error');
+      }
+    }
     return;
   }
 
