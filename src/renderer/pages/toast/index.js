@@ -214,6 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (config.appearance) {
       applyAppearanceSettings(config.appearance);
     }
+
+    // 앱이 시작될 때 사용자 프로필이 없으면(익명 사용자) 로그인 버튼으로 표시
+    if (!userProfile) {
+      updateProfileDisplay();
+      updateUserButton();
+    }
   });
 
   // Set up event listeners
@@ -453,29 +459,43 @@ async function initiateSignIn() {
 }
 
 /**
- * Fetch user profile and subscription information
+ * Fetch user profile information
+ * (subscription 정보는 profile API에서 통합 제공됨)
  */
 async function fetchUserProfileAndSubscription() {
   try {
-    // Fetch user profile
+    // Fetch user profile (이제 프로필 API 한 번만 호출)
     const profileResult = await window.toast.fetchUserProfile();
     if (!profileResult.error) {
       userProfile = profileResult;
+
+      // is_authenticated 값 확인 및 유효성 검사
+      if (userProfile.is_authenticated === undefined) {
+        console.warn('is_authenticated flag is missing in user profile, assuming authenticated');
+        userProfile.is_authenticated = true; // 값이 없으면 인증된 것으로 간주
+      }
+
       // Update user button UI immediately
       updateUserButton();
+
+      // subscription 정보 추출 (profile에서 제공)
+      if (profileResult.subscription) {
+        userSubscription = profileResult.subscription;
+
+        // Update subscription status
+        isSubscribed = userSubscription.active || userSubscription.is_subscribed || false;
+      } else {
+        // 구독 정보가 없는 경우 기본값 설정
+        userSubscription = {
+          active: false,
+          is_subscribed: false,
+          plan: 'free',
+          features: { page_groups: 1 }
+        };
+        isSubscribed = false;
+      }
     } else {
       console.error('Failed to fetch user profile information:', profileResult.error);
-    }
-
-    // Fetch subscription information
-    const subscriptionResult = await window.toast.fetchSubscription();
-    if (!subscriptionResult.error) {
-      userSubscription = subscriptionResult;
-
-      // Update subscription status
-      isSubscribed = subscriptionResult.active || subscriptionResult.is_subscribed || false;
-    } else {
-      console.error('Failed to fetch subscription information:', subscriptionResult.error);
     }
 
     return {
@@ -507,7 +527,8 @@ function hideLoginLoadingScreen() {
  */
 async function showUserProfile() {
   // 사용자가 로그인되어 있지 않은 경우
-  if (!userProfile || !userSubscription) {
+  // is_authenticated 플래그를 명시적으로 체크
+  if (!userProfile || !userSubscription || (userProfile && userProfile.is_authenticated === false)) {
     try {
       showStatus('Fetching user information...', 'info');
       showLoginLoadingScreen();
@@ -520,16 +541,18 @@ async function showUserProfile() {
         // 로그인 화면 표시 전에 프로필 정보 초기화
         updateProfileDisplay();
 
+        // 로그인 버튼 텍스트 변경
+        if (logoutButton) {
+          logoutButton.textContent = 'Sign In';
+        }
+
         // 로그인 모달 표시
         profileModal.classList.add('show');
         window.toast.setModalOpen(true);
 
-        // 로그인 버튼 텍스트 변경
+        // 로그인 버튼 이벤트 핸들러 설정 (로그인되지 않은 상태)
         if (logoutButton) {
-          logoutButton.textContent = 'Login';
-
-          // 일시적으로 이벤트 리스너 교체
-          const originalHandler = logoutButton.onclick;
+          // 완전히 새로운 이벤트 핸들러 설정 (원래 핸들러로 복원하지 않음)
           logoutButton.onclick = () => {
             // 모달 닫기
             hideProfileModal();
@@ -537,10 +560,6 @@ async function showUserProfile() {
             // 로그인 프로세스 시작
             setTimeout(() => {
               initiateSignIn();
-
-              // 원래 이벤트 리스너 복원
-              logoutButton.textContent = 'Logout';
-              logoutButton.onclick = originalHandler;
             }, 300);
           };
         }
@@ -553,6 +572,11 @@ async function showUserProfile() {
 
       // 오류 발생 시에도 프로필 정보 초기화
       updateProfileDisplay();
+
+      // 로그인 버튼 텍스트 변경
+      if (logoutButton) {
+        logoutButton.textContent = 'Sign In';
+      }
 
       // 로그인 모달 표시
       profileModal.classList.add('show');
@@ -575,7 +599,10 @@ async function showUserProfile() {
 function updateUserButton() {
   userButton.innerHTML = ''; // Remove existing content
 
-  if (userProfile) {
+  // 인증 상태 확인 - 사용자 프로필이 있고 is_authenticated가 true인 경우만 로그인으로 간주
+  const isAuthenticated = userProfile && userProfile.is_authenticated !== false;
+
+  if (isAuthenticated) {
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       // If profile image exists
       const img = document.createElement('img');
@@ -605,12 +632,23 @@ function updateUserButton() {
       userButton.style.backgroundColor = 'var(--primary-color)';
       userButton.style.color = 'white';
     }
+
+    // 로그인된 사용자인 경우 툴팁 업데이트
+    userButton.title = '사용자 정보 보기';
   } else {
     // Default icon if not logged in
     userButton.textContent = '👤';
     userButton.style.fontSize = '16px';
     userButton.style.backgroundColor = 'transparent';
     userButton.style.color = 'var(--text-color)';
+    userButton.style.border = 'none';
+
+    // 툴팁을 로그인 유도 메시지로 변경
+    userButton.title = '로그인하려면 클릭하세요';
+
+    // 로그인 버튼 스타일 변경 - 눈에 띄게 하기 위해 테두리 추가
+    userButton.style.border = '2px dashed var(--accent-color)';
+    userButton.style.boxShadow = '0 0 5px rgba(var(--accent-color-rgb), 0.5)';
   }
 }
 
@@ -621,8 +659,11 @@ function updateProfileDisplay() {
   // 프로필 이미지 초기화
   profileAvatar.innerHTML = '';
 
-  if (userProfile) {
-    // 사용자 프로필이 있는 경우
+  // 인증 상태 확인 - 사용자 프로필이 있고 is_authenticated가 true인 경우만 로그인으로 간주
+  const isAuthenticated = userProfile && userProfile.is_authenticated !== false;
+
+  if (isAuthenticated) {
+    // 사용자 프로필이 있고 인증된 경우
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       const img = document.createElement('img');
       img.src = userProfile.profile_image || userProfile.avatar || userProfile.image;
@@ -650,11 +691,21 @@ function updateProfileDisplay() {
     // Set name and email
     profileName.textContent = userProfile.name || userProfile.display_name || 'User';
     profileEmail.textContent = userProfile.email || '';
+
+    // 로그인 된 상태에서는 로그아웃 버튼 표시
+    if (logoutButton) {
+      logoutButton.textContent = 'Sign Out';
+    }
   } else {
     // 사용자 프로필이 없는 경우 (로그아웃 상태)
     profileAvatar.innerHTML = '👤';
     profileName.textContent = 'Guest User';
     profileEmail.textContent = 'Not logged in';
+
+    // 로그인하지 않은 상태에서는 로그인 버튼 표시
+    if (logoutButton) {
+      logoutButton.textContent = 'Sign In';
+    }
   }
 
   // 항상 사용자 버튼 UI 업데이트
@@ -761,6 +812,19 @@ async function resetToDefaults(options = { keepAppearance: true }) {
  * Handle logout process
  */
 async function handleLogout() {
+  // 인증 상태 확인 - 사용자 프로필이 있고 is_authenticated가 true인 경우만 로그인으로 간주
+  const isAuthenticated = userProfile && userProfile.is_authenticated !== false;
+
+  // 로그인되지 않은 경우 로그인 프로세스 시작
+  if (!isAuthenticated) {
+    // 로그인하지 않은 상태에서는 로그인 프로세스 시작
+    hideProfileModal();
+    setTimeout(() => {
+      initiateSignIn();
+    }, 300);
+    return;
+  }
+
   try {
     showStatus('Logging out...', 'info');
     const result = await window.toast.logout();

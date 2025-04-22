@@ -6,6 +6,7 @@
 
 const axios = require('axios');
 const { getEnv } = require('../config/env');
+const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // 기본 URL 및 엔드포인트 설정
 const TOAST_URL = getEnv('TOAST_URL', 'https://web.toast.sh');
@@ -20,7 +21,7 @@ const ENDPOINTS = {
 
   // 사용자 관련
   USER_PROFILE: `${API_BASE_URL}/users/profile`,
-  USER_SUBSCRIPTION: `${API_BASE_URL}/users/subscription`,
+  // 구독 정보는 프로필 API로 통합됨
 
   // 설정 관련
   SETTINGS: `${API_BASE_URL}/users/settings`
@@ -118,19 +119,7 @@ async function authenticatedRequest(apiCall, options = {}) {
   } = options;
 
   // 기본 구독 응답
-  const defaultSubscriptionResponse = {
-    active: false,
-    is_subscribed: false,
-    plan: 'free',
-    status: 'active',
-    features: {
-      page_groups: 1
-    },
-    features_array: ['basic_shortcuts'],
-    expiresAt: null,
-    subscribed_until: null,
-    isVip: false
-  };
+  const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
   if (!currentToken) {
     console.error('액세스 토큰이 없음');
@@ -158,13 +147,7 @@ async function authenticatedRequest(apiCall, options = {}) {
 
       // 구독 API 요청 특별 처리
       if (isSubscriptionRequest) {
-        return {
-          ...defaultSubscriptionResponse,
-          features: {
-            page_groups: 3
-          },
-          features_array: ['basic_shortcuts', 'standard_actions']
-        };
+        return defaultSubscription;
       }
 
       // 재인증 콜백 호출
@@ -188,13 +171,7 @@ async function authenticatedRequest(apiCall, options = {}) {
 
     // 구독 API에 대한 모든 유형의 오류 처리
     if (isSubscriptionRequest) {
-      return {
-        ...defaultSubscriptionResponse,
-        features: {
-          page_groups: 3
-        },
-        features_array: ['basic_shortcuts', 'standard_actions']
-      };
+      return defaultSubscription;
     }
 
     if (allowUnauthenticated && defaultValue) {

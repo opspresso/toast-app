@@ -29,12 +29,8 @@ const NODE_ENV = getEnv('NODE_ENV', 'development');
 const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
 
-// 구독 등급에 따른 페이지 그룹 수 상수
-const PAGE_GROUPS = {
-  ANONYMOUS: 1, // 인증되지 않은 사용자
-  AUTHENTICATED: 3, // 인증된 사용자
-  PREMIUM: 9 // 구독 또는 VIP 사용자
-};
+// 공통 상수 임포트
+const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
 
 console.log('API 모듈 초기화 완료');
 
@@ -557,38 +553,7 @@ async function fetchUserProfile() {
 }
 
 /**
- * 구독 정보를 가져옵니다
- * @returns {Promise<Object>} 구독 정보
- */
-async function fetchSubscription() {
-  try {
-    return await apiAuth.fetchSubscription(refreshAccessToken);
-  } catch (error) {
-    console.error('구독 정보 가져오기 오류:', error);
-
-    // 기본 구독 정보 반환
-    return {
-      id: 'sub_free_anonymous',
-      userId: 'anonymous',
-      plan: 'free',
-      status: 'active',
-      active: false,
-      is_subscribed: false,
-      features: {
-        page_groups: PAGE_GROUPS.ANONYMOUS
-      },
-      features_array: ['basic_shortcuts'],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      expiresAt: null,
-      subscribed_until: null,
-      isVip: false
-    };
-  }
-}
-
-/**
- * 인증 코드를 토큰으로 교환하고 구독 정보를 업데이트합니다
+ * 인증 코드를 토큰으로 교환하고 프로필 정보를 업데이트합니다
  * @param {string} code - OAuth 인증 코드
  * @returns {Promise<Object>} 처리 결과
  */
@@ -774,7 +739,7 @@ async function logoutAndResetPageGroups() {
         isAuthenticated: false,
         isSubscribed: false,
         subscribedUntil: '',
-        pageGroups: 1
+        pageGroups: PAGE_GROUPS.ANONYMOUS
       });
 
       console.log('Logged out and reset page group settings to defaults');
@@ -791,6 +756,32 @@ async function logoutAndResetPageGroups() {
 initializeTokensFromStorage().then(() => {
   console.log('토큰 상태 초기화 완료');
 });
+
+/**
+ * 구독 정보를 가져옵니다
+ * @returns {Promise<Object>} 구독 정보
+ */
+async function fetchSubscription() {
+  try {
+    // profile API를 통해 호출하고 subscription 정보 추출
+    const profileData = await fetchUserProfile();
+
+    if (profileData && profileData.subscription) {
+      // 성공적으로 프로필 데이터를 가져왔고 구독 정보가 있는 경우
+      return profileData.subscription;
+    } else if (profileData.error) {
+      // 에러가 있는 경우
+      return profileData;
+    } else {
+      // 프로필은 있지만 구독 정보가 없는 경우 기본값 반환
+      return DEFAULT_ANONYMOUS_SUBSCRIPTION;
+    }
+  } catch (error) {
+    console.error('구독 정보 조회 실패:', error);
+    // 오류 발생 시 익명 사용자로 처리
+    return DEFAULT_ANONYMOUS_SUBSCRIPTION;
+  }
+}
 
 module.exports = {
   initiateLogin,

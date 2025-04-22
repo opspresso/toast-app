@@ -8,7 +8,10 @@
 
 const auth = require('./auth');
 const cloudSync = require('./cloud-sync');
+const userDataManager = require('./user-data-manager');
 const { createConfigStore } = require('./config');
+const { client } = require('./api');
+const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
 
 // 창 참조 저장
 let windows = null;
@@ -31,6 +34,17 @@ function initialize(windowsRef) {
     hasValidToken,
     refreshAccessToken: () => auth.refreshAccessToken()
   });
+
+  // 사용자 데이터 관리자 초기화
+  userDataManager.initialize(client, {
+    getAccessToken,
+    hasValidToken,
+    fetchUserProfile: () => auth.fetchUserProfile(),
+    fetchSubscription: () => auth.fetchSubscription()
+  });
+
+  // 클라우드 동기화 모듈에 사용자 데이터 관리자 참조 설정
+  cloudSync.setUserDataManager(userDataManager);
 }
 
 /**
@@ -111,8 +125,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         }
         // 구독자는 기본적으로 cloud_sync 가능
         else if (result.subscription?.isSubscribed === true ||
-                 result.subscription?.active === true ||
-                 result.subscription?.is_subscribed === true) {
+          result.subscription?.active === true ||
+          result.subscription?.is_subscribed === true) {
           hasSyncFeature = true;
           console.log('구독 상태가 활성화되어 있어 cloud_sync 기능 활성화');
         }
@@ -156,6 +170,12 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         } else {
           console.log('클라우드 동기화 기능이 비활성화되어 있습니다. 구독 상태를 확인하세요.');
         }
+
+        // 3. 사용자 데이터 관리 (프로필 및 설정 정보 저장)
+        console.log('사용자 데이터 관리 시작');
+        userDataManager.syncAfterLogin().then(dataResult => {
+          console.log('로그인 후 사용자 데이터 동기화 결과:', dataResult ? '성공' : '실패');
+        });
       }
     } else {
       notifyLoginError(result.error || 'Unknown error');
@@ -183,9 +203,19 @@ async function logout() {
   try {
     const result = await auth.logout();
 
-    // 로그아웃 성공 시 클라우드 동기화 설정 업데이트
+    // 로그아웃 성공 시 주기적 동기화 중지 및 클라우드 동기화 설정 업데이트
     if (result && syncManager) {
+      // 동기화 기능 비활성화 및 주기적 동기화 중지
       cloudSync.updateCloudSyncSettings(false);
+      cloudSync.stopPeriodicSync();
+
+      console.log('로그아웃으로 인한 클라우드 동기화 비활성화 및 주기적 동기화 중지');
+    }
+
+    // 로그아웃 성공 시 사용자 데이터 정리
+    if (result) {
+      userDataManager.cleanupOnLogout();
+      console.log('로그아웃으로 인한 사용자 데이터 정리 완료');
     }
 
     // 로그아웃 성공 시 양쪽 창에 알림
@@ -208,6 +238,21 @@ async function logoutAndResetPageGroups() {
   try {
     const result = await auth.logoutAndResetPageGroups();
 
+    // 로그아웃 성공 시 주기적 동기화 중지 및 클라우드 동기화 설정 업데이트
+    if (result && syncManager) {
+      // 동기화 기능 비활성화 및 주기적 동기화 중지
+      cloudSync.updateCloudSyncSettings(false);
+      cloudSync.stopPeriodicSync();
+
+      console.log('로그아웃으로 인한 클라우드 동기화 비활성화 및 주기적 동기화 중지');
+    }
+
+    // 로그아웃 성공 시 사용자 데이터 정리
+    if (result) {
+      userDataManager.cleanupOnLogout();
+      console.log('로그아웃으로 인한 사용자 데이터 정리 완료');
+    }
+
     // 로그아웃 성공 시 양쪽 창에 알림
     if (result) {
       notifyLogout();
@@ -222,18 +267,40 @@ async function logoutAndResetPageGroups() {
 
 /**
  * 사용자 프로필 정보 가져오기
+ * @param {boolean} forceRefresh - API에서 강제로 새로 가져올지 여부 (기본: false)
  * @returns {Promise<Object>} 사용자 프로필 정보
  */
-async function fetchUserProfile() {
+async function fetchUserProfile(forceRefresh = false) {
+  // 저장된 파일에서 먼저 시도하고, 없으면 API 호출
+  const storedProfile = await userDataManager.getUserProfile(forceRefresh);
+  if (storedProfile && !forceRefresh) {
+    return storedProfile;
+  }
+
   return await auth.fetchUserProfile();
 }
 
 /**
- * 구독 정보 가져오기
+ * 구독 정보 가져오기 (프로필에서 통합 제공)
+ * @param {boolean} forceRefresh - API에서 강제로 새로 가져올지 여부 (기본: false)
  * @returns {Promise<Object>} 구독 정보
  */
-async function fetchSubscription() {
-  return await auth.fetchSubscription();
+async function fetchSubscription(forceRefresh = false) {
+  // 저장된 프로필에서 구독 정보 추출 시도
+  const storedProfile = await userDataManager.getUserProfile(forceRefresh);
+  if (storedProfile && storedProfile.subscription && !forceRefresh) {
+    return storedProfile.subscription;
+  }
+
+  // 저장된 정보가 없거나 강제 갱신인 경우 API 호출
+  const profileData = await auth.fetchUserProfile();
+
+  if (profileData && profileData.subscription) {
+    // 성공적으로 프로필 데이터를 가져왔고 구독 정보가 있는 경우
+    return profileData.subscription;
+  } else {
+    return DEFAULT_ANONYMOUS_SUBSCRIPTION;
+  }
 }
 
 /**
@@ -423,6 +490,15 @@ function notifyAuthStateChange(authState) {
   console.log('Auth state change notification sent to both windows');
 }
 
+/**
+ * 사용자 설정 정보 가져오기
+ * @param {boolean} forceRefresh - API에서 강제로 새로 가져올지 여부 (기본: false)
+ * @returns {Promise<Object>} 사용자 설정 정보
+ */
+async function getUserSettings(forceRefresh = false) {
+  return await userDataManager.getUserSettings(forceRefresh);
+}
+
 module.exports = {
   initialize,
   initiateLogin,
@@ -432,6 +508,7 @@ module.exports = {
   logoutAndResetPageGroups,
   fetchUserProfile,
   fetchSubscription,
+  getUserSettings,
   getAccessToken,
   hasValidToken,
   refreshAccessToken,

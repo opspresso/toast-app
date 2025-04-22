@@ -14,14 +14,12 @@ const {
   authenticatedRequest,
   clearTokens
 } = require('./client');
+const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // 인증 관련 상수
 const REDIRECT_URI = 'toast-app://auth';
 
-// 로그아웃 상태 추적
-let isLoggedOut = false;
-let logoutTimestamp = 0;
-const LOGOUT_COOLDOWN_MS = 5000; // 로그아웃 후 5초 동안 인증 요청 방지
+// 로그인 상태 관리
 
 // 로그인 진행 상태 추적
 let isLoginInProgress = false;
@@ -41,12 +39,6 @@ const stateStore = new Store({
  */
 function storeStateParam(state) {
   try {
-    // 로그아웃 상태에서는 상태 저장 방지
-    if (isInLogoutCooldown()) {
-      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-      return false;
-    }
-
     stateStore.set('oauth-state', state);
     stateStore.set('state-created-at', Date.now());
     console.log('Auth state stored:', state);
@@ -83,22 +75,6 @@ function retrieveStoredState() {
   }
 }
 
-/**
- * 로그아웃 상태에서 인증 요청 냉각기간 중인지 확인
- * @returns {boolean} 냉각기간 중이면 true
- */
-function isInLogoutCooldown() {
-  if (!isLoggedOut) return false;
-
-  const elapsed = Date.now() - logoutTimestamp;
-  if (elapsed > LOGOUT_COOLDOWN_MS) {
-    // 냉각기간이 지나면 플래그 초기화
-    isLoggedOut = false;
-    return false;
-  }
-
-  return true;
-}
 
 /**
  * 현재 로그인 진행 중인지 확인
@@ -141,15 +117,6 @@ function setLoginInProgress(status) {
  */
 function initiateLogin(clientId) {
   try {
-    // 로그아웃 상태에서는 인증 요청 거부
-    if (isInLogoutCooldown()) {
-      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-      return {
-        success: false,
-        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
-      };
-    }
-
     // 상태 값은 CSRF 공격 방지를 위해 사용됨
     const state = uuidv4();
 
@@ -158,7 +125,7 @@ function initiateLogin(clientId) {
     if (!stored) {
       return {
         success: false,
-        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
+        error: '상태 값 저장에 실패했습니다. 다시 시도해주세요.'
       };
     }
 
@@ -167,7 +134,7 @@ function initiateLogin(clientId) {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
-    authUrl.searchParams.append('scope', 'profile subscription');
+    authUrl.searchParams.append('scope', 'profile'); // subscription은 profile로 통합됨
     authUrl.searchParams.append('state', state);
 
     // 인증 URL 로깅
@@ -206,14 +173,6 @@ function initiateLogin(clientId) {
  */
 async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   try {
-    // 로그아웃 상태에서는 토큰 교환 거부
-    if (isInLogoutCooldown()) {
-      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-      return {
-        success: false,
-        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
-      };
-    }
 
     console.log('인증 코드를 토큰으로 교환 시작:', code.substring(0, 8) + '...');
 
@@ -254,9 +213,6 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       };
     }
 
-    // 로그인 성공 시 로그아웃 상태 초기화
-    isLoggedOut = false;
-
     // 로그인 진행 상태 종료
     setLoginInProgress(false);
 
@@ -291,15 +247,6 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
  */
 async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
   try {
-    // 로그아웃 상태에서는 토큰 갱신 거부
-    if (isInLogoutCooldown()) {
-      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-      return {
-        success: false,
-        error: '로그아웃 후 잠시 후에 다시 시도해주세요.',
-        code: 'LOGOUT_COOLDOWN'
-      };
-    }
 
     console.log('토큰 리프레시 프로세스 시작');
 
@@ -404,16 +351,6 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
   try {
     console.log('Processing auth redirect:', url);
 
-    // 로그아웃 상태에서는 리디렉션 처리 거부
-    if (isInLogoutCooldown()) {
-      console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-      setLoginInProgress(false); // 로그인 상태 초기화
-      return {
-        success: false,
-        error: '로그아웃 후 잠시 후에 다시 시도해주세요.'
-      };
-    }
-
     const urlObj = new URL(url);
 
     // 인증 코드 추출
@@ -490,16 +427,6 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
  * @returns {Promise<Object>} 사용자 프로필 정보
  */
 async function fetchUserProfile(onUnauthorized) {
-  // 로그아웃 상태에서는 프로필 정보 요청 거부
-  if (isInLogoutCooldown()) {
-    console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-    return {
-      error: {
-        code: 'LOGOUT_COOLDOWN',
-        message: '로그아웃 후 잠시 후에 다시 시도해주세요.'
-      }
-    };
-  }
 
   return authenticatedRequest(async () => {
     const headers = getAuthHeaders();
@@ -524,35 +451,9 @@ async function fetchUserProfile(onUnauthorized) {
  * @returns {Promise<Object>} 구독 정보
  */
 async function fetchSubscription(onUnauthorized) {
-  // 로그아웃 상태에서는 구독 정보 요청 거부
-  if (isInLogoutCooldown()) {
-    console.log('로그아웃 후 일정 시간 동안 인증 요청이 제한됩니다.');
-    return {
-      error: {
-        code: 'LOGOUT_COOLDOWN',
-        message: '로그아웃 후 잠시 후에 다시 시도해주세요.'
-      }
-    };
-  }
 
   // 구독 API에 대한 기본 응답 (인증 실패나 오류 발생 시 사용)
-  const defaultSubscription = {
-    id: 'sub_free_anonymous',
-    userId: 'anonymous',
-    plan: 'free',
-    status: 'active',
-    active: false,
-    is_subscribed: false,
-    features: {
-      page_groups: 1
-    },
-    features_array: ['basic_shortcuts'],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    expiresAt: null,
-    subscribed_until: null,
-    isVip: false
-  };
+  const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
   const options = {
     allowUnauthenticated: true,
@@ -564,19 +465,22 @@ async function fetchSubscription(onUnauthorized) {
   return authenticatedRequest(async () => {
     try {
       const headers = getAuthHeaders();
-      console.log('구독 API 호출:', ENDPOINTS.USER_SUBSCRIPTION);
+      console.log('프로필 API 호출 (구독 정보 포함):', ENDPOINTS.USER_PROFILE);
 
       const apiClient = createApiClient();
-      const response = await apiClient.get(ENDPOINTS.USER_SUBSCRIPTION, { headers });
-      console.log('구독 API 응답 상태:', response.status);
+      const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
+      console.log('프로필 API 응답 상태:', response.status);
 
       // API 응답 형식이 apiSuccess({ ... }) 형태인 경우 data 필드 추출
-      let subscriptionData;
+      let profileData;
       if (response.data && response.data.success === true && response.data.data) {
-        subscriptionData = response.data.data;
+        profileData = response.data.data;
       } else {
-        subscriptionData = response.data;
+        profileData = response.data;
       }
+
+      // 프로필 데이터에서 구독 정보 추출
+      let subscriptionData = profileData.subscription || {};
 
       console.log('구독 데이터 수신:', JSON.stringify(subscriptionData, null, 2));
 
@@ -584,6 +488,8 @@ async function fetchSubscription(onUnauthorized) {
       const normalizedSubscription = {
         ...defaultSubscription,
         ...subscriptionData,
+        // 사용자 ID 정보 추가
+        userId: profileData.id || profileData.userId || 'anonymous',
         // 활성 여부 필드 동기화 (is_subscribed 또는 active)
         active: subscriptionData.active || subscriptionData.is_subscribed || false,
         is_subscribed: subscriptionData.is_subscribed || subscriptionData.active || false,
@@ -630,11 +536,8 @@ async function logout() {
     clearTokens();
     console.log('메모리 토큰 초기화 완료');
 
-    // 로그아웃 상태 설정
-    isLoggedOut = true;
-    isLoginInProgress = false; // 로그인 진행 중이었다면 취소
-    logoutTimestamp = Date.now();
-    console.log(`로그아웃 후 ${LOGOUT_COOLDOWN_MS/1000}초 동안 인증 요청이 제한됩니다.`);
+    // 로그인 진행 중이었다면 취소
+    isLoginInProgress = false;
 
     return {
       success: true,

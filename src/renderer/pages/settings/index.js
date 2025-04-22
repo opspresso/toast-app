@@ -263,6 +263,7 @@ function getInitials(name) {
 
 /**
  * Fetch subscription information
+ * (subscription 정보는 profile API에서 통합 제공됨)
  */
 async function fetchSubscriptionInfo() {
   try {
@@ -277,6 +278,7 @@ async function fetchSubscriptionInfo() {
       return;
     }
 
+    // fetchSubscription은 profile API를 통해 구독 정보를 조회함
     const subscription = await window.settings.fetchSubscription();
     if (subscription) {
       authState.subscription = subscription;
@@ -389,18 +391,15 @@ function setLoading(loadingElement, isLoading) {
 }
 
 /**
- * Load user profile and subscription information and update UI
+ * Load user profile information and update UI
  * @returns {Promise<void>}
  */
 async function loadUserDataAndUpdateUI() {
   try {
-    // Load profile information
+    // Load profile information (이제 profile API로 모든 정보 조회)
     await fetchUserProfile();
 
-    // Load subscription information
-    await fetchSubscriptionInfo();
-
-    // Update UI after loading all data
+    // Update UI after loading data
     updateAuthStateUI(true);
 
     // Hide loading indicator

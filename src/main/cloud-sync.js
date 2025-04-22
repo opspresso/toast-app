@@ -9,15 +9,90 @@
 // API 공용 모듈 불러오기
 const { sync: apiSync } = require('./api');
 const { createConfigStore } = require('./config');
+let userDataManagerRef = null;
 
 // 동기화 관련 상수
 const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
+const PERIODIC_SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
 let syncTimer = null;
+let periodicSyncTimer = null;
 let syncEnabled = true;
 
 // 전역 참조 저장
 let configStore = null;
 let authManagerRef = null;
+
+/**
+ * 사용자 데이터 관리자 참조 설정
+ * @param {Object} userDataManager - 사용자 데이터 관리자 객체
+ */
+function setUserDataManager(userDataManager) {
+  userDataManagerRef = userDataManager;
+  console.log('Cloud Sync: 사용자 데이터 관리자 참조 설정 완료');
+}
+
+/**
+ * 주기적인 설정 동기화 시작
+ */
+function startPeriodicSync() {
+  // 이미 실행 중인 타이머가 있으면 중지
+  stopPeriodicSync();
+
+  console.log(`주기적 동기화 시작 (${Math.floor(PERIODIC_SYNC_INTERVAL_MS / 60000)}분 간격)`);
+
+  // 첫 실행은 1분 후부터 (앱 시작 시 부하 분산)
+  periodicSyncTimer = setTimeout(async function runPeriodicSync() {
+    // 활성화 상태 및 인증 상태 확인
+    if (syncEnabled && authManagerRef) {
+      const canSync = await isCloudSyncEnabled();
+      if (canSync) {
+        console.log('주기적 설정 동기화 수행 중...');
+
+        // 구독 정보 갱신
+        try {
+          const token = await authManagerRef.getAccessToken();
+          if (token) {
+            console.log('구독 정보 갱신 중...');
+            const subscription = await authManagerRef.fetchSubscription();
+            console.log('구독 정보 갱신 완료');
+          }
+        } catch (error) {
+          console.error('주기적 구독 정보 갱신 오류:', error);
+        }
+
+        // 설정 동기화
+        try {
+          const result = await downloadSettings();
+          if (result.success) {
+            console.log('주기적 설정 동기화 성공');
+          } else {
+            console.error('주기적 설정 동기화 실패:', result.error);
+          }
+        } catch (error) {
+          console.error('주기적 설정 동기화 오류:', error);
+        }
+      } else {
+        console.log('주기적 동기화 건너뜀: 클라우드 동기화 비활성화 상태');
+      }
+    } else {
+      console.log('주기적 동기화 건너뜀: 동기화 기능 비활성화 또는 인증되지 않음');
+    }
+
+    // 다음 실행 예약
+    periodicSyncTimer = setTimeout(runPeriodicSync, PERIODIC_SYNC_INTERVAL_MS);
+  }, 60000); // 첫 실행은 1분 후
+}
+
+/**
+ * 주기적인 설정 동기화 중지
+ */
+function stopPeriodicSync() {
+  if (periodicSyncTimer) {
+    clearTimeout(periodicSyncTimer);
+    periodicSyncTimer = null;
+    console.log('주기적 동기화 중지됨');
+  }
+}
 
 /**
  * 클라우드 동기화 초기화 - authManager에서 호출됨
@@ -95,6 +170,27 @@ function initCloudSync() {
 
     console.log(`페이지 설정 변경 감지됨 (${changeType}): ${changeDetails}, 동기화 예약...`);
 
+    // 사용자 설정 파일 업데이트
+    if (userDataManagerRef) {
+      try {
+        // 현재 설정 정보 가져오기
+        const currentSettings = await userDataManagerRef.getUserSettings();
+        if (currentSettings) {
+          // 현재 설정에 업데이트된 pages 정보 병합
+          const updatedSettings = {
+            ...currentSettings,
+            pages: newValue
+          };
+
+          // 설정 정보 파일에 저장
+          userDataManagerRef.updateSettings(updatedSettings);
+          console.log('로컬 설정 파일 업데이트 완료');
+        }
+      } catch (error) {
+        console.error('설정 파일 업데이트 오류:', error);
+      }
+    }
+
     // 디바운스 처리: 연속적인 변경이 있을 경우 마지막 변경 후 2초 후에 동기화
     clearTimeout(syncTimer);
     syncTimer = setTimeout(async () => {
@@ -108,30 +204,46 @@ function initCloudSync() {
     }, SYNC_DEBOUNCE_MS);
   });
 
-  return {
+  // 인터페이스 객체 생성
+  const syncManager = {
     // auth-manager.js가 기대하는 인터페이스
     unsubscribe: () => {
       unsubscribePages();
+      stopPeriodicSync();
     },
     enable: () => {
       syncEnabled = true;
       console.log('클라우드 동기화 활성화됨');
+      startPeriodicSync(); // 동기화 활성화 시 주기적 동기화 시작
     },
     disable: () => {
       syncEnabled = false;
       console.log('클라우드 동기화 비활성화됨');
+      stopPeriodicSync(); // 동기화 비활성화 시 주기적 동기화 중지
     },
     getLastSyncStatus: () => apiSync.getLastSyncStatus(),
     syncAfterLogin: async () => {
       console.log('로그인 후 클라우드 동기화 수행 중...');
       // 로그인 후에는 기본적으로 다운로드 우선 (서버 데이터 우선)
-      return await downloadSettings();
+      const result = await downloadSettings();
+
+      // 로그인 성공 시 주기적 동기화 시작
+      if (syncEnabled) {
+        startPeriodicSync();
+      }
+
+      return result;
     },
     manualSync: async (action = 'resolve') => {
       console.log(`수동 동기화 요청: ${action}`);
       return await syncSettings(action);
-    }
+    },
+    // 추가 인터페이스
+    startPeriodicSync,
+    stopPeriodicSync
   };
+
+  return syncManager;
 }
 
 /**
@@ -290,5 +402,8 @@ async function syncSettings(action = 'resolve') {
 module.exports = {
   initCloudSync,
   setAuthManager,
-  updateCloudSyncSettings
+  setUserDataManager,
+  updateCloudSyncSettings,
+  startPeriodicSync,
+  stopPeriodicSync
 };
