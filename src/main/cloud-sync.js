@@ -7,8 +7,7 @@
  * 2. 설정 변경 시 (로컬 저장 후 서버 업로드)
  * 3. 주기적 동기화 (15분 간격)
  * 4. 앱 시작 시 (이미 로그인된 상태인 경우)
- * 5. 네트워크 복구 시
- * 6. 수동 동기화 요청 시
+ * 5. 수동 동기화 요청 시
  */
 
 const { app } = require('electron');
@@ -19,14 +18,12 @@ const { createConfigStore } = require('./config');
 // 동기화 관련 상수
 const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
 const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
-const NETWORK_CHECK_INTERVAL_MS = 60 * 1000; // 1분마다 네트워크 상태 확인
 const MAX_RETRY_COUNT = 3; // 최대 재시도 횟수
 const RETRY_DELAY_MS = 5000; // 재시도 간격 (5초)
 
 // 동기화 모듈 상태
 const state = {
   enabled: true,
-  isOnline: true,
   isSyncing: false,
   lastSyncTime: 0,
   lastChangeType: null,
@@ -35,8 +32,7 @@ const state = {
   deviceId: null,
   timers: {
     sync: null,
-    debounce: null,
-    network: null
+    debounce: null
   }
 };
 
@@ -65,37 +61,11 @@ function getCurrentTimestamp() {
 }
 
 /**
- * 온라인 상태인지 확인
- * @returns {boolean} 온라인 상태 여부
- */
-function isOnline() {
-  try {
-    // DNS 조회 테스트
-    const dns = require('dns');
-    dns.lookupSync('google.com');
-    return true;
-  } catch (error) {
-    try {
-      // 네트워크 연결 테스트
-      const { execSync } = require('child_process');
-      const pingCmd = process.platform === 'win32'
-        ? 'ping -n 1 -w 1000 8.8.8.8'
-        : 'ping -c 1 -W 1 8.8.8.8';
-
-      execSync(pingCmd, { stdio: 'ignore' });
-      return true;
-    } catch (err) {
-      return false;
-    }
-  }
-}
-
-/**
  * 동기화가 가능한지 확인
  * @returns {Promise<boolean>} 동기화 가능 여부
  */
 async function canSync() {
-  if (!state.enabled || !state.isOnline || !authManager) {
+  if (!state.enabled || !authManager) {
     return false;
   }
 
@@ -107,63 +77,6 @@ async function canSync() {
   } catch (error) {
     console.error('동기화 가능 여부 확인 오류:', error);
     return false;
-  }
-}
-
-/**
- * 네트워크 상태 모니터링 시작
- */
-function startNetworkMonitoring() {
-  stopNetworkMonitoring();
-
-  // 첫 실행 즉시 체크
-  checkNetworkStatus(true);
-
-  // 주기적으로 네트워크 상태 확인
-  state.timers.network = setInterval(() => {
-    checkNetworkStatus(false);
-  }, NETWORK_CHECK_INTERVAL_MS);
-
-  console.log('네트워크 상태 모니터링 시작');
-}
-
-/**
- * 네트워크 상태 모니터링 중지
- */
-function stopNetworkMonitoring() {
-  if (state.timers.network) {
-    clearInterval(state.timers.network);
-    state.timers.network = null;
-    console.log('네트워크 상태 모니터링 중지');
-  }
-}
-
-/**
- * 네트워크 상태 확인 및 변경 처리
- * @param {boolean} forceSync - 강제 동기화 여부
- */
-async function checkNetworkStatus(forceSync = false) {
-  const online = isOnline();
-  const previousState = state.isOnline;
-
-  // 상태가 변경된 경우에만 처리
-  if (online !== previousState) {
-    console.log(`네트워크 상태 변경: ${previousState ? '온라인' : '오프라인'} → ${online ? '온라인' : '오프라인'}`);
-
-    // 오프라인→온라인 전환 시 동기화 실행
-    if (online && !previousState) {
-      console.log('네트워크 복구 감지: 동기화 시작');
-      await downloadSettings();
-    }
-
-    state.isOnline = online;
-  }
-
-  // 강제 동기화가 요청되고 온라인 상태인 경우
-  if (forceSync && online && state.pendingSync) {
-    console.log('보류 중이던 동기화 작업 실행');
-    state.pendingSync = false;
-    await uploadSettings();
   }
 }
 
@@ -236,13 +149,7 @@ async function uploadSettingsWithRetry() {
     } else {
       state.retryCount++;
 
-      // 오프라인 상태에서 동기화 실패 처리
-      if (result.error === 'Offline') {
-        console.log('오프라인 상태에서 동기화 실패, 다음 네트워크 복구 시 동기화 예약');
-        state.pendingSync = true;
-      } else {
-        console.log(`동기화 실패 원인: ${result.error}`);
-      }
+      console.log(`동기화 실패 원인: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
         console.log(`업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS/1000}초 후 시작`);
@@ -254,11 +161,6 @@ async function uploadSettingsWithRetry() {
       } else {
         console.error(`최대 재시도 횟수(${MAX_RETRY_COUNT}) 초과, 업로드 실패: ${result.error}`);
         state.retryCount = 0;
-
-        // 네트워크 문제인 경우 보류 상태 유지
-        if (result.error === 'Offline') {
-          state.pendingSync = true;
-        }
       }
     }
   } catch (error) {
@@ -291,11 +193,6 @@ async function uploadSettings() {
   if (!state.enabled) {
     console.log('클라우드 동기화 비활성화됨, 업로드 스킵');
     return { success: false, error: 'Cloud sync disabled' };
-  }
-
-  if (!state.isOnline) {
-    console.log('오프라인 상태: 설정 업로드 스킵');
-    return { success: false, error: 'Offline' };
   }
 
   if (!await canSync()) {
@@ -369,11 +266,6 @@ async function downloadSettings() {
   if (!state.enabled) {
     console.log('클라우드 동기화 비활성화됨, 다운로드 스킵');
     return { success: false, error: 'Cloud sync disabled' };
-  }
-
-  if (!state.isOnline) {
-    console.log('오프라인 상태: 설정 다운로드 스킵');
-    return { success: false, error: 'Offline' };
   }
 
   if (!await canSync()) {
@@ -527,10 +419,8 @@ function setEnabled(enabled) {
 
   if (enabled) {
     startPeriodicSync();
-    startNetworkMonitoring();
   } else {
     stopPeriodicSync();
-    stopNetworkMonitoring();
   }
 }
 
@@ -633,17 +523,12 @@ function initCloudSync() {
   // 설정 변경 감지 이벤트 등록
   setupConfigListeners();
 
-  // 초기 네트워크 상태 감지
-  state.isOnline = isOnline();
-  console.log(`초기 네트워크 상태: ${state.isOnline ? '온라인' : '오프라인'}`);
-
   // 인터페이스 객체 생성
   const syncManager = {
     // 기본 인터페이스
     unsubscribe: () => {
       // 타이머 중지
       stopPeriodicSync();
-      stopNetworkMonitoring();
 
       // 디바운스 타이머 취소
       if (state.timers.debounce) {
@@ -661,8 +546,7 @@ function initCloudSync() {
     },
     getLastSyncStatus: () => ({
       success: state.lastSyncTime > 0,
-      timestamp: state.lastSyncTime,
-      isOnline: state.isOnline
+      timestamp: state.lastSyncTime
     }),
     syncAfterLogin: async () => {
       console.log('로그인 후 클라우드 동기화 수행');
@@ -673,7 +557,6 @@ function initCloudSync() {
       // 동기화 활성화
       if (state.enabled) {
         startPeriodicSync();
-        startNetworkMonitoring();
       }
 
       return result;
@@ -688,7 +571,6 @@ function initCloudSync() {
     stopPeriodicSync,
     getCurrentStatus: () => ({
       enabled: state.enabled,
-      online: state.isOnline,
       deviceId: state.deviceId,
       lastChangeType: state.lastChangeType,
       lastSyncTime: state.lastSyncTime

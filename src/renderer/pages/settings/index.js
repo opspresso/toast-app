@@ -242,8 +242,8 @@ function updateSyncStatusUI(status) {
 
   // Update sync status badge
   if (status.enabled) {
-    syncStatusBadge.textContent = status.isOnline ? '활성화' : '오프라인';
-    syncStatusBadge.className = status.isOnline ? 'badge premium' : 'badge warning';
+    syncStatusBadge.textContent = '활성화';
+    syncStatusBadge.className = 'badge premium';
   } else {
     syncStatusBadge.textContent = '비활성화';
     syncStatusBadge.className = 'badge secondary';
@@ -251,7 +251,7 @@ function updateSyncStatusUI(status) {
 
   // Update sync status text
   syncStatusText.textContent = status.enabled
-    ? (status.isOnline ? '클라우드 동기화 활성화' : '네트워크 연결 대기 중')
+    ? '클라우드 동기화 활성화'
     : '클라우드 동기화 비활성화';
 
   // Update last synced time
@@ -267,7 +267,7 @@ function updateSyncStatusUI(status) {
 
   // Enable/disable buttons based on status
   const hasCloudSyncPermission = authState.subscription?.features?.cloud_sync;
-  const canUseCloudSync = status.isOnline && hasCloudSyncPermission;
+  const canUseCloudSync = hasCloudSyncPermission;
 
   enableCloudSyncCheckbox.disabled = !hasCloudSyncPermission;
   enableCloudSyncCheckbox.checked = status.enabled;
