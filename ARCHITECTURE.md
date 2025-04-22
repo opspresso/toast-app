@@ -580,11 +580,15 @@ A future version of Toast App may include a plugin system:
 
 ### Cloud Synchronization
 
-Cloud synchronization may be added in the future:
+Toast App already includes cloud synchronization for subscribers:
 
 1. **Secure Storage**: Encrypted storage of configuration in the cloud
-2. **Conflict Resolution**: Handling conflicts between different devices
-3. **Selective Sync**: Allowing users to choose what to synchronize
+2. **Automatic Sync**: Synchronizes settings across devices when logging in
+3. **Feature Availability**: Available for subscribers and authenticated users with cloud_sync feature enabled
+
+Future enhancements may include:
+1. **Conflict Resolution Improvements**: Enhanced handling of conflicts between different devices
+2. **Selective Sync**: Allowing users to choose what to synchronize
 
 ### Mobile Companion
 

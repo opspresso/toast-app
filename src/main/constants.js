@@ -1,17 +1,17 @@
 /**
- * Toast App - 공통 상수 모듈
+ * Toast App - Common Constants Module
  *
- * 앱 전체에서 공통으로 사용되는 상수값을 정의합니다.
+ * Defines constants used throughout the application.
  */
 
-// 구독 등급에 따른 페이지 그룹 수 상수
+// Constants for the number of page groups based on subscription level
 const PAGE_GROUPS = {
-  ANONYMOUS: 1, // 인증되지 않은 사용자
-  AUTHENTICATED: 3, // 인증된 사용자
-  PREMIUM: 9 // 구독 또는 VIP 사용자
+  ANONYMOUS: 1, // Unauthenticated users
+  AUTHENTICATED: 3, // Authenticated users
+  PREMIUM: 9 // Subscribers or VIP users
 };
 
-// 익명 사용자 기본 구독 정보
+// Default subscription information for anonymous users
 const DEFAULT_ANONYMOUS_SUBSCRIPTION = {
   id: 'sub_free_anonymous',
   userId: 'anonymous',
@@ -30,7 +30,7 @@ const DEFAULT_ANONYMOUS_SUBSCRIPTION = {
   isVip: false
 };
 
-// 익명 사용자 기본 프로필 정보
+// Default profile information for anonymous users
 const DEFAULT_ANONYMOUS = {
   id: 'anonymous',
   email: 'anonymous@user.com',
