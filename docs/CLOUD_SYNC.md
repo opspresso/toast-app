@@ -417,3 +417,162 @@ function getUserSettings() {
 1. **타임스탬프 기반**: 가장 최근에 변경된 설정이 우선
 2. **병합 전략**: 가능한 경우 충돌 없는 필드는 병합하여 데이터 보존
 3. **사용자 알림**: 충돌 발생 시 사용자에게 통보하고 선택 옵션 제공
+
+## 설정 저장소 단일화 구현
+
+클라우드 동기화의 안정성과 데이터 일관성 향상을 위해 설정 저장소를 단일화하는 방식으로 구현이 결정되었습니다. 이 섹션에서는 구현 방식과 세부 사항을 설명합니다.
+
+### 구현 배경
+
+기존 시스템에서는 다음과 같은 문제점이 있었습니다:
+
+1. **설정 저장소의 이원화**:
+   - `config.json` (electron-store로 관리): 앱의 기본 설정, UI 설정, 페이지 정보 등 저장
+   - `user-settings.json` (파일 시스템에 직접 저장): API와 동기화하려는 사용자 설정 정보 저장
+
+2. **동기화 불일치**:
+   - `cloud-sync.js`에서는 configStore의 변경을 감지하여 `user-settings.json` 파일에 저장
+   - `api/sync.js`에서는 서버로부터 다운로드한 설정을 `configStore`에 직접 저장
+   - 실제 데이터는 `config.json`에 있지만, 클라우드 동기화 시 `user-settings.json`을 참조하는 문제
+
+3. **부자연스러운 동기화 흐름**:
+   - 사용자 변경 → configStore 변경 → user-settings.json 업데이트 → API로 업로드
+   - 서버 다운로드 → configStore 직접 업데이트 → user-settings.json 타임스탬프만 업데이트
+   - 이로 인한 데이터 불일치 발생 가능성
+
+### 설정 저장소 단일화 구현
+
+단일 설정 저장소 접근법은 electron-store(configStore)를 주 데이터 소스로 사용하고, `user-settings.json`은 동기화 메타데이터 저장용으로만 활용합니다.
+
+#### 1. uploadSettings 함수 수정
+
+```javascript
+// cloud-sync.js의 uploadSettings 함수 수정
+async function uploadSettings() {
+  // 기존 코드 대신 직접 configStore에서 데이터 추출
+  const pages = configStore.get('pages') || [];
+  const appearance = configStore.get('appearance');
+  const advanced = configStore.get('advanced');
+
+  // 타임스탬프 업데이트
+  const timestamp = getCurrentTimestamp();
+
+  // 업로드할 데이터 구성
+  const uploadData = {
+    pages,
+    lastSyncedDevice: state.deviceId,
+    lastSyncedAt: timestamp,
+    appearance,
+    advanced
+  };
+
+  // API 호출...
+
+  // 성공 시 마지막 동기화 정보만 user-settings.json에 저장
+  const metaData = {
+    lastSyncedAt: timestamp,
+    lastSyncedDevice: state.deviceId
+  };
+  userDataManager.updateSyncMetadata(metaData);
+
+  // ...
+}
+```
+
+#### 2. 동기화 메타데이터 관리 함수 추가
+
+```javascript
+// user-data-manager.js에 메타데이터 저장 함수 추가
+function updateSyncMetadata(metadata) {
+  try {
+    const currentSettings = readFromFile(SETTINGS_FILE_PATH) || {};
+    const updatedSettings = {
+      ...currentSettings,
+      lastSyncedAt: metadata.lastSyncedAt,
+      lastSyncedDevice: metadata.lastSyncedDevice
+    };
+
+    return writeToFile(SETTINGS_FILE_PATH, updatedSettings);
+  } catch (error) {
+    console.error('동기화 메타데이터 업데이트 오류:', error);
+    return false;
+  }
+}
+```
+
+#### 3. 설정 변경 감지 로직 개선
+
+```javascript
+// cloud-sync.js의 setupConfigListeners 함수 수정
+function setupConfigListeners() {
+  // 페이지 설정 변경 감지
+  configStore.onDidChange('pages', async (newValue, oldValue) => {
+    // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 스킵
+    if (!state.enabled || !await canSync()) {
+      return;
+    }
+
+    // 변경 유형 감지...
+
+    // user-settings.json에 전체 데이터를 복제하는 대신 메타데이터만 업데이트
+    const timestamp = getCurrentTimestamp();
+    userDataManager.updateSyncMetadata({
+      lastModifiedAt: timestamp,
+      lastModifiedDevice: state.deviceId
+    });
+
+    // 동기화 예약...
+  });
+
+  // 비슷한 방식으로 다른 onDidChange 이벤트 핸들러 수정...
+}
+```
+
+#### 4. 다운로드 로직 개선
+
+```javascript
+// cloud-sync.js의 downloadSettings 함수 수정
+async function downloadSettings() {
+  // 기존 로직...
+
+  if (result.success) {
+    // 메타데이터만 user-settings.json에 업데이트
+    const timestamp = getCurrentTimestamp();
+    userDataManager.updateSyncMetadata({
+      lastSyncedAt: timestamp,
+      lastModifiedAt: timestamp,
+      lastModifiedDevice: state.deviceId
+    });
+  }
+
+  // ...
+}
+```
+
+### 구현 변경 사항 요약
+
+1. **api/sync.js**:
+   - 변경 없음 (이미 configStore를 사용하여 설정 저장 및 조회)
+
+2. **cloud-sync.js**:
+   - `uploadSettings` 함수에서 데이터 소스를 user-settings.json에서 configStore로 변경
+   - 설정 변경 감지 시 메타데이터만 업데이트
+
+3. **user-data-manager.js**:
+   - 동기화 메타데이터만 관리하는 `updateSyncMetadata` 함수 추가
+
+### 마이그레이션 전략
+
+기존 데이터 구조에서 단일 저장소 방식으로 원활하게 전환하기 위한 마이그레이션 전략입니다:
+
+1. **데이터 마이그레이션 유틸리티 개발**:
+   - 앱 시작 시 user-settings.json의 데이터가 config.json에 없는 경우 자동으로 이관
+   - 사용자에게 투명하게 진행되도록 구현
+
+2. **점진적 코드 전환**:
+   - 첫 단계로 uploadSettings와 설정 변경 감지 로직 수정
+   - 이후 점진적으로 다른 관련 코드 수정
+
+3. **이전 버전 호환성 유지**:
+   - 이전 버전과의 호환성을 유지하기 위해 이행 기간 동안 두 방식 모두 지원
+   - 특정 버전 이후 user-settings.json 데이터 구조를 메타데이터 전용으로 단순화
