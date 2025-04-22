@@ -59,14 +59,14 @@ sequenceDiagram
    }
    ```
 
-### 서버로 업로드하는 시점
-1. **페이지 추가 시**: 사용자가 새 페이지를 추가하면 변경사항을 즉시 서버에 업로드합니다.
-2. **페이지 삭제 시**: 사용자가 페이지를 삭제하면 변경사항을 즉시 서버에 업로드합니다.
-3. **버튼 수정 시**: 사용자가 버튼을 추가, 수정 또는 삭제하면 변경사항을 서버에 업로드합니다.
+### 로칼 파일에 저장하는 시점
+1. **페이지 추가 시**: 사용자가 새 페이지를 추가하면 변경사항을 즉시 로컬 파일(user-settings.json)에 저장합니다.
+2. **페이지 삭제 시**: 사용자가 페이지를 삭제하면 변경사항을 즉시 로컬 파일에 저장합니다.
+3. **버튼 수정 시**: 사용자가 버튼을 추가, 수정 또는 삭제하면 변경사항을 로컬 파일에 저장합니다.
 
-각 변경은 디바운싱을 통해 최적화됩니다. 여러 빠른 변경이 연속해서 발생할 경우, 마지막 변경 후 2초 후에 한 번만 동기화합니다.
+각 변경은 로컬 파일에 즉시 저장되며, configStore에서 감지한 변경사항이 user-settings.json 파일로 자동 저장됩니다.
 
-### 추가 동기화 시점
+### 서버와 동기화하는 시점
 1. **주기적 동기화**: 설정된 간격(15분)마다 자동으로 동기화를 시도합니다.
 2. **앱 시작 시**: 사용자가 이미 로그인된 상태에서 앱을 시작할 때 동기화합니다.
 3. **네트워크 복구 시**: 오프라인 상태에서 온라인 상태로 전환될 때 동기화를 시도합니다.
@@ -127,27 +127,44 @@ const { createConfigStore } = require('./config');
 const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
 const PERIODIC_SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
 
-// 설정 변경 감지 및 동기화
+// 설정 변경 감지 및 로컬 파일 저장
 configStore.onDidChange('pages', async (newValue, oldValue) => {
   // 변경 유형 감지 (페이지 추가, 삭제, 버튼 수정)
   if (Array.isArray(newValue) && Array.isArray(oldValue)) {
     if (newValue.length > oldValue.length) {
       // 페이지 추가 감지
-      console.log('페이지 추가 감지, 동기화 시작...');
+      console.log('페이지 추가 감지, 로컬 파일에 저장...');
     } else if (newValue.length < oldValue.length) {
       // 페이지 삭제 감지
-      console.log('페이지 삭제 감지, 동기화 시작...');
+      console.log('페이지 삭제 감지, 로컬 파일에 저장...');
     } else if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
       // 버튼 수정 감지
-      console.log('버튼 수정 감지, 동기화 시작...');
+      console.log('버튼 수정 감지, 로컬 파일에 저장...');
     }
   }
 
-  // 디바운스 처리: 연속적인 변경이 있을 경우 마지막 변경 후 2초 후에 동기화
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(async () => {
-    await uploadSettings();
-  }, SYNC_DEBOUNCE_MS);
+  // user-settings.json 파일에 저장
+  if (userDataManagerRef) {
+    try {
+      const currentSettings = await userDataManagerRef.getUserSettings();
+      if (currentSettings) {
+        const timestamp = getCurrentTimestamp();
+        const updatedSettings = {
+          ...currentSettings,
+          pages: newValue,
+          lastModifiedAt: timestamp,
+          lastModifiedDevice: deviceInfo
+        };
+
+        userDataManagerRef.updateSettings(updatedSettings);
+        console.log('로컬 설정 파일에 페이지 정보 저장 완료');
+      }
+    } catch (error) {
+      console.error('설정 파일 업데이트 오류:', error);
+    }
+  }
+
+  // 주기적 서버 동기화는 별도 타이머로 수행
 });
 ```
 

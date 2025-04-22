@@ -238,7 +238,9 @@ async function getUserSettings(forceRefresh = false) {
         console.log('파일에서 설정 정보 로드 성공:', {
           hasThemeSettings: !!settingsData.theme,
           hasFontSettings: !!settingsData.font,
-          hasGeneralSettings: !!settingsData.general
+          hasGeneralSettings: !!settingsData.general,
+          hasPagesSettings: !!settingsData.pages,
+          timestamp: new Date().toISOString()
         });
 
         return settingsData;
@@ -281,6 +283,7 @@ async function getUserSettings(forceRefresh = false) {
           hasThemeSettings: !!settingsData.theme,
           hasFontSettings: !!settingsData.font,
           hasGeneralSettings: !!settingsData.general,
+          hasPagesSettings: !!settingsData.pages,
           timestamp: new Date().toISOString()
         });
       }
