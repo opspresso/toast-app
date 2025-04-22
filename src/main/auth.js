@@ -1,8 +1,8 @@
 /**
  * Toast App - Authentication Module
  *
- * OAuth 2.0 인증과 구독 관리를 위한 모듈입니다.
- * 공용 API 모듈을 사용하여 구현되었습니다.
+ * This module is for OAuth 2.0 authentication and subscription management.
+ * It is implemented using the common API module.
  */
 
 const { app, shell } = require('electron');
@@ -11,14 +11,14 @@ const os = require('os');
 const fs = require('fs');
 const { createConfigStore } = require('./config');
 
-// API 공용 모듈 불러오기
+// Import common API module
 const { client, auth: apiAuth } = require('./api');
 
-// 토큰 저장 파일 경로 설정
+// Set token storage file path
 const USER_DATA_PATH = app.getPath('userData');
 const TOKEN_FILE_PATH = path.join(USER_DATA_PATH, 'auth-tokens.json');
 
-// 토큰 키 상수
+// Token key constants
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 const TOKEN_EXPIRES_KEY = 'token-expires-at';
@@ -28,14 +28,14 @@ const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
 const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
-const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '3600'), 10); // 기본값 1시간, 환경변수에서 재정의 가능
+const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '3600'), 10); // Default 1 hour, can be overridden in environment variables
 
-// 공통 상수 임포트
+// Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
 
-console.log('API 모듈 초기화 완료');
+console.log('API module initialization complete');
 
-// 토큰을 메모리에 설정
+// Set tokens in memory
 async function initializeTokensFromStorage() {
   try {
     const accessToken = await getStoredToken();
@@ -51,14 +51,14 @@ async function initializeTokensFromStorage() {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    console.error('토큰 초기화 중 오류:', error);
+    console.error('Error initializing tokens:', error);
     return { accessToken: null, refreshToken: null };
   }
 }
 
 /**
- * 로컬 파일에서 토큰 데이터를 읽습니다
- * @returns {Object|null} 토큰 데이터 객체 또는 null
+ * Read token data from local file
+ * @returns {Object|null} Token data object or null
  */
 function readTokenFile() {
   try {
@@ -69,236 +69,236 @@ function readTokenFile() {
     const data = fs.readFileSync(TOKEN_FILE_PATH, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    console.error('토큰 파일 읽기 오류:', error);
+    console.error('Error reading token file:', error);
     return null;
   }
 }
 
 /**
- * 토큰 데이터를 로컬 파일에 저장합니다
- * @param {Object} tokenData - 저장할 토큰 데이터 객체
- * @returns {boolean} 저장 성공 여부
+ * Save token data to local file
+ * @param {Object} tokenData - Token data object to save
+ * @returns {boolean} Whether the save was successful
  */
 function writeTokenFile(tokenData) {
   try {
     const dirPath = path.dirname(TOKEN_FILE_PATH);
 
-    // 디렉토리가 없으면 생성
+    // Create directory if it doesn't exist
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    // 파일에 JSON 형태로 저장
+    // Save to file in JSON format
     fs.writeFileSync(TOKEN_FILE_PATH, JSON.stringify(tokenData, null, 2), 'utf8');
     return true;
   } catch (error) {
-    console.error('토큰 파일 저장 오류:', error);
+    console.error('Error saving token file:', error);
     return false;
   }
 }
 
 /**
- * 인증 토큰을 로컬 파일에서 가져옵니다
- * @returns {Promise<string|null>} 저장된 토큰이나 없으면 null
+ * Get auth token from local file
+ * @returns {Promise<string|null>} Stored token or null if none exists
  */
 async function getStoredToken() {
   try {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[TOKEN_KEY] : null;
   } catch (error) {
-    console.error('로컬 파일에서 토큰 가져오기 실패:', error);
+    console.error('Failed to get token from local file:', error);
     return null;
   }
 }
 
 /**
- * 리프레시 토큰을 로컬 파일에서 가져옵니다
- * @returns {Promise<string|null>} 저장된 리프레시 토큰이나 없으면 null
+ * Get refresh token from local file
+ * @returns {Promise<string|null>} Stored refresh token or null if none exists
  */
 async function getStoredRefreshToken() {
   try {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[REFRESH_TOKEN_KEY] : null;
   } catch (error) {
-    console.error('로컬 파일에서 리프레시 토큰 가져오기 실패:', error);
+    console.error('Failed to get refresh token from local file:', error);
     return null;
   }
 }
 
 /**
- * 토큰 만료 시간 저장
- * @param {number} expiresAt - 토큰 만료 시간 (밀리초)
+ * Store token expiration time
+ * @param {number} expiresAt - Token expiration time (milliseconds)
  * @returns {Promise<void>}
  */
 async function storeTokenExpiry(expiresAt) {
   try {
-    // 기존 토큰 데이터 읽기
+    // Read existing token data
     const tokenData = readTokenFile() || {};
 
-    // 만료 시간 저장
+    // Store expiration time
     tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
 
-    // 파일에 저장
+    // Save to file
     if (!writeTokenFile(tokenData)) {
-      throw new Error('토큰 만료 시간 저장 실패');
+      throw new Error('Failed to save token expiration time');
     }
   } catch (error) {
-    console.error('토큰 만료 시간 저장 실패:', error);
+    console.error('Failed to store token expiration time:', error);
     throw error;
   }
 }
 
 /**
- * 저장된 토큰 만료 시간 가져오기
- * @returns {Promise<number|null>} 저장된 토큰 만료 시간 또는 null
+ * Get stored token expiration time
+ * @returns {Promise<number|null>} Stored token expiration time or null
  */
 async function getStoredTokenExpiry() {
   try {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[TOKEN_EXPIRES_KEY] : null;
   } catch (error) {
-    console.error('토큰 만료 시간 가져오기 실패:', error);
+    console.error('Failed to get token expiration time:', error);
     return null;
   }
 }
 
 /**
- * 토큰이 만료되었는지 확인
- * @returns {Promise<boolean>} 토큰이 만료되었으면 true
+ * Check if token is expired
+ * @returns {Promise<boolean>} Returns true if token is expired
  */
 async function isTokenExpired() {
   try {
     const expiresAt = await getStoredTokenExpiry();
 
     if (!expiresAt) {
-      // 만료 시간이 없으면 만료된 것으로 간주
+      // Consider expired if no expiration time
       return true;
     }
 
-    // 현재 시간과 비교하여 만료 여부 확인
+    // Compare with current time to check expiration
     const now = Date.now();
     const isExpired = now >= expiresAt;
 
-    // 만료 30초 전부터는 만료된 것으로 간주 (안전 마진)
-    const safetyMargin = 30 * 1000; // 30초
+    // Consider expired if within safety margin (30 seconds before actual expiry)
+    const safetyMargin = 30 * 1000; // 30 seconds
     const isNearExpiry = now >= (expiresAt - safetyMargin);
 
     if (isNearExpiry) {
-      console.log('토큰이 곧 만료됨 또는 이미 만료됨');
+      console.log('Token is about to expire or already expired');
       return true;
     }
 
-    // 토큰이 유효한 경우 남은 시간 로깅
+    // Log remaining time for valid tokens
     const remainingMinutes = Math.floor((expiresAt - now) / (60 * 1000));
-    console.log(`현재 토큰 유효 시간: 약 ${remainingMinutes}분 남음`);
+    console.log(`Current token validity: approximately ${remainingMinutes} minutes remaining`);
 
     return false;
   } catch (error) {
-    console.error('토큰 만료 확인 오류:', error);
-    // 오류 발생 시 안전하게 만료된 것으로 간주
+    console.error('Error checking token expiration:', error);
+    // Consider expired if error occurs, for safety
     return true;
   }
 }
 
 /**
- * 토큰을 로컬 파일에 저장합니다
- * @param {string} token - 저장할 인증 토큰
- * @param {number} expiresIn - 토큰 만료 시간(초)
+ * Store token in local file
+ * @param {string} token - Authentication token to store
+ * @param {number} expiresIn - Token expiration time in seconds
  * @returns {Promise<void>}
  */
 async function storeToken(token, expiresIn = 3600) {
   try {
-    // 클라이언트에 토큰 설정
+    // Set token in client
     client.setAccessToken(token);
 
-    // 기존 토큰 데이터 읽기
+    // Read existing token data
     const tokenData = readTokenFile() || {};
 
-    // 새 토큰 저장
+    // Store new token
     tokenData[TOKEN_KEY] = token;
 
-  // 만료 시간 계산 및 저장
+  // Calculate and store expiration time
   let expiresAt;
   if (expiresIn <= 0) {
-    // 음수 값이나 0은 무제한 만료 시간으로 처리 (아주 먼 미래 날짜 사용)
-    expiresAt = 8640000000000000; // JavaScript에서 지원하는 최대 날짜 (약 2억7천만년)
-    console.log('토큰 만료 시간이 무제한으로 설정되었습니다.');
+    // Treat negative or zero values as unlimited expiration time (use a very distant future date)
+    expiresAt = 8640000000000000; // Maximum date supported by JavaScript (about 270 million years)
+    console.log('Token expiration time set to unlimited.');
   } else {
     expiresAt = Date.now() + (expiresIn * 1000);
   }
   tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
 
-    // 파일에 저장
+    // Save to file
     if (!writeTokenFile(tokenData)) {
-      throw new Error('토큰 파일 저장 실패');
+      throw new Error('Failed to save token file');
     }
 
-    console.log(`토큰 저장 완료, 만료 시간: ${new Date(expiresAt).toLocaleString()}`);
+    console.log(`Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`);
   } catch (error) {
-    console.error('토큰 저장 실패:', error);
+    console.error('Failed to save token:', error);
     throw error;
   }
 }
 
 /**
- * 리프레시 토큰을 로컬 파일에 저장합니다
- * @param {string} refreshToken - 저장할 리프레시 토큰
+ * Store refresh token in local file
+ * @param {string} refreshToken - Refresh token to store
  * @returns {Promise<void>}
  */
 async function storeRefreshToken(refreshToken) {
   try {
-    // 클라이언트에 리프레시 토큰 설정
+    // Set refresh token in client
     client.setRefreshToken(refreshToken);
 
-    // 기존 토큰 데이터 읽기
+    // Read existing token data
     const tokenData = readTokenFile() || {};
 
-    // 새 리프레시 토큰 저장
+    // Store new refresh token
     tokenData[REFRESH_TOKEN_KEY] = refreshToken;
 
-    // 파일에 저장
+    // Save to file
     if (!writeTokenFile(tokenData)) {
-      throw new Error('리프레시 토큰 파일 저장 실패');
+      throw new Error('Failed to save refresh token file');
     }
   } catch (error) {
-    console.error('리프레시 토큰 저장 실패:', error);
+    console.error('Failed to save refresh token:', error);
     throw error;
   }
 }
 
 /**
- * 토큰과 리프레시 토큰을 로컬 파일에서 삭제합니다
+ * Delete tokens from local file
  * @returns {Promise<void>}
  */
 async function clearTokens() {
   try {
-    // 클라이언트 토큰 초기화
+    // Reset client tokens
     client.clearTokens();
 
-    // 토큰 파일이 존재하면 삭제
+    // Delete token file if it exists
     if (fs.existsSync(TOKEN_FILE_PATH)) {
       fs.unlinkSync(TOKEN_FILE_PATH);
     }
   } catch (error) {
-    console.error('토큰 삭제 실패:', error);
+    console.error('Failed to delete tokens:', error);
     throw error;
   }
 }
 
 /**
- * 로그인 프로세스를 시작합니다 (OAuth 인증 페이지 열기)
- * @returns {Promise<boolean>} 프로세스가 시작되었으면 true
+ * Start login process (open OAuth authentication page)
+ * @returns {Promise<boolean>} Returns true if process is started
  */
 async function initiateLogin() {
   try {
-    // 공용 모듈을 통해 로그인 URL 생성
+    // Generate login URL through common module
     const loginResult = apiAuth.initiateLogin(CLIENT_ID);
 
     if (!loginResult.success) {
-      throw new Error(loginResult.error || '로그인 프로세스 시작 실패');
+      throw new Error(loginResult.error || 'Failed to start login process');
     }
 
-    // 기본 브라우저에서 인증 페이지 열기
+    // Open authentication page in default browser
     await shell.openExternal(loginResult.url);
 
     return true;
@@ -309,28 +309,28 @@ async function initiateLogin() {
 }
 
 /**
- * 인증 URL로부터 받은 리디렉션 처리
- * @param {string} url - 리디렉션 URL
- * @returns {Promise<Object>} 처리 결과
+ * Process redirection received from authentication URL
+ * @param {string} url - Redirection URL
+ * @returns {Promise<Object>} Processing result
  */
 async function handleAuthRedirect(url) {
   try {
     console.log('Processing auth redirect:', url);
 
-    // 공용 모듈을 통해 리디렉션 URL 처리
+    // Process redirection URL through common module
     const redirectResult = await apiAuth.handleAuthRedirect({
       url,
       onCodeExchange: async (code) => {
-        // 코드를 토큰으로 교환하고 구독 정보 업데이트
+        // Exchange code for token and update subscription information
         return await exchangeCodeForTokenAndUpdateSubscription(code);
       }
     });
 
-    // 'reload_auth' 액션 처리
+    // Process 'reload_auth' action
     if (redirectResult.success && redirectResult.action === 'reload_auth') {
       console.log('Auth reload action detected');
 
-      // 토큰이 있는지 확인
+      // Check if token exists
       if (!redirectResult.token) {
         console.error('No token provided for auth reload');
         return {
@@ -339,11 +339,11 @@ async function handleAuthRedirect(url) {
         };
       }
 
-      // 현재 인증 상태 확인
+      // Check current authentication status
       const hasToken = await hasValidToken();
 
       if (hasToken) {
-        // 이미 인증된 상태라면 구독 정보만 다시 가져옴
+        // If already authenticated, just refresh subscription information
         console.log('Already authenticated, refreshing subscription info');
         const subscription = await fetchSubscription();
         await updatePageGroupSettings(subscription);
@@ -354,7 +354,7 @@ async function handleAuthRedirect(url) {
           subscription
         };
       } else {
-        // 인증되지 않은 상태라면 로그인 프로세스 시작
+        // If not authenticated, start login process
         console.log('Not authenticated, initiating login process');
         return await initiateLogin();
       }
@@ -371,15 +371,15 @@ async function handleAuthRedirect(url) {
 }
 
 /**
- * 인증 코드를 토큰으로 교환합니다
- * @param {string} code - OAuth 인증 코드
- * @returns {Promise<Object>} 토큰 교환 결과
+ * Exchange authentication code for token
+ * @param {string} code - OAuth authentication code
+ * @returns {Promise<Object>} Token exchange result
  */
 async function exchangeCodeForToken(code) {
   try {
-    console.log('인증 코드를 토큰으로 교환 시작:', code.substring(0, 8) + '...');
+    console.log('Starting exchange of authentication code for token:', code.substring(0, 8) + '...');
 
-    // 공용 모듈을 통해 코드를 토큰으로 교환
+    // Exchange code for token through common module
     const tokenResult = await apiAuth.exchangeCodeForToken({
       code,
       clientId: CLIENT_ID,
@@ -390,31 +390,31 @@ async function exchangeCodeForToken(code) {
       return tokenResult;
     }
 
-    // 토큰 저장
+    // Store tokens
     const { access_token, refresh_token, expires_in } = tokenResult;
 
-    // 안전한 저장소에 토큰과 만료 시간 저장
-    // 환경변수에 설정된 TOKEN_EXPIRES_IN 값 우선 사용, 없으면 서버 응답값, 모두 없으면 기본값 3600(1시간)
+    // Store token and expiration time in secure storage
+    // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
     await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-    console.log(`액세스 토큰 저장 완료 (만료 기간: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + '시간' : expires_in ? expires_in/3600 + '시간' : '1시간'})`);
+    console.log(`Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + ' hours' : expires_in ? expires_in/3600 + ' hours' : '1 hour'})`);
 
-    // 리프레시 토큰 저장 (있는 경우)
+    // Store refresh token (if available)
     if (refresh_token) {
       await storeRefreshToken(refresh_token);
-      console.log('리프레시 토큰 저장 완료');
+      console.log('Refresh token saved successfully');
     }
 
-    // 토큰이 정상적으로 저장되었는지 검증
+    // Verify token was saved correctly
     const storedToken = await getStoredToken();
     if (!storedToken) {
-      console.error('토큰 저장 확인 실패. 저장소에서 토큰을 찾을 수 없음');
+      console.error('Failed to verify token storage. Token not found in storage');
     } else {
-      console.log('토큰 저장 확인 성공');
+      console.log('Token storage verification successful');
     }
 
     return tokenResult;
   } catch (error) {
-    console.error('토큰 교환 중 오류 발생:', error);
+    console.error('Error occurred during token exchange:', error);
 
     return {
       success: false,
@@ -424,51 +424,51 @@ async function exchangeCodeForToken(code) {
   }
 }
 
-// 토큰 갱신 제한 설정
-const TOKEN_REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5분 동안 갱신 요청 제한
+// Token refresh limit settings
+const TOKEN_REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes limit for refresh requests
 let lastTokenRefresh = 0;
 let isRefreshing = false;
 
 /**
- * 리프레시 토큰을 사용하여 새 액세스 토큰을 얻습니다
- * @returns {Promise<object>} 토큰 새로고침 결과 (success: boolean, error?: string)
+ * Get new access token using refresh token
+ * @returns {Promise<object>} Token refresh result (success: boolean, error?: string)
  */
 async function refreshAccessToken() {
   try {
-    console.log('토큰 리프레시 프로세스 시작');
+    console.log('Starting token refresh process');
 
-    // 쓰로틀링: 마지막 갱신 요청 이후 일정 시간이 지나지 않았으면 스킵
+    // Throttling: Skip if not enough time has passed since last refresh request
     const now = Date.now();
     const timeSinceLastRefresh = now - lastTokenRefresh;
 
     if (timeSinceLastRefresh < TOKEN_REFRESH_COOLDOWN_MS && lastTokenRefresh > 0) {
-      console.log(`최근에 토큰 갱신 시도 중 (${Math.floor(timeSinceLastRefresh / 1000)}초 전). 중복 요청 방지를 위해 스킵합니다.`);
+      console.log(`Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`);
       return { success: true, throttled: true };
     }
 
-    // 이미 갱신 중인지 확인
+    // Check if already refreshing
     if (isRefreshing) {
-      console.log('토큰 갱신이 이미 진행 중입니다. 중복 요청 방지.');
+      console.log('Token refresh already in progress. Preventing duplicate requests.');
       return { success: false, error: 'Token refresh already in progress', code: 'REFRESH_IN_PROGRESS' };
     }
 
-    // 갱신 상태 설정
+    // Set refresh state
     isRefreshing = true;
     lastTokenRefresh = now;
 
     try {
-      // 토큰이 실제로 만료되었는지 확인
+      // Check if token is actually expired
       const isExpired = await isTokenExpired();
       if (!isExpired) {
-        console.log('토큰이 아직 유효합니다. 갱신이 필요하지 않습니다.');
+        console.log('Token is still valid. Refresh not needed.');
         return { success: true, refreshNeeded: false };
       }
 
-      // 리프레시 토큰 가져오기
+      // Get refresh token
       const refreshToken = client.getRefreshToken() || await getStoredRefreshToken();
 
       if (!refreshToken) {
-        console.error('리프레시 토큰이 없음');
+        console.error('No refresh token available');
         return {
           success: false,
           error: 'No refresh token available',
@@ -476,9 +476,9 @@ async function refreshAccessToken() {
         };
       }
 
-      console.log('리프레시 토큰 존재, 교환 시도 중');
+      console.log('Refresh token exists, attempting exchange');
 
-      // 공용 모듈을 통해 리프레시 토큰 교환
+      // Exchange refresh token through common module
       const refreshResult = await apiAuth.refreshAccessToken({
         refreshToken,
         clientId: CLIENT_ID,
@@ -486,38 +486,38 @@ async function refreshAccessToken() {
       });
 
       if (!refreshResult.success) {
-        // 실패 시 401 오류이면 토큰 초기화
+        // If failed with 401 error, reset tokens
         if (refreshResult.code === 'SESSION_EXPIRED') {
           await clearTokens();
-          console.log('만료된 토큰 초기화 완료');
+          console.log('Expired tokens reset complete');
         }
 
         return refreshResult;
       }
 
-      // 성공 시 새 토큰 저장
+      // On success, store new tokens
       const { access_token, refresh_token, expires_in } = refreshResult;
 
-      // 환경변수에 설정된 TOKEN_EXPIRES_IN 값 우선 사용, 없으면 서버 응답값, 모두 없으면 기본값 3600(1시간)
+      // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
       await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-      console.log(`새 액세스 토큰 저장 완료 (만료 기간: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + '시간' : expires_in ? expires_in/3600 + '시간' : '1시간'})`);
+      console.log(`New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + ' hours' : expires_in ? expires_in/3600 + ' hours' : '1 hour'})`);
 
-      // 새 리프레시 토큰 저장 (있는 경우)
+      // Store new refresh token (if available)
       if (refresh_token) {
         await storeRefreshToken(refresh_token);
-        console.log('새 리프레시 토큰 저장 완료');
+        console.log('New refresh token saved successfully');
       }
 
       return { success: true };
     } finally {
-      // 갱신 상태 초기화
+      // Reset refresh state
       isRefreshing = false;
     }
   } catch (error) {
-    console.error('토큰 리프레시 과정 중 예외 발생:', error);
-    isRefreshing = false; // 오류 발생 시에도 상태 초기화
+    console.error('Exception occurred during token refresh process:', error);
+    isRefreshing = false; // Reset state even on error
 
-    // 치명적인 오류이지만 앱 실행은 유지
+    // Critical error but keep app running
     const errorMessage = error.message || 'Unknown error in refresh token process';
     return {
       success: false,
@@ -528,14 +528,14 @@ async function refreshAccessToken() {
 }
 
 /**
- * 로그아웃 처리 (클라이언트 측에서만 토큰 삭제)
- * @returns {Promise<boolean>} 로그아웃 성공 여부
+ * Handle logout (only delete tokens on client side)
+ * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
   try {
-    // 서버 호출 없이 로컬 토큰만 삭제
+    // Delete local tokens without server call
     await clearTokens();
-    console.log('로컬 토큰 삭제 완료');
+    console.log('Local tokens deleted successfully');
 
     return true;
   } catch (error) {
@@ -545,42 +545,42 @@ async function logout() {
 }
 
 /**
- * 사용자 프로필 정보를 가져옵니다
- * @returns {Promise<Object>} 사용자 프로필 정보
+ * Get user profile information
+ * @returns {Promise<Object>} User profile information
  */
 async function fetchUserProfile() {
   try {
     return await apiAuth.fetchUserProfile(refreshAccessToken);
   } catch (error) {
-    console.error('프로필 정보 가져오기 오류:', error);
+    console.error('Error retrieving profile information:', error);
     return {
       error: {
         code: 'PROFILE_ERROR',
-        message: error.message || '프로필 정보를 가져올 수 없습니다.'
+        message: error.message || 'Unable to retrieve profile information.'
       }
     };
   }
 }
 
 /**
- * 인증 코드를 토큰으로 교환하고 프로필 정보를 업데이트합니다
- * @param {string} code - OAuth 인증 코드
- * @returns {Promise<Object>} 처리 결과
+ * Exchange authentication code for token and update profile information
+ * @param {string} code - OAuth authentication code
+ * @returns {Promise<Object>} Processing result
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   try {
-    // 토큰 교환
+    // Exchange token
     const tokenResult = await exchangeCodeForToken(code);
     if (!tokenResult.success) {
       return tokenResult;
     }
 
-    // 구독 정보 가져오기
+    // Get subscription information
     try {
       const subscription = await fetchSubscription();
-      console.log('구독 정보 조회 성공');
+      console.log('Successfully retrieved subscription information');
 
-      // 구독 정보를 config에 저장
+      // Save subscription information to config
       await updatePageGroupSettings(subscription);
 
       return {
@@ -588,27 +588,27 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         subscription
       };
     } catch (subError) {
-      console.error('구독 정보 조회 실패:', subError);
+      console.error('Failed to retrieve subscription information:', subError);
 
-      // 토큰 교환은 성공했으므로 성공으로 처리하고 경고만 함
+      // Token exchange was successful, so treat as success with warning
       return {
         success: true,
-        warning: '로그인은 성공했으나 구독 정보를 가져오지 못했습니다.',
+        warning: 'Login was successful, but failed to retrieve subscription information.',
         error_details: subError.message
       };
     }
   } catch (error) {
-    console.error('인증 코드 교환 및 구독 업데이트 중 오류 발생:', error);
+    console.error('Error during authentication code exchange and subscription update:', error);
     return {
       success: false,
-      error: error.message || '인증 처리 중 오류가 발생했습니다.',
+      error: error.message || 'An error occurred during authentication processing.',
       details: error.stack
     };
   }
 }
 
 /**
- * URI 프로토콜 핸들러를 등록합니다 (toast-app:// 프로토콜)
+ * Register URI protocol handler (toast-app:// protocol)
  * @returns {void}
  */
 function registerProtocolHandler() {
@@ -618,8 +618,8 @@ function registerProtocolHandler() {
 }
 
 /**
- * 유효한 액세스 토큰이 있는지 확인합니다
- * @returns {Promise<boolean>} 토큰이 유효하면 true
+ * Check if there is a valid access token
+ * @returns {Promise<boolean>} Returns true if token is valid
  */
 async function hasValidToken() {
   try {
@@ -628,10 +628,10 @@ async function hasValidToken() {
       return false;
     }
 
-    // 토큰이 있으면 만료 여부도 확인
+    // If token exists, also check expiration
     const isExpired = await isTokenExpired();
     if (isExpired) {
-      console.log('토큰이 만료되었습니다. 갱신이 필요합니다.');
+      console.log('Token has expired. Refresh needed.');
       return false;
     }
 
@@ -643,27 +643,27 @@ async function hasValidToken() {
 }
 
 /**
- * 현재 액세스 토큰을 가져옵니다
- * @returns {Promise<string|null>} 액세스 토큰 또는 null
+ * Get current access token
+ * @returns {Promise<string|null>} Access token or null
  */
 async function getAccessToken() {
   return client.getAccessToken() || await getStoredToken();
 }
 
 /**
- * 구독 정보에 따라 페이지 그룹 설정을 업데이트합니다
- * @param {Object} subscription - 구독 정보
+ * Update page group settings based on subscription information
+ * @param {Object} subscription - Subscription information
  * @returns {Promise<void>}
  */
 async function updatePageGroupSettings(subscription) {
   try {
     const config = createConfigStore();
 
-    // 활성 상태 및 구독 여부 확인
+    // Check active status and subscription status
     const isActive = subscription.active || subscription.is_subscribed || false;
     const isVip = subscription.isVip || false;
 
-    // 페이지 그룹 수 계산
+    // Calculate number of page groups
     let pageGroups = PAGE_GROUPS.ANONYMOUS;
     if (isActive || isVip) {
       if (subscription.plan === 'premium' || subscription.plan === 'pro' || isVip) {
@@ -672,47 +672,47 @@ async function updatePageGroupSettings(subscription) {
         pageGroups = PAGE_GROUPS.AUTHENTICATED;
       }
     } else if (subscription.userId && subscription.userId !== 'anonymous') {
-      // 비활성 사용자지만 로그인은 된 경우
+      // User is authenticated but not active subscription
       pageGroups = PAGE_GROUPS.AUTHENTICATED;
     }
 
-    // subscribedUntil 값 처리 - 항상 문자열로 변환
+    // Process subscribedUntil value - always convert to string
     let subscribedUntilStr = '';
     try {
       if (subscription.subscribed_until) {
-        // 명시적으로 문자열로 변환하고 유효한 문자열인지 확인
+        // Explicitly convert to string and verify valid string
         subscribedUntilStr = typeof subscription.subscribed_until === 'string'
           ? subscription.subscribed_until
           : String(subscription.subscribed_until);
       } else if (subscription.expiresAt) {
-        // 명시적으로 문자열로 변환하고 유효한 문자열인지 확인
+        // Explicitly convert to string and verify valid string
         subscribedUntilStr = typeof subscription.expiresAt === 'string'
           ? subscription.expiresAt
           : String(subscription.expiresAt);
       }
 
-      // 값이 undefined나 null이면 빈 문자열로 설정
+      // Set to empty string if value is undefined or null
       if (subscribedUntilStr === 'undefined' || subscribedUntilStr === 'null') {
         subscribedUntilStr = '';
       }
     } catch (error) {
-      console.error('subscribedUntil 값 변환 오류:', error);
-      subscribedUntilStr = ''; // 오류 발생 시 빈 문자열로 설정
+      console.error('Error converting subscribedUntil value:', error);
+      subscribedUntilStr = ''; // Use empty string if error occurs
     }
 
-    console.log('구독 정보 저장 전 확인:', {
+    console.log('Verifying subscription information before saving:', {
       plan: subscription.plan || 'free',
       subscribedUntil: subscribedUntilStr,
       subscribedUntilType: typeof subscribedUntilStr,
       pageGroups: subscription.features?.page_groups || pageGroups
     });
 
-    // 안전하게 구독 정보 저장
+    // Safely save subscription information
     config.set('subscription', {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
-      subscribedUntil: subscribedUntilStr, // 안전하게 문자열로 변환된 값
+      subscribedUntil: subscribedUntilStr, // Safely converted to string
       pageGroups: subscription.features?.page_groups || pageGroups,
       isVip: isVip,
       additionalFeatures: {
@@ -721,29 +721,29 @@ async function updatePageGroupSettings(subscription) {
       }
     });
 
-    console.log('구독 설정 업데이트 완료:', {
+    console.log('Subscription settings update complete:', {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
       pageGroups: subscription.features?.page_groups || pageGroups
     });
   } catch (error) {
-    console.error('페이지 그룹 설정 업데이트 오류:', error);
+    console.error('Error updating page group settings:', error);
     throw error;
   }
 }
 
 /**
- * 로그아웃 후 페이지 그룹 설정을 초기화합니다
- * @returns {Promise<boolean>} 로그아웃 성공 여부
+ * Logout and reset page group settings
+ * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logoutAndResetPageGroups() {
   try {
-    // 로그아웃 처리
+    // Process logout
     const logoutSuccess = await logout();
 
     if (logoutSuccess) {
-      // 페이지 그룹 설정 초기화
+      // Reset page group settings
       const config = createConfigStore();
       config.set('subscription', {
         isAuthenticated: false,
@@ -762,33 +762,33 @@ async function logoutAndResetPageGroups() {
   }
 }
 
-// 초기화: 저장된 토큰 메모리에 로드
+// Initialization: Load stored tokens into memory
 initializeTokensFromStorage().then(() => {
-  console.log('토큰 상태 초기화 완료');
+  console.log('Token state initialization complete');
 });
 
 /**
- * 구독 정보를 가져옵니다
- * @returns {Promise<Object>} 구독 정보
+ * Get subscription information
+ * @returns {Promise<Object>} Subscription information
  */
 async function fetchSubscription() {
   try {
-    // profile API를 통해 호출하고 subscription 정보 추출
+    // Call through profile API and extract subscription information
     const profileData = await fetchUserProfile();
 
     if (profileData && profileData.subscription) {
-      // 성공적으로 프로필 데이터를 가져왔고 구독 정보가 있는 경우
+      // Successfully retrieved profile data with subscription information
       return profileData.subscription;
     } else if (profileData.error) {
-      // 에러가 있는 경우
+      // Error case
       return profileData;
     } else {
-      // 프로필은 있지만 구독 정보가 없는 경우 기본값 반환
+      // Profile exists but no subscription information, return default
       return DEFAULT_ANONYMOUS_SUBSCRIPTION;
     }
   } catch (error) {
-    console.error('구독 정보 조회 실패:', error);
-    // 오류 발생 시 익명 사용자로 처리
+    console.error('Failed to retrieve subscription information:', error);
+    // Handle as anonymous user if error occurs
     return DEFAULT_ANONYMOUS_SUBSCRIPTION;
   }
 }

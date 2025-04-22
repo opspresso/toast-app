@@ -1,9 +1,9 @@
 /**
  * Toast App - Authentication Manager Module
  *
- * 설정 창과 토스트 창 간의 인증 상태 동기화를 위한 모듈입니다.
- * 로그인/로그아웃 처리를 중앙화하고 양쪽 창에 이벤트를 전송합니다.
- * 공용 API 모듈을 사용하여 구현되었습니다.
+ * This module is for synchronizing authentication state between settings window and toast window.
+ * It centralizes login/logout processing and sends events to both windows.
+ * It is implemented using the common API module.
  */
 
 const auth = require('./auth');
@@ -13,29 +13,29 @@ const { createConfigStore } = require('./config');
 const { client } = require('./api');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
 
-// 창 참조 저장
+// Store window references
 let windows = null;
-// 클라우드 동기화 객체
+// Cloud synchronization object
 let syncManager = null;
 
 /**
- * 인증 관리자 초기화
- * @param {Object} windowsRef - 애플리케이션 창 참조 객체
+ * Initialize authentication manager
+ * @param {Object} windowsRef - Application windows reference object
  */
 function initialize(windowsRef) {
   windows = windowsRef;
 
-  // 클라우드 동기화 초기화
+  // Initialize cloud synchronization
   syncManager = cloudSync.initCloudSync();
 
-  // authManager 참조 설정 - 순환 참조를 피하기 위해 필요한 메서드만 포함한 객체 전달
+  // Set authManager reference - pass an object containing only the necessary methods to avoid circular references
   cloudSync.setAuthManager({
     getAccessToken,
     hasValidToken,
     refreshAccessToken: () => auth.refreshAccessToken()
   });
 
-  // 사용자 데이터 관리자 초기화
+  // Initialize user data manager
   userDataManager.initialize(client, {
     getAccessToken,
     hasValidToken,
@@ -43,13 +43,13 @@ function initialize(windowsRef) {
     fetchSubscription: () => auth.fetchSubscription()
   });
 
-  // 클라우드 동기화 모듈에 사용자 데이터 관리자 참조 설정
+  // Set user data manager reference in cloud synchronization module
   cloudSync.setUserDataManager(userDataManager);
 }
 
 /**
- * 로그인 프로세스 시작
- * @returns {Promise<boolean>} 프로세스 시작 성공 여부
+ * Start login process
+ * @returns {Promise<boolean>} Whether process started successfully
  */
 async function initiateLogin() {
   try {
@@ -61,9 +61,9 @@ async function initiateLogin() {
 }
 
 /**
- * 인증 코드로 토큰 교환
- * @param {string} code - OAuth 인증 코드
- * @returns {Promise<Object>} 토큰 교환 결과
+ * Exchange authentication code for token
+ * @param {string} code - OAuth authentication code
+ * @returns {Promise<Object>} Token exchange result
  */
 async function exchangeCodeForToken(code) {
   try {
@@ -79,130 +79,130 @@ async function exchangeCodeForToken(code) {
 }
 
 /**
- * 인증 코드를 토큰으로 교환하고 프로필/설정/구독 정보 업데이트
- * @param {string} code - OAuth 인증 코드
- * @returns {Promise<Object>} 처리 결과
+ * Exchange authentication code for token and update profile/settings/subscription information
+ * @param {string} code - OAuth authentication code
+ * @returns {Promise<Object>} Processing result
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   try {
-    console.log('인증 코드를 토큰으로 교환 및 프로필/설정 업데이트 시작');
+    console.log('Starting exchange of authentication code for token and update of profile/settings');
     const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
 
-    // 로그인 성공 시 양쪽 창에 알림
+    // Notify both windows on login success
     if (result.success) {
       notifyLoginSuccess(result.subscription);
 
-      // 1. 사용자 프로필 정보 가져오기 및 저장
-      console.log('로그인 성공 후 사용자 프로필 정보 가져오기');
+      // 1. Get and save user profile information
+      console.log('Getting user profile information after successful login');
       const userProfile = await auth.fetchUserProfile();
 
-      // 사용자 데이터 관리자를 통해 프로필 정보 저장
+      // Save profile information through user data manager
       if (userProfile) {
-        await userDataManager.getUserProfile(true); // 강제 갱신 모드로 호출하여 API 결과를 파일에 저장
-        console.log('사용자 프로필 정보 저장 완료');
+        await userDataManager.getUserProfile(true); // Call in force refresh mode to save API results to file
+        console.log('User profile information saved successfully');
 
-        // 구독 정보 출력 (로깅)
+        // Log subscription information
         const userEmail = userProfile.email || result.subscription?.userId || 'unknown';
         const userName = userProfile.name || result.subscription?.name || 'unknown user';
         const userPlan = result.subscription?.plan || 'free';
         const isVip = result.subscription?.isVip || false;
 
-        console.log('====== 계정 정보 ======');
-        console.log('사용자 이메일:', userEmail);
-        console.log('사용자 이름:', userName);
-        console.log('구독 플랜:', userPlan);
-        console.log('VIP 상태:', isVip ? 'VIP 사용자' : '일반 사용자');
-        console.log('=======================');
+        console.log('====== Account Info ======');
+        console.log('User email:', userEmail);
+        console.log('User name:', userName);
+        console.log('Subscription plan:', userPlan);
+        console.log('VIP status:', isVip ? 'VIP user' : 'Regular user');
+        console.log('=========================');
       }
 
-      // 2. 사용자 설정 정보 가져오기 및 저장
-      console.log('로그인 성공 후 사용자 설정 정보 가져오기');
-      const userSettings = await getUserSettings(true); // 강제 갱신 모드로 호출
+      // 2. Get and save user settings
+      console.log('Getting user settings after successful login');
+      const userSettings = await getUserSettings(true); // Call in force refresh mode
 
       if (userSettings) {
-        console.log('사용자 설정 정보 저장 완료');
+        console.log('User settings saved successfully');
       }
 
-      // 3. 인증 상태 변경 알림 전송 (프로필 및 설정 포함)
+      // 3. Send authentication state change notification (including profile and settings)
       notifyAuthStateChange({
         isAuthenticated: true,
         profile: userProfile || null,
         settings: userSettings || null
       });
-      console.log('인증 상태 변경 알림 전송 완료');
+      console.log('Authentication state change notification sent');
 
-      // 4. 클라우드 동기화 수행
+      // 4. Perform cloud synchronization
       if (syncManager) {
         // ==========================================
-        // 시점 1: 사용자 로그인 성공 시 클라우드 싱크
+        // Point 1: Cloud sync after user login success
         // ==========================================
-        console.log('로그인 성공 후 클라우드 동기화 시작');
+        console.log('Starting cloud synchronization after successful login');
 
-        // 1. cloud_sync 기능 상태 확인 및 설정
+        // 1. Check and set cloud_sync feature status
         let hasSyncFeature = false;
 
-        // features 객체가 있는지 확인
+        // Check if features object exists
         if (result.subscription?.features && typeof result.subscription.features === 'object') {
           hasSyncFeature = result.subscription.features.cloud_sync === true;
-          console.log('구독 정보의 features에서 cloud_sync 기능 확인:', hasSyncFeature);
+          console.log('Checking cloud_sync feature in subscription features:', hasSyncFeature);
         }
-        // features_array 배열에서 확인 (대체 방법)
+        // Check in features_array (alternative method)
         else if (Array.isArray(result.subscription?.features_array)) {
           hasSyncFeature = result.subscription.features_array.includes('cloud_sync');
-          console.log('구독 정보의 features_array에서 cloud_sync 기능 확인:', hasSyncFeature);
+          console.log('Checking cloud_sync feature in features_array:', hasSyncFeature);
         }
-        // 구독자는 기본적으로 cloud_sync 가능
+        // Subscribers can use cloud_sync by default
         else if (result.subscription?.isSubscribed === true ||
           result.subscription?.active === true ||
           result.subscription?.is_subscribed === true) {
           hasSyncFeature = true;
-          console.log('구독 상태가 활성화되어 있어 cloud_sync 기능 활성화');
+          console.log('Cloud_sync feature enabled due to active subscription status');
         }
 
-        // 구독 정보에 cloud_sync 기능 강제 추가 (디버깅용)
+        // Force add cloud_sync feature to subscription info (for debugging)
         if (result.subscription && typeof result.subscription === 'object') {
-          // 기존 구독 정보 복사
+          // Copy existing subscription info
           const updatedSubscription = { ...result.subscription };
 
-          // features 객체가 없으면 생성
+          // Create features object if it doesn't exist
           if (!updatedSubscription.features || typeof updatedSubscription.features !== 'object') {
             updatedSubscription.features = {};
           }
 
-          // cloud_sync 기능 설정
+          // Set cloud_sync feature
           updatedSubscription.features.cloud_sync = hasSyncFeature;
 
-          // 설정 저장소에 업데이트된 구독 정보 저장
+          // Save updated subscription info to settings store
           const config = createConfigStore();
           config.set('subscription', updatedSubscription);
-          console.log('업데이트된 구독 정보 저장됨:', JSON.stringify(updatedSubscription));
+          console.log('Updated subscription information saved:', JSON.stringify(updatedSubscription));
         }
 
-        console.log('클라우드 동기화 기능 상태 설정:', hasSyncFeature);
+        console.log('Cloud synchronization feature status set:', hasSyncFeature);
         cloudSync.updateCloudSyncSettings(hasSyncFeature);
 
-        // 2. 서버에서 최신 데이터 다운로드 (서버 데이터 우선)
+        // 2. Download latest data from server (server data takes priority)
         if (hasSyncFeature) {
-          console.log('클라우드 동기화 기능이 활성화되어 있습니다. 서버에서 설정 가져오는 중...');
-          // 페이지 설정 동기화 시작
+          console.log('Cloud synchronization feature is enabled. Getting settings from server...');
+          // Start page settings synchronization
           syncManager.syncAfterLogin().then(syncResult => {
-            console.log('로그인 후 클라우드 동기화 결과:', syncResult);
+            console.log('Cloud synchronization result after login:', syncResult);
 
             if (syncResult && syncResult.success) {
-              // 설정 동기화 성공 시 양쪽 창에 알림
+              // Notify both windows when settings sync is successful
               notifySettingsSynced();
             } else {
-              console.log('로그인 후 동기화 실패:', syncResult?.error || '알 수 없는 오류');
+              console.log('Synchronization failed after login:', syncResult?.error || 'Unknown error');
             }
           });
         } else {
-          console.log('클라우드 동기화 기능이 비활성화되어 있습니다. 구독 상태를 확인하세요.');
+          console.log('Cloud synchronization feature is disabled. Please check your subscription status.');
         }
 
-        // 3. 사용자 데이터 관리 (프로필 및 설정 정보 저장)
-        console.log('사용자 데이터 관리 시작');
+        // 3. User data management (save profile and settings information)
+        console.log('Starting user data management');
         userDataManager.syncAfterLogin().then(dataResult => {
-          console.log('로그인 후 사용자 데이터 동기화 결과:', dataResult ? '성공' : '실패');
+          console.log('User data synchronization result after login:', dataResult ? 'Success' : 'Failure');
         });
       }
     } else {
@@ -213,7 +213,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
   } catch (error) {
     console.error('Error in exchangeCodeForTokenAndUpdateSubscription:', error);
 
-    // 오류 발생 시 양쪽 창에 알림
+    // Send error notification to both windows
     notifyLoginError(error.message || 'Unknown error');
 
     return {
@@ -224,29 +224,29 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 }
 
 /**
- * 로그아웃 처리 (로컬 토큰 삭제 및 환경 데이터 초기화)
- * @returns {Promise<boolean>} 로그아웃 성공 여부
+ * Process logout (delete local tokens and reset environment data)
+ * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
   try {
-    console.log('로그아웃 프로세스 시작');
+    console.log('Starting logout process');
     const result = await auth.logout();
 
-    // 로그아웃 성공 시 주기적 동기화 중지 및 클라우드 동기화 설정 업데이트
+    // Stop periodic synchronization and update cloud sync settings when logout is successful
     if (result && syncManager) {
-      // 동기화 기능 비활성화 및 주기적 동기화 중지
+      // Disable synchronization feature and stop periodic synchronization
       cloudSync.updateCloudSyncSettings(false);
       cloudSync.stopPeriodicSync();
 
-      console.log('로그아웃으로 인한 클라우드 동기화 비활성화 및 주기적 동기화 중지');
+      console.log('Cloud synchronization disabled and periodic synchronization stopped due to logout');
     }
 
-    // 로그아웃 성공 시 사용자 데이터 정리
+    // Clean up user data when logout is successful
     if (result) {
       userDataManager.cleanupOnLogout();
-      console.log('로그아웃으로 인한 사용자 데이터 정리 완료');
+      console.log('User data cleanup completed due to logout');
 
-      // 구독 정보 초기화 (익명 상태로 변경)
+      // Reset subscription information (change to anonymous state)
       const config = createConfigStore();
       config.set('subscription', {
         isAuthenticated: false,
@@ -254,18 +254,18 @@ async function logout() {
         subscribedUntil: '',
         pageGroups: DEFAULT_ANONYMOUS_SUBSCRIPTION.features.page_groups
       });
-      console.log('구독 정보 초기화 완료');
+      console.log('Subscription information reset complete');
 
-      // 앱의 인증 상태 변경 알림
+      // Send app authentication state change notification
       notifyAuthStateChange({
         isAuthenticated: false,
         profile: DEFAULT_ANONYMOUS,
         settings: null
       });
-      console.log('인증 상태 변경 알림 전송 완료');
+      console.log('Authentication state change notification sent');
     }
 
-    // 로그아웃 성공 시 양쪽 창에 알림
+    // Send notification to both windows when logout is successful
     if (result) {
       notifyLogout();
     }
@@ -278,29 +278,29 @@ async function logout() {
 }
 
 /**
- * 로그아웃 및 페이지 그룹 설정 초기화
- * @returns {Promise<boolean>} 로그아웃 성공 여부
+ * Logout and reset page group settings
+ * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logoutAndResetPageGroups() {
   try {
-    console.log('로그아웃 및 페이지 그룹 초기화 프로세스 시작');
+    console.log('Starting logout and page group reset process');
     const result = await auth.logoutAndResetPageGroups();
 
-    // 로그아웃 성공 시 주기적 동기화 중지 및 클라우드 동기화 설정 업데이트
+    // Stop periodic synchronization and update cloud sync settings when logout is successful
     if (result && syncManager) {
-      // 동기화 기능 비활성화 및 주기적 동기화 중지
+      // Disable synchronization feature and stop periodic synchronization
       cloudSync.updateCloudSyncSettings(false);
       cloudSync.stopPeriodicSync();
 
-      console.log('로그아웃으로 인한 클라우드 동기화 비활성화 및 주기적 동기화 중지');
+      console.log('Cloud synchronization disabled and periodic synchronization stopped due to logout');
     }
 
-    // 로그아웃 성공 시 사용자 데이터 정리
+    // Clean up user data when logout is successful
     if (result) {
       userDataManager.cleanupOnLogout();
-      console.log('로그아웃으로 인한 사용자 데이터 정리 완료');
+      console.log('User data cleanup completed due to logout');
 
-      // 구독 정보 초기화 (익명 상태로 변경)
+      // Reset subscription information (change to anonymous state)
       const config = createConfigStore();
       config.set('subscription', {
         isAuthenticated: false,
@@ -308,18 +308,18 @@ async function logoutAndResetPageGroups() {
         subscribedUntil: '',
         pageGroups: DEFAULT_ANONYMOUS_SUBSCRIPTION.features.page_groups
       });
-      console.log('구독 정보 초기화 완료');
+      console.log('Subscription information reset complete');
 
-      // 앱의 인증 상태 변경 알림
+      // Send app authentication state change notification
       notifyAuthStateChange({
         isAuthenticated: false,
         profile: DEFAULT_ANONYMOUS,
         settings: null
       });
-      console.log('인증 상태 변경 알림 전송 완료');
+      console.log('Authentication state change notification sent');
     }
 
-    // 로그아웃 성공 시 양쪽 창에 알림
+    // Send notification to both windows when logout is successful
     if (result) {
       notifyLogout();
     }
@@ -332,12 +332,12 @@ async function logoutAndResetPageGroups() {
 }
 
 /**
- * 사용자 프로필 정보 가져오기
- * @param {boolean} forceRefresh - API에서 강제로 새로 가져올지 여부 (기본: false)
- * @returns {Promise<Object>} 사용자 프로필 정보
+ * Get user profile information
+ * @param {boolean} forceRefresh - Whether to force a refresh from API (default: false)
+ * @returns {Promise<Object>} User profile information
  */
 async function fetchUserProfile(forceRefresh = false) {
-  // 저장된 파일에서 먼저 시도하고, 없으면 API 호출
+  // First try from stored file, then API call if not available
   const storedProfile = await userDataManager.getUserProfile(forceRefresh);
   if (storedProfile && !forceRefresh) {
     return storedProfile;
@@ -347,22 +347,22 @@ async function fetchUserProfile(forceRefresh = false) {
 }
 
 /**
- * 구독 정보 가져오기 (프로필에서 통합 제공)
- * @param {boolean} forceRefresh - API에서 강제로 새로 가져올지 여부 (기본: false)
- * @returns {Promise<Object>} 구독 정보
+ * Get subscription information (provided as part of profile)
+ * @param {boolean} forceRefresh - Whether to force a refresh from API (default: false)
+ * @returns {Promise<Object>} Subscription information
  */
 async function fetchSubscription(forceRefresh = false) {
-  // 저장된 프로필에서 구독 정보 추출 시도
+  // Try to extract subscription information from stored profile
   const storedProfile = await userDataManager.getUserProfile(forceRefresh);
   if (storedProfile && storedProfile.subscription && !forceRefresh) {
     return storedProfile.subscription;
   }
 
-  // 저장된 정보가 없거나 강제 갱신인 경우 API 호출
+  // Call API if no stored information or force refresh
   const profileData = await auth.fetchUserProfile();
 
   if (profileData && profileData.subscription) {
-    // 성공적으로 프로필 데이터를 가져왔고 구독 정보가 있는 경우
+    // Successfully retrieved profile data with subscription information
     return profileData.subscription;
   } else {
     return DEFAULT_ANONYMOUS_SUBSCRIPTION;
@@ -370,32 +370,32 @@ async function fetchSubscription(forceRefresh = false) {
 }
 
 /**
- * 토큰 갱신
- * @returns {Promise<Object>} 갱신 결과
+ * Refresh token
+ * @returns {Promise<Object>} Refresh result
  */
 async function refreshAccessToken() {
   return await auth.refreshAccessToken();
 }
 
 /**
- * 현재 인증 토큰 가져오기
- * @returns {Promise<string|null>} 인증 토큰 또는 null
+ * Get current authentication token
+ * @returns {Promise<string|null>} Authentication token or null
  */
 async function getAccessToken() {
   return await auth.getAccessToken();
 }
 
 /**
- * 유효한 토큰이 있는지 확인
- * @returns {Promise<boolean>} 토큰 유효 여부
+ * Check if there is a valid token
+ * @returns {Promise<boolean>} Whether token is valid
  */
 async function hasValidToken() {
   return await auth.hasValidToken();
 }
 
 /**
- * 로그인 성공 알림을 양쪽 창에 전송
- * @param {Object} subscription - 구독 정보
+ * Send login success notification to both windows
+ * @param {Object} subscription - Subscription information
  */
 function notifyLoginSuccess(subscription) {
   if (!windows) return;
@@ -406,12 +406,12 @@ function notifyLoginSuccess(subscription) {
     pageGroups: subscription?.features?.page_groups || 3
   };
 
-  // 토스트 창에 알림
+  // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {
     windows.toast.webContents.send('login-success', loginData);
   }
 
-  // 설정 창에 알림
+  // Send notification to settings window
   if (windows.settings && !windows.settings.isDestroyed()) {
     windows.settings.webContents.send('login-success', loginData);
   }
@@ -420,23 +420,23 @@ function notifyLoginSuccess(subscription) {
 }
 
 /**
- * 로그인 오류 알림을 양쪽 창에 전송
- * @param {string} errorMessage - 오류 메시지
+ * Send login error notification to both windows
+ * @param {string} errorMessage - Error message
  */
 function notifyLoginError(errorMessage) {
   if (!windows) return;
 
   const errorData = {
     error: errorMessage,
-    message: '인증에 실패했습니다: ' + errorMessage
+    message: 'Authentication failed: ' + errorMessage
   };
 
-  // 토스트 창에 알림
+  // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {
     windows.toast.webContents.send('login-error', errorData);
   }
 
-  // 설정 창에 알림
+  // Send notification to settings window
   if (windows.settings && !windows.settings.isDestroyed()) {
     windows.settings.webContents.send('login-error', errorData);
   }
@@ -445,17 +445,17 @@ function notifyLoginError(errorMessage) {
 }
 
 /**
- * 로그아웃 알림을 양쪽 창에 전송
+ * Send logout notification to both windows
  */
 function notifyLogout() {
   if (!windows) return;
 
-  // 토스트 창에 알림
+  // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {
     windows.toast.webContents.send('logout-success', {});
   }
 
-  // 설정 창에 알림
+  // Send notification to settings window
   if (windows.settings && !windows.settings.isDestroyed()) {
     windows.settings.webContents.send('logout-success', {});
   }
@@ -464,33 +464,33 @@ function notifyLogout() {
 }
 
 /**
- * 설정 동기화 알림을 양쪽 창에 전송
+ * Send settings synchronization notification to both windows
  */
 function notifySettingsSynced() {
   if (!windows) return;
 
   const syncData = {
     success: true,
-    message: '설정이 클라우드와 성공적으로 동기화되었습니다.'
+    message: 'Settings have been successfully synchronized with the cloud.'
   };
 
-  // 토스트 창에 알림
+  // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {
     windows.toast.webContents.send('settings-synced', syncData);
   }
 
-  // 설정 창에 알림
+  // Send notification to settings window
   if (windows.settings && !windows.settings.isDestroyed()) {
     windows.settings.webContents.send('settings-synced', syncData);
   }
 
-  console.log('설정 동기화 알림 전송 완료');
+  console.log('Settings synchronization notification sent');
 }
 
 /**
- * 수동 동기화 요청 처리
- * @param {string} action - 동기화 액션 ('upload', 'download', 'resolve')
- * @returns {Promise<boolean>} 동기화 성공 여부
+ * Process manual synchronization request
+ * @param {string} action - Synchronization action ('upload', 'download', 'resolve')
+ * @returns {Promise<boolean>} Whether synchronization was successful
  */
 async function syncSettings(action = 'resolve') {
   try {
@@ -507,15 +507,15 @@ async function syncSettings(action = 'resolve') {
 
     return false;
   } catch (error) {
-    console.error('수동 동기화 오류:', error);
+    console.error('Manual synchronization error:', error);
     return false;
   }
 }
 
 /**
- * 클라우드 동기화 설정 업데이트
- * @param {boolean} enabled - 동기화 활성화 여부
- * @returns {boolean} 설정 변경 성공 여부
+ * Update cloud synchronization settings
+ * @param {boolean} enabled - Whether to enable synchronization
+ * @returns {boolean} Whether settings change was successful
  */
 function updateSyncSettings(enabled) {
   try {
@@ -531,24 +531,24 @@ function updateSyncSettings(enabled) {
 
     return true;
   } catch (error) {
-    console.error('동기화 설정 변경 오류:', error);
+    console.error('Error changing synchronization settings:', error);
     return false;
   }
 }
 
 /**
- * 인증 상태 변경 알림을 양쪽 창에 전송
- * @param {Object} authState - 인증 상태 정보
+ * Send authentication state change notification to both windows
+ * @param {Object} authState - Authentication state information
  */
 function notifyAuthStateChange(authState) {
   if (!windows) return;
 
-  // 토스트 창에 알림
+  // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {
     windows.toast.webContents.send('auth-state-changed', authState);
   }
 
-  // 설정 창에 알림
+  // Send notification to settings window
   if (windows.settings && !windows.settings.isDestroyed()) {
     windows.settings.webContents.send('auth-state-changed', authState);
   }
@@ -557,9 +557,9 @@ function notifyAuthStateChange(authState) {
 }
 
 /**
- * 사용자 설정 정보 가져오기
- * @param {boolean} forceRefresh - API에서 강제로 새로 가져올지 여부 (기본: false)
- * @returns {Promise<Object>} 사용자 설정 정보
+ * Get user settings information
+ * @param {boolean} forceRefresh - Whether to force a refresh from API (default: false)
+ * @returns {Promise<Object>} User settings information
  */
 async function getUserSettings(forceRefresh = false) {
   return await userDataManager.getUserSettings(forceRefresh);

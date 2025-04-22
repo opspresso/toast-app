@@ -263,7 +263,7 @@ function getInitials(name) {
 
 /**
  * Fetch subscription information
- * (subscription 정보는 profile API에서 통합 제공됨)
+ * (subscription information is provided by the profile API)
  */
 async function fetchSubscriptionInfo() {
   try {
@@ -278,7 +278,7 @@ async function fetchSubscriptionInfo() {
       return;
     }
 
-    // fetchSubscription은 profile API를 통해 구독 정보를 조회함
+    // fetchSubscription gets subscription info through the profile API
     const subscription = await window.settings.fetchSubscription();
     if (subscription) {
       authState.subscription = subscription;
@@ -396,7 +396,7 @@ function setLoading(loadingElement, isLoading) {
  */
 async function loadUserDataAndUpdateUI() {
   try {
-    // Load profile information (이제 profile API로 모든 정보 조회)
+    // Load profile information (now querying all information through profile API)
     await fetchUserProfile();
 
     // Update UI after loading data
@@ -453,7 +453,7 @@ async function handleLogin() {
  */
 async function handleLogout() {
   try {
-    // Call the main process to log out (로컬에서만 로그아웃)
+    // Call the main process to log out (logout only locally)
     await window.settings.logoutAndResetPageGroups();
 
     // Update UI
@@ -596,35 +596,35 @@ function setupEventListeners() {
     }
   });
 
-  // 로그인 성공 이벤트 리스너
+  // Login success event listener
   window.addEventListener('login-success', (event) => {
     console.log('Login success event received in settings window:', event.detail);
-    // 로그인 성공 시 사용자 데이터 로드 및 UI 업데이트
+    // Load user data and update UI when login is successful
     loadUserDataAndUpdateUI();
   });
 
-  // 로그인 오류 이벤트 리스너
+  // Login error event listener
   window.addEventListener('login-error', (event) => {
     console.error('Login error event received in settings window:', event.detail);
-    // 로그인 오류 시 UI 업데이트
+    // Update UI when login fails
     updateAuthStateUI(false);
     alert(`Login failed: ${event.detail.message || event.detail.error || 'Unknown error'}`);
   });
 
-  // 로그아웃 성공 이벤트 리스너
+  // Logout success event listener
   window.addEventListener('logout-success', (event) => {
     console.log('Logout success event received in settings window');
-    // 로그아웃 성공 시 UI 업데이트
+    // Update UI when logout is successful
     updateAuthStateUI(false);
   });
 
-  // 인증 상태 변경 이벤트 리스너
+  // Authentication state change event listener
   window.addEventListener('auth-state-changed', (event) => {
     console.log('Auth state changed event received in settings window:', event.detail);
 
-    // 인증 상태 변경 유형에 따라 처리
+    // Handle based on authentication state change type
     if (event.detail.type === 'auth-reload') {
-      // 인증 정보 새로고침 시 사용자 데이터 로드 및 UI 업데이트
+      // Load user data and update UI when authentication info is refreshed
       loadUserDataAndUpdateUI();
     }
   });

@@ -15,12 +15,12 @@ const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortc
 const auth = require('./auth');
 const authManager = require('./auth-manager');
 
-// 버튼 편집 모달 상태 추적
+// Track button edit modal state
 let isModalOpen = false;
 
 /**
- * 현재 모달이 열려있는지 확인하는 함수
- * @returns {boolean} 모달 열림 상태
+ * Function to check if modal is currently open
+ * @returns {boolean} Modal open state
  */
 function isModalOpened() {
   return isModalOpen;
@@ -31,17 +31,17 @@ function isModalOpened() {
  * @param {Object} windows - Object containing application windows
  */
 function setupIpcHandlers(windows) {
-  // 인증 관리자 초기화 (창 참조 전달)
+  // Initialize authentication manager (pass window references)
   authManager.initialize(windows);
 
-  // URL 프로토콜 핸들러 등록 (OAuth 리디렉션 처리)
+  // Register URL protocol handler (OAuth redirection handling)
   auth.registerProtocolHandler();
 
-  // 앱 실행 중 프로토콜 요청 처리
+  // Handle protocol requests during app execution
   global.handleProtocolRequest = async (url) => {
     console.log('Protocol request received:', url);
 
-    // auth.js의 handleAuthRedirect 함수로 인증 URL 처리
+    // Process authentication URL using handleAuthRedirect function in auth.js
     if (url.startsWith('toast-app://auth')) {
       try {
         const urlObj = new URL(url);
@@ -49,51 +49,51 @@ function setupIpcHandlers(windows) {
 
         const result = await auth.handleAuthRedirect(url);
 
-        // 처리 결과를 설정 창으로 전달
+        // Send processing result to settings window
         if (windows.settings && !windows.settings.isDestroyed()) {
           windows.settings.webContents.send('auth-result', result);
         }
 
-        // 로그인 성공 시 auth-manager를 통해 양쪽 창에 알림
+        // Notify both windows through auth-manager on login success
         if (result.success) {
-          // reload_auth 액션인 경우 특별 메시지 전송
-          if (action === 'reload_auth') {
-            authManager.notifyAuthStateChange({
-              type: 'auth-reload',
-              subscription: result.subscription,
-              message: '인증 정보가 새로고침되었습니다.'
-            });
-          } else {
-            // 일반 로그인 성공 알림
+        // Send special message if action is reload_auth
+        if (action === 'reload_auth') {
+          authManager.notifyAuthStateChange({
+            type: 'auth-reload',
+            subscription: result.subscription,
+            message: 'Authentication information has been refreshed.'
+          });
+        } else {
+          // Regular login success notification
             authManager.notifyLoginSuccess(result.subscription);
           }
         } else {
-          // 로그인 실패 알림
+          // Login failure notification
           authManager.notifyLoginError(result.error || 'Unknown error');
         }
       } catch (error) {
         console.error('Error handling auth redirect:', error);
-        // 오류 발생 시 알림
+        // Notification when error occurs
         authManager.notifyLoginError(error.message || 'Unknown error');
       }
     } else if (windows.settings && !windows.settings.isDestroyed()) {
-      // 기타 프로토콜 데이터 전달
+      // Deliver other protocol data
       windows.settings.webContents.send('protocol-data', url);
     }
   };
 
-  // 버튼 편집 모달 상태 변경 처리
+  // Handle button edit modal state change
   ipcMain.on('modal-state-changed', (event, open) => {
     isModalOpen = open;
     console.log('Modal state changed:', isModalOpen ? 'open' : 'closed');
   });
 
-  // 현재 모달 상태 반환 핸들러
+  // Handler to return current modal state
   ipcMain.handle('is-modal-open', () => {
     return isModalOpen;
   });
 
-  // 창의 alwaysOnTop 속성 설정
+  // Set window's alwaysOnTop property
   ipcMain.handle('set-always-on-top', (event, value) => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
@@ -107,7 +107,7 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // 창의 현재 위치 반환
+  // Return current window position
   ipcMain.handle('get-window-position', (event) => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
@@ -120,13 +120,13 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // 창을 일시적으로 숨김 (파일 선택 대화상자 표시를 위해)
+  // Temporarily hide window (to display file selection dialog)
   ipcMain.handle('hide-window-temporarily', async (event) => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
-        // 창을 숨기기 전에 항상 위 속성 끄기
+        // Turn off alwaysOnTop property before hiding window
         windows.toast.setAlwaysOnTop(false);
-        // 창 숨기기
+        // Hide window
         windows.toast.hide();
         return true;
       }
@@ -137,25 +137,25 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // 대화상자가 닫힌 후 창 다시 표시
+  // Display window again after dialog is closed
   ipcMain.handle('show-window-after-dialog', async (event, position) => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
-        // 저장된 위치로 창 이동 (위치 정보가 있는 경우)
+        // Move window to saved position (if position information exists)
         if (position && Array.isArray(position) && position.length === 2) {
           windows.toast.setPosition(position[0], position[1]);
         }
 
-        // 창 표시 및 포커스
+        // Show window and focus
         windows.toast.show();
         windows.toast.focus();
 
-        // 항상 위로 설정 복원
+        // Restore alwaysOnTop setting
         setTimeout(() => {
           if (windows.toast && !windows.toast.isDestroyed()) {
             windows.toast.setAlwaysOnTop(true);
           }
-        }, 100); // 약간의 지연 후 alwaysOnTop 설정
+        }, 100); // Set alwaysOnTop after slight delay
 
         return true;
       }
@@ -219,9 +219,9 @@ function setupIpcHandlers(windows) {
         config.set(key, value);
       }
 
-      // 설정이 변경되면 토스트 창에 즉시 알림
+      // Immediately notify toast window when settings change
       if (windows.toast && !windows.toast.isDestroyed()) {
-        // 전체 설정 또는 특정 섹션이 업데이트된 경우
+        // If entire settings or specific section is updated
         if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages') {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
@@ -230,17 +230,17 @@ function setupIpcHandlers(windows) {
           });
         }
 
-        // 윈도우 설정에 영향을 미치는 경우 윈도우 속성 업데이트
+        // Update window properties if window settings are affected
         if (key === 'appearance' || key === 'appearance.opacity' || key === 'appearance.size') {
           const opacity = config.get('appearance.opacity') || 0.95;
           windows.toast.setOpacity(opacity);
 
-          // 윈도우 크기 변경 (필요한 경우)
+          // Change window size (if needed)
           const size = config.get('appearance.size') || 'medium';
           updateToastWindowSize(windows.toast, size);
         }
 
-        // 윈도우 위치에 영향을 미치는 경우 위치 업데이트
+        // Update position if window position settings are affected
         if (key === 'appearance' || key === 'appearance.position') {
           const { positionToastWindow } = require('./shortcuts');
           positionToastWindow(windows.toast, config);
@@ -255,7 +255,7 @@ function setupIpcHandlers(windows) {
   });
 
   /**
-   * 토스트 창 크기 업데이트
+   * Update toast window size
    */
   function updateToastWindowSize(window, size) {
     let width, height;
@@ -288,7 +288,7 @@ function setupIpcHandlers(windows) {
           config.set(key, changes[key]);
         });
 
-        // 설정이 변경되면 토스트 창에 즉시 알림
+        // Immediately notify toast window when settings change
         if (windows.toast && !windows.toast.isDestroyed()) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
@@ -296,7 +296,7 @@ function setupIpcHandlers(windows) {
             subscription: config.get('subscription')
           });
 
-          // 외관 설정이 변경된 경우 토스트 창의 외관 업데이트
+          // Update toast window appearance if appearance settings change
           if (changes.appearance) {
             if (changes.appearance.opacity) {
               windows.toast.setOpacity(changes.appearance.opacity);
@@ -328,7 +328,7 @@ function setupIpcHandlers(windows) {
       const { resetToDefaults } = require('./config');
       resetToDefaults(config);
 
-      // 설정 초기화 후 토스트 창에 변경 알림 전송
+      // Send change notification to toast window after settings reset
       if (windows.toast && !windows.toast.isDestroyed()) {
         windows.toast.webContents.send('config-updated', {
           pages: config.get('pages'),
@@ -391,9 +391,9 @@ function setupIpcHandlers(windows) {
   // Close settings window
   ipcMain.on('close-settings', () => {
     if (windows.settings && !windows.settings.isDestroyed()) {
-      // 먼저 창을 숨기고 나서 닫아 깜빡임 방지
+      // First hide the window then close to prevent flashing
       windows.settings.hide();
-      // 약간의 지연 후 실제로 창 닫기
+      // Close the window after a slight delay
       setTimeout(() => {
         if (windows.settings && !windows.settings.isDestroyed()) {
           windows.settings.close();
@@ -415,62 +415,62 @@ function setupIpcHandlers(windows) {
     app.quit();
   });
 
-  // 인증 관련 핸들러
+  // Authentication related handlers
 
-  // 로그인 프로세스 시작
+  // Start login process
   ipcMain.handle('initiate-login', async () => {
     return await authManager.initiateLogin();
   });
 
-  // 인증 코드로 토큰 교환
+  // Exchange authentication code for token
   ipcMain.handle('exchange-code-for-token', async (event, code) => {
     return await authManager.exchangeCodeForToken(code);
   });
 
-  // 로그아웃
+  // Logout
   ipcMain.handle('logout', async () => {
     return await authManager.logout();
   });
 
-  // 로그아웃 및 페이지 그룹 설정 초기화
+  // Logout and reset page group settings
   ipcMain.handle('logoutAndResetPageGroups', async () => {
     return await authManager.logoutAndResetPageGroups();
   });
 
-  // 사용자 프로필 정보 가져오기
+  // Get user profile information
   ipcMain.handle('fetch-user-profile', async () => {
     return await authManager.fetchUserProfile();
   });
 
-  // 구독 정보 가져오기
+  // Get subscription information
   ipcMain.handle('fetch-subscription', async () => {
     return await authManager.fetchSubscription();
   });
 
-  // 현재 인증 토큰 반환
+  // Return current authentication token
   ipcMain.handle('get-auth-token', async () => {
     return await authManager.getAccessToken();
   });
 
-  // 클라우드 동기화 관련 핸들러
+  // Cloud synchronization related handlers
 
-  // 동기화 가능 여부 확인
+  // Check if synchronization is possible
   ipcMain.handle('is-cloud-sync-enabled', async () => {
     const cloudSync = require('./cloud-sync');
     return await cloudSync.isCloudSyncEnabled();
   });
 
-  // 수동 동기화 요청
+  // Manual synchronization request
   ipcMain.handle('sync-settings', async (event, action) => {
     return await authManager.syncSettings(action);
   });
 
-  // 동기화 설정 업데이트
+  // Update synchronization settings
   ipcMain.handle('update-sync-settings', async (event, enabled) => {
     return authManager.updateSyncSettings(enabled);
   });
 
-  // URL 외부 브라우저에서 열기
+  // Open URL in external browser
   ipcMain.handle('open-url', async (event, url) => {
     try {
       await shell.openExternal(url);
@@ -481,11 +481,11 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // 단축키 레코딩을 위한 핸들러
-  // 임시로 모든 단축키 비활성화
+  // Handlers for shortcut recording
+  // Temporarily disable all shortcuts
   ipcMain.handle('temporarily-disable-shortcuts', () => {
     try {
-      // 현재 설정된 모든 글로벌 단축키 비활성화
+      // Disable all currently set global shortcuts
       unregisterGlobalShortcuts();
       return true;
     } catch (error) {
@@ -494,10 +494,10 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // 단축키 복원
+  // Restore shortcuts
   ipcMain.handle('restore-shortcuts', () => {
     try {
-      // 글로벌 단축키를 다시 등록
+      // Register global shortcuts again
       return registerGlobalShortcuts(config, windows);
     } catch (error) {
       console.error('Error restoring shortcuts:', error);
@@ -508,11 +508,11 @@ function setupIpcHandlers(windows) {
   // Show open dialog
   ipcMain.handle('show-open-dialog', async (event, options) => {
     try {
-      // options에 modal: true 추가하여 모달로 표시
+      // Add modal: true to options to display as modal
       const modalOptions = {
         ...options,
         modal: true,
-        // toast 창을 부모로 설정하여 항상 toast 창 위에 표시
+        // Set toast window as parent to always display above toast window
         parent: windows.toast
       };
       return await dialog.showOpenDialog(modalOptions);
@@ -525,11 +525,11 @@ function setupIpcHandlers(windows) {
   // Show save dialog
   ipcMain.handle('show-save-dialog', async (event, options) => {
     try {
-      // options에 modal: true 추가하여 모달로 표시
+      // Add modal: true to options to display as modal
       const modalOptions = {
         ...options,
         modal: true,
-        // toast 창을 부모로 설정하여 항상 toast 창 위에 표시
+        // Set toast window as parent to always display above toast window
         parent: windows.toast
       };
       return await dialog.showSaveDialog(modalOptions);
@@ -542,11 +542,11 @@ function setupIpcHandlers(windows) {
   // Show message box
   ipcMain.handle('show-message-box', async (event, options) => {
     try {
-      // options에 modal: true 추가하여 모달로 표시
+      // Add modal: true to options to display as modal
       const modalOptions = {
         ...options,
         modal: true,
-        // toast 창을 부모로 설정하여 항상 toast 창 위에 표시
+        // Set toast window as parent to always display above toast window
         parent: windows.toast
       };
       return await dialog.showMessageBox(modalOptions);
