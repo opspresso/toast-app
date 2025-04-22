@@ -461,6 +461,11 @@ function setupIpcHandlers(windows) {
     return await authManager.fetchUserProfile();
   });
 
+  // Get user settings information
+  ipcMain.handle('get-user-settings', async () => {
+    return await authManager.getUserSettings();
+  });
+
   // Get subscription information
   ipcMain.handle('fetch-subscription', async () => {
     return await authManager.fetchSubscription();

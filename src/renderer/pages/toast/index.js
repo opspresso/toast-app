@@ -163,10 +163,7 @@ const defaultButtons = [
 
 // Define empty button set (15 buttons)
 const emptyButtons = Array(15).fill(null).map((_, index) => {
-  const row = Math.floor(index / 5);
-  const col = index % 5;
   const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
-
   return {
     name: `Button ${rowLetters[index]}`,
     shortcut: rowLetters[index],
@@ -215,23 +212,23 @@ document.addEventListener('DOMContentLoaded', () => {
       applyAppearanceSettings(config.appearance);
     }
 
-  // Load user information when the app starts
-  fetchUserProfileAndSubscription()
-    .then(() => {
-      console.log('User information loading complete:', {
-        profileExists: !!userProfile,
-        subscriptionExists: !!userSubscription
+    // Load user information when the app starts
+    fetchUserProfileAndSubscription()
+      .then(() => {
+        console.log('User information loading complete:', {
+          profileExists: !!userProfile,
+          subscriptionExists: !!userSubscription
+        });
+        // Update user information UI
+        updateProfileDisplay();
+        updateUserButton();
+      })
+      .catch(error => {
+        console.error('Error loading user information:', error);
+        // Update UI anyway (display as anonymous user) even if error occurs
+        updateProfileDisplay();
+        updateUserButton();
       });
-      // Update user information UI
-      updateProfileDisplay();
-      updateUserButton();
-    })
-    .catch(error => {
-      console.error('Error loading user information:', error);
-      // Update UI anyway (display as anonymous user) even if error occurs
-      updateProfileDisplay();
-      updateUserButton();
-    });
   });
 
   // Set up event listeners

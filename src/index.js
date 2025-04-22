@@ -32,9 +32,6 @@ if (!app.requestSingleInstanceLock()) {
 // Create configuration store
 const config = createConfigStore();
 
-// Flag to track if the app is quitting
-let isQuitting = false;
-
 /**
  * 환경 구성 파일을 로드하고 앱에 반영
  */

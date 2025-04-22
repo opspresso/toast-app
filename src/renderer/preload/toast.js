@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld(
     initiateLogin: () => ipcRenderer.invoke('initiate-login'),
     fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
     fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
+    getUserSettings: () => ipcRenderer.invoke('get-user-settings'),
     logout: () => ipcRenderer.invoke('logout'),
     invoke: (channel, ...args) => {
       // 허용된 채널에 대해서만 invoke 호출
