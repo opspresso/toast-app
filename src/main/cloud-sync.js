@@ -126,7 +126,7 @@ function scheduleSync(changeType) {
     await uploadSettingsWithRetry();
   }, SYNC_DEBOUNCE_MS);
 
-  console.log(`${changeType} 변경 감지, ${SYNC_DEBOUNCE_MS/1000}초 후 동기화 예약됨`);
+  console.log(`${changeType} 변경 감지, ${SYNC_DEBOUNCE_MS / 1000}초 후 동기화 예약됨`);
 }
 
 /**
@@ -152,7 +152,7 @@ async function uploadSettingsWithRetry() {
       console.log(`동기화 실패 원인: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
-        console.log(`업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS/1000}초 후 시작`);
+        console.log(`업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS / 1000}초 후 시작`);
 
         // 재시도 예약
         setTimeout(() => {
@@ -168,7 +168,7 @@ async function uploadSettingsWithRetry() {
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
-      console.log(`예외로 인한 업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS/1000}초 후 시작`);
+      console.log(`예외로 인한 업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS / 1000}초 후 시작`);
 
       // 재시도 예약
       setTimeout(() => {
@@ -212,15 +212,13 @@ async function uploadSettings() {
     // 타임스탬프 업데이트
     const timestamp = getCurrentTimestamp();
 
-    // 업로드할 데이터 구성
+    // 업로드할 데이터 구성 - 두 가지 형식 모두 대응하기 위해 pages 배열 직접 노출
     const uploadData = {
-      data: {
-        advanced,
-        appearance,
-        lastSyncedAt: timestamp,
-        lastSyncedDevice: state.deviceId,
-        pages,
-      }
+      advanced,
+      appearance,
+      lastSyncedAt: timestamp,
+      lastSyncedDevice: state.deviceId,
+      pages,
     };
 
     console.log(`서버에 ${pages.length}개 페이지 설정 업로드 중`);
@@ -349,14 +347,14 @@ async function syncSettings(action = 'resolve') {
       } else if (Array.isArray(subscription.features_array)) {
         hasSyncFeature = subscription.features_array.includes('cloud_sync');
       } else if (subscription.isSubscribed === true ||
-                 subscription.active === true ||
-                 subscription.is_subscribed === true) {
+        subscription.active === true ||
+        subscription.is_subscribed === true) {
         hasSyncFeature = true;
       }
 
       // additionalFeatures 확인 (설정 페이지에서 저장하는 형식)
       if (!hasSyncFeature && subscription.additionalFeatures &&
-          typeof subscription.additionalFeatures === 'object') {
+        typeof subscription.additionalFeatures === 'object') {
         hasSyncFeature = subscription.additionalFeatures.cloudSync === true;
       }
 

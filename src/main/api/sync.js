@@ -52,8 +52,8 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
     } else if (Array.isArray(subscription.features_array)) {
       hasSyncFeature = subscription.features_array.includes('cloud_sync');
     } else if (subscription.isSubscribed === true ||
-               subscription.active === true ||
-               subscription.is_subscribed === true) {
+      subscription.active === true ||
+      subscription.is_subscribed === true) {
       hasSyncFeature = true;
     }
 
@@ -106,20 +106,6 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
       throw new Error('Invalid data');
     }
 
-    // data.pages 또는 pages 구조 모두 지원
-    const pagesData = directData.data?.pages || directData.pages;
-    if (!Array.isArray(pagesData)) {
-      console.error('업로드할 유효한 페이지 데이터가 없습니다');
-      throw new Error('Invalid pages data');
-    }
-
-    console.log(`서버에 ${pagesData.length}개 페이지 설정 업로드 중...`);
-
-    // 업로드 전 데이터 로깅
-    if (pagesData.length > 0) {
-      console.log(`첫 번째 페이지 이름: ${pagesData[0].name}`);
-    }
-
     // API 요청
     return await authenticatedRequest(async () => {
       const headers = getAuthHeaders();
@@ -128,7 +114,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
       console.log('서버에 요청 데이터 전송:', {
         endpoint: ENDPOINTS.SETTINGS,
         dataSize: JSON.stringify(directData).length,
-        pageCount: directData.pages.length
+        dataFields: Object.keys(directData),
       });
 
       const response = await apiClient.put(ENDPOINTS.SETTINGS, directData, { headers });
