@@ -322,8 +322,57 @@ async function downloadSettings() {
 async function syncSettings(action = 'resolve') {
   console.log(`수동 동기화 요청: ${action}`);
 
-  if (!await canSync()) {
-    return { success: false, error: '클라우드 동기화가 비활성화 되었거나 구독이 없습니다' };
+  // 추가 디버깅 정보
+  const syncCheckResult = await canSync();
+  console.log('수동 동기화 canSync 결과:', syncCheckResult);
+
+  if (!syncCheckResult) {
+    const configStore = createConfigStore();
+    const subscription = configStore.get('subscription') || {};
+    console.log('수동 동기화 구독 정보 확인:', JSON.stringify(subscription));
+
+    // 구독 정보에 따른 상세 오류 메시지
+    let errorMessage = '클라우드 동기화가 비활성화 되었거나 구독이 없습니다';
+
+    // 로그인 상태 확인
+    const isAuthenticated = await authManager.hasValidToken();
+    if (!isAuthenticated) {
+      errorMessage = '로그인이 필요합니다';
+    }
+    // 구독 정보 확인 (sync.js에 추가한 것과 동일한 조건들을 확인)
+    else {
+      let hasSyncFeature = false;
+
+      // 다양한 구독 정보 형식 검사
+      if (subscription.features && typeof subscription.features === 'object') {
+        hasSyncFeature = subscription.features.cloud_sync === true;
+      } else if (Array.isArray(subscription.features_array)) {
+        hasSyncFeature = subscription.features_array.includes('cloud_sync');
+      } else if (subscription.isSubscribed === true ||
+                 subscription.active === true ||
+                 subscription.is_subscribed === true) {
+        hasSyncFeature = true;
+      }
+
+      // additionalFeatures 확인 (설정 페이지에서 저장하는 형식)
+      if (!hasSyncFeature && subscription.additionalFeatures &&
+          typeof subscription.additionalFeatures === 'object') {
+        hasSyncFeature = subscription.additionalFeatures.cloudSync === true;
+      }
+
+      // 구독 유형 확인 (최후의 수단)
+      if (!hasSyncFeature && subscription.plan && (
+        subscription.plan.toLowerCase().includes('premium') ||
+        subscription.plan.toLowerCase().includes('pro')
+      )) {
+        hasSyncFeature = true;
+
+        // 구독은 프리미엄인데 동기화 권한이 없는 경우 - 내부 오류일 가능성 높음
+        errorMessage = '구독 정보가 올바르게, 반영되지 않았습니다. 앱을 재시작하거나 로그아웃 후 다시 로그인해 주세요.';
+      }
+    }
+
+    return { success: false, error: errorMessage };
   }
 
   try {

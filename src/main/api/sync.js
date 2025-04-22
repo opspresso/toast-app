@@ -57,6 +57,20 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       hasSyncFeature = true;
     }
 
+    // additionalFeatures 체크 (설정 페이지에서 저장하는 형식)
+    if (!hasSyncFeature && subscription.additionalFeatures && typeof subscription.additionalFeatures === 'object') {
+      hasSyncFeature = subscription.additionalFeatures.cloudSync === true;
+    }
+
+    // 기존 구독 정보에서 구독 상태가 true인 경우 (최후의 수단으로 확인)
+    if (!hasSyncFeature && subscription.plan && (
+      subscription.plan.toLowerCase().includes('premium') ||
+      subscription.plan.toLowerCase().includes('pro')
+    )) {
+      hasSyncFeature = true;
+      console.log('Plan-based cloud sync permission granted');
+    }
+
     console.log('클라우드 동기화 기능 활성화 여부:', hasSyncFeature);
     return hasSyncFeature;
   } catch (error) {

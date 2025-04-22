@@ -266,7 +266,21 @@ function updateSyncStatusUI(status) {
     : '현재 장치: 알 수 없음';
 
   // Enable/disable buttons based on status
-  const hasCloudSyncPermission = authState.subscription?.features?.cloud_sync;
+  let hasCloudSyncPermission = false;
+
+  // Check subscription in various formats
+  if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
+    hasCloudSyncPermission = authState.subscription.features.cloud_sync === true;
+  } else if (Array.isArray(authState.subscription?.features_array)) {
+    hasCloudSyncPermission = authState.subscription.features_array.includes('cloud_sync');
+  } else if (
+    authState.subscription?.isSubscribed === true ||
+    authState.subscription?.active === true ||
+    authState.subscription?.is_subscribed === true
+  ) {
+    hasCloudSyncPermission = true;
+  }
+
   const canUseCloudSync = hasCloudSyncPermission;
 
   enableCloudSyncCheckbox.disabled = !hasCloudSyncPermission;
@@ -387,9 +401,37 @@ async function fetchSubscriptionInfo() {
       return;
     }
 
+    // 구독 정보 확인을 위한 로그
+    console.log('구독 정보 요청 시작');
+
+    // 프로필 정보를 먼저 가져와 구독 정보 확인
+    const profile = await window.settings.fetchUserProfile();
+    console.log('프로필 정보 수신:', profile ? '성공' : '실패');
+
+    if (profile && profile.subscription) {
+      console.log('프로필에서 구독 정보 발견:', JSON.stringify(profile.subscription));
+    }
+
     // fetchSubscription gets subscription info through the profile API
     const subscription = await window.settings.fetchSubscription();
+    console.log('구독 정보 수신:', subscription ? '성공' : '실패');
+
     if (subscription) {
+      console.log('수신된 구독 정보:', JSON.stringify(subscription));
+
+      // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
+      if (subscription.plan && (
+        subscription.plan.toLowerCase().includes('premium') ||
+        subscription.plan.toLowerCase().includes('pro')
+      )) {
+        if (!subscription.features) {
+          subscription.features = {};
+        }
+        // 프리미엄/프로 사용자라면 cloud_sync 기능 활성화
+        subscription.features.cloud_sync = true;
+        console.log('프리미엄 구독 감지, cloud_sync 활성화');
+      }
+
       authState.subscription = subscription;
 
       // Update subscription UI
@@ -397,6 +439,9 @@ async function fetchSubscriptionInfo() {
 
       // Save subscription info to config
       saveSubscriptionToConfig(subscription);
+
+      // 구독 정보를 설정에 직접 저장
+      await window.settings.setConfig('subscription', subscription);
     }
 
     // Hide loading state
@@ -1047,14 +1092,28 @@ async function handleCloudSyncToggle() {
     // Show loading state
     setLoading(syncLoading, true);
 
-    // Check if user has subscription permission
-    const hasCloudSyncPermission = authState.subscription?.features?.cloud_sync;
-    if (!hasCloudSyncPermission) {
-      alert('클라우드 동기화 기능은 Premium 구독이 필요합니다.');
-      enableCloudSyncCheckbox.checked = false;
-      setLoading(syncLoading, false);
-      return;
-    }
+  // Check if user has subscription permission
+  let hasCloudSyncPermission = false;
+
+  // Check subscription in various formats
+  if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
+    hasCloudSyncPermission = authState.subscription.features.cloud_sync === true;
+  } else if (Array.isArray(authState.subscription?.features_array)) {
+    hasCloudSyncPermission = authState.subscription.features_array.includes('cloud_sync');
+  } else if (
+    authState.subscription?.isSubscribed === true ||
+    authState.subscription?.active === true ||
+    authState.subscription?.is_subscribed === true
+  ) {
+    hasCloudSyncPermission = true;
+  }
+
+  if (!hasCloudSyncPermission) {
+    alert('클라우드 동기화 기능은 Premium 구독이 필요합니다.');
+    enableCloudSyncCheckbox.checked = false;
+    setLoading(syncLoading, false);
+    return;
+  }
 
     // Enable/disable cloud sync
     const enabled = enableCloudSyncCheckbox.checked;

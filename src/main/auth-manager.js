@@ -141,6 +141,9 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         // 1. Check and set cloud_sync feature status
         let hasSyncFeature = false;
 
+        // 디버깅 정보 추가
+        console.log('서브스크립션 정보 전체:', JSON.stringify(result.subscription || {}));
+
         // Check if features object exists
         if (result.subscription?.features && typeof result.subscription.features === 'object') {
           hasSyncFeature = result.subscription.features.cloud_sync === true;
