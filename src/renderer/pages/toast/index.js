@@ -1031,15 +1031,8 @@ function addNewPage() {
 
   if (userProfile && userProfile.is_authenticated !== false) {
     // 인증된 사용자
-    if (isSubscribed || (userSubscription && (userSubscription.active || userSubscription.is_subscribed))) {
-      // 구독 중인 사용자
-      maxPages = userSubscription?.features?.page_groups || 9; // 구독자 기본값: 9 페이지
-      console.log('구독 사용자: 최대 페이지 수 =', maxPages);
-    } else {
-      // 인증되었지만 구독하지 않은 사용자
-      maxPages = userSubscription?.features?.page_groups || 3; // 인증된 무료 사용자 기본값: 3 페이지
-      console.log('인증된 무료 사용자: 최대 페이지 수 =', maxPages);
-    }
+    maxPages = userSubscription?.features?.page_groups || 3;
+    console.log('인증된 사용자: 최대 페이지 수 =', maxPages);
   } else {
     console.log('익명 사용자: 최대 페이지 수 =', maxPages);
   }
@@ -1054,7 +1047,7 @@ function addNewPage() {
       }, 1500);
     } else {
       // 인증된 사용자
-      if (isSubscribed || (userSubscription && (userSubscription.active || userSubscription.is_subscribed))) {
+      if (isSubscribed || userSubscription?.active || userSubscription?.is_subscribed) {
         // 구독 중인 사용자
         showStatus(`최대 ${maxPages}개의 페이지만 사용할 수 있습니다.`, 'error');
       } else {

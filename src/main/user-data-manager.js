@@ -140,8 +140,9 @@ async function getUserProfile(forceRefresh = false) {
         if (profileData.subscription) {
           const plan = profileData.subscription.plan || 'free';
           const isSubscribed = profileData.subscription.active ||
-                              profileData.subscription.is_subscribed || false;
-          console.log(`로드된 구독 정보: 플랜=${plan}, 구독상태=${isSubscribed ? '활성' : '비활성'}`);
+            profileData.subscription.is_subscribed || false;
+          const pageGroups = profileData.subscription.features.page_groups || 1;
+          console.log(`로드된 구독 정보: 플랜=${plan}, 구독상태=${isSubscribed ? '활성' : '비활성'}, pages=${pageGroups}`);
         }
 
         return profileData;
@@ -176,7 +177,7 @@ async function getUserProfile(forceRefresh = false) {
       console.log('API에서 가져온 프로필 정보:', {
         name: profileData.name || '이름 없음',
         email: profileData.email || '이메일 없음',
-        hasSubscription: !!profileData.subscription,
+        hasSubscription: profileData.subscription?.active || profileData.subscription?.is_subscribed,
         plan: profileData.subscription?.plan || 'free'
       });
 
