@@ -445,7 +445,10 @@ The page system is designed to provide flexibility and organization:
 1. **Multiple Pages**: Users can create up to 9 pages, organized by context or function
 2. **Page Navigation**: Simple navigation via tabs or number keys
 3. **Page Management**: Users can add, remove, and organize pages
-4. **Subscription Tiers**: Free users can create up to 3 pages, while subscribers can create up to 9
+4. **Subscription Tiers**:
+   - Unauthenticated free users (ANONYMOUS): Limited to 1 page
+   - Authenticated free users (AUTHENTICATED): Up to 3 pages
+   - Subscribers (PREMIUM): Up to 9 pages
 
 This approach allows users to organize their shortcuts based on different contexts or workflows, making the application more versatile.
 

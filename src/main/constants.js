@@ -6,9 +6,9 @@
 
 // Constants for the number of page groups based on subscription level
 const PAGE_GROUPS = {
-  ANONYMOUS: 1, // Unauthenticated users
-  AUTHENTICATED: 3, // Authenticated users
-  PREMIUM: 9 // Subscribers or VIP users
+  ANONYMOUS: 1, // Unauthenticated free users (ANONYMOUS): Limited to 1 page
+  AUTHENTICATED: 3, // Authenticated free users (AUTHENTICATED): Up to 3 pages
+  PREMIUM: 9 // Subscribers (PREMIUM): Up to 9 pages
 };
 
 // Default subscription information for anonymous users
