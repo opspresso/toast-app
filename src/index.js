@@ -36,6 +36,46 @@ const config = createConfigStore();
 let isQuitting = false;
 
 /**
+ * 환경 구성 파일을 로드하고 앱에 반영
+ */
+async function loadEnvironmentConfig() {
+  console.log('환경 구성 파일 로드 시작...');
+  try {
+    // 1. 인증 토큰 로드
+    const hasToken = await auth.hasValidToken();
+    console.log('인증 토큰 확인 결과:', hasToken ? '토큰 있음' : '토큰 없음');
+
+    // 2. 사용자 프로필 로드
+    if (hasToken) {
+      const userProfile = await authManager.fetchUserProfile();
+      console.log('사용자 프로필 로드 완료:', userProfile ? '성공' : '실패');
+
+      // 3. 사용자 설정 로드
+      const userSettings = await authManager.getUserSettings();
+      console.log('사용자 설정 로드 완료:', userSettings ? '성공' : '실패');
+
+      // 인증 상태 알림
+      if (userProfile) {
+        authManager.notifyAuthStateChange({
+          isAuthenticated: true,
+          profile: userProfile,
+          settings: userSettings
+        });
+        console.log('인증 상태 업데이트 알림 전송 완료');
+      }
+    } else {
+      console.log('유효한 토큰이 없어 인증 상태 초기화');
+      authManager.notifyAuthStateChange({
+        isAuthenticated: false
+      });
+    }
+  } catch (error) {
+    console.error('환경 구성 파일 로드 중 오류:', error);
+  }
+  console.log('환경 구성 파일 로드 완료');
+}
+
+/**
  * Initialize the application
  */
 function initialize() {
@@ -66,6 +106,9 @@ function initialize() {
 
   // 인증 관리자 초기화 (클라우드 동기화 포함)
   authManager.initialize(windows);
+
+  // 환경 구성 파일 로드 및 앱에 반영
+  loadEnvironmentConfig();
 
   // 프로토콜 핸들러 등록 (auth 모듈의 함수 호출)
   auth.registerProtocolHandler();

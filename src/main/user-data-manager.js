@@ -109,6 +109,8 @@ function deleteFile(filePath) {
  */
 async function getUserProfile(forceRefresh = false) {
   try {
+    console.log(`사용자 프로필 정보 가져오기 (강제 갱신: ${forceRefresh ? '예' : '아니오'})`);
+
     // 인증 상태 확인
     if (!authManagerRef) {
       console.error('인증 관리자가 초기화되지 않음');
@@ -121,7 +123,7 @@ async function getUserProfile(forceRefresh = false) {
       return DEFAULT_ANONYMOUS;
     }
 
-    // 로컬 파일에서 우선 조회 (강제 갱신이 아닌 경우)
+    // 1. 로컬 파일 확인 (강제 갱신이 아닌 경우)
     if (!forceRefresh && fileExists(PROFILE_FILE_PATH)) {
       const profileData = readFromFile(PROFILE_FILE_PATH);
       if (profileData) {
@@ -133,11 +135,20 @@ async function getUserProfile(forceRefresh = false) {
           console.log('파일에서 로드한 프로필에 인증 상태 추가');
         }
         console.log('파일에서 프로필 정보 로드 성공');
+
+        // 구독 정보 로그 출력
+        if (profileData.subscription) {
+          const plan = profileData.subscription.plan || 'free';
+          const isSubscribed = profileData.subscription.active ||
+                              profileData.subscription.is_subscribed || false;
+          console.log(`로드된 구독 정보: 플랜=${plan}, 구독상태=${isSubscribed ? '활성' : '비활성'}`);
+        }
+
         return profileData;
       }
     }
 
-    // API에서 프로필 조회
+    // 2. API에서 프로필 조회
     console.log('API에서 프로필 정보 조회 중...');
     const profileData = await authManagerRef.fetchUserProfile();
 
@@ -155,13 +166,23 @@ async function getUserProfile(forceRefresh = false) {
       return null;
     }
 
-    // 성공적으로 조회한 경우 인증 상태를 명시적으로 추가하고 파일에 저장
+    // 3. 성공적으로 조회한 경우 인증 상태를 명시적으로 추가하고 파일에 저장
     if (profileData && !profileData.error) {
       // 인증 상태 추가 (is_authenticated와 isAuthenticated 모두 설정)
       profileData.is_authenticated = true;
       profileData.isAuthenticated = true;
 
+      // 로그 추가
+      console.log('API에서 가져온 프로필 정보:', {
+        name: profileData.name || '이름 없음',
+        email: profileData.email || '이메일 없음',
+        hasSubscription: !!profileData.subscription,
+        plan: profileData.subscription?.plan || 'free'
+      });
+
+      // 파일에 저장
       writeToFile(PROFILE_FILE_PATH, profileData);
+      console.log('프로필 정보 파일에 저장 완료');
     }
 
     return profileData;
@@ -186,6 +207,8 @@ async function getUserProfile(forceRefresh = false) {
  */
 async function getUserSettings(forceRefresh = false) {
   try {
+    console.log(`사용자 설정 정보 가져오기 (강제 갱신: ${forceRefresh ? '예' : '아니오'})`);
+
     // 인증 상태 확인
     if (!authManagerRef) {
       console.error('인증 관리자가 초기화되지 않음');
@@ -198,7 +221,7 @@ async function getUserSettings(forceRefresh = false) {
       return { isAuthenticated: false };
     }
 
-    // 로컬 파일에서 우선 조회 (강제 갱신이 아닌 경우)
+    // 1. 로컬 파일에서 우선 조회 (강제 갱신이 아닌 경우)
     if (!forceRefresh && fileExists(SETTINGS_FILE_PATH)) {
       const settingsData = readFromFile(SETTINGS_FILE_PATH);
       if (settingsData) {
@@ -209,18 +232,25 @@ async function getUserSettings(forceRefresh = false) {
           writeToFile(SETTINGS_FILE_PATH, settingsData);
           console.log('파일에서 로드한 설정에 인증 상태 추가');
         }
-        console.log('파일에서 설정 정보 로드 성공');
+
+        // 로그 추가
+        console.log('파일에서 설정 정보 로드 성공:', {
+          hasThemeSettings: !!settingsData.theme,
+          hasFontSettings: !!settingsData.font,
+          hasGeneralSettings: !!settingsData.general
+        });
+
         return settingsData;
       }
     }
 
-    // API 참조 확인
+    // 2. API 참조 확인
     if (!apiClientRef) {
       console.error('API 클라이언트가 초기화되지 않음');
       return null;
     }
 
-    // API에서 설정 조회
+    // 3. API에서 설정 조회
     console.log('API에서 설정 정보 조회 중...');
     const token = await authManagerRef.getAccessToken();
 
@@ -244,12 +274,20 @@ async function getUserSettings(forceRefresh = false) {
         settingsData.isAuthenticated = true;
 
         writeToFile(SETTINGS_FILE_PATH, settingsData);
-        console.log('API에서 설정 정보 조회 및 파일 저장 성공');
+
+        // 로그 추가
+        console.log('API에서 설정 정보 조회 및 파일 저장 성공:', {
+          hasThemeSettings: !!settingsData.theme,
+          hasFontSettings: !!settingsData.font,
+          hasGeneralSettings: !!settingsData.general,
+          timestamp: new Date().toISOString()
+        });
       }
 
       return settingsData;
     }
 
+    console.log('API에서 설정 정보를 가져오지 못함, 기본 설정 반환');
     return { isAuthenticated: false };
   } catch (error) {
     console.error('설정 정보 가져오기 오류:', error);
@@ -261,7 +299,8 @@ async function getUserSettings(forceRefresh = false) {
       return savedSettingsData;
     }
 
-    return null;
+    console.log('저장된 설정 정보도 없음, 기본 설정 반환');
+    return { isAuthenticated: false };
   }
 }
 
@@ -417,21 +456,53 @@ async function syncAfterLogin() {
 
 /**
  * 로그아웃 시 데이터 정리
+ * @returns {boolean} 정리 성공 여부
  */
 function cleanupOnLogout() {
   try {
-    console.log('로그아웃: 사용자 데이터 정리');
+    console.log('로그아웃: 사용자 데이터 정리 시작');
 
-    // 주기적 갱신 중지
+    // 1. 파일 삭제 전에 현재 상태 확인
+    const profileExists = fileExists(PROFILE_FILE_PATH);
+    const settingsExists = fileExists(SETTINGS_FILE_PATH);
+
+    console.log('현재 상태:', {
+      profileFileExists: profileExists,
+      settingsFileExists: settingsExists,
+      profileRefreshActive: !!profileRefreshTimer,
+      settingsRefreshActive: !!settingsRefreshTimer
+    });
+
+    // 2. 주기적 갱신 중지
     stopProfileRefresh();
     stopSettingsRefresh();
+    console.log('주기적 갱신 타이머 중지 완료');
 
-    // 저장된 파일 삭제
-    deleteFile(PROFILE_FILE_PATH);
-    deleteFile(SETTINGS_FILE_PATH);
+    // 3. 저장된 파일 삭제
+    const profileDeleted = deleteFile(PROFILE_FILE_PATH);
+    const settingsDeleted = deleteFile(SETTINGS_FILE_PATH);
 
-    console.log('사용자 데이터 정리 완료');
-    return true;
+    console.log('파일 삭제 결과:', {
+      profileDeleted: profileDeleted ? '성공' : '실패 또는 파일 없음',
+      settingsDeleted: settingsDeleted ? '성공' : '실패 또는 파일 없음'
+    });
+
+    // 4. 최종 결과 보고
+    const finalCheck = {
+      profileFileExists: fileExists(PROFILE_FILE_PATH),
+      settingsFileExists: fileExists(SETTINGS_FILE_PATH),
+      allDataCleared: !fileExists(PROFILE_FILE_PATH) && !fileExists(SETTINGS_FILE_PATH)
+    };
+
+    console.log('사용자 데이터 정리 완료 상태:', finalCheck);
+
+    if (finalCheck.allDataCleared) {
+      console.log('모든 사용자 데이터가 성공적으로 정리되었습니다.');
+    } else {
+      console.warn('일부 사용자 데이터 파일이 정리되지 않았습니다. 확인이 필요합니다.');
+    }
+
+    return finalCheck.allDataCleared;
   } catch (error) {
     console.error('로그아웃 데이터 정리 오류:', error);
     return false;

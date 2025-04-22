@@ -11,7 +11,7 @@ const cloudSync = require('./cloud-sync');
 const userDataManager = require('./user-data-manager');
 const { createConfigStore } = require('./config');
 const { client } = require('./api');
-const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
+const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
 
 // 창 참조 저장
 let windows = null;
@@ -79,22 +79,31 @@ async function exchangeCodeForToken(code) {
 }
 
 /**
- * 인증 코드를 토큰으로 교환하고 구독 정보 업데이트
+ * 인증 코드를 토큰으로 교환하고 프로필/설정/구독 정보 업데이트
  * @param {string} code - OAuth 인증 코드
  * @returns {Promise<Object>} 처리 결과
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   try {
+    console.log('인증 코드를 토큰으로 교환 및 프로필/설정 업데이트 시작');
     const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
 
     // 로그인 성공 시 양쪽 창에 알림
     if (result.success) {
       notifyLoginSuccess(result.subscription);
 
-      // 로그인 성공 시 계정 정보 로깅 및 클라우드 동기화 수행
-      if (syncManager) {
-        const userEmail = result.subscription?.userId || 'unknown';
-        const userName = result.subscription?.name || 'unknown user';
+      // 1. 사용자 프로필 정보 가져오기 및 저장
+      console.log('로그인 성공 후 사용자 프로필 정보 가져오기');
+      const userProfile = await auth.fetchUserProfile();
+
+      // 사용자 데이터 관리자를 통해 프로필 정보 저장
+      if (userProfile) {
+        await userDataManager.getUserProfile(true); // 강제 갱신 모드로 호출하여 API 결과를 파일에 저장
+        console.log('사용자 프로필 정보 저장 완료');
+
+        // 구독 정보 출력 (로깅)
+        const userEmail = userProfile.email || result.subscription?.userId || 'unknown';
+        const userName = userProfile.name || result.subscription?.name || 'unknown user';
         const userPlan = result.subscription?.plan || 'free';
         const isVip = result.subscription?.isVip || false;
 
@@ -104,7 +113,26 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         console.log('구독 플랜:', userPlan);
         console.log('VIP 상태:', isVip ? 'VIP 사용자' : '일반 사용자');
         console.log('=======================');
+      }
 
+      // 2. 사용자 설정 정보 가져오기 및 저장
+      console.log('로그인 성공 후 사용자 설정 정보 가져오기');
+      const userSettings = await getUserSettings(true); // 강제 갱신 모드로 호출
+
+      if (userSettings) {
+        console.log('사용자 설정 정보 저장 완료');
+      }
+
+      // 3. 인증 상태 변경 알림 전송 (프로필 및 설정 포함)
+      notifyAuthStateChange({
+        isAuthenticated: true,
+        profile: userProfile || null,
+        settings: userSettings || null
+      });
+      console.log('인증 상태 변경 알림 전송 완료');
+
+      // 4. 클라우드 동기화 수행
+      if (syncManager) {
         // ==========================================
         // 시점 1: 사용자 로그인 성공 시 클라우드 싱크
         // ==========================================
@@ -196,11 +224,12 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 }
 
 /**
- * 로그아웃 처리 (로컬 토큰만 삭제)
+ * 로그아웃 처리 (로컬 토큰 삭제 및 환경 데이터 초기화)
  * @returns {Promise<boolean>} 로그아웃 성공 여부
  */
 async function logout() {
   try {
+    console.log('로그아웃 프로세스 시작');
     const result = await auth.logout();
 
     // 로그아웃 성공 시 주기적 동기화 중지 및 클라우드 동기화 설정 업데이트
@@ -216,6 +245,24 @@ async function logout() {
     if (result) {
       userDataManager.cleanupOnLogout();
       console.log('로그아웃으로 인한 사용자 데이터 정리 완료');
+
+      // 구독 정보 초기화 (익명 상태로 변경)
+      const config = createConfigStore();
+      config.set('subscription', {
+        isAuthenticated: false,
+        isSubscribed: false,
+        subscribedUntil: '',
+        pageGroups: DEFAULT_ANONYMOUS_SUBSCRIPTION.features.page_groups
+      });
+      console.log('구독 정보 초기화 완료');
+
+      // 앱의 인증 상태 변경 알림
+      notifyAuthStateChange({
+        isAuthenticated: false,
+        profile: DEFAULT_ANONYMOUS,
+        settings: null
+      });
+      console.log('인증 상태 변경 알림 전송 완료');
     }
 
     // 로그아웃 성공 시 양쪽 창에 알림
@@ -236,6 +283,7 @@ async function logout() {
  */
 async function logoutAndResetPageGroups() {
   try {
+    console.log('로그아웃 및 페이지 그룹 초기화 프로세스 시작');
     const result = await auth.logoutAndResetPageGroups();
 
     // 로그아웃 성공 시 주기적 동기화 중지 및 클라우드 동기화 설정 업데이트
@@ -251,6 +299,24 @@ async function logoutAndResetPageGroups() {
     if (result) {
       userDataManager.cleanupOnLogout();
       console.log('로그아웃으로 인한 사용자 데이터 정리 완료');
+
+      // 구독 정보 초기화 (익명 상태로 변경)
+      const config = createConfigStore();
+      config.set('subscription', {
+        isAuthenticated: false,
+        isSubscribed: false,
+        subscribedUntil: '',
+        pageGroups: DEFAULT_ANONYMOUS_SUBSCRIPTION.features.page_groups
+      });
+      console.log('구독 정보 초기화 완료');
+
+      // 앱의 인증 상태 변경 알림
+      notifyAuthStateChange({
+        isAuthenticated: false,
+        profile: DEFAULT_ANONYMOUS,
+        settings: null
+      });
+      console.log('인증 상태 변경 알림 전송 완료');
     }
 
     // 로그아웃 성공 시 양쪽 창에 알림
