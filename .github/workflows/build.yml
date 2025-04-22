@@ -80,7 +80,7 @@ jobs:
         with:
           path: artifacts
 
-      - name: Create Release 📦
+      - name: Create Release in Current Repo 📦
         id: create_release
         uses: softprops/action-gh-release@v1
         env:
@@ -88,6 +88,23 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.dmg
+            artifacts/**/*.exe
+            artifacts/**/*.zip
+
+      - name: Create Release in Releases Repo 🚀
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+        with:
+          repository: opspresso/releases
+          tag_name: toast-${{ github.ref_name }}
+          name: Toast App ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: |
