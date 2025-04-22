@@ -197,15 +197,15 @@ Users can create an account and manage their subscription at [https://web.toast.
 
 Comprehensive documentation is available in the repository:
 
-- [User Guide](USER_GUIDE.md) - Complete guide for end users
+- [User Guide](docs/USER_GUIDE.md) - Complete guide for end users
 - [Architecture](ARCHITECTURE.md) - System architecture and design decisions
-- [API Documentation](API_DOCUMENTATION.md) - Internal API documentation
-- [Configuration Schema](CONFIG_SCHEMA.md) - Configuration options and schema
+- [API Documentation](docs/API_DOCUMENTATION.md) - Internal API documentation
+- [Configuration Schema](docs/CONFIG_SCHEMA.md) - Configuration options and schema
 - [Pages and Navigation](PAGES.md) - Page layout and navigation structure
-- [Project Structure](PROJECT_STRUCTURE.md) - Project structure and code organization
-- [Technical Requirements](TECHNICAL_REQUIREMENTS.md) - Technical specifications and requirements
-- [Development Roadmap](DEVELOPMENT_ROADMAP.md) - Future development plans
-- [Testing Strategy](TESTING_STRATEGY.md) - Testing approach and methodologies
+- [Project Structure](docs/PROJECT_STRUCTURE.md) - Project structure and code organization
+- [Technical Requirements](docs/TECHNICAL_REQUIREMENTS.md) - Technical specifications and requirements
+- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) - Future development plans
+- [Testing Strategy](docs/TESTING_STRATEGY.md) - Testing approach and methodologies
 
 ## Project Structure
 
