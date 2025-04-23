@@ -10,6 +10,7 @@ const closeButton = document.getElementById('close-button');
 const statusContainer = document.getElementById('status-container');
 const buttonTemplate = document.getElementById('button-template');
 const settingsModeToggle = document.getElementById('settings-mode-toggle');
+const settingsButton = document.getElementById('settings-button');
 const addPageButton = document.getElementById('add-page-button');
 const removePageButton = document.getElementById('remove-page-button');
 const userButton = document.getElementById('user-button');
@@ -310,6 +311,11 @@ function setupEventListeners() {
 
   // Settings mode toggle button
   settingsModeToggle.addEventListener('click', toggleSettingsMode);
+
+  // Settings button - Open settings window
+  settingsButton.addEventListener('click', () => {
+    window.toast.showSettings();
+  });
 
   // User button - User information button
   userButton.addEventListener('click', showUserProfile);

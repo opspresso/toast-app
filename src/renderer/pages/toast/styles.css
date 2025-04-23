@@ -211,7 +211,8 @@ body {
   -webkit-app-region: no-drag;
 }
 
-.toast-mode-toggle {
+.toast-mode-toggle,
+.toast-settings-button {
   cursor: pointer;
   font-size: 16px;
   width: 32px;
@@ -225,7 +226,8 @@ body {
   background-color: transparent;
 }
 
-.toast-mode-toggle:hover {
+.toast-mode-toggle:hover,
+.toast-settings-button:hover {
   background-color: var(--button-hover-bg);
   transform: scale(1.05);
   box-shadow: var(--button-hover-shadow);
