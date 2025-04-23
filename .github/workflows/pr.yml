@@ -1,7 +1,8 @@
 name: Bump Package
 
 on:
-  - pull_request
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build:
