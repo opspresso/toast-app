@@ -54,7 +54,7 @@ jobs:
           git config --local user.email "bot@nalbam.com"
           git add .
           git commit -m "Bump version to $NEW_VERSION"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:$HEAD_REF
 
           # retitle pull request
           echo "Retitling pull request to 'Release $NEW_VERSION'"
