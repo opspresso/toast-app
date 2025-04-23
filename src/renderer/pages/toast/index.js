@@ -289,7 +289,9 @@ function renderPagingButtons() {
 }
 
 /**
- * Set up event listeners
+ * Sets up all event listeners for UI controls, keyboard shortcuts, authentication events, configuration updates, and modal interactions in the Toast window.
+ *
+ * This function binds handlers for button clicks, keyboard navigation, authentication state changes, configuration updates, and modal dialogs, ensuring the UI responds appropriately to user actions and system events.
  */
 function setupEventListeners() {
   // Close button
