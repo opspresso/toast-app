@@ -58,15 +58,25 @@ jobs:
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
           echo "New version: $NEW_VERSION"
 
-          # write new version to package.json
-          jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+          # write new version to package.json (only if changed)
+          if [[ "$(jq -r .version package.json)" != "$NEW_VERSION" ]]; then
+            jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+            git add package.json
+          else
+            echo "package.json already has version $NEW_VERSION, skipping update"
+          fi
 
           # setup git
           git config --local user.name "nalbam-bot"
           git config --local user.email "bot@nalbam.com"
-          git add .
-          git commit -m "Bump version to $NEW_VERSION"
-          git push origin HEAD:$HEAD_REF
+
+          # commit only if there are staged changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Bump version to $NEW_VERSION"
+            git push origin HEAD:$HEAD_REF
+          else
+            echo "No changes to commit, skipping git commit and push"
+          fi
 
           # retitle pull request
           echo "Retitling pull request to 'Release $NEW_VERSION'"
