@@ -1091,9 +1091,21 @@ function markUnsavedChanges() {
  * Handle Cloud Sync toggle
  */
 async function handleCloudSyncToggle() {
+  // 원래 체크박스 상태 저장
+  const originalChecked = enableCloudSyncCheckbox.checked;
+
+  // 체크박스 상태 텍스트
+  const statusText = originalChecked ? "활성화 중..." : "비활성화 중...";
+
   try {
     // Show loading state
     setLoading(syncLoading, true);
+    enableCloudSyncCheckbox.disabled = true;
+    manualSyncDisabled();
+
+    // 체크박스 레이블 근처에 있는 sync-status-text 업데이트하여 상태 표시
+    const originalStatusText = syncStatusText.textContent;
+    syncStatusText.textContent = statusText;
 
     // Check if user has subscription permission
     let hasCloudSyncPermission = false;
@@ -1112,40 +1124,65 @@ async function handleCloudSyncToggle() {
     }
 
     if (!hasCloudSyncPermission) {
-      alert('클라우드 동기화 기능은 Premium 구독이 필요합니다.');
+      syncStatusText.textContent = "Premium 구독이 필요합니다";
       enableCloudSyncCheckbox.checked = false;
+
+      // 일정 시간 후 원래 상태로 복원
+      setTimeout(() => {
+        syncStatusText.textContent = originalStatusText;
+        enableCloudSyncCheckbox.disabled = false;
+        manualSyncEnabled();
+      }, 1500);
+
       setLoading(syncLoading, false);
       return;
     }
 
     // Enable/disable cloud sync
-    const enabled = enableCloudSyncCheckbox.checked;
+    const enabled = originalChecked;
 
     // Update cloud sync configuration
     await window.settings.setCloudSyncEnabled(enabled);
 
     // Update UI based on new status
     const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
 
     // Hide loading state
     setLoading(syncLoading, false);
 
-    // Show message
-    alert(enabled ? '클라우드 동기화가 활성화되었습니다.' : '클라우드 동기화가 비활성화되었습니다.');
+    // 성공 메시지 표시
+    syncStatusText.textContent = enabled ? "동기화 활성화 완료!" : "동기화 비활성화 완료!";
+
+    // 일정 시간 후 UI 업데이트 및 원래 상태로 복원
+    setTimeout(() => {
+      updateSyncStatusUI(status);
+      enableCloudSyncCheckbox.disabled = false;
+      manualSyncEnabled();
+    }, 1500);
+
   } catch (error) {
     console.error('Cloud sync toggle error:', error);
 
     // Hide loading state
     setLoading(syncLoading, false);
 
-    // Show error message
-    alert(`클라우드 동기화 설정 오류: ${error.message || '알 수 없는 오류'}`);
+    // Show error in status text
+    syncStatusText.textContent = `오류 발생: ${error.message || '알 수 없는 오류'}`;
 
-    // Reset checkbox to current state
-    window.settings.getSyncStatus().then(status => {
-      enableCloudSyncCheckbox.checked = status.enabled;
-    });
+    // 체크박스 상태 복원
+    enableCloudSyncCheckbox.checked = !originalChecked;
+
+    // 일정 시간 후 원래 상태로 복원
+    setTimeout(() => {
+      window.settings.getSyncStatus().then(status => {
+        updateSyncStatusUI(status);
+        enableCloudSyncCheckbox.disabled = false;
+        manualSyncEnabled();
+      });
+    }, 2000);
+
+    // 오류 로깅
+    console.error(`클라우드 동기화 설정 오류: ${error.message || '알 수 없는 오류'}`);
   }
 }
 
@@ -1172,9 +1209,13 @@ function manualSyncEnabled() {
  */
 async function handleManualSyncUpload() {
   try {
-    // Show loading state
+    // Save the original button text
+    const originalButtonText = manualSyncUploadButton.textContent;
+
+    // Disable buttons and show loading
     setLoading(syncLoading, true);
     manualSyncDisabled();
+    manualSyncUploadButton.textContent = "업로드 중...";
 
     // Upload settings to server
     const result = await window.settings.manualSync('upload');
@@ -1186,10 +1227,18 @@ async function handleManualSyncUpload() {
     const status = await window.settings.getSyncStatus();
     updateSyncStatusUI(status);
 
-    // Show message
     if (result.success) {
-      alert('설정이 서버에 성공적으로 업로드되었습니다.');
-      manualSyncEnabled();
+      // Show success message in button
+      manualSyncUploadButton.textContent = "업로드 완료!";
+
+      // Enable only the current button to show the success message
+      manualSyncUploadButton.disabled = false;
+
+      // Reset button after delay
+      setTimeout(() => {
+        manualSyncUploadButton.textContent = originalButtonText;
+        manualSyncEnabled();
+      }, 1500);
     } else {
       throw new Error(result.error || '업로드 실패');
     }
@@ -1199,12 +1248,18 @@ async function handleManualSyncUpload() {
     // Hide loading state
     setLoading(syncLoading, false);
 
-    // Re-enable buttons
-    const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
+    // Show error in button
+    manualSyncUploadButton.textContent = "업로드 실패";
+    manualSyncUploadButton.disabled = false;
 
-    // Show error message
-    alert(`설정 업로드 오류: ${error.message || '알 수 없는 오류'}`);
+    // Re-enable buttons after delay
+    setTimeout(() => {
+      manualSyncUploadButton.textContent = "서버에 업로드";
+      manualSyncEnabled();
+    }, 1500);
+
+    // Log error to console
+    console.error(`설정 업로드 오류: ${error.message || '알 수 없는 오류'}`);
   }
 }
 
@@ -1213,6 +1268,9 @@ async function handleManualSyncUpload() {
  */
 async function handleManualSyncDownload() {
   try {
+    // Save the original button text
+    const originalButtonText = manualSyncDownloadButton.textContent;
+
     // Show loading state
     setLoading(syncLoading, true);
     manualSyncDisabled();
@@ -1227,6 +1285,9 @@ async function handleManualSyncDownload() {
       return;
     }
 
+    // Update button text
+    manualSyncDownloadButton.textContent = "다운로드 중...";
+
     // Download settings from server
     const result = await window.settings.manualSync('download');
 
@@ -1237,10 +1298,10 @@ async function handleManualSyncDownload() {
     const status = await window.settings.getSyncStatus();
     updateSyncStatusUI(status);
 
-    // Show message
     if (result.success) {
-      alert('설정이 서버에서 성공적으로 다운로드되었습니다.');
-      manualSyncEnabled();
+      // Show success in button
+      manualSyncDownloadButton.textContent = "다운로드 완료!";
+      manualSyncDownloadButton.disabled = false;
 
       // Reload config
       const newConfig = await window.settings.getConfig();
@@ -1248,6 +1309,12 @@ async function handleManualSyncDownload() {
 
       // Update UI to reflect new settings
       initializeUI();
+
+      // Reset button after delay
+      setTimeout(() => {
+        manualSyncDownloadButton.textContent = originalButtonText;
+        manualSyncEnabled();
+      }, 1500);
     } else {
       throw new Error(result.error || '다운로드 실패');
     }
@@ -1257,12 +1324,18 @@ async function handleManualSyncDownload() {
     // Hide loading state
     setLoading(syncLoading, false);
 
-    // Re-enable buttons
-    const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
+    // Show error in button
+    manualSyncDownloadButton.textContent = "다운로드 실패";
+    manualSyncDownloadButton.disabled = false;
 
-    // Show error message
-    alert(`설정 다운로드 오류: ${error.message || '알 수 없는 오류'}`);
+    // Reset button after delay
+    setTimeout(() => {
+      manualSyncDownloadButton.textContent = originalButtonText;
+      manualSyncEnabled();
+    }, 1500);
+
+    // Log error to console
+    console.error(`설정 다운로드 오류: ${error.message || '알 수 없는 오류'}`);
   }
 }
 
@@ -1271,6 +1344,9 @@ async function handleManualSyncDownload() {
  */
 async function handleManualSyncResolve() {
   try {
+    // Save the original button text
+    const originalButtonText = manualSyncResolveButton.textContent;
+
     // Show loading state
     setLoading(syncLoading, true);
     manualSyncDisabled();
@@ -1285,6 +1361,9 @@ async function handleManualSyncResolve() {
       return;
     }
 
+    // Update button text
+    manualSyncResolveButton.textContent = "충돌 해결 중...";
+
     // Resolve conflicts
     const result = await window.settings.manualSync('resolve');
 
@@ -1295,10 +1374,10 @@ async function handleManualSyncResolve() {
     const status = await window.settings.getSyncStatus();
     updateSyncStatusUI(status);
 
-    // Show message
     if (result.success) {
-      alert('설정 충돌이 성공적으로 해결되었습니다.');
-      manualSyncEnabled();
+      // Show success in button
+      manualSyncResolveButton.textContent = "충돌 해결 완료!";
+      manualSyncResolveButton.disabled = false;
 
       // Reload config
       const newConfig = await window.settings.getConfig();
@@ -1306,6 +1385,12 @@ async function handleManualSyncResolve() {
 
       // Update UI to reflect new settings
       initializeUI();
+
+      // Reset button after delay
+      setTimeout(() => {
+        manualSyncResolveButton.textContent = originalButtonText;
+        manualSyncEnabled();
+      }, 1500);
     } else {
       throw new Error(result.error || '충돌 해결 실패');
     }
@@ -1315,11 +1400,17 @@ async function handleManualSyncResolve() {
     // Hide loading state
     setLoading(syncLoading, false);
 
-    // Re-enable buttons
-    const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
+    // Show error in button
+    manualSyncResolveButton.textContent = "충돌 해결 실패";
+    manualSyncResolveButton.disabled = false;
 
-    // Show error message
-    alert(`설정 충돌 해결 오류: ${error.message || '알 수 없는 오류'}`);
+    // Reset button after delay
+    setTimeout(() => {
+      manualSyncResolveButton.textContent = originalButtonText;
+      manualSyncEnabled();
+    }, 1500);
+
+    // Log error to console
+    console.error(`설정 충돌 해결 오류: ${error.message || '알 수 없는 오류'}`);
   }
 }
