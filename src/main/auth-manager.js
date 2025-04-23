@@ -11,11 +11,21 @@ const userDataManager = require('./user-data-manager');
 const { createConfigStore } = require('./config');
 const { client } = require('./api');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
+const cloudSync = require('./cloud-sync'); // 클라우드 동기화 모듈 가져오기
 
 // Store window references
 let windows = null;
 // Cloud synchronization object
 let syncManager = null;
+
+/**
+ * Set up cloud synchronization manager
+ * @param {Object} syncMgr - Synchronization manager instance
+ */
+function setSyncManager(syncMgr) {
+  syncManager = syncMgr;
+  console.log('Sync manager initialized successfully');
+}
 
 /**
  * Initialize authentication manager
@@ -143,7 +153,12 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         }
 
         console.log('Cloud synchronization feature status set:', hasSyncFeature);
-        cloudSync.updateCloudSyncSettings(hasSyncFeature);
+        // syncManager를 통해 클라우드 동기화 설정 업데이트
+        if (syncManager && typeof syncManager.updateCloudSyncSettings === 'function') {
+          syncManager.updateCloudSyncSettings(hasSyncFeature);
+        } else {
+          console.warn('syncManager not properly initialized or missing updateCloudSyncSettings method');
+        }
       }
 
       // 3. 통합된 동기화 처리 - 프로필과 설정 정보를 한 번에 처리
@@ -231,8 +246,12 @@ async function logout() {
     // Stop periodic synchronization and update cloud sync settings when logout is successful
     if (result && syncManager) {
       // Disable synchronization feature and stop periodic synchronization
-      cloudSync.updateCloudSyncSettings(false);
-      cloudSync.stopPeriodicSync();
+      if (typeof syncManager.updateCloudSyncSettings === 'function') {
+        syncManager.updateCloudSyncSettings(false);
+      }
+      if (typeof syncManager.stopPeriodicSync === 'function') {
+        syncManager.stopPeriodicSync();
+      }
 
       console.log('Cloud synchronization disabled and periodic synchronization stopped due to logout');
     }
@@ -285,8 +304,12 @@ async function logoutAndResetPageGroups() {
     // Stop periodic synchronization and update cloud sync settings when logout is successful
     if (result && syncManager) {
       // Disable synchronization feature and stop periodic synchronization
-      cloudSync.updateCloudSyncSettings(false);
-      cloudSync.stopPeriodicSync();
+      if (typeof syncManager.updateCloudSyncSettings === 'function') {
+        syncManager.updateCloudSyncSettings(false);
+      }
+      if (typeof syncManager.stopPeriodicSync === 'function') {
+        syncManager.stopPeriodicSync();
+      }
 
       console.log('Cloud synchronization disabled and periodic synchronization stopped due to logout');
     }
@@ -580,5 +603,6 @@ module.exports = {
   notifyAuthStateChange,
   notifySettingsSynced,
   syncSettings,
-  updateSyncSettings
+  updateSyncSettings,
+  setSyncManager // 새로 추가된 함수 내보내기
 };

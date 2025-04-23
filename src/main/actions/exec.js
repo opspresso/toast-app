@@ -71,59 +71,61 @@ async function executeCommand(action) {
  * @returns {Promise<Object>} Result object
  */
 async function openInTerminal(command, workingDir) {
-  try {
-    // Platform-specific terminal commands
-    let terminalCommand;
+  return new Promise((resolve, reject) => {
+    try {
+      // Platform-specific terminal commands
+      let terminalCommand;
 
-    if (process.platform === 'darwin') {
-      // macOS
-      terminalCommand = `osascript -e 'tell application "Terminal" to do script "${command}"'`;
+      if (process.platform === 'darwin') {
+        // macOS
+        terminalCommand = `osascript -e 'tell application "Terminal" to do script "${command}"'`;
 
-      if (workingDir) {
-        terminalCommand = `osascript -e 'tell application "Terminal" to do script "cd ${workingDir} && ${command}"'`;
+        if (workingDir) {
+          terminalCommand = `osascript -e 'tell application "Terminal" to do script "cd ${workingDir} && ${command}"'`;
+        }
+      } else if (process.platform === 'win32') {
+        // Windows
+        terminalCommand = `start cmd.exe /K "${command}"`;
+
+        if (workingDir) {
+          terminalCommand = `start cmd.exe /K "cd /d ${workingDir} && ${command}"`;
+        }
+      } else {
+        // Linux and others
+        // Try to detect the terminal
+        const terminals = ['x-terminal-emulator', 'gnome-terminal', 'xterm', 'konsole', 'terminator'];
+        let terminal = terminals[0]; // Default to first one
+
+        terminalCommand = `${terminal} -e "bash -c '${command}; exec bash'"`;
+
+        if (workingDir) {
+          terminalCommand = `${terminal} -e "bash -c 'cd ${workingDir} && ${command}; exec bash'"`;
+        }
       }
-    } else if (process.platform === 'win32') {
-      // Windows
-      terminalCommand = `start cmd.exe /K "${command}"`;
 
-      if (workingDir) {
-        terminalCommand = `start cmd.exe /K "cd /d ${workingDir} && ${command}"`;
-      }
-    } else {
-      // Linux and others
-      // Try to detect the terminal
-      const terminals = ['x-terminal-emulator', 'gnome-terminal', 'xterm', 'konsole', 'terminator'];
-      let terminal = terminals[0]; // Default to first one
-
-      terminalCommand = `${terminal} -e "bash -c '${command}; exec bash'"`;
-
-      if (workingDir) {
-        terminalCommand = `${terminal} -e "bash -c 'cd ${workingDir} && ${command}; exec bash'"`;
-      }
+      // Execute the terminal command
+      exec(terminalCommand, (error) => {
+        if (error) {
+          resolve({
+            success: false,
+            message: `Error opening terminal: ${error.message}`,
+            error: error
+          });
+        } else {
+          resolve({
+            success: true,
+            message: 'Command opened in terminal'
+          });
+        }
+      });
+    } catch (error) {
+      resolve({
+        success: false,
+        message: `Error opening terminal: ${error.message}`,
+        error: error
+      });
     }
-
-    // Execute the terminal command
-    exec(terminalCommand, (error) => {
-      if (error) {
-        return {
-          success: false,
-          message: `Error opening terminal: ${error.message}`,
-          error: error
-        };
-      }
-    });
-
-    return {
-      success: true,
-      message: 'Command opened in terminal'
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Error opening terminal: ${error.message}`,
-      error: error
-    };
-  }
+  });
 }
 
 module.exports = {
