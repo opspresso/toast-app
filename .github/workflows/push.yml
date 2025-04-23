@@ -16,11 +16,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump Version 🏷️
-        id: bump
-        uses: opspresso/action-builder@master
-        with:
-          args: --version
+      - name: Read Version 📖
+        id: read_version
+        run: |
+          echo "VERSION=$(cat package.json | jq -r .version)" >> VERSION
 
       - name: Release Version 🚀
         uses: opspresso/action-builder@master
