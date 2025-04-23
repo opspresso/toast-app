@@ -17,32 +17,37 @@ jobs:
         id: bump
         run: |
           echo "Bumping version"
-          MAJOR=$(cat ./VERSION | xargs | cut -d'.' -f1)
-          MINOR=$(cat ./VERSION | xargs | cut -d'.' -f2)
-          PATCH=$(cat ./VERSION | xargs | cut -d'.' -f3)
+
+          # Read and clean VERSION file (strip leading v if exists)
+          VERSION_RAW=$(cat ./VERSION | xargs)
+          VERSION_STRIPPED="${VERSION_RAW#v}"
+
+          MAJOR=$(echo "$VERSION_STRIPPED" | cut -d'.' -f1)
+          MINOR=$(echo "$VERSION_STRIPPED" | cut -d'.' -f2)
+          PATCH=$(echo "$VERSION_STRIPPED" | cut -d'.' -f3)
+
           echo "Current version: $MAJOR.$MINOR.$PATCH"
 
-          # get last version from release
+          # Get latest release tag (e.g., v0.4.0)
           LAST_VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-          echo "Last version: $LAST_VERSION"
+          echo "Last version (raw): $LAST_VERSION"
 
-          # if MAJOR, MINOR are same, increment PATCH
-          if [[ "$LAST_VERSION" == "$MAJOR.$MINOR.$PATCH" ]]; then
+          # Strip 'v' prefix from last version tag
+          CLEANED_VERSION="${LAST_VERSION#v}"
+          echo "Last version (cleaned): $CLEANED_VERSION"
+
+          # Compare with current version
+          if [[ "$CLEANED_VERSION" == "$MAJOR.$MINOR.$PATCH" ]]; then
             PATCH=$((PATCH + 1))
+          elif [[ "$CLEANED_VERSION" =~ ^$MAJOR\.$MINOR ]]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
           else
-            # if MAJOR, MINOR are different, increment MINOR
-            if [[ "$LAST_VERSION" == "$MAJOR.$MINOR"* ]]; then
-              MINOR=$((MINOR + 1))
-              PATCH=0
-            else
-              # if MAJOR is different, increment MAJOR
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-            fi
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
           fi
 
-          # set new version
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           echo "New version: $NEW_VERSION"
 
@@ -54,10 +59,11 @@ jobs:
           git config --local user.email "bot@nalbam.com"
           git add .
           git commit -m "Bump version to $NEW_VERSION"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:$HEAD_REF
 
           # retitle pull request
           echo "Retitling pull request to 'Release $NEW_VERSION'"
           gh pr edit ${{ github.event.pull_request.number }} --title "Release $NEW_VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
