@@ -104,11 +104,19 @@ function createApiClient(options = {}) {
   return axios.create(clientOptions);
 }
 
+// Track token refresh attempts to prevent infinite loops
+const tokenRefreshTracking = {
+  requestsAfterRefresh: 0,
+  maxRequestsAfterRefresh: 3, // Maximum allowed consecutive requests after refresh
+  lastRefreshTime: 0,
+  refreshCooldownMs: 10000 // 10 seconds minimum between refresh attempts
+};
+
 /**
- * 인증이 필요한 API 요청 공통 처리 함수
- * @param {Function} apiCall - API 호출 함수
- * @param {Object} options - 옵션
- * @returns {Promise<any>} API 응답
+ * Common function to handle authenticated API requests
+ * @param {Function} apiCall - API call function
+ * @param {Object} options - Options
+ * @returns {Promise<any>} API response
  */
 async function authenticatedRequest(apiCall, options = {}) {
   const {
@@ -118,11 +126,11 @@ async function authenticatedRequest(apiCall, options = {}) {
     onUnauthorized = null
   } = options;
 
-  // 기본 구독 응답
+  // Default subscription response
   const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
   if (!currentToken) {
-    console.error('액세스 토큰이 없음');
+    console.error('No access token available');
 
     if (allowUnauthenticated && defaultValue) {
       return defaultValue;
@@ -131,7 +139,7 @@ async function authenticatedRequest(apiCall, options = {}) {
     return {
       error: {
         code: 'NO_TOKEN',
-        message: '인증 정보가 없습니다. 로그인이 필요합니다.'
+        message: 'Authentication required. Please log in.'
       }
     };
   }
@@ -139,28 +147,97 @@ async function authenticatedRequest(apiCall, options = {}) {
   try {
     return await apiCall();
   } catch (error) {
-    console.log('API 호출 오류:', error.response?.status, error.message);
+    console.log('API call error:', error.response?.status, error.message);
 
-    // 401 오류 처리
+    // Handle 401 unauthorized error
     if (error.response && error.response.status === 401) {
-      console.log('401 오류 발생, 토큰 문제 감지');
+      console.log('401 error detected, token issue suspected');
 
-      // 구독 API 요청 특별 처리
+      // Special handling for subscription API requests
       if (isSubscriptionRequest) {
         return defaultSubscription;
       }
 
-      // 재인증 콜백 호출
+      // Prevent infinite refresh loops
+      const now = Date.now();
+      const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
+
+      if (timeSinceLastRefresh < tokenRefreshTracking.refreshCooldownMs) {
+        console.warn(`Token refresh attempted too soon (${Math.floor(timeSinceLastRefresh / 1000)}s ago). Skipping to prevent loop.`);
+
+        if (allowUnauthenticated && defaultValue) {
+          return defaultValue;
+        }
+
+        return {
+          error: {
+            code: 'AUTH_REFRESH_RATE_LIMIT',
+            message: 'Authentication refresh rate limit exceeded. Please try again later.'
+          }
+        };
+      }
+
+      if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
+        console.error(`Too many consecutive auth failures (${tokenRefreshTracking.requestsAfterRefresh}). Possible refresh loop detected.`);
+
+        // Reset token to force re-login
+        clearTokens();
+
+        return {
+          error: {
+            code: 'AUTH_REFRESH_LOOP',
+            message: 'Authentication failure loop detected. Please log in again.',
+            requireRelogin: true
+          }
+        };
+      }
+
+      // Call re-authentication callback
       if (onUnauthorized && typeof onUnauthorized === 'function') {
+        console.log('Attempting token refresh...');
+        tokenRefreshTracking.lastRefreshTime = now;
+
         const refreshResult = await onUnauthorized();
 
         if (refreshResult && refreshResult.success) {
           try {
-            return await apiCall();
+            // Increment counter for requests after refresh
+            tokenRefreshTracking.requestsAfterRefresh++;
+
+            const result = await apiCall();
+
+            // Reset counter after successful request
+            tokenRefreshTracking.requestsAfterRefresh = 0;
+
+            return result;
           } catch (retryError) {
-            console.error('토큰 갱신 후 API 재호출 실패:', retryError.message);
-            throw retryError;
+            console.error('API request failed after token refresh:', retryError.message);
+
+            if (allowUnauthenticated && defaultValue) {
+              return defaultValue;
+            }
+
+            return {
+              error: {
+                code: 'AUTH_REFRESH_FAILED',
+                message: 'Authentication failed even after token refresh. Please log in again.',
+                requireRelogin: true
+              }
+            };
           }
+        } else {
+          console.error('Token refresh failed:', refreshResult?.error || 'Unknown error');
+
+          // Reset tokens on refresh failure
+          clearTokens();
+
+          return {
+            error: {
+              code: 'AUTH_REFRESH_FAILED',
+              message: 'Failed to refresh authentication. Please log in again.',
+              requireRelogin: true
+            }
+          };
         }
       }
 
@@ -169,7 +246,7 @@ async function authenticatedRequest(apiCall, options = {}) {
       }
     }
 
-    // 구독 API에 대한 모든 유형의 오류 처리
+    // Handle errors for subscription API
     if (isSubscriptionRequest) {
       return defaultSubscription;
     }

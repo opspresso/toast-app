@@ -327,70 +327,117 @@ async function getUserSettings(forceRefresh = false) {
 }
 
 /**
- * 설정 정보 업데이트
- * @param {Object} settings - 저장할 설정 정보
- * @returns {boolean} 업데이트 성공 여부
+ * Update settings with improved error handling and atomic file operations
+ * @param {Object} settings - Settings to save
+ * @returns {boolean} Whether update was successful
  */
 function updateSettings(settings) {
   try {
     if (!settings) {
-      console.error('업데이트할 설정 정보가 없음');
+      console.error('No settings to update');
       return false;
     }
 
-    // 파일에 설정 저장
-    const result = writeToFile(SETTINGS_FILE_PATH, settings);
+    // Create a temporary file path
+    const tempFilePath = `${SETTINGS_FILE_PATH}.temp`;
 
-    if (result) {
-      console.log('설정 정보 파일 업데이트 성공');
+    try {
+      // First write to a temporary file
+      fs.writeFileSync(tempFilePath, JSON.stringify(settings, null, 2), 'utf8');
+
+      // Verify the written data is valid
+      try {
+        const verifyData = fs.readFileSync(tempFilePath, 'utf8');
+        JSON.parse(verifyData); // Ensure it's valid JSON
+      } catch (verifyError) {
+        console.error('Error verifying written settings data:', verifyError);
+        // Clean up corrupted temp file
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (cleanupError) {
+          console.error('Error cleaning up temporary file:', cleanupError);
+        }
+        return false;
+      }
+
+      // Use atomic rename operation
+      if (fs.existsSync(SETTINGS_FILE_PATH)) {
+        // On Windows, need to unlink existing file first
+        if (process.platform === 'win32') {
+          try {
+            fs.unlinkSync(SETTINGS_FILE_PATH);
+          } catch (unlinkError) {
+            console.error('Error removing existing settings file:', unlinkError);
+          }
+        }
+      }
+
+      fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
+      console.log('Settings file updated successfully using atomic operation');
       return true;
-    } else {
-      console.error('설정 정보 파일 업데이트 실패');
+    } catch (fileError) {
+      console.error('File operation error during settings update:', fileError);
       return false;
     }
   } catch (error) {
-    console.error('설정 정보 업데이트 오류:', error);
+    console.error('Settings update error:', error);
     return false;
   }
 }
 
 /**
- * 동기화 메타데이터만 업데이트
- * @param {Object} metadata - 업데이트할 메타데이터
- * @returns {boolean} 업데이트 성공 여부
+ * Update synchronization metadata with improved validation and error recovery
+ * @param {Object} metadata - Metadata to update
+ * @returns {boolean} Whether update was successful
  */
 function updateSyncMetadata(metadata) {
   try {
     if (!metadata) {
-      console.error('업데이트할 메타데이터가 없음');
+      console.error('No metadata to update');
       return false;
     }
 
-    // 현재 설정 파일 읽기
-    const currentSettings = readFromFile(SETTINGS_FILE_PATH) || {};
+    // Read current settings file
+    const currentSettings = readFromFile(SETTINGS_FILE_PATH);
 
-    // 메타데이터만 업데이트
+    // If current settings file doesn't exist or is corrupted, create a new minimal one
+    if (!currentSettings) {
+      console.warn('Current settings file missing or corrupted, creating new baseline');
+
+      // Create minimal settings structure
+      const newSettings = {
+        lastSyncedAt: metadata.lastSyncedAt || Date.now(),
+        lastModifiedAt: metadata.lastModifiedAt || Date.now(),
+        lastSyncedDevice: metadata.lastSyncedDevice || 'unknown',
+        lastModifiedDevice: metadata.lastModifiedDevice || 'unknown'
+      };
+
+      // Save new baseline settings
+      return updateSettings(newSettings);
+    }
+
+    // Prepare updated settings with metadata
     const updatedSettings = {
       ...currentSettings,
-      // 타임스탬프 정보 업데이트
+      // Update timestamp information
       lastSyncedAt: metadata.lastSyncedAt || currentSettings.lastSyncedAt,
       lastModifiedAt: metadata.lastModifiedAt || currentSettings.lastModifiedAt,
       lastSyncedDevice: metadata.lastSyncedDevice || currentSettings.lastSyncedDevice,
       lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice
     };
 
-    // 파일에 저장
-    const result = writeToFile(SETTINGS_FILE_PATH, updatedSettings);
+    // Save using atomic file operation
+    const result = updateSettings(updatedSettings);
 
     if (result) {
-      console.log('동기화 메타데이터 업데이트 성공');
+      console.log('Sync metadata updated successfully');
       return true;
     } else {
-      console.error('동기화 메타데이터 업데이트 실패');
+      console.error('Failed to update sync metadata');
       return false;
     }
   } catch (error) {
-    console.error('동기화 메타데이터 업데이트 오류:', error);
+    console.error('Error updating sync metadata:', error);
     return false;
   }
 }

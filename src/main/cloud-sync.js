@@ -131,11 +131,11 @@ function scheduleSync(changeType) {
 }
 
 /**
- * 설정을 서버에 업로드 (재시도 로직 포함)
+ * Upload settings to server with retry logic
  */
 async function uploadSettingsWithRetry() {
   if (state.isSyncing) {
-    console.log('이미 동기화 중, 요청 무시');
+    console.log('Already syncing, request ignored');
     return;
   }
 
@@ -144,39 +144,39 @@ async function uploadSettingsWithRetry() {
     const result = await uploadSettings();
 
     if (result.success) {
-      console.log(`'${state.lastChangeType}' 변경에 대한 클라우드 동기화 성공`);
+      console.log(`Cloud sync successful for '${state.lastChangeType}' change`);
       state.retryCount = 0;
       state.pendingSync = false;
     } else {
       state.retryCount++;
 
-      console.log(`동기화 실패 원인: ${result.error}`);
+      console.log(`Sync failed reason: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
-        console.log(`업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS / 1000}초 후 시작`);
+        console.log(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
-        // 재시도 예약
+        // Schedule retry
         setTimeout(() => {
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
       } else {
-        console.error(`최대 재시도 횟수(${MAX_RETRY_COUNT}) 초과, 업로드 실패: ${result.error}`);
+        console.error(`Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload failed: ${result.error}`);
         state.retryCount = 0;
       }
     }
   } catch (error) {
-    console.error('설정 업로드 중 오류 발생:', error);
+    console.error('Error during settings upload:', error);
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
-      console.log(`예외로 인한 업로드 실패, ${state.retryCount}/${MAX_RETRY_COUNT}번째 재시도 ${RETRY_DELAY_MS / 1000}초 후 시작`);
+      console.log(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
-      // 재시도 예약
+      // Schedule retry
       setTimeout(() => {
         uploadSettingsWithRetry();
       }, RETRY_DELAY_MS);
     } else {
-      console.error(`최대 재시도 횟수(${MAX_RETRY_COUNT}) 초과, 업로드 중단`);
+      console.error(`Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload aborted`);
       state.retryCount = 0;
     }
   } finally {
@@ -185,42 +185,44 @@ async function uploadSettingsWithRetry() {
 }
 
 /**
- * 현재 설정을 서버에 업로드
- * @returns {Promise<Object>} 업로드 결과
+ * Upload current settings to server
+ * @returns {Promise<Object>} Upload result
  */
 async function uploadSettings() {
-  console.log('설정 업로드 시작');
+  console.log('Starting settings upload');
 
-  // if (!state.enabled) {
-  //   console.log('클라우드 동기화 비활성화됨, 업로드 스킵');
-  //   return { success: false, error: 'Cloud sync disabled' };
-  // }
+  // Check sync state
+  if (!state.enabled) {
+    console.log('Cloud sync disabled, skipping upload');
+    return { success: false, error: 'Cloud sync disabled' };
+  }
 
-  // if (!await canSync()) {
-  //   return { success: false, error: 'Cloud sync not enabled' };
-  // }
+  // Verify sync capability
+  if (!await canSync()) {
+    return { success: false, error: 'Cloud sync not enabled' };
+  }
 
   if (state.isSyncing) {
-    console.log('이미 동기화 중, 업로드 스킵');
+    console.log('Already syncing, skipping upload');
     return { success: false, error: 'Already syncing' };
   }
 
   try {
     state.isSyncing = true;
 
-    // configStore에서 직접 데이터 추출
+    // Extract data directly from configStore (single source of truth)
     const advanced = configStore.get('advanced');
     const appearance = configStore.get('appearance');
     const pages = configStore.get('pages') || [];
 
     if (pages.length === 0) {
-      console.warn('업로드할 페이지 데이터가 없습니다');
+      console.warn('No page data to upload');
     }
 
-    // 타임스탬프 업데이트
+    // Update timestamp
     const timestamp = getCurrentTimestamp();
 
-    // 업로드할 데이터 구성 - 두 가지 형식 모두 대응하기 위해 pages 배열 직접 노출
+    // Prepare upload data - expose pages array directly to support multiple formats
     const uploadData = {
       advanced,
       appearance,
@@ -229,9 +231,9 @@ async function uploadSettings() {
       pages,
     };
 
-    console.log(`서버에 ${pages.length}개 페이지 설정 업로드 중`);
+    console.log(`Uploading settings with ${pages.length} pages to server`);
 
-    // API 호출
+    // API call
     const result = await apiSync.uploadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
@@ -239,25 +241,25 @@ async function uploadSettings() {
       directData: uploadData,
     });
 
-    // 성공 시 마지막 동기화 시간 업데이트
+    // Update last sync time on success
     if (result.success) {
       state.lastSyncTime = timestamp;
 
-      // 동기화 메타데이터만 업데이트
+      // Update sync metadata only
       userDataManager.updateSyncMetadata({
         lastSyncedAt: timestamp,
         lastSyncedDevice: state.deviceId
       });
 
-      console.log('설정 업로드 성공 및 동기화 메타데이터 업데이트 완료');
+      console.log('Settings upload successful and sync metadata updated');
     }
 
     return result;
   } catch (error) {
-    console.error('설정 업로드 오류:', error);
+    console.error('Settings upload error:', error);
     return {
       success: false,
-      error: error.message || '알 수 없는 오류'
+      error: error.message || 'Unknown error'
     };
   } finally {
     state.isSyncing = false;
@@ -265,41 +267,43 @@ async function uploadSettings() {
 }
 
 /**
- * 서버에서 설정 다운로드
- * @returns {Promise<Object>} 다운로드 결과
+ * Download settings from server
+ * @returns {Promise<Object>} Download result
  */
 async function downloadSettings() {
-  console.log('설정 다운로드 시작');
+  console.log('Starting settings download');
 
-  // if (!state.enabled) {
-  //   console.log('클라우드 동기화 비활성화됨, 다운로드 스킵');
-  //   return { success: false, error: 'Cloud sync disabled' };
-  // }
+  // Check sync state
+  if (!state.enabled) {
+    console.log('Cloud sync disabled, skipping download');
+    return { success: false, error: 'Cloud sync disabled' };
+  }
 
-  // if (!await canSync()) {
-  //   return { success: false, error: 'Cloud sync not enabled' };
-  // }
+  // Verify sync capability
+  if (!await canSync()) {
+    return { success: false, error: 'Cloud sync not enabled' };
+  }
 
   if (state.isSyncing) {
-    console.log('이미 동기화 중, 다운로드 스킵');
+    console.log('Already syncing, skipping download');
     return { success: false, error: 'Already syncing' };
   }
 
   try {
     state.isSyncing = true;
 
-    // 데이터 형식을 일관되게 맞추기 위해 빈 객체 전달
+    // Pass empty object to maintain consistent data format
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
       configStore,
-      directData: {} // 빈 객체를 전달해도 API에서는 GET 요청이므로 무시됨
+      directData: {} // Empty object is ignored in GET request
     });
 
     if (result.success) {
       state.lastSyncTime = getCurrentTimestamp();
 
-      // 동기화 메타데이터만 업데이트
+      // Update sync metadata only
       const timestamp = getCurrentTimestamp();
       userDataManager.updateSyncMetadata({
         lastSyncedAt: timestamp,
@@ -307,15 +311,15 @@ async function downloadSettings() {
         lastModifiedDevice: state.deviceId
       });
 
-      console.log('설정 다운로드 성공 및 동기화 메타데이터 업데이트 완료');
+      console.log('Settings download successful and sync metadata updated');
     }
 
     return result;
   } catch (error) {
-    console.error('설정 다운로드 오류:', error);
+    console.error('Settings download error:', error);
     return {
       success: false,
-      error: error.message || '알 수 없는 오류'
+      error: error.message || 'Unknown error'
     };
   } finally {
     state.isSyncing = false;
@@ -437,84 +441,84 @@ function setEnabled(enabled) {
 }
 
 /**
- * 설정 변경 감지 이벤트 등록
+ * Register event listeners for config changes
  */
 function setupConfigListeners() {
-  // 페이지 설정 변경 감지
+  // Page settings change detection
   configStore.onDidChange('pages', async (newValue, oldValue) => {
-    // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 스킵
+    // Skip synchronization if disabled or not logged in
     if (!state.enabled || !await canSync()) {
       return;
     }
 
-    // 변경 유형 감지
-    let changeType = '알 수 없는 변경';
+    // Detect change type
+    let changeType = 'Unknown change';
 
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
       if (newValue.length > oldValue.length) {
-        changeType = '페이지 추가';
+        changeType = 'Page added';
       } else if (newValue.length < oldValue.length) {
-        changeType = '페이지 삭제';
+        changeType = 'Page deleted';
       } else {
-        changeType = '버튼 수정';
+        changeType = 'Button modified';
       }
     }
 
-    console.log(`페이지 설정 변경 감지됨 (${changeType})`);
+    console.log(`Page settings change detected (${changeType})`);
 
-    // 메타데이터만 업데이트
+    // Update metadata only
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId
     });
 
-    console.log('설정 파일 메타데이터 업데이트 완료');
+    console.log('Settings file metadata update complete');
 
-    // 동기화 예약
+    // Schedule synchronization
     scheduleSync(changeType);
   });
 
-  // 외관 설정 변경 감지
+  // Appearance settings change detection
   configStore.onDidChange('appearance', async (newValue, oldValue) => {
     if (!state.enabled || !await canSync()) {
       return;
     }
 
-    console.log('외관 설정 변경 감지됨');
+    console.log('Appearance settings change detected');
 
-    // 메타데이터만 업데이트
+    // Update metadata only
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId
     });
 
-    console.log('설정 파일 메타데이터 업데이트 완료');
+    console.log('Settings file metadata update complete');
 
-    // 동기화 예약
-    scheduleSync('외관 설정 변경');
+    // Schedule synchronization
+    scheduleSync('Appearance change');
   });
 
-  // 고급 설정 변경 감지
+  // Advanced settings change detection
   configStore.onDidChange('advanced', async (newValue, oldValue) => {
     if (!state.enabled || !await canSync()) {
       return;
     }
 
-    console.log('고급 설정 변경 감지됨');
+    console.log('Advanced settings change detected');
 
-    // 메타데이터만 업데이트
+    // Update metadata only
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId
     });
 
-    console.log('설정 파일 메타데이터 업데이트 완료');
+    console.log('Settings file metadata update complete');
 
-    // 동기화 예약
-    scheduleSync('고급 설정 변경');
+    // Schedule synchronization
+    scheduleSync('Advanced settings change');
   });
 }
 

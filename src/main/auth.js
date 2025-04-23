@@ -75,21 +75,49 @@ function readTokenFile() {
 }
 
 /**
- * Save token data to local file
+ * Save token data to local file using atomic write operation to prevent corruption
  * @param {Object} tokenData - Token data object to save
  * @returns {boolean} Whether the save was successful
  */
 function writeTokenFile(tokenData) {
   try {
     const dirPath = path.dirname(TOKEN_FILE_PATH);
+    const tempFilePath = `${TOKEN_FILE_PATH}.temp`;
 
     // Create directory if it doesn't exist
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    // Save to file in JSON format
-    fs.writeFileSync(TOKEN_FILE_PATH, JSON.stringify(tokenData, null, 2), 'utf8');
+    // First write to a temporary file
+    fs.writeFileSync(tempFilePath, JSON.stringify(tokenData, null, 2), 'utf8');
+
+    // Verify the written data is valid
+    try {
+      const verifyData = fs.readFileSync(tempFilePath, 'utf8');
+      JSON.parse(verifyData); // Ensure it's valid JSON
+    } catch (verifyError) {
+      console.error('Error verifying written token data:', verifyError);
+      fs.unlinkSync(tempFilePath); // Clean up corrupted temp file
+      return false;
+    }
+
+    // Use atomic rename operation to replace the actual file
+    // This is much safer as it prevents partial writes from corrupting the file
+    if (fs.existsSync(TOKEN_FILE_PATH)) {
+      // On Windows, we need to unlink the existing file first
+      if (process.platform === 'win32') {
+        try {
+          fs.unlinkSync(TOKEN_FILE_PATH);
+        } catch (unlinkError) {
+          console.error('Error removing existing token file:', unlinkError);
+        }
+      }
+    }
+
+    fs.renameSync(tempFilePath, TOKEN_FILE_PATH);
+
+    console.log('Token file saved successfully using atomic write operation');
     return true;
   } catch (error) {
     console.error('Error saving token file:', error);
@@ -428,6 +456,7 @@ async function exchangeCodeForToken(code) {
 const TOKEN_REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes limit for refresh requests
 let lastTokenRefresh = 0;
 let isRefreshing = false;
+let refreshPromise = null;
 
 /**
  * Get new access token using refresh token
@@ -446,73 +475,87 @@ async function refreshAccessToken() {
       return { success: true, throttled: true };
     }
 
-    // Check if already refreshing
-    if (isRefreshing) {
-      console.log('Token refresh already in progress. Preventing duplicate requests.');
-      return { success: false, error: 'Token refresh already in progress', code: 'REFRESH_IN_PROGRESS' };
+    // If already refreshing, return the ongoing refresh promise instead of starting a new one
+    if (isRefreshing && refreshPromise) {
+      console.log('Token refresh already in progress. Returning existing promise to prevent duplicate requests.');
+      return refreshPromise;
     }
 
-    // Set refresh state
+    // Set refresh state and create a promise that will be shared across concurrent calls
     isRefreshing = true;
     lastTokenRefresh = now;
 
-    try {
-      // Check if token is actually expired
-      const isExpired = await isTokenExpired();
-      if (!isExpired) {
-        console.log('Token is still valid. Refresh not needed.');
-        return { success: true, refreshNeeded: false };
-      }
-
-      // Get refresh token
-      const refreshToken = client.getRefreshToken() || await getStoredRefreshToken();
-
-      if (!refreshToken) {
-        console.error('No refresh token available');
-        return {
-          success: false,
-          error: 'No refresh token available',
-          code: 'NO_REFRESH_TOKEN'
-        };
-      }
-
-      console.log('Refresh token exists, attempting exchange');
-
-      // Exchange refresh token through common module
-      const refreshResult = await apiAuth.refreshAccessToken({
-        refreshToken,
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET
-      });
-
-      if (!refreshResult.success) {
-        // If failed with 401 error, reset tokens
-        if (refreshResult.code === 'SESSION_EXPIRED') {
-          await clearTokens();
-          console.log('Expired tokens reset complete');
+    // Create a new shared promise for this refresh operation
+    refreshPromise = (async () => {
+      try {
+        // Check if token is actually expired
+        const isExpired = await isTokenExpired();
+        if (!isExpired) {
+          console.log('Token is still valid. Refresh not needed.');
+          return { success: true, refreshNeeded: false };
         }
 
-        return refreshResult;
+        // Get refresh token
+        const refreshToken = client.getRefreshToken() || await getStoredRefreshToken();
+
+        if (!refreshToken) {
+          console.error('No refresh token available');
+          return {
+            success: false,
+            error: 'No refresh token available',
+            code: 'NO_REFRESH_TOKEN'
+          };
+        }
+
+        console.log('Refresh token exists, attempting exchange');
+
+        // Exchange refresh token through common module
+        const refreshResult = await apiAuth.refreshAccessToken({
+          refreshToken,
+          clientId: CLIENT_ID,
+          clientSecret: CLIENT_SECRET
+        });
+
+        if (!refreshResult.success) {
+          // If failed with 401 error, reset tokens
+          if (refreshResult.code === 'SESSION_EXPIRED') {
+            await clearTokens();
+            console.log('Expired tokens reset complete');
+          }
+
+          return refreshResult;
+        }
+
+        // On success, store new tokens
+        const { access_token, refresh_token, expires_in } = refreshResult;
+
+        // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
+        await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
+        console.log(`New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + ' hours' : expires_in ? expires_in/3600 + ' hours' : '1 hour'})`);
+
+        // Store new refresh token (if available)
+        if (refresh_token) {
+          await storeRefreshToken(refresh_token);
+          console.log('New refresh token saved successfully');
+        }
+
+        return { success: true };
+      } catch (error) {
+        console.error('Exception in token refresh:', error);
+        return {
+          success: false,
+          error: error.message || 'Unknown error in token refresh',
+          code: 'REFRESH_EXCEPTION'
+        };
+      } finally {
+        // Reset refresh state
+        isRefreshing = false;
+        refreshPromise = null;
       }
+    })(); // Execute the async function immediately and store its promise
 
-      // On success, store new tokens
-      const { access_token, refresh_token, expires_in } = refreshResult;
-
-      // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
-      await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-      console.log(`New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + ' hours' : expires_in ? expires_in/3600 + ' hours' : '1 hour'})`);
-
-      // Store new refresh token (if available)
-      if (refresh_token) {
-        await storeRefreshToken(refresh_token);
-        console.log('New refresh token saved successfully');
-      }
-
-      return { success: true };
-    } finally {
-      // Reset refresh state
-      isRefreshing = false;
-    }
+    // Return the shared promise
+    return refreshPromise;
   } catch (error) {
     console.error('Exception occurred during token refresh process:', error);
     isRefreshing = false; // Reset state even on error
