@@ -15,14 +15,35 @@ jobs:
 
       - name: Bump Version 🏷️
         id: bump
-        uses: opspresso/action-builder@master
-        with:
-          args: --version
-
-      - name: Update Package.json 📦
         run: |
-          echo "Updating package.json with new version"
-          jq --arg version "${{ steps.bump.outputs.version }}" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+          echo "Bumping version"
+          MAJOR=$(cat ./VERSION | xargs | cut -d'.' -f1)
+          MINOR=$(cat ./VERSION | xargs | cut -d'.' -f2)
+          PATCH=$(cat ./VERSION | xargs | cut -d'.' -f3)
+          # get last version from release
+          LAST_VERSION=$(gh release list --limit 1 | head -n 1 | awk '{print $1}')
+          # if MAJOR, MINOR are same, increment PATCH
+          if [[ "$LAST_VERSION" == "$MAJOR.$MINOR.$PATCH" ]]; then
+            PATCH=$((PATCH + 1))
+          else
+            # if MAJOR, MINOR are different, increment MINOR
+            if [[ "$LAST_VERSION" == "$MAJOR.$MINOR."* ]]; then
+              MINOR=$((MINOR + 1))
+              PATCH=0
+            else
+              # if MAJOR is different, increment MAJOR
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+            fi
+          fi
+          # set new version
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
+          # write new version to VERSION file
+          echo "$NEW_VERSION" > VERSION
+          # write new version to package.json
+          jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
 
       - name: Retitle Pull Request 📬
         run: |
