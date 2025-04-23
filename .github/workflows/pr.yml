@@ -31,7 +31,7 @@ jobs:
             PATCH=$((PATCH + 1))
           else
             # if MAJOR, MINOR are different, increment MINOR
-            if [[ "$LAST_VERSION" == "$MAJOR.$MINOR."* ]]; then
+            if [[ "$LAST_VERSION" == "$MAJOR.$MINOR"* ]]; then
               MINOR=$((MINOR + 1))
               PATCH=0
             else
@@ -54,7 +54,7 @@ jobs:
           git config --local user.email "bot@nalbam.com"
           git add .
           git commit -m "Bump version to $NEW_VERSION"
-          git push origin HEAD:$HEAD_REF
+          git push origin HEAD:${{ github.head_ref }}
 
           # retitle pull request
           echo "Retitling pull request to 'Release $NEW_VERSION'"
