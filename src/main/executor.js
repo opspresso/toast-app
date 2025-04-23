@@ -6,6 +6,7 @@
 
 // Import action handlers
 const { executeApplication } = require('./actions/application');
+const { executeChainedActions } = require('./actions/chain');
 const { executeCommand } = require('./actions/exec');
 const { executeScript } = require('./actions/script');
 const { executeShortcut } = require('./actions/shortcut');
@@ -56,47 +57,6 @@ async function executeAction(action) {
   }
 }
 
-/**
- * Execute a series of actions in sequence
- * @param {Object} chainAction - Chain action configuration
- * @param {Array} chainAction.actions - Array of actions to execute
- * @returns {Promise<Object>} Result object
- */
-async function executeChainedActions(chainAction) {
-  try {
-    // Validate actions array
-    if (!chainAction.actions || !Array.isArray(chainAction.actions) || chainAction.actions.length === 0) {
-      return { success: false, message: 'No actions provided for chain' };
-    }
-
-    const results = [];
-    let success = true;
-
-    // Execute each action in sequence
-    for (const action of chainAction.actions) {
-      const result = await executeAction(action);
-      results.push(result);
-
-      // If an action fails and stopOnError is true, stop the chain
-      if (!result.success && chainAction.stopOnError) {
-        success = false;
-        break;
-      }
-    }
-
-    return {
-      success: success,
-      message: success ? 'All actions executed successfully' : 'Some actions failed',
-      results: results
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Error executing chained actions: ${error.message}`,
-      error: error
-    };
-  }
-}
 
 /**
  * Test an action without executing it

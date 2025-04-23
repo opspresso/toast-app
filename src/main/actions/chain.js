@@ -4,8 +4,6 @@
  * This module handles executing a series of actions in sequence.
  */
 
-const { executeAction } = require('../executor');
-
 /**
  * Execute a chain of actions in sequence
  * @param {Object} action - Chain action configuration
@@ -14,6 +12,8 @@ const { executeAction } = require('../executor');
  * @returns {Promise<Object>} Result object
  */
 async function executeChainedActions(action) {
+  // 순환 참조를 피하기 위해 executeAction을 동적으로 가져옵니다
+  const { executeAction } = require('../executor');
   try {
     if (!action.actions || !Array.isArray(action.actions) || action.actions.length === 0) {
       return {
