@@ -41,6 +41,8 @@ const editButtonCommandInput = document.getElementById('edit-button-command');
 const editButtonUrlInput = document.getElementById('edit-button-url');
 const editButtonScriptInput = document.getElementById('edit-button-script');
 const editButtonKeyShortcutInput = document.getElementById('edit-button-key-shortcut');
+const recordKeyShortcutButton = document.getElementById('record-key-shortcut');
+const clearKeyShortcutButton = document.getElementById('clear-key-shortcut');
 const editButtonApplicationInput = document.getElementById('edit-button-application');
 const browseApplicationButton = document.getElementById('browse-application-button');
 const commandInputGroup = document.getElementById('command-input-group');
@@ -184,6 +186,7 @@ let currentEditingButton = null; // Currently editing button
 let userProfile = null; // User profile information
 let userSubscription = null; // User subscription information
 let isLoggingIn = false; // Login progress status
+let isRecordingKeyShortcut = false; // Key shortcut recording state
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -1500,6 +1503,12 @@ function setupModalEventListeners() {
   // Save button
   saveButtonEdit.addEventListener('click', saveButtonSettings);
 
+  // Record key shortcut button
+  recordKeyShortcutButton.addEventListener('click', startRecordingKeyShortcut);
+
+  // Clear key shortcut button
+  clearKeyShortcutButton.addEventListener('click', clearKeyShortcut);
+
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
     showActionFields(editButtonActionSelect.value);
@@ -1608,9 +1617,105 @@ function closeButtonEditModal() {
   // Notify main process that modal is closed
   window.toast.setModalOpen(false);
 
+  // Make sure any recording session is ended
+  isRecordingKeyShortcut = false;
+  editButtonKeyShortcutInput.classList.remove('recording');
+  recordKeyShortcutButton.disabled = false;
+
   buttonEditModal.classList.remove('show');
   currentEditingButton = null;
 }
+
+/**
+ * Start recording a key shortcut
+ */
+function startRecordingKeyShortcut() {
+  isRecordingKeyShortcut = true;
+  editButtonKeyShortcutInput.value = '단축키를 입력하세요...';
+  editButtonKeyShortcutInput.classList.add('recording');
+  recordKeyShortcutButton.disabled = true;
+
+  // 녹화중 상태 표시
+  showStatus('단축키 레코딩 중... 키보드 조합을 입력하세요.', 'info');
+}
+
+/**
+ * Clear the key shortcut
+ */
+function clearKeyShortcut() {
+  editButtonKeyShortcutInput.value = '';
+  isRecordingKeyShortcut = false;
+  editButtonKeyShortcutInput.classList.remove('recording');
+  recordKeyShortcutButton.disabled = false;
+}
+
+/**
+ * Handle key shortcut recording
+ * @param {KeyboardEvent} event - Keyboard event
+ */
+document.addEventListener('keydown', (event) => {
+  // 단축키 녹화 중이 아니라면 무시
+  if (!isRecordingKeyShortcut) return;
+
+  // 이벤트 기본 동작 막기
+  event.preventDefault();
+  event.stopPropagation();
+
+  // 수정자 키 추출 (Electron 형식으로 변환)
+  const modifiers = [];
+  if (event.ctrlKey) modifiers.push('CommandOrControl');
+  if (event.altKey) modifiers.push('Alt');
+  if (event.shiftKey) modifiers.push('Shift');
+  if (event.metaKey) modifiers.push('Super'); // macOS Command 키
+
+  // 키 이름 추출 (Electron 형식으로 변환)
+  let key = event.key;
+  let code = event.code;
+
+  // 수정자 키만 눌리면 무시 (실제 키 입력 대기)
+  if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+    return;
+  }
+
+  // 특수 키 포맷 변환
+  if (key === ' ' || code === 'Space' || key === 'Spacebar' || key === 'Space') {
+    key = 'Space';
+  } else if (key.length === 1) {
+    key = key.toUpperCase();
+  } else if (code.startsWith('Key')) {
+    // 문자 키(KeyA, KeyB 등) 처리
+    key = code.slice(3);
+  } else if (code.startsWith('Digit')) {
+    // 숫자 키(Digit0, Digit1 등) 처리
+    key = code.slice(5);
+  } else {
+    // 특수 키 처리
+    const keyMap = {
+      'Escape': 'Esc',
+      'ArrowUp': 'Up',
+      'ArrowDown': 'Down',
+      'ArrowLeft': 'Left',
+      'ArrowRight': 'Right',
+      'Enter': 'Return'
+    };
+    key = keyMap[key] || key;
+  }
+
+  // Electron 포맷의 핫키 문자열 생성
+  const hotkey = [...modifiers, key].join('+');
+
+  // 디버그 정보
+  console.log('레코딩된 단축키:', hotkey, '원본 키:', event.key, '코드:', event.code);
+
+  // 입력 필드에 표시
+  editButtonKeyShortcutInput.value = hotkey;
+  editButtonKeyShortcutInput.classList.remove('recording');
+  recordKeyShortcutButton.disabled = false;
+  isRecordingKeyShortcut = false;
+
+  // 녹화 완료 메시지
+  showStatus('단축키가 설정되었습니다: ' + hotkey, 'success');
+});
 
 /**
  * Show/hide input fields based on action type

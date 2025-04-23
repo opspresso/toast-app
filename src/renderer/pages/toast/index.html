@@ -138,7 +138,11 @@
         </div>
         <div class="form-group" id="shortcut-input-group" style="display: none;">
           <label for="edit-button-key-shortcut">Key Combination</label>
-          <input type="text" id="edit-button-key-shortcut" placeholder="Set shortcut keys">
+          <div class="shortcut-input-container">
+            <input type="text" id="edit-button-key-shortcut" placeholder="Set shortcut keys" readonly>
+            <button id="record-key-shortcut" class="secondary-button">Record</button>
+            <button id="clear-key-shortcut" class="secondary-button">Clear</button>
+          </div>
         </div>
         <div class="form-group" id="application-input-group" style="display: none;">
           <label for="edit-button-application">Application Path</label>
