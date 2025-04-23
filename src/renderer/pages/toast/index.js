@@ -1124,6 +1124,16 @@ function handleKeyDown(event) {
       if (isSettingsMode && !buttonEditModal.classList.contains('show')) {
         event.preventDefault();
         toggleSettingsMode();
+      } else if (!isSettingsMode) {
+        // Hide window when ESC is pressed in normal mode (if hideOnEscape is enabled)
+        event.preventDefault();
+        // Get hideOnEscape setting and hide window if enabled
+        window.toast.getConfig('advanced.hideOnEscape')
+          .then(hideOnEscape => {
+            if (hideOnEscape !== false) {
+              hideToastWindow();
+            }
+          });
       }
       break;
     case ',':  // Toggle settings mode when comma key is pressed
@@ -1456,6 +1466,14 @@ function executeButton(button) {
     .then(result => {
       if (result.success) {
         showStatus(result.message || 'Action completed successfully', 'success');
+
+        // Check hideAfterAction setting and hide window if enabled
+        window.toast.getConfig('advanced.hideAfterAction')
+          .then(hideAfterAction => {
+            if (hideAfterAction !== false) {
+              window.toast.hideWindow();
+            }
+          });
       } else {
         showStatus(result.message || 'Action failed', 'error');
       }
