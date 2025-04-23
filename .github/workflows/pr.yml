@@ -1,0 +1,63 @@
+name: Bump Package
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump Version 🏷️
+        id: bump
+        run: |
+          echo "Bumping version"
+          MAJOR=$(cat ./VERSION | xargs | cut -d'.' -f1)
+          MINOR=$(cat ./VERSION | xargs | cut -d'.' -f2)
+          PATCH=$(cat ./VERSION | xargs | cut -d'.' -f3)
+          # get last version from release
+          LAST_VERSION=$(gh release list --limit 1 | head -n 1 | awk '{print $1}')
+          # if MAJOR, MINOR are same, increment PATCH
+          if [[ "$LAST_VERSION" == "$MAJOR.$MINOR.$PATCH" ]]; then
+            PATCH=$((PATCH + 1))
+          else
+            # if MAJOR, MINOR are different, increment MINOR
+            if [[ "$LAST_VERSION" == "$MAJOR.$MINOR."* ]]; then
+              MINOR=$((MINOR + 1))
+              PATCH=0
+            else
+              # if MAJOR is different, increment MAJOR
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+            fi
+          fi
+          # set new version
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
+          # write new version to VERSION file
+          echo "$NEW_VERSION" > VERSION
+          # write new version to package.json
+          jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+
+      - name: Retitle Pull Request 📬
+        run: |
+          echo "Retitling pull request to 'Release ${{ steps.bump.outputs.version }}'"
+          gh pr edit ${{ github.event.pull_request.number }} --title "Release ${{ steps.bump.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit Changes ✍️
+        run: |
+          git config --local user.name "nalbam-bot"
+          git config --local user.email "bot@nalbam.com"
+          git add .
+          git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
+          git push origin HEAD:${{ github.head_ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
