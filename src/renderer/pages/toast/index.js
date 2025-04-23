@@ -37,19 +37,39 @@ const editButtonNameInput = document.getElementById('edit-button-name');
 const editButtonIconInput = document.getElementById('edit-button-icon');
 const editButtonShortcutInput = document.getElementById('edit-button-shortcut');
 const editButtonActionSelect = document.getElementById('edit-button-action');
+
+// Command action elements
 const editButtonCommandInput = document.getElementById('edit-button-command');
+const editButtonWorkingDirInput = document.getElementById('edit-button-workingDir');
+const editButtonRunInTerminalCheckbox = document.getElementById('edit-button-runInTerminal');
+
+// Open action elements
 const editButtonUrlInput = document.getElementById('edit-button-url');
+const editButtonPathInput = document.getElementById('edit-button-path');
+const editButtonOpenApplicationInput = document.getElementById('edit-button-open-application');
+const browsePathButton = document.getElementById('browse-path-button');
+
+// Script action elements
 const editButtonScriptInput = document.getElementById('edit-button-script');
-const editButtonKeyShortcutInput = document.getElementById('edit-button-key-shortcut');
-const recordKeyShortcutButton = document.getElementById('record-key-shortcut');
-const clearKeyShortcutButton = document.getElementById('clear-key-shortcut');
+const editButtonScriptTypeSelect = document.getElementById('edit-button-scriptType');
+const editButtonScriptParamsInput = document.getElementById('edit-button-scriptParams');
+
+// Application action elements
 const editButtonApplicationInput = document.getElementById('edit-button-application');
 const browseApplicationButton = document.getElementById('browse-application-button');
+
+// Chain action elements
+const chainActionsContainer = document.getElementById('chain-actions-container');
+const addChainActionButton = document.getElementById('add-chain-action');
+const editButtonStopOnErrorCheckbox = document.getElementById('edit-button-stopOnError');
+
+// Input groups
 const commandInputGroup = document.getElementById('command-input-group');
 const urlInputGroup = document.getElementById('url-input-group');
 const scriptInputGroup = document.getElementById('script-input-group');
 const shortcutInputGroup = document.getElementById('shortcut-input-group');
 const applicationInputGroup = document.getElementById('application-input-group');
+const chainInputGroup = document.getElementById('chain-input-group');
 
 // Define default button set
 const defaultButtons = [
@@ -1503,12 +1523,6 @@ function setupModalEventListeners() {
   // Save button
   saveButtonEdit.addEventListener('click', saveButtonSettings);
 
-  // Record key shortcut button
-  recordKeyShortcutButton.addEventListener('click', startRecordingKeyShortcut);
-
-  // Clear key shortcut button
-  clearKeyShortcutButton.addEventListener('click', clearKeyShortcut);
-
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
     showActionFields(editButtonActionSelect.value);
@@ -1558,6 +1572,44 @@ function setupModalEventListeners() {
     });
   }
 
+  // Browse button for path selection
+  if (browsePathButton) {
+    browsePathButton.addEventListener('click', async () => {
+      try {
+        // Configure file/folder selection dialog options
+        const options = {
+          title: 'Select File or Folder',
+          defaultPath: window.toast?.platform === 'darwin' ? '/Users' : 'C:\\',
+          properties: ['openFile', 'openDirectory'] // 파일 또는 폴더 선택 가능
+        };
+
+        // Call ipcRenderer to save current toast window position
+        const windowPosition = await window.toast.getWindowPosition();
+
+        // Hide toast window (so file selection dialog appears in front)
+        await window.toast.hideWindowTemporarily();
+
+        try {
+          // Call file selection dialog
+          const result = await window.toast.showOpenDialog(options);
+
+          if (!result.canceled && result.filePaths.length > 0) {
+            // Set selected path to input field
+            editButtonPathInput.value = result.filePaths[0];
+          }
+        } finally {
+          // Show toast window again after file selection dialog is closed
+          await window.toast.showWindowAfterDialog(windowPosition);
+        }
+      } catch (error) {
+        console.error('Error selecting file or folder:', error);
+        showStatus('파일 또는 폴더 선택 중 오류가 발생했습니다.', 'error');
+        // Restore alwaysOnTop property even if an error occurs
+        await window.toast.setAlwaysOnTop(true);
+      }
+    });
+  }
+
   // Close on click outside modal
   buttonEditModal.addEventListener('click', (event) => {
     if (event.target === buttonEditModal) {
@@ -1590,12 +1642,23 @@ function editButtonSettings(button) {
   editButtonShortcutInput.value = button.shortcut || '';
   editButtonActionSelect.value = button.action || 'exec';
 
-  // Set field values based on action type
+  // Set common field values
   editButtonCommandInput.value = button.command || '';
+  editButtonWorkingDirInput.value = button.workingDir || '';
+  editButtonRunInTerminalCheckbox.checked = button.runInTerminal || false;
+
   editButtonUrlInput.value = button.url || '';
+  editButtonPathInput.value = button.path || '';
+  editButtonOpenApplicationInput.value = button.application || '';
+
   editButtonScriptInput.value = button.script || '';
-  editButtonKeyShortcutInput.value = button.keyShortcut || '';
+  editButtonScriptTypeSelect.value = button.scriptType || 'javascript';
+  editButtonScriptParamsInput.value = button.scriptParams ? JSON.stringify(button.scriptParams, null, 2) : '';
+
+  // shortcut 액션 타입 제거
+
   editButtonApplicationInput.value = button.applicationPath || '';
+  editButtonStopOnErrorCheckbox.checked = button.stopOnError !== false; // 기본값 true
 
   // Show input fields appropriate for current action type
   showActionFields(button.action || 'exec');
@@ -1617,105 +1680,9 @@ function closeButtonEditModal() {
   // Notify main process that modal is closed
   window.toast.setModalOpen(false);
 
-  // Make sure any recording session is ended
-  isRecordingKeyShortcut = false;
-  editButtonKeyShortcutInput.classList.remove('recording');
-  recordKeyShortcutButton.disabled = false;
-
   buttonEditModal.classList.remove('show');
   currentEditingButton = null;
 }
-
-/**
- * Start recording a key shortcut
- */
-function startRecordingKeyShortcut() {
-  isRecordingKeyShortcut = true;
-  editButtonKeyShortcutInput.value = '단축키를 입력하세요...';
-  editButtonKeyShortcutInput.classList.add('recording');
-  recordKeyShortcutButton.disabled = true;
-
-  // 녹화중 상태 표시
-  showStatus('단축키 레코딩 중... 키보드 조합을 입력하세요.', 'info');
-}
-
-/**
- * Clear the key shortcut
- */
-function clearKeyShortcut() {
-  editButtonKeyShortcutInput.value = '';
-  isRecordingKeyShortcut = false;
-  editButtonKeyShortcutInput.classList.remove('recording');
-  recordKeyShortcutButton.disabled = false;
-}
-
-/**
- * Handle key shortcut recording
- * @param {KeyboardEvent} event - Keyboard event
- */
-document.addEventListener('keydown', (event) => {
-  // 단축키 녹화 중이 아니라면 무시
-  if (!isRecordingKeyShortcut) return;
-
-  // 이벤트 기본 동작 막기
-  event.preventDefault();
-  event.stopPropagation();
-
-  // 수정자 키 추출 (Electron 형식으로 변환)
-  const modifiers = [];
-  if (event.ctrlKey) modifiers.push('CommandOrControl');
-  if (event.altKey) modifiers.push('Alt');
-  if (event.shiftKey) modifiers.push('Shift');
-  if (event.metaKey) modifiers.push('Super'); // macOS Command 키
-
-  // 키 이름 추출 (Electron 형식으로 변환)
-  let key = event.key;
-  let code = event.code;
-
-  // 수정자 키만 눌리면 무시 (실제 키 입력 대기)
-  if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
-    return;
-  }
-
-  // 특수 키 포맷 변환
-  if (key === ' ' || code === 'Space' || key === 'Spacebar' || key === 'Space') {
-    key = 'Space';
-  } else if (key.length === 1) {
-    key = key.toUpperCase();
-  } else if (code.startsWith('Key')) {
-    // 문자 키(KeyA, KeyB 등) 처리
-    key = code.slice(3);
-  } else if (code.startsWith('Digit')) {
-    // 숫자 키(Digit0, Digit1 등) 처리
-    key = code.slice(5);
-  } else {
-    // 특수 키 처리
-    const keyMap = {
-      'Escape': 'Esc',
-      'ArrowUp': 'Up',
-      'ArrowDown': 'Down',
-      'ArrowLeft': 'Left',
-      'ArrowRight': 'Right',
-      'Enter': 'Return'
-    };
-    key = keyMap[key] || key;
-  }
-
-  // Electron 포맷의 핫키 문자열 생성
-  const hotkey = [...modifiers, key].join('+');
-
-  // 디버그 정보
-  console.log('레코딩된 단축키:', hotkey, '원본 키:', event.key, '코드:', event.code);
-
-  // 입력 필드에 표시
-  editButtonKeyShortcutInput.value = hotkey;
-  editButtonKeyShortcutInput.classList.remove('recording');
-  recordKeyShortcutButton.disabled = false;
-  isRecordingKeyShortcut = false;
-
-  // 녹화 완료 메시지
-  showStatus('단축키가 설정되었습니다: ' + hotkey, 'success');
-});
 
 /**
  * Show/hide input fields based on action type
@@ -1726,8 +1693,8 @@ function showActionFields(actionType) {
   commandInputGroup.style.display = 'none';
   urlInputGroup.style.display = 'none';
   scriptInputGroup.style.display = 'none';
-  shortcutInputGroup.style.display = 'none';
   applicationInputGroup.style.display = 'none';
+  chainInputGroup.style.display = 'none';
 
   // Update icon field hint
   const iconHint = document.querySelector('.field-hint');
@@ -1758,6 +1725,9 @@ function showActionFields(actionType) {
       break;
     case 'application':
       applicationInputGroup.style.display = 'block';
+      break;
+    case 'chain':
+      chainInputGroup.style.display = 'block';
       break;
   }
 }
@@ -1792,18 +1762,53 @@ function saveButtonSettings() {
   switch (action) {
     case 'exec':
       updatedButton.command = editButtonCommandInput.value.trim();
+
+      // 작업 디렉토리 추가 (선택적)
+      if (editButtonWorkingDirInput.value.trim()) {
+        updatedButton.workingDir = editButtonWorkingDirInput.value.trim();
+      }
+
+      // 터미널에서 실행 여부 추가
+      updatedButton.runInTerminal = editButtonRunInTerminalCheckbox.checked;
       break;
+
     case 'open':
-      updatedButton.url = editButtonUrlInput.value.trim();
+      // URL 또는 path 중 하나 필요 (둘 다는 아님)
+      if (editButtonUrlInput.value.trim()) {
+        updatedButton.url = editButtonUrlInput.value.trim();
+      } else if (editButtonPathInput.value.trim()) {
+        updatedButton.path = editButtonPathInput.value.trim();
+      }
+
+      // 애플리케이션 설정 (선택적)
+      if (editButtonOpenApplicationInput.value.trim()) {
+        updatedButton.application = editButtonOpenApplicationInput.value.trim();
+      }
       break;
+
     case 'script':
       updatedButton.script = editButtonScriptInput.value.trim();
+      updatedButton.scriptType = editButtonScriptTypeSelect.value;
+
+      // 스크립트 파라미터 추가 (JSON 형식으로 파싱)
+      if (editButtonScriptParamsInput.value.trim()) {
+        try {
+          updatedButton.scriptParams = JSON.parse(editButtonScriptParamsInput.value.trim());
+        } catch (error) {
+          showStatus('스크립트 파라미터 JSON 형식이 잘못되었습니다. 빈 객체를 사용합니다.', 'error');
+          updatedButton.scriptParams = {};
+        }
+      }
       break;
-    case 'shortcut':
-      updatedButton.keyShortcut = editButtonKeyShortcutInput.value.trim();
-      break;
+
     case 'application':
       updatedButton.applicationPath = editButtonApplicationInput.value.trim();
+      break;
+
+    case 'chain':
+      // 체인 액션 추가 기능 구현 필요
+      updatedButton.actions = []; // 실제 구현에서는 GUI에서 추가된 액션 목록을 가져옴
+      updatedButton.stopOnError = editButtonStopOnErrorCheckbox.checked;
       break;
   }
 

@@ -968,23 +968,69 @@ body {
 }
 
 .application-input-container,
-.shortcut-input-container {
+.shortcut-input-container,
+.path-input-container {
   display: flex;
   gap: 10px;
 }
 
 .application-input-container input,
-.shortcut-input-container input {
+.shortcut-input-container input,
+.path-input-container input {
   flex: 1;
 }
 
 .application-input-container button,
-.shortcut-input-container button {
+.shortcut-input-container button,
+.path-input-container button {
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
   flex-shrink: 0;
   min-width: 80px;
+}
+
+/* 서브필드 스타일 */
+.subfield {
+  margin-top: 12px;
+  margin-left: 10px;
+  border-left: 2px solid var(--border-color);
+  padding-left: 14px;
+}
+
+.subfield label {
+  font-size: 13px;
+  color: var(--secondary-text-color);
+}
+
+/* 체크박스가 포함된 서브필드 */
+.subfield label input[type="checkbox"] {
+  width: auto;
+  margin-right: 6px;
+}
+
+/* 체인 액션 관련 스타일 */
+.chain-actions-container {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 100px;
+  margin-bottom: 10px;
+  background-color: var(--search-bg);
+}
+
+.chain-actions-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.no-actions-message {
+  color: var(--secondary-text-color);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
 }
 
 /* 키보드 단축키 레코딩 관련 스타일 */

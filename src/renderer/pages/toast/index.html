@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Toast App</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="toast-container">
     <div class="toast-header">
@@ -32,67 +34,67 @@
       <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
     </div>
 
-  <!-- Login loading screen -->
-  <div id="login-loading-overlay" class="login-loading-overlay">
-    <div class="login-loading-content">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">Logging in...</div>
-    </div>
-  </div>
-
-  <!-- User profile and subscription info modal -->
-  <div id="profile-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>User Information</h2>
-        <span class="close-modal" id="close-profile-modal">&times;</span>
+    <!-- Login loading screen -->
+    <div id="login-loading-overlay" class="login-loading-overlay">
+      <div class="login-loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Logging in...</div>
       </div>
-      <div class="modal-body">
-        <div id="profile-container" class="profile-container">
-          <div class="profile-header">
-            <div id="profile-avatar" class="profile-avatar"></div>
-            <div class="profile-info">
-              <div id="profile-name" class="profile-name"></div>
-              <div id="profile-email" class="profile-email"></div>
+    </div>
+
+    <!-- User profile and subscription info modal -->
+    <div id="profile-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>User Information</h2>
+          <span class="close-modal" id="close-profile-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="profile-container" class="profile-container">
+            <div class="profile-header">
+              <div id="profile-avatar" class="profile-avatar"></div>
+              <div class="profile-info">
+                <div id="profile-name" class="profile-name"></div>
+                <div id="profile-email" class="profile-email"></div>
+              </div>
             </div>
-          </div>
-          <div class="profile-divider"></div>
-          <div class="subscription-container">
-            <h3>Subscription Information</h3>
-            <div class="subscription-details">
-              <div class="subscription-item">
-                <span class="subscription-label">Subscription Status:</span>
-                <span>
-                  <span id="subscription-status" class="subscription-value"></span>
-                  (<span id="subscription-plan" class="subscription-value"></span>)
-                </span>
+            <div class="profile-divider"></div>
+            <div class="subscription-container">
+              <h3>Subscription Information</h3>
+              <div class="subscription-details">
+                <div class="subscription-item">
+                  <span class="subscription-label">Subscription Status:</span>
+                  <span>
+                    <span id="subscription-status" class="subscription-value"></span>
+                    (<span id="subscription-plan" class="subscription-value"></span>)
+                  </span>
+                </div>
+                <div class="subscription-item">
+                  <span class="subscription-label">Expiry Date:</span>
+                  <span id="subscription-expiry" class="subscription-value"></span>
+                </div>
+                <!-- Page group information is hidden -->
+                <div id="subscription-pages" style="display: none;"></div>
               </div>
-              <div class="subscription-item">
-                <span class="subscription-label">Expiry Date:</span>
-                <span id="subscription-expiry" class="subscription-value"></span>
-              </div>
-              <!-- Page group information is hidden -->
-              <div id="subscription-pages" style="display: none;"></div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button id="logout-button" class="secondary-button">Sign Out</button>
-        <button id="close-profile-button" class="primary-button">Close</button>
+        <div class="modal-footer">
+          <button id="logout-button" class="secondary-button">Sign Out</button>
+          <button id="close-profile-button" class="primary-button">Close</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="toast-footer">
-    <div class="toast-status" id="status-container">
-      <!-- Status messages will be displayed here -->
+    <div class="toast-footer">
+      <div class="toast-status" id="status-container">
+        <!-- Status messages will be displayed here -->
+      </div>
+      <div class="toast-settings">
+        <div class="toast-user-button" id="user-button" title="User Information">👤</div>
+        <div class="toast-mode-toggle" id="settings-mode-toggle" title="Settings Mode">⚙️</div>
+      </div>
     </div>
-    <div class="toast-settings">
-      <div class="toast-user-button" id="user-button" title="User Information">👤</div>
-      <div class="toast-mode-toggle" id="settings-mode-toggle" title="Settings Mode">⚙️</div>
-    </div>
-  </div>
   </div>
 
   <!-- Button Edit Modal -->
@@ -121,27 +123,59 @@
             <option value="exec">Execute Command</option>
             <option value="open">Open URL</option>
             <option value="script">Run Script</option>
-            <option value="shortcut">Execute Shortcut</option>
+            <option value="chain">Chain Actions</option>
           </select>
         </div>
         <div class="form-group" id="command-input-group">
           <label for="edit-button-command">Command</label>
           <input type="text" id="edit-button-command" placeholder="Command to execute">
+
+          <div class="subfield">
+            <label for="edit-button-workingDir">Working Directory (optional)</label>
+            <input type="text" id="edit-button-workingDir" placeholder="Working directory path">
+          </div>
+
+          <div class="subfield">
+            <label for="edit-button-runInTerminal">
+              <input type="checkbox" id="edit-button-runInTerminal">
+              Run in Terminal
+            </label>
+          </div>
         </div>
         <div class="form-group" id="url-input-group" style="display: none;">
           <label for="edit-button-url">URL</label>
           <input type="text" id="edit-button-url" placeholder="URL to open">
+
+          <div class="subfield">
+            <label for="edit-button-path">Path (alternative to URL)</label>
+            <div class="path-input-container">
+              <input type="text" id="edit-button-path" placeholder="File or folder path">
+              <button id="browse-path-button" class="secondary-button">Browse</button>
+            </div>
+          </div>
+
+          <div class="subfield">
+            <label for="edit-button-open-application">Open with Application (optional)</label>
+            <input type="text" id="edit-button-open-application" placeholder="Application name">
+          </div>
         </div>
         <div class="form-group" id="script-input-group" style="display: none;">
           <label for="edit-button-script">Script</label>
           <textarea id="edit-button-script" placeholder="Script to execute"></textarea>
-        </div>
-        <div class="form-group" id="shortcut-input-group" style="display: none;">
-          <label for="edit-button-key-shortcut">Key Combination</label>
-          <div class="shortcut-input-container">
-            <input type="text" id="edit-button-key-shortcut" placeholder="Set shortcut keys" readonly>
-            <button id="record-key-shortcut" class="secondary-button">Record</button>
-            <button id="clear-key-shortcut" class="secondary-button">Clear</button>
+
+          <div class="subfield">
+            <label for="edit-button-scriptType">Script Type</label>
+            <select id="edit-button-scriptType">
+              <option value="javascript">JavaScript</option>
+              <option value="applescript">AppleScript (macOS only)</option>
+              <option value="powershell">PowerShell (Windows only)</option>
+              <option value="bash">Bash (macOS/Linux only)</option>
+            </select>
+          </div>
+
+          <div class="subfield">
+            <label for="edit-button-scriptParams">Script Parameters (for JavaScript, JSON format)</label>
+            <textarea id="edit-button-scriptParams" placeholder='{"param1": "value1", "param2": "value2"}'></textarea>
           </div>
         </div>
         <div class="form-group" id="application-input-group" style="display: none;">
@@ -149,6 +183,22 @@
           <div class="application-input-container">
             <input type="text" id="edit-button-application" placeholder="Application path">
             <button id="browse-application-button" class="secondary-button">Browse</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="chain-input-group" style="display: none;">
+          <label for="chain-actions-container">Chain Actions</label>
+          <div id="chain-actions-container" class="chain-actions-container">
+            <div class="no-actions-message">No actions added. Click "Add Action" to add an action to the chain.</div>
+          </div>
+          <div class="chain-actions-buttons">
+            <button id="add-chain-action" class="secondary-button">Add Action</button>
+            <div class="subfield">
+              <label for="edit-button-stopOnError">
+                <input type="checkbox" id="edit-button-stopOnError" checked>
+                Stop on Error
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -170,4 +220,5 @@
 
   <script src="index.js"></script>
 </body>
+
 </html>
