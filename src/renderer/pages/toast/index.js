@@ -1183,11 +1183,9 @@ function handleKeyDown(event) {
         addNewPage();
       }
       break;
-    case '=': // Add page when Shift+= is pressed (supporting different keyboard layouts)
-      if (event.shiftKey) {
-        event.preventDefault();
-        addNewPage();
-      }
+    case '=': // Add page when = key is pressed (with or without Shift)
+      event.preventDefault();
+      addNewPage();
       break;
     case '-': // Delete page in settings mode
       if (isSettingsMode) {
