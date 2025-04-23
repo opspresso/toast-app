@@ -1,0 +1,30 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump Version 🏷️
+        id: bump
+        uses: opspresso/action-builder@master
+        with:
+          args: --version
+
+      - name: Release Version 🚀
+        uses: opspresso/action-builder@master
+        with:
+          args: --release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
