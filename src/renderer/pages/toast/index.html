@@ -15,6 +15,7 @@
         <img src="../../assets/icon.png" class="toast-logo" alt="Toast Logo">
         <div class="toast-title">Toast</div>
       </div>
+      <div class="toast-clock" id="toast-clock">00:00:00</div>
       <div class="toast-header-buttons">
         <div class="toast-close" id="close-button">×</div>
       </div>
@@ -80,8 +81,14 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button id="logout-button" class="secondary-button">Sign Out</button>
-          <button id="close-profile-button" class="primary-button">Close</button>
+          <div class="modal-footer-left">
+            <button id="subscribe-button" class="primary-button" style="display: none;">Subscribe</button>
+            <button id="dashboard-button" class="primary-button" style="display: none;">Dashboard</button>
+          </div>
+          <div class="modal-footer-right">
+            <button id="logout-button" class="secondary-button">Sign Out</button>
+            <button id="close-profile-button" class="primary-button">Close</button>
+          </div>
         </div>
       </div>
     </div>

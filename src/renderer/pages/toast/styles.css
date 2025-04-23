@@ -179,6 +179,30 @@ body {
   z-index: 10;
 }
 
+/* 시계 스타일 */
+.toast-clock {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  font-size: 15px;
+  background-color: var(--button-bg);
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--primary-color);
+  box-shadow: var(--button-shadow);
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+  cursor: default;
+}
+
+.toast-clock:hover {
+  box-shadow: var(--button-hover-shadow);
+  transform: translateX(-50%) translateY(-1px);
+}
+
 .toast-title-container {
   display: flex;
   align-items: center;
@@ -940,9 +964,21 @@ body {
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--status-bg);
+}
+
+.modal-footer-left {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.modal-footer-right {
+  display: flex;
   justify-content: flex-end;
   gap: 12px;
-  background-color: var(--status-bg);
 }
 
 .form-group {

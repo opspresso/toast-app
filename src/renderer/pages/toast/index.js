@@ -2,6 +2,11 @@
  * Toast - Toast Window JavaScript
  */
 
+// Toast URL 설정
+const TOAST_URL = window.toast?.apiBaseUrl || 'https://app.toast.sh';
+const SUBSCRIPTION_URL = `${TOAST_URL}/subscription`;
+const DASHBOARD_URL = `${TOAST_URL}/dashboard`;
+
 // DOM Elements
 const buttonsContainer = document.getElementById('buttons-container');
 const pagingContainer = document.getElementById('paging-container');
@@ -14,6 +19,7 @@ const settingsButton = document.getElementById('settings-button');
 const addPageButton = document.getElementById('add-page-button');
 const removePageButton = document.getElementById('remove-page-button');
 const userButton = document.getElementById('user-button');
+const toastClock = document.getElementById('toast-clock');
 
 // Login and user information related elements
 const loginLoadingOverlay = document.getElementById('login-loading-overlay');
@@ -26,6 +32,8 @@ const subscriptionStatus = document.getElementById('subscription-status');
 const subscriptionPlan = document.getElementById('subscription-plan');
 const subscriptionExpiry = document.getElementById('subscription-expiry');
 const subscriptionPages = document.getElementById('subscription-pages');
+const subscribeButton = document.getElementById('subscribe-button');
+const dashboardButton = document.getElementById('dashboard-button');
 const logoutButton = document.getElementById('logout-button');
 const closeProfileButton = document.getElementById('close-profile-button');
 
@@ -258,7 +266,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Set up event listeners
   setupEventListeners();
+
+  // Initialize clock
+  initClock();
 });
+
+/**
+ * Initialize the clock and start updating it
+ */
+function initClock() {
+  updateClock();
+  // Update clock every second
+  setInterval(updateClock, 1000);
+}
+
+/**
+ * Update the clock display with current time
+ */
+function updateClock() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  // Update clock display
+  if (toastClock) {
+    toastClock.textContent = `${hours}:${minutes}:${seconds}`;
+  }
+}
 
 /**
  * Render paging buttons
@@ -330,6 +365,34 @@ function setupEventListeners() {
   closeProfileModal.addEventListener('click', hideProfileModal);
   closeProfileButton.addEventListener('click', hideProfileModal);
   logoutButton.addEventListener('click', handleLogout);
+
+  // Add subscribe button click event
+  if (subscribeButton) {
+    subscribeButton.addEventListener('click', () => {
+      // Open subscription page in browser using defined constant
+      window.toast.executeAction({
+        action: 'open',
+        url: SUBSCRIPTION_URL
+      });
+
+      // Hide profile modal
+      hideProfileModal();
+    });
+  }
+
+  // Add dashboard button click event
+  if (dashboardButton) {
+    dashboardButton.addEventListener('click', () => {
+      // Open dashboard page in browser using defined constant
+      window.toast.executeAction({
+        action: 'open',
+        url: DASHBOARD_URL
+      });
+
+      // Hide profile modal
+      hideProfileModal();
+    });
+  }
 
   // Set up modal event listeners
   setupModalEventListeners();
@@ -798,6 +861,15 @@ function updateProfileDisplay() {
   subscriptionStatus.className = 'subscription-value subscription-status-inactive';
   subscriptionPlan.className = 'subscription-value';
 
+  // 버튼 초기 상태 설정
+  if (subscribeButton) {
+    subscribeButton.style.display = 'none';
+  }
+
+  if (dashboardButton) {
+    dashboardButton.style.display = 'none';
+  }
+
   if (userSubscription) {
     console.log('Displaying subscription information:', userSubscription);
     // When subscription information exists
@@ -825,6 +897,16 @@ function updateProfileDisplay() {
       expiry: subscriptionExpiry.textContent,
       pages: subscriptionPages.textContent
     });
+
+    // 구독하기 버튼 표시 - 구독중이 아닌 경우 (익명 사용자 포함)
+    if (!isActive && subscribeButton) {
+      subscribeButton.style.display = 'block';
+    }
+
+    // 대시보드 버튼 표시 - 구독중인 경우만
+    if (isActive && dashboardButton) {
+      dashboardButton.style.display = 'block';
+    }
   } else {
     console.log('No subscription information, using default values');
     // When no subscription information (logged out state)
