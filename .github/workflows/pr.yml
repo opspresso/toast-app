@@ -20,8 +20,10 @@ jobs:
           MAJOR=$(cat ./VERSION | xargs | cut -d'.' -f1)
           MINOR=$(cat ./VERSION | xargs | cut -d'.' -f2)
           PATCH=$(cat ./VERSION | xargs | cut -d'.' -f3)
+
           # get last version from release
           LAST_VERSION=$(gh release list --limit 1 | head -n 1 | awk '{print $1}')
+
           # if MAJOR, MINOR are same, increment PATCH
           if [[ "$LAST_VERSION" == "$MAJOR.$MINOR.$PATCH" ]]; then
             PATCH=$((PATCH + 1))
@@ -37,29 +39,23 @@ jobs:
               PATCH=0
             fi
           fi
+
           # set new version
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           echo "New version: $NEW_VERSION"
-          # write new version to VERSION file
-          echo "$NEW_VERSION" > VERSION
+
           # write new version to package.json
           jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit Changes ✍️
-        run: |
+          # setup git
           git config --local user.name "nalbam-bot"
           git config --local user.email "bot@nalbam.com"
           git add .
-          git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
+          git commit -m "Bump version to $NEW_VERSION"
           git push origin HEAD:${{ github.head_ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Retitle Pull Request 📬
-        run: |
-          echo "Retitling pull request to 'Release ${{ steps.bump.outputs.version }}'"
-          gh pr edit ${{ github.event.pull_request.number }} --title "Release ${{ steps.bump.outputs.version }}"
+          # retitle pull request
+          echo "Retitling pull request to 'Release $NEW_VERSION'"
+          gh pr edit ${{ github.event.pull_request.number }} --title "Release $NEW_VERSION"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
