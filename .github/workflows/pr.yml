@@ -20,9 +20,11 @@ jobs:
           MAJOR=$(cat ./VERSION | xargs | cut -d'.' -f1)
           MINOR=$(cat ./VERSION | xargs | cut -d'.' -f2)
           PATCH=$(cat ./VERSION | xargs | cut -d'.' -f3)
+          echo "Current version: $MAJOR.$MINOR.$PATCH"
 
           # get last version from release
           LAST_VERSION=$(gh release list --limit 1 | head -n 1 | awk '{print $1}')
+          echo "Last version: $LAST_VERSION"
 
           # if MAJOR, MINOR are same, increment PATCH
           if [[ "$LAST_VERSION" == "$MAJOR.$MINOR.$PATCH" ]]; then
