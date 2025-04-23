@@ -23,6 +23,11 @@ const { setupIpcHandlers } = require('./main/ipc');
 const authManager = require('./main/auth-manager');
 const auth = require('./main/auth');
 
+// macOS에서 Dock 아이콘 숨기기
+if (process.platform === 'darwin' && app.dock) {
+  app.dock.hide();
+}
+
 // Prevent multiple instances of the app
 if (!app.requestSingleInstanceLock()) {
   app.quit();
