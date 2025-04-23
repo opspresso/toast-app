@@ -1,0 +1,75 @@
+name: Bump Package
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump Version 🏷️
+        id: bump
+        run: |
+          echo "Bumping version"
+
+          # Read current version from VERSION file and strip 'v' if present
+          CURRENT_VERSION_RAW=$(cat ./VERSION | xargs)
+          CURRENT_VERSION="${CURRENT_VERSION_RAW#v}"
+          echo "Current version: $CURRENT_VERSION"
+
+          # Parse current version
+          CUR_MAJOR=$(echo "$CURRENT_VERSION" | cut -d'.' -f1)
+          CUR_MINOR=$(echo "$CURRENT_VERSION" | cut -d'.' -f2)
+          CUR_PATCH=$(echo "$CURRENT_VERSION" | cut -d'.' -f3)
+
+          # Get latest release from GitHub
+          LAST_VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+          CLEANED_VERSION="${LAST_VERSION#v}"
+          echo "Last version (raw): $LAST_VERSION"
+          echo "Last version (cleaned): $CLEANED_VERSION"
+
+          # Parse last release version
+          REL_MAJOR=$(echo "$CLEANED_VERSION" | cut -d'.' -f1)
+          REL_MINOR=$(echo "$CLEANED_VERSION" | cut -d'.' -f2)
+          REL_PATCH=$(echo "$CLEANED_VERSION" | cut -d'.' -f3)
+
+          # Use the greater of VERSION and LAST_VERSION
+          if [[ "$REL_MAJOR" -gt "$CUR_MAJOR" ]] || \
+            ([[ "$REL_MAJOR" -eq "$CUR_MAJOR" ]] && [[ "$REL_MINOR" -gt "$CUR_MINOR" ]]) || \
+            ([[ "$REL_MAJOR" -eq "$CUR_MAJOR" ]] && [[ "$REL_MINOR" -eq "$CUR_MINOR" ]] && [[ "$REL_PATCH" -gt "$CUR_PATCH" ]]); then
+            # Bump from GitHub release version
+            MAJOR=$REL_MAJOR
+            MINOR=$REL_MINOR
+            PATCH=$((REL_PATCH + 1))
+          else
+            # Bump from VERSION file
+            MAJOR=$CUR_MAJOR
+            MINOR=$CUR_MINOR
+            PATCH=$((CUR_PATCH + 1))
+          fi
+
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW_VERSION"
+
+          # write new version to package.json
+          jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+
+          # setup git
+          git config --local user.name "nalbam-bot"
+          git config --local user.email "bot@nalbam.com"
+          git add .
+          git commit -m "Bump version to $NEW_VERSION"
+          git push origin HEAD:$HEAD_REF
+
+          # retitle pull request
+          echo "Retitling pull request to 'Release $NEW_VERSION'"
+          gh pr edit ${{ github.event.pull_request.number }} --title "Release $NEW_VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
