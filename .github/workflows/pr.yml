@@ -1,0 +1,35 @@
+name: Bump Package
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump Version 🏷️
+        id: bump
+        uses: opspresso/action-builder@master
+        with:
+          args: --version
+
+      - name: Update Package.json 📦
+        run: |
+          echo "Updating package.json with new version"
+          jq --arg version "${{ steps.bump.outputs.version }}" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+
+      - name: Commit Changes ✍️
+        run: |
+          git config --local user.name "nalbam-bot"
+          git config --local user.email "bot@nalbam.com"
+          git add .
+          git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
+          git push origin HEAD:${{ github.head_ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
