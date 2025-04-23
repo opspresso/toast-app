@@ -56,6 +56,7 @@ const editButtonScriptParamsInput = document.getElementById('edit-button-scriptP
 
 // Application action elements
 const editButtonApplicationInput = document.getElementById('edit-button-application');
+const editButtonApplicationParametersInput = document.getElementById('edit-button-application-parameters');
 const browseApplicationButton = document.getElementById('browse-application-button');
 
 // Chain action elements
@@ -1658,6 +1659,7 @@ function editButtonSettings(button) {
   // shortcut 액션 타입 제거
 
   editButtonApplicationInput.value = button.applicationPath || '';
+  editButtonApplicationParametersInput.value = button.applicationParameters || '';
   editButtonStopOnErrorCheckbox.checked = button.stopOnError !== false; // 기본값 true
 
   // Show input fields appropriate for current action type
@@ -1803,6 +1805,11 @@ function saveButtonSettings() {
 
     case 'application':
       updatedButton.applicationPath = editButtonApplicationInput.value.trim();
+
+      // 애플리케이션 파라미터 추가 (선택적)
+      if (editButtonApplicationParametersInput.value.trim()) {
+        updatedButton.applicationParameters = editButtonApplicationParametersInput.value.trim();
+      }
       break;
 
     case 'chain':

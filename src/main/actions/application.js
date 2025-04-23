@@ -35,13 +35,25 @@ async function executeApplication(action) {
     // Platform-specific command to open application
     if (process.platform === 'darwin') {
       // macOS: Use the 'open' command
-      command = `open "${action.applicationPath}"`;
+      if (action.applicationParameters) {
+        command = `open -a "${action.applicationPath}" ${action.applicationParameters}`;
+      } else {
+        command = `open "${action.applicationPath}"`;
+      }
     } else if (process.platform === 'win32') {
-      // Windows: Just use the path directly, wrapped in quotes
-      command = `"${action.applicationPath}"`;
+      // Windows: Just use the path directly, wrapped in quotes, with parameters
+      if (action.applicationParameters) {
+        command = `"${action.applicationPath}" ${action.applicationParameters}`;
+      } else {
+        command = `"${action.applicationPath}"`;
+      }
     } else {
-      // Linux: Use xdg-open
-      command = `xdg-open "${action.applicationPath}"`;
+      // Linux: Use xdg-open or direct execution with parameters
+      if (action.applicationParameters) {
+        command = `"${action.applicationPath}" ${action.applicationParameters}`;
+      } else {
+        command = `xdg-open "${action.applicationPath}"`;
+      }
     }
 
     // Execute the command
