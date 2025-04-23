@@ -44,11 +44,6 @@ jobs:
           echo "$NEW_VERSION" > VERSION
           # write new version to package.json
           jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
-
-      - name: Retitle Pull Request 📬
-        run: |
-          echo "Retitling pull request to 'Release ${{ steps.bump.outputs.version }}'"
-          gh pr edit ${{ github.event.pull_request.number }} --title "Release ${{ steps.bump.outputs.version }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,5 +54,12 @@ jobs:
           git add .
           git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
           git push origin HEAD:${{ github.head_ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retitle Pull Request 📬
+        run: |
+          echo "Retitling pull request to 'Release ${{ steps.bump.outputs.version }}'"
+          gh pr edit ${{ github.event.pull_request.number }} --title "Release ${{ steps.bump.outputs.version }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
