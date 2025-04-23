@@ -33,3 +33,10 @@ jobs:
           git push origin HEAD:${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retitle Pull Request 📬
+        run: |
+          echo "Retitling pull request to 'Release ${{ steps.bump.outputs.version }}'"
+          gh pr edit ${{ github.event.pull_request.number }} --title "Release ${{ steps.bump.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
