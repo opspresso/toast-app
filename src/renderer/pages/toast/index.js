@@ -1604,7 +1604,7 @@ function setupModalEventListeners() {
         }
       } catch (error) {
         console.error('Error selecting file or folder:', error);
-        showStatus('파일 또는 폴더 선택 중 오류가 발생했습니다.', 'error');
+        showStatus('An error occurred while selecting the file or folder.', 'error');
         // Restore alwaysOnTop property even if an error occurs
         await window.toast.setAlwaysOnTop(true);
       }
@@ -1797,7 +1797,7 @@ function saveButtonSettings() {
         try {
           updatedButton.scriptParams = JSON.parse(editButtonScriptParamsInput.value.trim());
         } catch (error) {
-          showStatus('스크립트 파라미터 JSON 형식이 잘못되었습니다. 빈 객체를 사용합니다.', 'error');
+          showStatus('Script parameter JSON format is invalid. Using an empty object.', 'error');
           updatedButton.scriptParams = {};
         }
       }

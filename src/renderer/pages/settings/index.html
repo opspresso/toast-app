@@ -203,35 +203,35 @@
             <div class="subscription-container">
               <div class="subscription-details">
                 <div class="subscription-status">
-                  <span id="sync-status-badge" class="badge">비활성화</span>
-                  <span id="sync-status-text">Cloud Sync 상태</span>
+                  <span id="sync-status-badge" class="badge">Disabled</span>
+                  <span id="sync-status-text">Cloud Sync Status</span>
                 </div>
-                <p id="last-synced-time">마지막 동기화: -</p>
-                <p id="sync-device-info">현재 장치: -</p>
+                <p id="last-synced-time">Last Synced: -</p>
+                <p id="sync-device-info">Current Device: -</p>
               </div>
             </div>
           </div>
 
           <!-- Sync Controls -->
           <div class="settings-group">
-            <h3>동기화 설정</h3>
+            <h3>Sync Settings</h3>
             <div class="settings-group">
               <label>
                 <input type="checkbox" id="enable-cloud-sync">
-                클라우드 동기화 활성화
+                Enable Cloud Sync
               </label>
-              <p class="help-text">여러 기기에서 설정과 페이지를 동기화합니다. Premium 구독 필요.</p>
+              <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
             </div>
 
             <div class="settings-group">
               <div class="subscription-actions">
-                <button id="manual-sync-upload" class="primary-button">서버에 업로드</button>
-                <button id="manual-sync-download" class="primary-button">서버에서 다운로드</button>
-                <button id="manual-sync-resolve" class="secondary-button">충돌 해결</button>
+                <button id="manual-sync-upload" class="primary-button">Upload to Server</button>
+                <button id="manual-sync-download" class="primary-button">Download from Server</button>
+                <button id="manual-sync-resolve" class="secondary-button">Resolve Conflicts</button>
               </div>
               <div id="sync-loading" class="loading-indicator hidden">
                 <div class="spinner"></div>
-                <p>동기화 중...</p>
+                <p>Syncing...</p>
               </div>
             </div>
           </div>
