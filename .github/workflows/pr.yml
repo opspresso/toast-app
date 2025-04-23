@@ -30,6 +30,6 @@ jobs:
           git config --local user.email "bot@nalbam.com"
           git add .
           git commit -m "Bump version to ${{ steps.bump.outputs.version }}"
-          git push origin "${{ steps.bump.outputs.version }}"
+          git push origin HEAD:${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
