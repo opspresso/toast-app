@@ -97,7 +97,7 @@ const schema = {
         type: 'boolean',
         default: false
       },
-      subscribedUntil: {
+      expiresAt: {
         type: 'string',
         default: ''
       },
@@ -110,7 +110,7 @@ const schema = {
     default: {
       isSubscribed: false,
       isAuthenticated: false,
-      subscribedUntil: '',
+      expiresAt: '',
       pageGroups: 1
     }
   },
@@ -125,7 +125,46 @@ const schema = {
  * @returns {Store} Configuration store instance
  */
 function createConfigStore() {
-  return new Store({ schema });
+  try {
+    // 먼저 스키마 검증 없이 구성을 로드하여 마이그레이션
+    const migrationStore = new Store({
+      schema: null, // 스키마 검증 비활성화
+      clearInvalidConfig: false
+    });
+
+    // 구독 정보 마이그레이션 시도
+    try {
+      const subscription = migrationStore.get('subscription');
+      if (subscription) {
+        // 구독 정보 타입 정리
+        const sanitizedSubscription = sanitizeSubscription(subscription);
+
+        // 변경된 데이터 저장 (스키마 검증 전)
+        migrationStore.set('subscription', sanitizedSubscription);
+
+        console.log('Legacy subscription data migrated successfully');
+      }
+    } catch (migrationError) {
+      console.error('Error during subscription data migration:', migrationError);
+      // 마이그레이션 오류 발생시 구독 정보 재설정
+      try {
+        migrationStore.set('subscription', schema.subscription.default);
+        console.log('Reset subscription data to defaults due to migration error');
+      } catch (resetError) {
+        console.error('Failed to reset subscription data:', resetError);
+      }
+    }
+
+    // 이제 정상적인 스키마 검증으로 Store 객체 생성
+    return new Store({ schema });
+  } catch (error) {
+    // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
+    console.error('Error creating config store with schema, falling back to schema-less store:', error);
+    return new Store({
+      schema: null,
+      clearInvalidConfig: false
+    });
+  }
 }
 
 /**
@@ -248,23 +287,31 @@ function sanitizeSubscription(subscription) {
   result.isSubscribed = Boolean(result.isSubscribed);
   result.isAuthenticated = Boolean(result.isAuthenticated);
 
-  // subscribedUntil 필드는 반드시 문자열이어야 함
-  if (result.subscribedUntil !== undefined) {
-    if (typeof result.subscribedUntil === 'string') {
+  // expiresAt 필드는 반드시 문자열이어야 함
+  if (result.expiresAt !== undefined) {
+    if (typeof result.expiresAt === 'string') {
       // 이미 문자열이면 그대로 사용
-    } else if (result.subscribedUntil instanceof Date) {
+    } else if (result.expiresAt instanceof Date) {
       // Date 객체인 경우 ISO 문자열로 변환
-      result.subscribedUntil = result.subscribedUntil.toISOString();
-    } else if (typeof result.subscribedUntil === 'number') {
+      result.expiresAt = result.expiresAt.toISOString();
+    } else if (typeof result.expiresAt === 'number') {
       // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
-      result.subscribedUntil = new Date(result.subscribedUntil).toISOString();
+      result.expiresAt = new Date(result.expiresAt).toISOString();
     } else {
       // 기타 타입은 빈 문자열로 설정
-      result.subscribedUntil = '';
+      result.expiresAt = '';
     }
   } else {
     // undefined인 경우 빈 문자열로 설정
-    result.subscribedUntil = '';
+    result.expiresAt = '';
+  }
+
+  // 이전 버전과의 호환성을 위해 subscribedUntil이 존재할 경우 expiresAt으로 이동
+  if (result.subscribedUntil !== undefined) {
+    if (!result.expiresAt && result.subscribedUntil) {
+      result.expiresAt = result.subscribedUntil;
+    }
+    delete result.subscribedUntil;
   }
 
   // pageGroups 필드는 숫자여야 함

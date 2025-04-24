@@ -719,34 +719,34 @@ async function updatePageGroupSettings(subscription) {
       pageGroups = PAGE_GROUPS.AUTHENTICATED;
     }
 
-    // Process subscribedUntil value - always convert to string
-    let subscribedUntilStr = '';
+    // Process expiresAt value - always convert to string
+    let expiresAtStr = '';
     try {
       if (subscription.subscribed_until) {
         // Explicitly convert to string and verify valid string
-        subscribedUntilStr = typeof subscription.subscribed_until === 'string'
+        expiresAtStr = typeof subscription.subscribed_until === 'string'
           ? subscription.subscribed_until
           : String(subscription.subscribed_until);
       } else if (subscription.expiresAt) {
         // Explicitly convert to string and verify valid string
-        subscribedUntilStr = typeof subscription.expiresAt === 'string'
+        expiresAtStr = typeof subscription.expiresAt === 'string'
           ? subscription.expiresAt
           : String(subscription.expiresAt);
       }
 
       // Set to empty string if value is undefined or null
-      if (subscribedUntilStr === 'undefined' || subscribedUntilStr === 'null') {
-        subscribedUntilStr = '';
+      if (expiresAtStr === 'undefined' || expiresAtStr === 'null') {
+        expiresAtStr = '';
       }
     } catch (error) {
-      console.error('Error converting subscribedUntil value:', error);
-      subscribedUntilStr = ''; // Use empty string if error occurs
+      console.error('Error converting expiresAt value:', error);
+      expiresAtStr = ''; // Use empty string if error occurs
     }
 
     console.log('Verifying subscription information before saving:', {
       plan: subscription.plan || 'free',
-      subscribedUntil: subscribedUntilStr,
-      subscribedUntilType: typeof subscribedUntilStr,
+      expiresAt: expiresAtStr,
+      expiresAtType: typeof expiresAtStr,
       pageGroups: subscription.features?.page_groups || pageGroups
     });
 
@@ -755,7 +755,7 @@ async function updatePageGroupSettings(subscription) {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
-      subscribedUntil: subscribedUntilStr, // Safely converted to string
+      expiresAt: expiresAtStr, // Safely converted to string
       pageGroups: subscription.features?.page_groups || pageGroups,
       isVip: isVip,
       additionalFeatures: {
@@ -791,7 +791,7 @@ async function logoutAndResetPageGroups() {
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
-        subscribedUntil: '',
+        expiresAt: '',
         pageGroups: PAGE_GROUPS.ANONYMOUS
       });
 

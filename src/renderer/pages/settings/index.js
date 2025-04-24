@@ -478,8 +478,9 @@ function updateSubscriptionUI(subscription) {
   }
 
   // Update subscription expiry
-  if (subscription.subscribed_until) {
-    const expiryDate = new Date(subscription.subscribed_until);
+  if (subscription.expiresAt || subscription.subscribed_until) {
+    const expiryValue = subscription.expiresAt || subscription.subscribed_until;
+    const expiryDate = new Date(expiryValue);
     subscriptionExpiry.textContent = `Subscription valid until: ${expiryDate.toLocaleDateString()}`;
   } else {
     subscriptionExpiry.textContent = '';
@@ -509,27 +510,30 @@ function updateSubscriptionUI(subscription) {
  * @param {Object} subscription - Subscription information
  */
 function saveSubscriptionToConfig(subscription) {
-  // subscribedUntil은 문자열이어야 함
-  let subscribedUntilStr = null;
-  if (subscription.subscribed_until) {
+  // expiresAt은 문자열이어야 함
+  let expiresAtStr = null;
+  if (subscription.subscribed_until || subscription.expiresAt) {
+    // 먼저 유효한 값이 있는 필드 선택
+    const expiresValue = subscription.expiresAt || subscription.subscribed_until;
+
     // 날짜 객체인 경우 ISO 문자열로 변환
-    if (subscription.subscribed_until instanceof Date) {
-      subscribedUntilStr = subscription.subscribed_until.toISOString();
+    if (expiresValue instanceof Date) {
+      expiresAtStr = expiresValue.toISOString();
     }
     // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
-    else if (typeof subscription.subscribed_until === 'number') {
-      subscribedUntilStr = new Date(subscription.subscribed_until).toISOString();
+    else if (typeof expiresValue === 'number') {
+      expiresAtStr = new Date(expiresValue).toISOString();
     }
     // 이미 문자열인 경우 그대로 사용
-    else if (typeof subscription.subscribed_until === 'string') {
-      subscribedUntilStr = subscription.subscribed_until;
+    else if (typeof expiresValue === 'string') {
+      expiresAtStr = expiresValue;
     }
   }
 
   const subscriptionConfig = {
     isSubscribed: subscription.is_subscribed,
     plan: subscription.plan,
-    subscribedUntil: subscribedUntilStr,
+    expiresAt: expiresAtStr,
     pageGroups: subscription.features?.page_groups || 1,
     additionalFeatures: {
       advancedActions: subscription.features?.advanced_actions || false,

@@ -146,6 +146,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 |------|------|--------|------|
 | `subscription.isAuthenticated` | 불리언 | `false` | 사용자 인증 상태 |
 | `subscription.level` | 문자열 | `"free"` | 구독 수준 (`"free"`, `"basic"`, `"premium"`) |
+| `subscription.pageGroups` | 숫자 | 사용자 타입별 | 사용자가 생성할 수 있는 페이지 그룹의 최대 수 |
 | `subscription.features` | 객체 | `{}` | 활성화된 기능 플래그 |
 | `subscription.email` | 문자열 | `null` | 인증된 사용자 이메일 |
 | `subscription.expiresAt` | 문자열 | `null` | 구독 만료 날짜 (ISO 문자열) |
@@ -155,6 +156,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 "subscription": {
   "isAuthenticated": true,
   "level": "premium",
+  "pageGroups": 9,
   "features": {
     "cloud_sync": true,
     "advanced_actions": true
@@ -163,6 +165,11 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
   "expiresAt": "2023-12-31T23:59:59Z"
 }
 ```
+
+**pageGroups 기본값**:
+- 익명 사용자: 1
+- 인증된 일반 사용자: 3
+- 프리미엄 사용자: 9
 
 ## 구성 예시
 
@@ -230,6 +237,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
   "subscription": {
     "isAuthenticated": false,
     "level": "free",
+    "pageGroups": 1,
     "features": {},
     "email": null,
     "expiresAt": null
