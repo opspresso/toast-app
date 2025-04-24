@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Toast App</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="../../assets/js/icons/icons-catalog.js"></script>
 </head>
 
 <body>
@@ -119,8 +120,11 @@
         </div>
         <div class="form-group">
           <label for="edit-button-icon">Icon</label>
-          <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL">
-          <small class="field-hint">Use emoji (e.g. 🚀) or an image URL (https://...)</small>
+          <div class="icon-input-container">
+            <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL">
+            <button id="browse-icon-button" class="secondary-button">아이콘 찾기</button>
+          </div>
+          <small class="field-hint">Use emoji (e.g. 🚀), image URL (https://...) or FlatColorIcons.name</small>
         </div>
         <!-- Shortcut field is hidden (cannot be changed) -->
         <input type="hidden" id="edit-button-shortcut">
@@ -231,6 +235,40 @@
       <div class="button-shortcut"></div>
     </div>
   </template>
+
+  <!-- 아이콘 검색 모달 -->
+  <div id="icon-search-modal" class="modal">
+    <div class="modal-content icon-browser-modal">
+      <div class="modal-header">
+        <h2>아이콘 검색</h2>
+        <span class="close-modal" id="close-icon-search">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="search-container">
+          <input type="text" id="icon-search-input" placeholder="아이콘 이름으로 검색">
+          <div class="category-filter">
+            <label for="category-select">카테고리:</label>
+            <select id="category-select">
+              <option value="all">모든 카테고리</option>
+              <option value="basicIcons">기본 아이콘</option>
+              <option value="business">비즈니스</option>
+              <option value="photoVideo">사진 및 비디오</option>
+              <option value="industry">산업</option>
+              <option value="mobile">모바일</option>
+              <option value="arrows">화살표</option>
+              <option value="data">데이터</option>
+            </select>
+          </div>
+        </div>
+        <div id="icons-container" class="icons-container">
+          <!-- 아이콘이 동적으로 여기에 로드됩니다 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="close-icon-browser" class="secondary-button">취소</button>
+      </div>
+    </div>
+  </div>
 
   <script src="index.js"></script>
 </body>
