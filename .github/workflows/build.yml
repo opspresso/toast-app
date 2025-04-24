@@ -34,8 +34,9 @@ jobs:
         with:
           fetch-depth: 0 # Fetch complete history
 
-      - name: Verify tag matches package version 🔍
-        id: verify_version
+      - name: Verify tag matches package version (Unix) 🔍
+        if: runner.os != 'Windows'
+        id: verify_version_unix
         run: |
           # Remove 'v' prefix from tag name
           TAG_VERSION="${GITHUB_REF#refs/tags/}"
@@ -59,7 +60,34 @@ jobs:
           echo "✅ Version verification passed: $TAG_VERSION"
           echo "🚀 Proceeding with build for version $TAG_VERSION"
 
-      - name: Setup Node.js 📦
+      - name: Verify tag matches package version (Windows) 🔍
+        if: runner.os == 'Windows'
+        id: verify_version_windows
+        shell: pwsh
+        run: |
+          # Remove 'v' prefix from tag name
+          $TAG_VERSION = "$env:GITHUB_REF" -replace "refs/tags/", ""
+          $TAG_VERSION = $TAG_VERSION -replace "^v", ""
+          Write-Host "🏷️ Detected tag version: $TAG_VERSION"
+
+          # Get version from package.json and remove 'v' prefix
+          $PKG_VERSION = (Get-Content package.json | ConvertFrom-Json).version
+          $PKG_VERSION = $PKG_VERSION -replace "^v", ""
+          Write-Host "📦 Found package.json version: $PKG_VERSION"
+
+          # Verify versions match
+          Write-Host "🔍 Verifying version consistency..."
+          if ($TAG_VERSION -ne $PKG_VERSION) {
+            Write-Host "❌ ERROR: Version mismatch detected!"
+            Write-Host "::error::Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
+            Write-Host "🛑 Build process cannot continue with inconsistent versions"
+            exit 1
+          }
+
+          Write-Host "✅ Version verification passed: $TAG_VERSION"
+          Write-Host "🚀 Proceeding with build for version $TAG_VERSION"
+
+      - name: Setup Node.js �
         uses: actions/setup-node@v4
         with:
           node-version: 20
