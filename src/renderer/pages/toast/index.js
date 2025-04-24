@@ -39,6 +39,7 @@ const closeProfileButton = document.getElementById('close-profile-button');
 
 // Modal related DOM elements
 const buttonEditModal = document.getElementById('button-edit-modal');
+const iconSearchModal = document.getElementById('icon-search-modal');
 const closeButtonEdit = document.getElementById('close-button-edit');
 const saveButtonEdit = document.getElementById('save-button-edit');
 const cancelButtonEdit = document.getElementById('cancel-button-edit');
@@ -405,6 +406,19 @@ function setupEventListeners() {
 
   // Set up modal event listeners
   setupModalEventListeners();
+
+  // HTML에 스크립트를 추가하는 대신 프로그래밍 방식으로 FlatColorIcons 객체 처리
+  if (window.IconsCatalog && window.AllIcons) {
+    // FlatColorIcons 객체가 없으면 생성
+    window.FlatColorIcons = {};
+
+    // 모든 아이콘에 대해 FlatColorIcons 객체에 경로 추가
+    Object.keys(window.AllIcons).forEach(iconName => {
+      window.FlatColorIcons[iconName] = window.AllIcons[iconName];
+    });
+
+    console.log('FlatColorIcons 객체가 초기화되었습니다.');
+  }
 
   // Keyboard page switching (1-9 key events)
   document.addEventListener('keydown', (event) => {
@@ -1517,8 +1531,26 @@ function createButtonElement(button) {
   // Set button icon
   const iconElement = buttonElement.querySelector('.button-icon');
 
-  // If URL type and icon is empty but URL exists, use URL's favicon
-  if (button.action === 'open' && (!button.icon || button.icon.trim() === '') && button.url) {
+  // FlatColorIcons 형식 아이콘 처리
+  if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
+    const iconName = button.icon.split('.')[1]; // 'FlatColorIcons.home' -> 'home'
+    if (window.AllIcons && window.AllIcons[iconName]) {
+      iconElement.textContent = '';
+      const img = document.createElement('img');
+      img.src = window.AllIcons[iconName];
+      img.alt = button.name || iconName;
+      img.onerror = function () {
+        // 이미지 로드에 실패한 경우 기본 아이콘 표시
+        iconElement.textContent = '🔍';
+      };
+      iconElement.appendChild(img);
+    } else {
+      // 아이콘을 찾을 수 없는 경우 아이콘 이름만 표시
+      iconElement.textContent = iconName || '❓';
+    }
+  }
+  // URL type and icon is empty but URL exists, use URL's favicon
+  else if (button.action === 'open' && (!button.icon || button.icon.trim() === '') && button.url) {
     // Extract domain from URL and create favicon path
     const faviconUrl = getFaviconFromUrl(button.url);
     iconElement.textContent = '';
@@ -1713,12 +1745,162 @@ function setupModalEventListeners() {
     }
   });
 
-  // Close modal with ESC key
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && buttonEditModal.classList.contains('show')) {
-      closeButtonEditModal();
+  // 아이콘 검색 모달 외부 클릭 시 닫기
+  iconSearchModal.addEventListener('click', (event) => {
+    if (event.target === iconSearchModal) {
+      closeIconSearchModal();
     }
   });
+
+  // Close modal with ESC key
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      // 우선순위에 따라 모달 닫기
+      if (iconSearchModal.classList.contains('show')) {
+        closeIconSearchModal();
+        event.stopPropagation();
+      } else if (buttonEditModal.classList.contains('show')) {
+        closeButtonEditModal();
+        event.stopPropagation();
+      } else if (profileModal.classList.contains('show')) {
+        hideProfileModal();
+        event.stopPropagation();
+      }
+    }
+  });
+
+  // 아이콘 찾기 모달 이벤트 리스너
+  const browseIconButton = document.getElementById('browse-icon-button');
+  const closeIconSearch = document.getElementById('close-icon-search');
+  const closeIconBrowser = document.getElementById('close-icon-browser');
+  const iconSearchInput = document.getElementById('icon-search-input');
+  const categorySelect = document.getElementById('category-select');
+  const iconsContainer = document.getElementById('icons-container');
+
+  // 아이콘 찾기 버튼 클릭 이벤트
+  browseIconButton.addEventListener('click', () => {
+    // 아이콘 컨테이너 초기화 및 아이콘 그리드 렌더링
+    renderIconsGrid();
+
+    // 아이콘 검색 모달 표시
+    iconSearchModal.classList.add('show');
+    window.toast.setModalOpen(true);
+
+    // 검색 필드에 포커스
+    setTimeout(() => {
+      iconSearchInput.focus();
+    }, 300);
+  });
+
+  // 아이콘 검색 모달 닫기 버튼 이벤트
+  closeIconSearch.addEventListener('click', closeIconSearchModal);
+  closeIconBrowser.addEventListener('click', closeIconSearchModal);
+
+  // 아이콘 검색 필드 입력 이벤트
+  iconSearchInput.addEventListener('input', () => {
+    renderIconsGrid();
+  });
+
+  // 카테고리 선택 변경 이벤트
+  categorySelect.addEventListener('change', () => {
+    renderIconsGrid();
+  });
+
+  // 아이콘 검색 모달 닫기 함수
+  function closeIconSearchModal() {
+    iconSearchModal.classList.remove('show');
+    window.toast.setModalOpen(false);
+  }
+
+  // 아이콘 그리드 렌더링 함수
+  function renderIconsGrid() {
+    // 컨테이너 초기화
+    iconsContainer.innerHTML = '';
+
+    const searchQuery = iconSearchInput.value.trim().toLowerCase();
+    const selectedCategory = categorySelect.value;
+
+    // 모든 카테고리 또는 선택된 카테고리만 표시
+    if (selectedCategory === 'all') {
+      // 모든 카테고리 표시
+      Object.keys(window.IconsCatalog).forEach(category => {
+        renderCategoryIcons(category, searchQuery);
+      });
+    } else {
+      // 선택된 카테고리만 표시
+      renderCategoryIcons(selectedCategory, searchQuery);
+    }
+  }
+
+  // 카테고리 아이콘 렌더링 함수
+  function renderCategoryIcons(categoryKey, searchQuery) {
+    if (!window.IconsCatalog || !window.IconsCatalog[categoryKey]) return;
+
+    const category = window.IconsCatalog[categoryKey];
+    const icons = category.icons;
+    const filteredIcons = {};
+
+    // 검색어로 아이콘 필터링
+    Object.keys(icons).forEach(iconKey => {
+      if (!searchQuery || iconKey.toLowerCase().includes(searchQuery)) {
+        filteredIcons[iconKey] = icons[iconKey];
+      }
+    });
+
+    // 필터링된 아이콘이 있는 경우만 카테고리 추가
+    if (Object.keys(filteredIcons).length > 0) {
+      // 카테고리 제목 추가
+      const categoryTitle = document.createElement('div');
+      categoryTitle.className = 'icon-category-title';
+      categoryTitle.textContent = category.name;
+      iconsContainer.appendChild(categoryTitle);
+
+      // 아이콘 추가
+      Object.keys(filteredIcons).forEach(iconKey => {
+        const iconPath = filteredIcons[iconKey];
+        const iconValue = `FlatColorIcons.${iconKey}`;
+
+        // 아이콘 항목 생성
+        const iconItem = document.createElement('div');
+        iconItem.className = 'icon-item';
+        iconItem.setAttribute('data-icon', iconValue);
+
+        // 현재 선택된 아이콘인지 확인
+        if (editButtonIconInput.value === iconValue) {
+          iconItem.classList.add('selected');
+        }
+
+        // 아이콘 이미지 생성
+        const img = document.createElement('img');
+        img.src = iconPath;
+        img.alt = iconKey;
+
+        // 아이콘 클릭 이벤트
+        iconItem.addEventListener('click', () => {
+          // 이전 선택된 아이콘에서 선택 제거
+          document.querySelectorAll('.icons-container .icon-item.selected').forEach(item => {
+            item.classList.remove('selected');
+          });
+
+          // 현재 아이콘 선택
+          iconItem.classList.add('selected');
+
+          // 아이콘 필드에 값 설정
+          editButtonIconInput.value = iconValue;
+
+          // 모달 닫기
+          closeIconSearchModal();
+
+          // 상태 메시지 표시
+          showStatus(`아이콘 선택됨`, 'info');
+        });
+
+        // 아이콘 항목에 이미지만 추가 (이름 제거)
+        iconItem.appendChild(img);
+        iconsContainer.appendChild(iconItem);
+      });
+    }
+  }
 }
 
 /**
