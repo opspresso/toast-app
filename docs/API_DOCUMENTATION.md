@@ -1,49 +1,49 @@
-Toast App API Documentation
+Toast 앱 API 문서
 
-This document provides comprehensive documentation for the Toast App's internal APIs including the main process modules IPC communication and renderer process interfaces.
+이 문서는 Toast 앱의 내부 API에 대한 포괄적인 문서를 제공하며, 메인 프로세스 모듈, IPC 통신 및 렌더러 프로세스 인터페이스를 포함합니다.
 
-## Main Process APIs
+## 메인 프로세스 API
 
-### Config Module (`src/main/config.js`)
+### 구성 모듈 (`src/main/config.js`)
 
-The Config module handles configuration management using electron-store.
+구성 모듈은 electron-store를 사용하여 구성 관리를 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Create a configuration store
- * @returns {Store} Configuration store instance
+ * 구성 저장소 생성
+ * @returns {Store} 구성 저장소 인스턴스
  */
 function createConfigStore()
 
 /**
- * Reset configuration to default values
- * @param {Store} config - Configuration store instance
+ * 구성을 기본값으로 재설정
+ * @param {Store} config - 구성 저장소 인스턴스
  */
 function resetToDefaults(config)
 
 /**
- * Import configuration from a file
- * @param {Store} config - Configuration store instance
- * @param {string} filePath - Path to the configuration file
- * @returns {boolean} Success status
+ * 파일에서 구성 가져오기
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} filePath - 구성 파일 경로
+ * @returns {boolean} 성공 상태
  */
 function importConfig(config filePath)
 
 /**
- * Export configuration to a file
- * @param {Store} config - Configuration store instance
- * @param {string} filePath - Path to save the configuration file
- * @returns {boolean} Success status
+ * 파일로 구성 내보내기
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} filePath - 구성 파일을 저장할 경로
+ * @returns {boolean} 성공 상태
  */
 function exportConfig(config filePath)
 ```
 
-#### Configuration Schema
+#### 구성 스키마
 
 ```javascript
-// Default configuration schema
+// 기본 구성 스키마
 const schema = {
   globalHotkey: {
     type: 'string'
@@ -137,78 +137,78 @@ const schema = {
 };
 ```
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
 const { createConfigStore resetToDefaults } = require('./main/config');
 
-// Create a configuration store
+// 구성 저장소 생성
 const config = createConfigStore();
 
-// Get a configuration value
+// 구성 값 가져오기
 const globalHotkey = config.get('globalHotkey');
 
-// Get all pages
+// 모든 페이지 가져오기
 const pages = config.get('pages');
 
-// Set a configuration value
+// 구성 값 설정
 config.set('globalHotkey' 'Alt+Space');
 
-// Reset to defaults
+// 기본값으로 재설정
 resetToDefaults(config);
 ```
 
-### Executor Module (`src/main/executor.js`)
+### 실행기 모듈 (`src/main/executor.js`)
 
-The Executor module handles the execution of actions.
+실행기 모듈은 액션 실행을 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Execute an action based on its type
- * @param {Object} action - Action configuration
- * @returns {Promise<Object>} Result object
+ * 유형에 따라 액션 실행
+ * @param {Object} action - 액션 구성
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeAction(action)
 
 /**
- * Execute a series of actions in sequence
- * @param {Object} chainAction - Chain action configuration
- * @param {Array} chainAction.actions - Array of actions to execute
- * @returns {Promise<Object>} Result object
+ * 일련의 액션을 순차적으로 실행
+ * @param {Object} chainAction - 체인 액션 구성
+ * @param {Array} chainAction.actions - 실행할 액션 배열
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeChainedActions(chainAction)
 
 /**
- * Test an action without executing it
- * @param {Object} action - Action configuration
- * @returns {Promise<Object>} Validation result
+ * 실행하지 않고 액션 테스트
+ * @param {Object} action - 액션 구성
+ * @returns {Promise<Object>} 유효성 검사 결과
  */
 async function validateAction(action)
 ```
 
-#### Supported Action Types
+#### 지원되는 액션 유형
 
-- `exec`: Execute a shell command
-- `open`: Open a URL file or folder
-- `shortcut`: Execute a keyboard shortcut
-- `script`: Execute a custom script
-- `chain`: Execute a series of actions in sequence
+- `exec`: 셸 명령 실행
+- `open`: URL, 파일 또는 폴더 열기
+- `shortcut`: 키보드 단축키 실행
+- `script`: 사용자 정의 스크립트 실행
+- `chain`: 일련의 액션을 순차적으로 실행
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
 const { executeAction validateAction } = require('./main/executor');
 
-// Validate an action
+// 액션 유효성 검사
 const validation = await validateAction({
   action: 'exec'
   command: 'echo "Hello world!"'
 });
 
 if (validation.valid) {
-  // Execute the action
+  // 액션 실행
   const result = await executeAction({
     action: 'exec'
     command: 'echo "Hello world!"'
@@ -218,427 +218,427 @@ if (validation.valid) {
 }
 ```
 
-### Shortcuts Module (`src/main/shortcuts.js`)
+### 단축키 모듈 (`src/main/shortcuts.js`)
 
-The Shortcuts module handles global keyboard shortcuts.
+단축키 모듈은 전역 키보드 단축키를 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Register global shortcuts
- * @param {Object} config - Configuration store
- * @param {Object} windows - Object containing application windows
- * @returns {boolean} Success status
+ * 전역 단축키 등록
+ * @param {Object} config - 구성 저장소
+ * @param {Object} windows - 애플리케이션 윈도우를 포함하는 객체
+ * @returns {boolean} 성공 상태
  */
 function registerGlobalShortcuts(config windows)
 
 /**
- * Toggle the visibility of the Toast window
- * @param {BrowserWindow} toastWindow - Toast window
+ * Toast 윈도우의 가시성 전환
+ * @param {BrowserWindow} toastWindow - Toast 윈도우
  */
 function toggleToastWindow(toastWindow)
 
 /**
- * Position the Toast window based on configuration
- * @param {BrowserWindow} toastWindow - Toast window
- * @param {Object} [config] - Configuration store (optional)
+ * 구성에 따라 Toast 윈도우 위치 지정
+ * @param {BrowserWindow} toastWindow - Toast 윈도우
+ * @param {Object} [config] - 구성 저장소(선택 사항)
  */
 function positionToastWindow(toastWindow config)
 
 /**
- * Unregister all global shortcuts
+ * 모든 전역 단축키 등록 해제
  */
 function unregisterGlobalShortcuts()
 
 /**
- * Check if a shortcut is registered
- * @param {string} accelerator - Shortcut to check
- * @returns {boolean} Whether the shortcut is registered
+ * 단축키가 등록되어 있는지 확인
+ * @param {string} accelerator - 확인할 단축키
+ * @returns {boolean} 단축키가 등록되어 있는지 여부
  */
 function isShortcutRegistered(accelerator)
 ```
 
-#### Position Options
+#### 위치 옵션
 
-- `center`: Center of the screen
-- `top`: Top center of the screen
-- `bottom`: Bottom center of the screen
-- `cursor`: Near the cursor position
+- `center`: 화면 중앙
+- `top`: 화면 상단 중앙
+- `bottom`: 화면 하단 중앙
+- `cursor`: 커서 위치 근처
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
 const { registerGlobalShortcuts unregisterGlobalShortcuts } = require('./main/shortcuts');
 
-// Register global shortcuts
+// 전역 단축키 등록
 registerGlobalShortcuts(config windows);
 
-// Unregister global shortcuts
+// 전역 단축키 등록 해제
 unregisterGlobalShortcuts();
 
-// Position the Toast window
+// Toast 윈도우 위치 지정
 positionToastWindow(windows.toast config);
 ```
 
-### Tray Module (`src/main/tray.js`)
+### 트레이 모듈 (`src/main/tray.js`)
 
-The Tray module handles the system tray icon and menu.
+트레이 모듈은 시스템 트레이 아이콘과 메뉴를 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Create the system tray icon
- * @param {Object} windows - Object containing application windows
- * @returns {Tray} Tray instance
+ * 시스템 트레이 아이콘 생성
+ * @param {Object} windows - 애플리케이션 윈도우를 포함하는 객체
+ * @returns {Tray} 트레이 인스턴스
  */
 function createTray(windows)
 
 /**
- * Update the tray menu
- * @param {Tray} tray - Tray instance
- * @param {Object} windows - Object containing application windows
+ * 트레이 메뉴 업데이트
+ * @param {Tray} tray - 트레이 인스턴스
+ * @param {Object} windows - 애플리케이션 윈도우를 포함하는 객체
  */
 function updateTrayMenu(tray windows)
 
 /**
- * Destroy the tray icon
+ * 트레이 아이콘 제거
  */
 function destroyTray()
 ```
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
 const { createTray destroyTray } = require('./main/tray');
 
-// Create the tray icon
+// 트레이 아이콘 생성
 const tray = createTray(windows);
 
-// Destroy the tray icon
+// 트레이 아이콘 제거
 destroyTray();
 ```
 
-### Windows Module (`src/main/windows.js`)
+### 윈도우 모듈 (`src/main/windows.js`)
 
-The Windows module handles window creation and management.
+윈도우 모듈은 윈도우 생성 및 관리를 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Create the Toast popup window
- * @param {Object} config - Configuration store
- * @returns {BrowserWindow} Toast window
+ * Toast 팝업 윈도우 생성
+ * @param {Object} config - 구성 저장소
+ * @returns {BrowserWindow} Toast 윈도우
  */
 function createToastWindow(config)
 
 /**
- * Set up event handlers for the Toast window
- * @param {BrowserWindow} toastWindow - Toast window
- * @param {Object} config - Configuration store
+ * Toast 윈도우에 대한 이벤트 핸들러 설정
+ * @param {BrowserWindow} toastWindow - Toast 윈도우
+ * @param {Object} config - 구성 저장소
  */
 function setupToastWindowEvents(toastWindow config)
 
 /**
- * Create the Settings window
- * @param {Object} config - Configuration store
- * @returns {BrowserWindow} Settings window
+ * 설정 윈도우 생성
+ * @param {Object} config - 구성 저장소
+ * @returns {BrowserWindow} 설정 윈도우
  */
 function createSettingsWindow(config)
 
 /**
- * Set up event handlers for the Settings window
- * @param {BrowserWindow} settingsWindow - Settings window
+ * 설정 윈도우에 대한 이벤트 핸들러 설정
+ * @param {BrowserWindow} settingsWindow - 설정 윈도우
  */
 function setupSettingsWindowEvents(settingsWindow)
 
 /**
- * Show the Toast window
- * @param {Object} config - Configuration store
+ * Toast 윈도우 표시
+ * @param {Object} config - 구성 저장소
  */
 function showToastWindow(config)
 
 /**
- * Hide the Toast window
+ * Toast 윈도우 숨기기
  */
 function hideToastWindow()
 
 /**
- * Show the Settings window
- * @param {Object} config - Configuration store
+ * 설정 윈도우 표시
+ * @param {Object} config - 구성 저장소
  */
 function showSettingsWindow(config)
 
 /**
- * Close all windows
+ * 모든 윈도우 닫기
  */
 function closeAllWindows()
 ```
 
-#### Window Properties
+#### 윈도우 속성
 
-- **Toast Window Properties**: `frame` `transparent` `resizable` `skipTaskbar` `alwaysOnTop`
-- **Settings Window Properties**: `minWidth` `minHeight` `contextIsolation` `nodeIntegration`
+- **Toast 윈도우 속성**: `frame` `transparent` `resizable` `skipTaskbar` `alwaysOnTop`
+- **설정 윈도우 속성**: `minWidth` `minHeight` `contextIsolation` `nodeIntegration`
 
-#### Window Size Options
+#### 윈도우 크기 옵션
 
-- `small`: 500x350 pixels
-- `medium`: 700x500 pixels
-- `large`: 800x550 pixels
+- `small`: 500x350 픽셀
+- `medium`: 700x500 픽셀
+- `large`: 800x550 픽셀
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
 const { createToastWindow showToastWindow hideToastWindow } = require('./main/windows');
 
-// Create the Toast window
+// Toast 윈도우 생성
 const toastWindow = createToastWindow(config);
 
-// Show the Toast window
+// Toast 윈도우 표시
 showToastWindow(config);
 
-// Hide the Toast window
+// Toast 윈도우 숨기기
 hideToastWindow();
 ```
 
-### IPC Module (`src/main/ipc.js`)
+### IPC 모듈 (`src/main/ipc.js`)
 
-The IPC module handles inter-process communication between the main process and renderer processes.
+IPC 모듈은 메인 프로세스와 렌더러 프로세스 간의 프로세스 간 통신을 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Set up IPC handlers
- * @param {Object} windows - Object containing application windows
+ * IPC 핸들러 설정
+ * @param {Object} windows - 애플리케이션 윈도우를 포함하는 객체
  */
 function setupIpcHandlers(windows)
 ```
 
-#### IPC Channels
+#### IPC 채널
 
-| Channel | Type | Description |
-|---------|------|-------------|
-| `execute-action` | handle | Execute an action |
-| `validate-action` | handle | Validate an action |
-| `get-config` | handle | Get configuration |
-| `set-config` | handle | Set configuration |
-| `save-config` | handle | Save specific configuration changes |
-| `reset-config` | handle | Reset configuration to defaults |
-| `import-config` | handle | Import configuration from a file |
-| `export-config` | handle | Export configuration to a file |
-| `show-toast` | on | Show the Toast window |
-| `hide-toast` | on | Hide the Toast window |
-| `show-settings` | on | Show the Settings window |
-| `close-settings` | on | Close the Settings window |
-| `restart-app` | on | Restart the application |
-| `quit-app` | on | Quit the application |
-| `temporarily-disable-shortcuts` | handle | Temporarily disable global shortcuts for recording |
-| `restore-shortcuts` | handle | Restore global shortcuts after recording |
-| `show-open-dialog` | handle | Show the open file dialog |
-| `show-save-dialog` | handle | Show the save file dialog |
-| `show-message-box` | handle | Show a message box |
-| `test-action` | handle | Test an action |
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `execute-action` | handle | 액션 실행 |
+| `validate-action` | handle | 액션 유효성 검사 |
+| `get-config` | handle | 구성 가져오기 |
+| `set-config` | handle | 구성 설정 |
+| `save-config` | handle | 특정 구성 변경 사항 저장 |
+| `reset-config` | handle | 구성을 기본값으로 재설정 |
+| `import-config` | handle | 파일에서 구성 가져오기 |
+| `export-config` | handle | 파일로 구성 내보내기 |
+| `show-toast` | on | Toast 윈도우 표시 |
+| `hide-toast` | on | Toast 윈도우 숨기기 |
+| `show-settings` | on | 설정 윈도우 표시 |
+| `close-settings` | on | 설정 윈도우 닫기 |
+| `restart-app` | on | 애플리케이션 재시작 |
+| `quit-app` | on | 애플리케이션 종료 |
+| `temporarily-disable-shortcuts` | handle | 녹화를 위해 전역 단축키 일시적으로 비활성화 |
+| `restore-shortcuts` | handle | 녹화 후 전역 단축키 복원 |
+| `show-open-dialog` | handle | 파일 열기 대화 상자 표시 |
+| `show-save-dialog` | handle | 파일 저장 대화 상자 표시 |
+| `show-message-box` | handle | 메시지 상자 표시 |
+| `test-action` | handle | 액션 테스트 |
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
 const { setupIpcHandlers } = require('./main/ipc');
 
-// Set up IPC handlers
+// IPC 핸들러 설정
 setupIpcHandlers(windows);
 ```
 
-## Action Modules
+## 액션 모듈
 
-### Exec Action (`src/main/actions/exec.js`)
+### Exec 액션 (`src/main/actions/exec.js`)
 
-The Exec Action module handles executing shell commands.
+Exec 액션 모듈은 셸 명령 실행을 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Execute a shell command
- * @param {Object} action - Action configuration
- * @param {string} action.command - Command to execute
- * @param {string} [action.workingDir] - Working directory
- * @param {boolean} [action.runInTerminal] - Whether to run in terminal
- * @returns {Promise<Object>} Result object
+ * 셸 명령 실행
+ * @param {Object} action - 액션 구성
+ * @param {string} action.command - 실행할 명령
+ * @param {string} [action.workingDir] - 작업 디렉토리
+ * @param {boolean} [action.runInTerminal] - 터미널에서 실행할지 여부
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeCommand(action)
 
 /**
- * Open a command in the terminal
- * @param {string} command - Command to execute
- * @param {string} [workingDir] - Working directory
- * @returns {Promise<Object>} Result object
+ * 터미널에서 명령 열기
+ * @param {string} command - 실행할 명령
+ * @param {string} [workingDir] - 작업 디렉토리
+ * @returns {Promise<Object>} 결과 객체
  */
 async function openInTerminal(command workingDir)
 ```
 
-### Open Action (`src/main/actions/open.js`)
+### Open 액션 (`src/main/actions/open.js`)
 
-The Open Action module handles opening URLs files and folders.
+Open 액션 모듈은 URL, 파일 및 폴더 열기를 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Open a URL file or folder
- * @param {Object} action - Action configuration
- * @param {string} [action.url] - URL to open
- * @param {string} [action.path] - File or folder path to open
- * @param {string} [action.application] - Application to use for opening
- * @returns {Promise<Object>} Result object
+ * URL, 파일 또는 폴더 열기
+ * @param {Object} action - 액션 구성
+ * @param {string} [action.url] - 열 URL
+ * @param {string} [action.path] - 열 파일 또는 폴더 경로
+ * @param {string} [action.application] - 열기에 사용할 애플리케이션
+ * @returns {Promise<Object>} 결과 객체
  */
 async function openItem(action)
 
 /**
- * Open a URL in the default browser
- * @param {string} url - URL to open
- * @returns {Promise<Object>} Result object
+ * 기본 브라우저에서 URL 열기
+ * @param {string} url - 열 URL
+ * @returns {Promise<Object>} 결과 객체
  */
 async function openUrl(url)
 
 /**
- * Open a file or folder
- * @param {string} itemPath - Path to file or folder
- * @param {string} [application] - Application to use for opening
- * @returns {Promise<Object>} Result object
+ * 파일 또는 폴더 열기
+ * @param {string} itemPath - 파일 또는 폴더 경로
+ * @param {string} [application] - 열기에 사용할 애플리케이션
+ * @returns {Promise<Object>} 결과 객체
  */
 async function openPath(itemPath application)
 
 /**
- * Open a file with a specific application
- * @param {string} filePath - Path to file
- * @param {string} application - Application to use
- * @returns {Promise<Object>} Result object
+ * 특정 애플리케이션으로 파일 열기
+ * @param {string} filePath - 파일 경로
+ * @param {string} application - 사용할 애플리케이션
+ * @returns {Promise<Object>} 결과 객체
  */
 async function openWithApplication(filePath application)
 ```
 
-### Shortcut Action (`src/main/actions/shortcut.js`)
+### Shortcut 액션 (`src/main/actions/shortcut.js`)
 
-The Shortcut Action module handles sending keyboard shortcuts to the system.
+Shortcut 액션 모듈은 시스템에 키보드 단축키를 보내는 것을 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Execute a keyboard shortcut
- * @param {Object} action - Action configuration
- * @param {string} action.keys - Keyboard shortcut to execute (e.g. "Ctrl+C")
- * @returns {Promise<Object>} Result object
+ * 키보드 단축키 실행
+ * @param {Object} action - 액션 구성
+ * @param {string} action.keys - 실행할 키보드 단축키(예: "Ctrl+C")
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeShortcut(action)
 
 /**
- * Parse a shortcut string into an array of keys
- * @param {string} shortcutString - Shortcut string (e.g. "Ctrl+Shift+A")
- * @returns {Array} Array of key constants
+ * 단축키 문자열을 키 배열로 파싱
+ * @param {string} shortcutString - 단축키 문자열(예: "Ctrl+Shift+A")
+ * @returns {Array} 키 상수 배열
  */
 function parseShortcut(shortcutString)
 
 /**
- * Press a combination of keys
- * @param {Array} keys - Array of key constants
+ * 키 조합 누르기
+ * @param {Array} keys - 키 상수 배열
  * @returns {Promise<void>}
  */
 async function pressKeys(keys)
 ```
 
-### Script Action (`src/main/actions/script.js`)
+### Script 액션 (`src/main/actions/script.js`)
 
-The Script Action module handles executing custom scripts in various languages.
+Script 액션 모듈은 다양한 언어로 사용자 정의 스크립트 실행을 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Execute a custom script
- * @param {Object} action - Action configuration
- * @param {string} action.script - Script content
- * @param {string} action.scriptType - Script language (javascript applescript powershell bash)
- * @param {Object} [action.scriptParams] - Parameters to pass to the script
- * @returns {Promise<Object>} Result object
+ * 사용자 정의 스크립트 실행
+ * @param {Object} action - 액션 구성
+ * @param {string} action.script - 스크립트 내용
+ * @param {string} action.scriptType - 스크립트 언어(javascript, applescript, powershell, bash)
+ * @param {Object} [action.scriptParams] - 스크립트에 전달할 매개변수
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeScript(action)
 
 /**
- * Execute JavaScript code
- * @param {string} script - JavaScript code
- * @param {Object} [params] - Parameters to pass to the script
- * @returns {Promise<Object>} Result object
+ * JavaScript 코드 실행
+ * @param {string} script - JavaScript 코드
+ * @param {Object} [params] - 스크립트에 전달할 매개변수
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeJavaScript(script params)
 
 /**
- * Execute AppleScript (macOS only)
- * @param {string} script - AppleScript code
- * @returns {Promise<Object>} Result object
+ * AppleScript 실행(macOS 전용)
+ * @param {string} script - AppleScript 코드
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeAppleScript(script)
 
 /**
- * Execute PowerShell script (Windows only)
- * @param {string} script - PowerShell script
- * @returns {Promise<Object>} Result object
+ * PowerShell 스크립트 실행(Windows 전용)
+ * @param {string} script - PowerShell 스크립트
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executePowerShell(script)
 
 /**
- * Execute Bash script (macOS/Linux only)
- * @param {string} script - Bash script
- * @returns {Promise<Object>} Result object
+ * Bash 스크립트 실행(macOS/Linux 전용)
+ * @param {string} script - Bash 스크립트
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeBash(script)
 ```
 
-### Chain Action (`src/main/actions/chain.js`)
+### Chain 액션 (`src/main/actions/chain.js`)
 
-The Chain Action module handles executing a series of actions in sequence.
+Chain 액션 모듈은 일련의 액션을 순차적으로 실행하는 것을 처리합니다.
 
-#### Functions
+#### 함수
 
 ```javascript
 /**
- * Execute a chain of actions in sequence
- * @param {Object} action - Chain action configuration
- * @param {Array} action.actions - Array of actions to execute in sequence
- * @param {boolean} [action.stopOnError=true] - Whether to stop execution if an action fails
- * @returns {Promise<Object>} Result object
+ * 액션 체인을 순차적으로 실행
+ * @param {Object} action - 체인 액션 구성
+ * @param {Array} action.actions - 순차적으로 실행할 액션 배열
+ * @param {boolean} [action.stopOnError=true] - 액션이 실패하면 실행을 중지할지 여부
+ * @returns {Promise<Object>} 결과 객체
  */
 async function executeChainedActions(action)
 ```
 
-#### Chain Action Results
+#### 체인 액션 결과
 
-A chain action returns a result object with the following structure:
+체인 액션은 다음 구조를 가진 결과 객체를 반환합니다:
 
 ```javascript
 {
-  success: true|false, // Whether the entire chain executed successfully
+  success: true|false, // 전체 체인이 성공적으로 실행되었는지 여부
   message: "Chain executed successfully" | "Chain execution stopped due to an error",
   results: [
     {
-      index: 0, // Index of the action in the chain
-      action: {}, // The original action configuration
-      result: {} // The result of the action execution
+      index: 0, // 체인에서 액션의 인덱스
+      action: {}, // 원래 액션 구성
+      result: {} // 액션 실행 결과
     },
-    // More action results...
+    // 더 많은 액션 결과...
   ]
 }
 ```
 
-If the `stopOnError` property is set to `true` (the default), the chain execution will stop when an action fails. Otherwise, all actions in the chain will be executed regardless of previous failures.
+`stopOnError` 속성이 `true`(기본값)로 설정되면 액션이 실패할 때 체인 실행이 중지됩니다. 그렇지 않으면 이전 실패에 관계없이 체인의 모든 액션이 실행됩니다.
 
-#### Chain Action Example
+#### 체인 액션 예시
 
 ```javascript
-// Execute a chain of actions
+// 액션 체인 실행
 const chainResult = await executeAction({
   action: 'chain',
   actions: [
@@ -659,330 +659,330 @@ const chainResult = await executeAction({
 });
 
 console.log(chainResult.success, chainResult.message);
-// Access individual action results
+// 개별 액션 결과 접근
 chainResult.results.forEach(result => {
   console.log(`Action ${result.index}: ${result.result.success ? 'Success' : 'Failed'}`);
 });
 ```
 
-## Renderer Process APIs
+## 렌더러 프로세스 API
 
-### Toast Window API (`src/renderer/preload/toast.js`)
+### Toast 윈도우 API (`src/renderer/preload/toast.js`)
 
-The Toast Window API provides an interface for the Toast window to communicate with the main process.
+Toast 윈도우 API는 Toast 윈도우가 메인 프로세스와 통신하기 위한 인터페이스를 제공합니다.
 
-#### Methods
+#### 메서드
 
 ```javascript
-// Configuration
-window.toast.getConfig(key) // Get configuration
+// 구성
+window.toast.getConfig(key) // 구성 가져오기
 
-// Actions
-window.toast.executeAction(action) // Execute an action
+// 액션
+window.toast.executeAction(action) // 액션 실행
 
-// Window control
-window.toast.hideWindow() // Hide the Toast window
-window.toast.showSettings() // Show the Settings window
+// 윈도우 제어
+window.toast.hideWindow() // Toast 윈도우 숨기기
+window.toast.showSettings() // 설정 윈도우 표시
 
-// Platform information
-window.toast.platform // The platform (darwin win32 linux)
+// 플랫폼 정보
+window.toast.platform // 플랫폼(darwin, win32, linux)
 
-// Save configuration
-window.toast.saveConfig(config) // Save configuration changes
+// 구성 저장
+window.toast.saveConfig(config) // 구성 변경 사항 저장
 
-// Events
-window.toast.onConfigUpdated(callback) // Listen for configuration updates
+// 이벤트
+window.toast.onConfigUpdated(callback) // 구성 업데이트 수신
 ```
 
-#### Events
+#### 이벤트
 
 ```javascript
-// Configuration loaded event
+// 구성 로드 이벤트
 window.addEventListener('config-loaded' (event) => {
   const config = event.detail;
-  // detail contains: pages appearance subscription
+  // detail에는 다음이 포함됩니다: pages, appearance, subscription
 });
 
-// Before window hide event
+// 윈도우 숨기기 전 이벤트
 window.addEventListener('before-window-hide' () => {
-  // Clean up before the window is hidden
+  // 윈도우가 숨겨지기 전에 정리
 });
 ```
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
-// Get configuration
+// 구성 가져오기
 const pages = await window.toast.getConfig('pages');
 
-// Execute an action
+// 액션 실행
 const result = await window.toast.executeAction({
   action: 'exec'
   command: 'echo "Hello world!"'
 });
 
-// Save configuration (e.g. updating pages)
+// 구성 저장(예: 페이지 업데이트)
 await window.toast.saveConfig({ pages: updatedPages });
 
-// Hide the window
+// 윈도우 숨기기
 window.toast.hideWindow();
 
-// Listen for configuration updates
+// 구성 업데이트 수신
 const removeListener = window.toast.onConfigUpdated((config) => {
   console.log('Configuration updated:' config);
 });
 
-// Check platform for platform-specific behavior
+// 플랫폼별 동작을 위한 플랫폼 확인
 if (window.toast.platform === 'darwin') {
-  // macOS specific code
+  // macOS 특정 코드
 } else if (window.toast.platform === 'win32') {
-  // Windows specific code
+  // Windows 특정 코드
 }
 ```
 
-### Settings Window API (`src/renderer/preload/settings.js`)
+### 설정 윈도우 API (`src/renderer/preload/settings.js`)
 
-The Settings Window API provides an interface for the Settings window to communicate with the main process.
+설정 윈도우 API는 설정 윈도우가 메인 프로세스와 통신하기 위한 인터페이스를 제공합니다.
 
-#### Methods
+#### 메서드
 
 ```javascript
-// Configuration
-window.settings.getConfig(key) // Get configuration
-window.settings.setConfig(key value) // Set configuration
-window.settings.resetConfig() // Reset configuration to defaults
-window.settings.importConfig(filePath) // Import configuration from a file
-window.settings.exportConfig(filePath) // Export configuration to a file
+// 구성
+window.settings.getConfig(key) // 구성 가져오기
+window.settings.setConfig(key value) // 구성 설정
+window.settings.resetConfig() // 구성을 기본값으로 재설정
+window.settings.importConfig(filePath) // 파일에서 구성 가져오기
+window.settings.exportConfig(filePath) // 파일로 구성 내보내기
 
-// Actions
-window.settings.testAction(action) // Test an action
-window.settings.validateAction(action) // Validate an action
+// 액션
+window.settings.testAction(action) // 액션 테스트
+window.settings.validateAction(action) // 액션 유효성 검사
 
-// Window control
-window.settings.showToast() // Show the Toast window
-window.settings.closeWindow() // Close the Settings window
+// 윈도우 제어
+window.settings.showToast() // Toast 윈도우 표시
+window.settings.closeWindow() // 설정 윈도우 닫기
 
-// Dialog
-window.settings.showOpenDialog(options) // Show the open file dialog
-window.settings.showSaveDialog(options) // Show the save file dialog
-window.settings.showMessageBox(options) // Show a message box
+// 대화 상자
+window.settings.showOpenDialog(options) // 파일 열기 대화 상자 표시
+window.settings.showSaveDialog(options) // 파일 저장 대화 상자 표시
+window.settings.showMessageBox(options) // 메시지 상자 표시
 
-// App control
-window.settings.restartApp() // Restart the application
-window.settings.quitApp() // Quit the application
+// 앱 제어
+window.settings.restartApp() // 애플리케이션 재시작
+window.settings.quitApp() // 애플리케이션 종료
 
-// Shortcuts control for recording
-window.settings.temporarilyDisableShortcuts() // Temporarily disable global shortcuts
-window.settings.restoreShortcuts() // Restore global shortcuts
+// 단축키 제어(녹화용)
+window.settings.temporarilyDisableShortcuts() // 전역 단축키 일시적으로 비활성화
+window.settings.restoreShortcuts() // 전역 단축키 복원
 
-// System information
-window.settings.getPlatform() // Get the platform (darwin win32 linux)
-window.settings.getVersion() // Get the application version
+// 시스템 정보
+window.settings.getPlatform() // 플랫폼 가져오기(darwin, win32, linux)
+window.settings.getVersion() // 애플리케이션 버전 가져오기
 ```
 
-#### Events
+#### 이벤트
 
 ```javascript
-// Configuration loaded event
+// 구성 로드 이벤트
 window.addEventListener('config-loaded' (event) => {
   const config = event.detail;
-  // Contains the full configuration object
+  // 전체 구성 객체 포함
 });
 ```
 
-#### Usage Example
+#### 사용 예시
 
 ```javascript
-// Get configuration
+// 구성 가져오기
 const config = await window.settings.getConfig();
 
-// Set configuration
+// 구성 설정
 await window.settings.setConfig('globalHotkey' 'Alt+Space');
 
-// Test an action
+// 액션 테스트
 const result = await window.settings.testAction({
   action: 'exec'
   command: 'echo "Hello world!"'
 });
 
-// Show the open file dialog
+// 파일 열기 대화 상자 표시
 const result = await window.settings.showOpenDialog({
   properties: ['openFile']
 });
 
-// Temporarily disable shortcuts for recording
+// 녹화를 위해 단축키 일시적으로 비활성화
 await window.settings.temporarilyDisableShortcuts();
 
-// Record shortcut here...
+// 여기서 단축키 녹화...
 
-// Restore shortcuts
+// 단축키 복원
 await window.settings.restoreShortcuts();
 
-// Show a message box
+// 메시지 상자 표시
 await window.settings.showMessageBox({
   type: 'info'
-  title: 'Information'
-  message: 'This is an information message'
-  buttons: ['OK']
+  title: '정보'
+  message: '이것은 정보 메시지입니다'
+  buttons: ['확인']
 });
 ```
 
-## Result Objects
+## 결과 객체
 
-Many API functions return result objects with a consistent structure:
+많은 API 함수는 일관된 구조를 가진 결과 객체를 반환합니다:
 
-### Success Result
+### 성공 결과
 
 ```javascript
 {
   success: true
-  message: 'Operation completed successfully'
-  // Additional data specific to the operation
+  message: '작업이 성공적으로 완료되었습니다'
+  // 작업별 추가 데이터
 }
 ```
 
-### Error Result
+### 오류 결과
 
 ```javascript
 {
   success: false
-  message: 'Error message'
-  error: errorObject // Original error object or string
-  // Additional error details
+  message: '오류 메시지'
+  error: errorObject // 원래 오류 객체 또는 문자열
+  // 추가 오류 세부 정보
 }
 ```
 
-### Validation Result
+### 유효성 검사 결과
 
 ```javascript
 {
   valid: true|false
-  message: 'Validation message if invalid'
-  error: errorObject // Original error object or string if applicable
+  message: '유효하지 않은 경우 유효성 검사 메시지'
+  error: errorObject // 해당되는 경우 원래 오류 객체 또는 문자열
 }
 ```
 
-## Page and Button Structure
+## 페이지 및 버튼 구조
 
-### Page Object
+### 페이지 객체
 
 ```javascript
 {
-  name: "Applications" // Display name of the page
-  shortcut: "1" // Keyboard shortcut to access the page (1-9)
+  name: "Applications" // 페이지의 표시 이름
+  shortcut: "1" // 페이지에 접근하기 위한 키보드 단축키(1-9)
   buttons: [
-    // Array of button objects
+    // 버튼 객체 배열
   ]
 }
 ```
 
-### Button Object
+### 버튼 객체
 
 ```javascript
 {
-  name: "Terminal" // Display name of the button
-  shortcut: "T" // Keyboard shortcut (single character)
-  icon: "⌨️" // Emoji or icon
-  action: "exec" // Action type (exec open shortcut script chain)
+  name: "Terminal" // 버튼의 표시 이름
+  shortcut: "T" // 키보드 단축키(단일 문자)
+  icon: "⌨️" // 이모지 또는 아이콘
+  action: "exec" // 액션 유형(exec, open, shortcut, script, chain)
 
-  // Additional properties based on action type:
-  command: "open -a Terminal" // For exec action
-  url: "https://example.com" // For open action
-  keys: "Ctrl+C" // For shortcut action
-  script: "console.log('Hello');" // For script action
-  scriptType: "javascript" // For script action
-  actions: [] // For chain action (array of actions)
-  stopOnError: true // For chain action
+  // 액션 유형에 따른 추가 속성:
+  command: "open -a Terminal" // exec 액션용
+  url: "https://example.com" // open 액션용
+  keys: "Ctrl+C" // shortcut 액션용
+  script: "console.log('Hello');" // script 액션용
+  scriptType: "javascript" // script 액션용
+  actions: [] // chain 액션용(액션 배열)
+  stopOnError: true // chain 액션용
 }
 ```
 
-## Event System
+## 이벤트 시스템
 
-The application uses several event systems:
+애플리케이션은 여러 이벤트 시스템을 사용합니다:
 
-### Electron IPC Events
+### Electron IPC 이벤트
 
-Used for communication between the main process and renderer processes.
+메인 프로세스와 렌더러 프로세스 간의 통신에 사용됩니다.
 
-### DOM Events
+### DOM 이벤트
 
-Used for communication within renderer processes.
+렌더러 프로세스 내의 통신에 사용됩니다.
 
-#### Config Loaded Event
+#### 구성 로드 이벤트
 
 ```javascript
-// In Toast window
+// Toast 윈도우에서
 window.addEventListener('config-loaded' (event) => {
   const { pages appearance subscription } = event.detail;
-  // Handle configuration
+  // 구성 처리
 });
 
-// In Settings window
+// 설정 윈도우에서
 window.addEventListener('config-loaded' (event) => {
-  const config = event.detail; // Full configuration object
-  // Handle configuration
+  const config = event.detail; // 전체 구성 객체
+  // 구성 처리
 });
 ```
 
-#### Before Window Hide Event
+#### 윈도우 숨기기 전 이벤트
 
 ```javascript
 window.addEventListener('before-window-hide' () => {
-  // Clean up before the window is hidden (e.g. exit edit mode)
+  // 윈도우가 숨겨지기 전에 정리(예: 편집 모드 종료)
 });
 ```
 
-## Error Handling
+## 오류 처리
 
-All API functions include error handling to prevent crashes:
+모든 API 함수는 충돌을 방지하기 위한 오류 처리를 포함합니다:
 
-1. **Try-Catch Blocks**: All async functions use try-catch blocks to handle errors.
-2. **Error Objects**: Errors are returned as part of the result object.
-3. **Validation**: Input is validated before processing.
-4. **Default Values**: Default values are used when inputs are missing or invalid.
+1. **Try-Catch 블록**: 모든 비동기 함수는 오류를 처리하기 위해 try-catch 블록을 사용합니다.
+2. **오류 객체**: 오류는 결과 객체의 일부로 반환됩니다.
+3. **유효성 검사**: 입력은 처리 전에 유효성이 검사됩니다.
+4. **기본값**: 입력이 누락되거나 유효하지 않은 경우 기본값이 사용됩니다.
 
-## Security Considerations
+## 보안 고려 사항
 
-The API implements several security measures:
+API는 여러 보안 조치를 구현합니다:
 
-1. **Context Isolation**: Renderer processes use contextBridge for secure IPC.
-2. **Input Validation**: All inputs are validated before processing.
-3. **Sandboxed Scripts**: JavaScript scripts run in a sandboxed environment.
-4. **Limited Permissions**: Only necessary APIs are exposed to renderer processes.
+1. **컨텍스트 격리**: 렌더러 프로세스는 안전한 IPC를 위해 contextBridge를 사용합니다.
+2. **입력 유효성 검사**: 모든 입력은 처리 전에 유효성이 검사됩니다.
+3. **샌드박스 스크립트**: JavaScript 스크립트는 샌드박스 환경에서 실행됩니다.
+4. **제한된 권한**: 필요한 API만 렌더러 프로세스에 노출됩니다.
 
-## Platform-Specific Behavior
+## 플랫폼별 동작
 
-Some APIs have platform-specific behavior:
+일부 API는 플랫폼별 동작을 가집니다:
 
-1. **Shortcuts**: Different modifier keys on macOS (`Command`) and Windows (`Ctrl`).
-2. **File Paths**: Different path formats on different platforms.
-3. **Script Execution**: AppleScript only on macOS PowerShell only on Windows.
-4. **Terminal Commands**: Different terminal commands on different platforms.
-5. **Keyboard Input**: English keyboard activation differs between platforms.
+1. **단축키**: macOS(`Command`)와 Windows(`Ctrl`)에서 다른 수정자 키.
+2. **파일 경로**: 다른 플랫폼에서 다른 경로 형식.
+3. **스크립트 실행**: AppleScript는 macOS에서만, PowerShell은 Windows에서만.
+4. **터미널 명령**: 다른 플랫폼에서 다른 터미널 명령.
+5. **키보드 입력**: 영어 키보드 활성화는 플랫폼 간에 다릅니다.
 
-## Extending the API
+## API 확장
 
-To extend the API with new functionality:
+새 기능으로 API를 확장하려면:
 
-1. **Add a new module** in the appropriate directory.
-2. **Export functions** from the module.
-3. **Import and use** the functions in other modules.
-4. **Expose to renderer** via IPC if needed.
-5. **Document** the new functionality in this document.
+1. 적절한 디렉토리에 **새 모듈을 추가**합니다.
+2. 모듈에서 **함수를 내보냅니다**.
+3. 다른 모듈에서 함수를 **가져와서 사용**합니다.
+4. 필요한 경우 IPC를 통해 **렌더러에 노출**합니다.
+5. 이 문서에서 새 기능을 **문서화**합니다.
 
-## Versioning
+## 버전 관리
 
-The API follows semantic versioning:
+API는 의미적 버전 관리를 따릅니다:
 
-1. **Major version**: Breaking changes to the API.
-2. **Minor version**: New features without breaking changes.
-3. **Patch version**: Bug fixes and minor improvements.
+1. **주 버전**: API의 호환성을 깨는 변경 사항.
+2. **부 버전**: 호환성을 깨지 않는 새 기능.
+3. **패치 버전**: 버그 수정 및 소소한 개선 사항.
 
-## Deprecation Policy
+## 사용 중단 정책
 
-When deprecating API features:
+API 기능을 사용 중단할 때:
 
-1. **Mark as deprecated** in the documentation.
-2. **Provide alternatives** in the documentation.
-3. **Log warnings** when deprecated features are used.
-4. **Remove** in the next major version.
+1. 문서에서 **사용 중단으로 표시**합니다.
+2. 문서에서 **대안을 제공**합니다.
+3. 사용 중단된 기능이 사용될 때 **경고를 기록**합니다.
+4. 다음 주 버전에서 **제거**합니다.

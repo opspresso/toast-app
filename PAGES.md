@@ -1,21 +1,21 @@
-# Toast App Pages and Navigation
+# Toast 앱 페이지 및 네비게이션
 
-This document describes the page layouts, components, and navigation structure of the Toast App.
+이 문서는 Toast 앱의 페이지 레이아웃, 컴포넌트 및 네비게이션 구조를 설명합니다.
 
-## Overview
+## 개요
 
-Toast App consists of two main windows:
+Toast 앱은 두 개의 주요 윈도우로 구성됩니다:
 
-1. **Toast Window**: The popup window that appears when the global hotkey is pressed
-2. **Settings Window**: The window for configuring the application
+1. **Toast 윈도우**: 전역 단축키를 누르면 나타나는 팝업 윈도우
+2. **설정 윈도우**: 애플리케이션을 구성하기 위한 윈도우
 
-Each window has its own layout, components, and navigation patterns. The Toast window supports multiple pages of buttons, allowing users to organize their actions into logical groups.
+각 윈도우는 자체 레이아웃, 컴포넌트 및 네비게이션 패턴을 가지고 있습니다. Toast 윈도우는 여러 페이지의 버튼을 지원하여 사용자가 액션을 논리적 그룹으로 구성할 수 있습니다.
 
-## Toast Window
+## Toast 윈도우
 
-The Toast window is the main interface that users interact with to execute actions.
+Toast 윈도우는 사용자가 액션을 실행하기 위해 상호작용하는 주요 인터페이스입니다.
 
-### Layout
+### 레이아웃
 
 ```
 ┌───────────────────────────────────────────────────────────┐
@@ -43,96 +43,96 @@ The Toast window is the main interface that users interact with to execute actio
 │ │Calendar Z│   │ Chat X  │   │ Stats C │   │Network V│     │
 │ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
 │                                                           │
-│ Status: Ready                               Settings ⚙️   │
+│ 상태: 준비됨                                  설정 ⚙️   │
 └───────────────────────────────────────────────────────────┘
 ```
 
-### Components
+### 컴포넌트
 
-#### Header
+#### 헤더
 
-- **Title**: Displays "Toast" as the window title
-- **Close Button**: Closes the Toast window
+- **제목**: 윈도우 제목으로 "Toast" 표시
+- **닫기 버튼**: Toast 윈도우 닫기
 
-#### Page Navigation
+#### 페이지 네비게이션
 
-- **Page Buttons**: Numbered buttons (1-9) to switch between pages
-  - **Free Users**: Limited to 1 page
-  - **Authenticated Users**: Can create up to 3 pages
-  - **Subscribers**: Can create up to 9 pages
-- **Add Page Button**: Adds a new page of buttons (+) (based on account limits)
-- **Remove Page Button**: Removes the current page (-)
+- **페이지 버튼**: 페이지 간 전환을 위한 번호 버튼(1-9)
+  - **무료 사용자**: 1 페이지로 제한
+  - **인증된 사용자**: 최대 3 페이지 생성 가능
+  - **구독자**: 최대 9 페이지 생성 가능
+- **페이지 추가 버튼**: 새 버튼 페이지 추가(+) (계정 제한에 따라)
+- **페이지 제거 버튼**: 현재 페이지 제거(-)
 
-#### Button Grid
+#### 버튼 그리드
 
-- **Buttons**: Displays the configured buttons in a grid or list layout (up to 15 buttons per page)
-- **Button Components**:
-  - **Icon**: Visual representation of the button (emoji or custom icon)
-  - **Name**: Display name of the button
-  - **Shortcut**: Single-key shortcut for the button (Q-Z, A-M letters)
+- **버튼**: 구성된 버튼을 그리드 또는 목록 레이아웃으로 표시(페이지당 최대 15개 버튼)
+- **버튼 컴포넌트**:
+  - **아이콘**: 버튼의 시각적 표현(이모지 또는 사용자 정의 아이콘)
+  - **이름**: 버튼의 표시 이름
+  - **단축키**: 버튼의 단일 키 단축키(Q-Z, A-M 문자)
 
-#### Status Bar
+#### 상태 표시줄
 
-- **Status Message**: Displays the status of the last action
-- **Status Types**:
-  - **Ready**: Default state
-  - **Executing**: Action is being executed
-  - **Success**: Action completed successfully (auto-hides after 3 seconds)
-  - **Error**: Action failed
-- **Settings Toggle**: Button to toggle settings mode (⚙️)
+- **상태 메시지**: 마지막 액션의 상태 표시
+- **상태 유형**:
+  - **준비됨**: 기본 상태
+  - **실행 중**: 액션이 실행 중
+  - **성공**: 액션이 성공적으로 완료됨(3초 후 자동 숨김)
+  - **오류**: 액션 실패
+- **설정 토글**: 설정 모드 전환 버튼(⚙️)
 
-### Navigation
+### 네비게이션
 
-#### Keyboard Navigation
+#### 키보드 네비게이션
 
-- **Arrow Keys**: Navigate between buttons
-- **Enter**: Execute the selected button
-- **Escape**: Close the Toast window or exit settings mode
-- **Shortcut Keys**: Execute the corresponding button
-- **Number Keys (1-9)**: Switch between pages
-- **Plus Key (+)**: Add a new page (with Shift)
-- **Minus Key (-)**: Remove current page (in settings mode)
-- **Comma Key (,)**: Toggle settings mode
+- **화살표 키**: 버튼 간 이동
+- **Enter**: 선택한 버튼 실행
+- **Escape**: Toast 윈도우 닫기 또는 설정 모드 종료
+- **단축키**: 해당 버튼 실행
+- **숫자 키(1-9)**: 페이지 간 전환
+- **플러스 키(+)**: 새 페이지 추가(Shift와 함께)
+- **마이너스 키(-)**: 현재 페이지 제거(설정 모드에서)
+- **콤마 키(,)**: 설정 모드 전환
 
-#### Mouse Navigation
+#### 마우스 네비게이션
 
-- **Click**: Execute a button or edit in settings mode
-- **Hover**: Highlight a button
-- **Click Page Numbers**: Switch between pages
-- **Click + Button**: Add a new page
-- **Click - Button**: Remove the current page
-- **Click Settings Icon**: Toggle settings mode
+- **클릭**: 버튼 실행 또는 설정 모드에서 편집
+- **호버**: 버튼 강조 표시
+- **페이지 번호 클릭**: 페이지 간 전환
+- **+ 버튼 클릭**: 새 페이지 추가
+- **- 버튼 클릭**: 현재 페이지 제거
+- **설정 아이콘 클릭**: 설정 모드 전환
 
-#### Settings Mode
+#### 설정 모드
 
-- **Toggle**: Click the gear icon (⚙️) or press comma (,) key
-- **Edit Buttons**: Click any button to edit its properties
-- **Exit**: Press Escape key or click the gear icon again
+- **토글**: 기어 아이콘(⚙️) 클릭 또는 콤마(,) 키 누르기
+- **버튼 편집**: 아무 버튼을 클릭하여 속성 편집
+- **종료**: Escape 키 누르기 또는 기어 아이콘 다시 클릭
 
-#### Search Navigation
+#### 검색 네비게이션
 
-- **Type**: Filter buttons by name or shortcut
-- **Enter**: Execute the first matching button
-- **Escape**: Clear the search input
+- **입력**: 이름이나 단축키로 버튼 필터링
+- **Enter**: 첫 번째 일치 버튼 실행
+- **Escape**: 검색 입력 지우기
 
-## Settings Window
+## 설정 윈도우
 
-The Settings window allows users to configure the application.
+설정 윈도우는 사용자가 애플리케이션을 구성할 수 있게 합니다.
 
-### Layout
+### 레이아웃
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Toast Settings                          │
+│                     Toast 설정                              │
 ├─────────────┬───────────────────────────────────────────────┤
 │             │                                               │
-│  General    │  General Settings                             │
+│  일반       │  일반 설정                                    │
 │             │                                               │
-│  Buttons    │  Global Hotkey: [Alt+Space]  [Record] [Clear] │
+│  버튼       │  전역 단축키: [Alt+Space]  [기록] [지우기]    │
 │             │                                               │
-│  Appearance │  ☑ Launch at login                            │
+│  외관       │  ☑ 로그인 시 시작                             │
 │             │                                               │
-│  Advanced   │                                               │
+│  고급       │                                               │
 │             │                                               │
 │             │                                               │
 │             │                                               │
@@ -144,272 +144,272 @@ The Settings window allows users to configure the application.
 │             │                                               │
 │             │                                               │
 ├─────────────┴───────────────────────────────────────────────┤
-│  [Save]                                      [Cancel]       │
+│  [저장]                                      [취소]         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Components
+### 컴포넌트
 
-#### Header
+#### 헤더
 
-- **Title**: Displays "Toast App Settings" as the window title
-- **Save Button**: Saves the settings
-- **Cancel Button**: Cancels changes and closes the window
+- **제목**: 윈도우 제목으로 "Toast 앱 설정" 표시
+- **저장 버튼**: 설정 저장
+- **취소 버튼**: 변경 취소 및 윈도우 닫기
 
-#### Sidebar
+#### 사이드바
 
-- **Navigation Tabs**:
-  - **General**: General settings
-  - **Buttons**: Button configuration
-  - **Appearance**: Visual appearance settings
-  - **Advanced**: Advanced settings
+- **네비게이션 탭**:
+  - **일반**: 일반 설정
+  - **버튼**: 버튼 구성
+  - **외관**: 시각적 외관 설정
+  - **고급**: 고급 설정
 
-#### Main Content Area
+#### 메인 콘텐츠 영역
 
-The main content area displays different settings based on the selected tab.
+메인 콘텐츠 영역은 선택한 탭에 따라 다른 설정을 표시합니다.
 
-##### General Tab
+##### 일반 탭
 
-- **Global Hotkey**: Configure the global hotkey to trigger the Toast window
-  - **Hotkey Input**: Displays the current hotkey
-  - **Record Button**: Records a new hotkey
-  - **Clear Button**: Clears the current hotkey
-- **Launch at Login**: Option to start Toast App automatically at login
+- **전역 단축키**: Toast 윈도우를 트리거하는 전역 단축키 구성
+  - **단축키 입력**: 현재 단축키 표시
+  - **기록 버튼**: 새 단축키 기록
+  - **지우기 버튼**: 현재 단축키 지우기
+- **로그인 시 시작**: 로그인 시 Toast 앱을 자동으로 시작하는 옵션
 
-##### Buttons Tab
+##### 버튼 탭
 
-- **Button List**: Displays the configured buttons
-  - **Button Items**:
-    - **Icon**: Visual representation of the button
-    - **Name**: Display name of the button
-    - **Action**: Description of the button's action
-    - **Edit Button**: Opens the button editor
-    - **Delete Button**: Deletes the button
-- **Add Button**: Adds a new button
-- **Import/Export**: Imports or exports button configurations
+- **버튼 목록**: 구성된 버튼 표시
+  - **버튼 항목**:
+    - **아이콘**: 버튼의 시각적 표현
+    - **이름**: 버튼의 표시 이름
+    - **액션**: 버튼 액션의 설명
+    - **편집 버튼**: 버튼 편집기 열기
+    - **삭제 버튼**: 버튼 삭제
+- **버튼 추가**: 새 버튼 추가
+- **가져오기/내보내기**: 버튼 구성 가져오기 또는 내보내기
 
-##### Appearance Tab
+##### 외관 탭
 
-- **Theme**: Choose between light, dark, or system theme
-- **Position**: Choose where the Toast window appears
-- **Size**: Choose the size of the Toast window
-- **Opacity**: Adjust the transparency of the Toast window
-- **Button Layout**: Choose between grid or list layout
+- **테마**: 라이트, 다크 또는 시스템 테마 중 선택
+- **위치**: Toast 윈도우가 나타나는 위치 선택
+- **크기**: Toast 윈도우의 크기 선택
+- **불투명도**: Toast 윈도우의 투명도 조정
+- **버튼 레이아웃**: 그리드 또는 목록 레이아웃 중 선택
 
-##### Advanced Tab
+##### 고급 탭
 
-- **Hide After Action**: Hide the Toast window after executing an action
-- **Hide on Blur**: Hide the Toast window when it loses focus
-- **Hide on Escape**: Hide the Toast window when the Escape key is pressed
-- **Show in Taskbar**: Show the Toast window in the taskbar/dock
-- **Reset to Defaults**: Reset all settings to their default values
+- **액션 후 숨기기**: 액션 실행 후 Toast 윈도우 숨기기
+- **포커스 상실 시 숨기기**: 포커스를 잃을 때 Toast 윈도우 숨기기
+- **Escape 키로 숨기기**: Escape 키를 눌렀을 때 Toast 윈도우 숨기기
+- **작업 표시줄에 표시**: Toast 윈도우를 작업 표시줄/독에 표시
+- **기본값으로 재설정**: 모든 설정을 기본값으로 재설정
 
-#### Button Editor Dialog
+#### 버튼 편집기 대화 상자
 
-The button editor dialog appears when editing a button in settings mode. This dialog is displayed directly in the Toast window when a button is clicked in settings mode.
+버튼 편집기 대화 상자는 설정 모드에서 버튼을 편집할 때 나타납니다. 이 대화 상자는 설정 모드에서 버튼을 클릭하면 Toast 윈도우에 직접 표시됩니다.
 
 ```
 ┌─────────────────────────────────────────┐
-│  Edit Button Settings                  × │
+│  버튼 설정 편집                        × │
 ├─────────────────────────────────────────┤
 │                                         │
-│  Button Name: [                    ]    │
+│  버튼 이름: [                      ]    │
 │                                         │
-│  Icon: [                          ]     │
+│  아이콘: [                        ]     │
 │                                         │
-│  Action Type: [Execute Command     ▼]   │
+│  액션 유형: [명령 실행           ▼]     │
 │                                         │
-│  Command: [                        ]    │
+│  명령: [                          ]     │
 │                                         │
-│  URL: [                            ]    │
+│  URL: [                           ]     │
 │                                         │
-│  Script: [                         ]    │
+│  스크립트: [                      ]     │
 │                                         │
-│  Key Combination: [                ]    │
+│  키 조합: [                       ]     │
 │                                         │
 ├─────────────────────────────────────────┤
-│  [Save]                      [Cancel]   │
+│  [저장]                        [취소]   │
 └─────────────────────────────────────────┘
 ```
 
-- **Dialog Header**:
-  - **Title**: "Edit Button Settings"
-  - **Close Button**: Closes the dialog
-- **Button Properties**:
-  - **Button Name**: Display name of the button
-  - **Icon**: Emoji or custom icon
-  - **Action Type**: Type of action to execute (exec, open, script, shortcut)
-- **Action Parameters**: Different parameters based on the selected action type:
-  - **Execute Command**: Command field
-  - **Open URL**: URL field
-  - **Run Script**: Script text area
-  - **Execute Shortcut**: Key Combination field
-- **Dialog Footer**:
-  - **Save Button**: Saves the button changes
-  - **Cancel Button**: Cancels changes and closes the dialog
+- **대화 상자 헤더**:
+  - **제목**: "버튼 설정 편집"
+  - **닫기 버튼**: 대화 상자 닫기
+- **버튼 속성**:
+  - **버튼 이름**: 버튼의 표시 이름
+  - **아이콘**: 이모지 또는 사용자 정의 아이콘
+  - **액션 유형**: 실행할 액션 유형(exec, open, script, shortcut)
+- **액션 매개변수**: 선택한 액션 유형에 따른 다른 매개변수:
+  - **명령 실행**: 명령 필드
+  - **URL 열기**: URL 필드
+  - **스크립트 실행**: 스크립트 텍스트 영역
+  - **단축키 실행**: 키 조합 필드
+- **대화 상자 푸터**:
+  - **저장 버튼**: 버튼 변경 사항 저장
+  - **취소 버튼**: 변경 취소 및 대화 상자 닫기
 
-Note: The shortcut key cannot be changed when editing a button as it's used as the button's identifier within a page.
+참고: 버튼을 편집할 때 단축키를 변경할 수 없습니다. 단축키는 페이지 내에서 버튼의 식별자로 사용되기 때문입니다.
 
-### Navigation
+### 네비게이션
 
-#### Tab Navigation
+#### 탭 네비게이션
 
-- **Click**: Switch between tabs
-- **Tab Key**: Navigate between form controls
-- **Enter**: Activate buttons or submit forms
+- **클릭**: 탭 간 전환
+- **Tab 키**: 폼 컨트롤 간 이동
+- **Enter**: 버튼 활성화 또는 폼 제출
 
-#### Button List Navigation
+#### 버튼 목록 네비게이션
 
-- **Scroll**: Scroll through the button list
-- **Click**: Select a button to edit or delete
+- **스크롤**: 버튼 목록 스크롤
+- **클릭**: 편집하거나 삭제할 버튼 선택
 
-#### Dialog Navigation
+#### 대화 상자 네비게이션
 
-- **Tab Key**: Navigate between form controls
-- **Enter**: Submit the form
-- **Escape**: Cancel and close the dialog
+- **Tab 키**: 폼 컨트롤 간 이동
+- **Enter**: 폼 제출
+- **Escape**: 취소 및 대화 상자 닫기
 
-## System Tray Menu
+## 시스템 트레이 메뉴
 
-The system tray menu provides quick access to Toast App functions.
+시스템 트레이 메뉴는 Toast 앱 기능에 빠르게 접근할 수 있게 합니다.
 
 ```
 ┌─────────────────┐
-│  Open Toast     │
+│  Toast 열기     │
 ├─────────────────┤
-│  Settings       │
+│  설정           │
 ├─────────────────┤
-│  About Toast    │
+│  Toast 정보     │
 ├─────────────────┤
-│  Quit           │
+│  종료           │
 └─────────────────┘
 ```
 
-### Menu Items
+### 메뉴 항목
 
-- **Open Toast**: Opens the Toast window
-- **Settings**: Opens the Settings window
-- **About Toast**: Shows information about Toast
-- **Quit**: Quits the application
+- **Toast 열기**: Toast 윈도우 열기
+- **설정**: 설정 윈도우 열기
+- **Toast 정보**: Toast에 대한 정보 표시
+- **종료**: 애플리케이션 종료
 
-### Navigation
+### 네비게이션
 
-- **Click**: Select a menu item
-- **Hover**: Highlight a menu item
-- **Escape**: Close the menu
+- **클릭**: 메뉴 항목 선택
+- **호버**: 메뉴 항목 강조 표시
+- **Escape**: 메뉴 닫기
 
-## Navigation Flow
+## 네비게이션 흐름
 
-### Application Startup
+### 애플리케이션 시작
 
-1. Toast App starts
-2. If it's the first launch, the Settings window opens
-3. Otherwise, Toast App runs in the background with a system tray icon
+1. Toast 앱 시작
+2. 첫 실행인 경우 설정 윈도우 열림
+3. 그렇지 않으면 Toast 앱이 시스템 트레이 아이콘과 함께 백그라운드에서 실행됨
 
-### Opening the Toast Window
+### Toast 윈도우 열기
 
-1. User presses the global hotkey
-2. Toast window appears at the configured position
-3. User can search, navigate, or execute buttons
-4. Toast window closes after an action or when the user clicks outside
+1. 사용자가 전역 단축키 누름
+2. Toast 윈도우가 구성된 위치에 나타남
+3. 사용자가 검색, 탐색 또는 버튼 실행 가능
+4. 액션 후 또는 사용자가 외부를 클릭하면 Toast 윈도우 닫힘
 
-### Configuring Settings
+### 설정 구성
 
-1. User right-clicks the system tray icon
-2. User selects "Settings" from the menu
-3. Settings window opens
-4. User navigates between tabs to configure different settings
-5. User saves or cancels changes
+1. 사용자가 시스템 트레이 아이콘 우클릭
+2. 사용자가 메뉴에서 "설정" 선택
+3. 설정 윈도우 열림
+4. 사용자가 탭 간 이동하여 다양한 설정 구성
+5. 사용자가 변경 사항 저장 또는 취소
 
-### Adding or Editing a Button
+### 버튼 추가 또는 편집
 
-1. User opens the Settings window
-2. User navigates to the Buttons tab
-3. User clicks "Add Button" or "Edit" on an existing button
-4. Button editor dialog opens
-5. User configures the button properties
-6. User saves or cancels changes
+1. 사용자가 설정 윈도우 열기
+2. 사용자가 버튼 탭으로 이동
+3. 사용자가 "버튼 추가" 또는 기존 버튼의 "편집" 클릭
+4. 버튼 편집기 대화 상자 열림
+5. 사용자가 버튼 속성 구성
+6. 사용자가 변경 사항 저장 또는 취소
 
-### Quitting the Application
+### 애플리케이션 종료
 
-1. User right-clicks the system tray icon
-2. User selects "Quit" from the menu
-3. Toast App closes
+1. 사용자가 시스템 트레이 아이콘 우클릭
+2. 사용자가 메뉴에서 "종료" 선택
+3. Toast 앱 닫힘
 
-## Page Limits and Authentication
+## 페이지 제한 및 인증
 
-Toast App provides different page limits based on your account status:
+Toast 앱은 계정 상태에 따라 다양한 페이지 제한을 제공합니다:
 
-### Page Allocation Policy
+### 페이지 할당 정책
 
-- **Free Users**: All users without authentication receive 1 page for basic functionality.
-- **Authenticated Users**: Users who have logged in and been authenticated receive up to 3 pages.
-- **Subscribers**: Users with an active subscription can create up to 9 pages.
+- **무료 사용자**: 인증 없이 모든 사용자는 기본 기능을 위한 1 페이지를 받습니다.
+- **인증된 사용자**: 로그인하고 인증된 사용자는 최대 3 페이지를 받습니다.
+- **구독자**: 활성 구독이 있는 사용자는 최대 9 페이지를 생성할 수 있습니다.
 
-### Authentication Process
+### 인증 프로세스
 
-1. Open Settings and navigate to the Account tab
-2. Click "Log In" and authenticate through the Toast Web service
-3. Your account status is automatically verified and page limits updated accordingly
+1. 설정을 열고 계정 탭으로 이동
+2. "로그인" 클릭 및 Toast 웹 서비스를 통해 인증
+3. 계정 상태가 자동으로 확인되고 페이지 제한이 그에 따라 업데이트됨
 
-### Subscription Benefits
+### 구독 혜택
 
-Subscribing to Toast App Premium provides additional benefits:
-- Increased page limit (up to 9 pages)
-- Access to premium actions and integrations
-- Cloud backup of configurations
-- Priority support
+Toast 앱 프리미엄 구독은 추가 혜택을 제공합니다:
+- 증가된 페이지 제한(최대 9 페이지)
+- 프리미엄 액션 및 통합 액세스
+- 구성의 클라우드 백업
+- 우선 지원
 
-## Responsive Behavior
+## 반응형 동작
 
-### Toast Window
+### Toast 윈도우
 
-- **Small Screen**: Buttons arranged in a 3x3 grid
-- **Medium Screen**: Buttons arranged in a 4x3 grid
-- **Large Screen**: Buttons arranged in a 5x3 grid
+- **작은 화면**: 3x3 그리드로 버튼 배열
+- **중간 화면**: 4x3 그리드로 버튼 배열
+- **큰 화면**: 5x3 그리드로 버튼 배열
 
-### Settings Window
+### 설정 윈도우
 
-- **Small Screen**: Sidebar collapses to a dropdown menu
-- **Medium Screen**: Sidebar and content side by side
-- **Large Screen**: Wider content area with more space for controls
+- **작은 화면**: 사이드바가 드롭다운 메뉴로 축소
+- **중간 화면**: 사이드바와 콘텐츠 나란히 배치
+- **큰 화면**: 더 넓은 콘텐츠 영역과 컨트롤을 위한 더 많은 공간
 
-## Accessibility Considerations
+## 접근성 고려 사항
 
-### Keyboard Navigation
+### 키보드 네비게이션
 
-- All functions are accessible via keyboard
-- Tab order follows a logical flow
-- Focus indicators are visible
+- 모든 기능은 키보드로 접근 가능
+- 탭 순서는 논리적 흐름을 따름
+- 포커스 표시기가 가시적임
 
-### Screen Readers
+### 스크린 리더
 
-- All controls have appropriate labels
-- Status messages are announced
-- Dialog focus is managed properly
+- 모든 컨트롤에 적절한 레이블이 있음
+- 상태 메시지가 알려짐
+- 대화 상자 포커스가 적절하게 관리됨
 
-### Color Contrast
+### 색상 대비
 
-- Text has sufficient contrast against backgrounds
-- Focus indicators are visible
-- Status messages use appropriate colors
+- 텍스트는 배경에 대해 충분한 대비를 가짐
+- 포커스 표시기가 가시적임
+- 상태 메시지는 적절한 색상 사용
 
-## Future UI Enhancements
+## 향후 UI 개선 사항
 
-### Toast Window
+### Toast 윈도우
 
-- Customizable button size and spacing
-- Drag and drop to reorder buttons
-- Button categories and folders
-- Search history and favorites
+- 사용자 정의 가능한 버튼 크기 및 간격
+- 버튼 재정렬을 위한 드래그 앤 드롭
+- 버튼 카테고리 및 폴더
+- 검색 기록 및 즐겨찾기
 
-### Settings Window
+### 설정 윈도우
 
-- Visual button editor with drag and drop
-- Preview of the Toast window
-- Theme customization
-- Keyboard shortcut editor
+- 드래그 앤 드롭이 있는 시각적 버튼 편집기
+- Toast 윈도우 미리보기
+- 테마 사용자 지정
+- 키보드 단축키 편집기
 
-## Conclusion
+## 결론
 
-The Toast App UI is designed to be simple, efficient, and accessible. The Toast window provides quick access to actions, while the Settings window allows for comprehensive configuration. The system tray integration ensures that the app stays out of the way when not needed.
+Toast 앱 UI는 간단하고 효율적이며 접근 가능하도록 설계되었습니다. Toast 윈도우는 액션에 빠르게 접근할 수 있게 하고, 설정 윈도우는 종합적인 구성을 가능하게 합니다. 시스템 트레이 통합으로 필요하지 않을 때 앱이 방해가 되지 않습니다.

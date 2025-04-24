@@ -1,375 +1,375 @@
-# Toast App Project Structure
+# Toast 앱 프로젝트 구조
 
-This document provides a detailed overview of the Toast App project structure, explaining the purpose and organization of directories and files.
+이 문서는 Toast 앱 프로젝트 구조에 대한 상세한 개요를 제공하며, 디렉토리와 파일의 목적 및 구성을 설명합니다.
 
-## Directory Structure
+## 디렉토리 구조
 
 ```
 toast-app/
-├── assets/                # Application assets
-│   └── icons/             # Application icons
-├── docs/                  # Documentation assets
-│   └── images/            # Documentation images
-├── src/                   # Source code
-│   ├── main/              # Main process code
-│   │   ├── actions/       # Action implementations
-│   │   ├── config.js      # Configuration management
-│   │   ├── executor.js    # Action execution
-│   │   ├── ipc.js         # IPC handling
-│   │   ├── shortcuts.js   # Global shortcuts
-│   │   ├── tray.js        # System tray
-│   │   └── windows.js     # Window management
-│   ├── renderer/          # Renderer process code
-│   │   ├── pages/         # Application pages
-│   │   │   ├── toast/     # Toast popup UI
-│   │   │   └── settings/  # Settings UI
-│   │   └── preload/       # Preload scripts
-│   └── index.js           # Application entry point
-├── tests/                 # Test files
-│   ├── unit/              # Unit tests
-│   ├── integration/       # Integration tests
-│   └── e2e/               # End-to-end tests
-└── [Configuration Files]  # Various configuration files
+├── assets/                # 애플리케이션 자산
+│   └── icons/             # 애플리케이션 아이콘
+├── docs/                  # 문서 자산
+│   └── images/            # 문서 이미지
+├── src/                   # 소스 코드
+│   ├── main/              # 메인 프로세스 코드
+│   │   ├── actions/       # 액션 구현
+│   │   ├── config.js      # 구성 관리
+│   │   ├── executor.js    # 액션 실행
+│   │   ├── ipc.js         # IPC 처리
+│   │   ├── shortcuts.js   # 글로벌 단축키
+│   │   ├── tray.js        # 시스템 트레이
+│   │   └── windows.js     # 윈도우 관리
+│   ├── renderer/          # 렌더러 프로세스 코드
+│   │   ├── pages/         # 애플리케이션 페이지
+│   │   │   ├── toast/     # Toast 팝업 UI
+│   │   │   └── settings/  # 설정 UI
+│   │   └── preload/       # 프리로드 스크립트
+│   └── index.js           # 애플리케이션 진입점
+├── tests/                 # 테스트 파일
+│   ├── unit/              # 단위 테스트
+│   ├── integration/       # 통합 테스트
+│   └── e2e/               # 엔드 투 엔드 테스트
+└── [구성 파일]             # 다양한 구성 파일
 ```
 
-## Key Files and Directories
+## 주요 파일 및 디렉토리
 
-### Root Directory
+### 루트 디렉토리
 
-- **package.json**: Project metadata, dependencies, and scripts
-- **package-lock.json**: Dependency lock file
-- **.gitignore**: Git ignore rules
-- **.eslintrc.js**: ESLint configuration
-- **.prettierrc**: Prettier configuration
-- **jest.config.js**: Jest testing configuration
-- **README.md**: Project overview and documentation
+- **package.json**: 프로젝트 메타데이터, 의존성 및 스크립트
+- **package-lock.json**: 의존성 잠금 파일
+- **.gitignore**: Git 무시 규칙
+- **.eslintrc.js**: ESLint 구성
+- **.prettierrc**: Prettier 구성
+- **jest.config.js**: Jest 테스팅 구성
+- **README.md**: 프로젝트 개요 및 문서
 
-### Documentation
+### 문서
 
-- **ARCHITECTURE.md**: System architecture and design decisions
-- **API_DOCUMENTATION.md**: Internal API documentation
-- **CONFIG_SCHEMA.md**: Configuration options and schema
-- **CONTRIBUTING.md**: Contribution guidelines
-- **DEVELOPMENT_ROADMAP.md**: Future development plans
-- **PAGES.md**: Page layout and navigation structure
-- **PROJECT_STRUCTURE.md**: This file - project structure documentation
-- **SCENARIOS.md**: User scenarios and workflows
-- **SECURITY.md**: Security policies and procedures
-- **TECHNICAL_REQUIREMENTS.md**: Technical specifications and requirements
-- **TESTING_STRATEGY.md**: Testing approach and methodologies
-- **USER_GUIDE.md**: End-user documentation
+- **ARCHITECTURE.md**: 시스템 아키텍처 및 설계 결정
+- **API_DOCUMENTATION.md**: 내부 API 문서
+- **CONFIG_SCHEMA.md**: 구성 옵션 및 스키마
+- **CONTRIBUTING.md**: 기여 가이드라인
+- **DEVELOPMENT_ROADMAP.md**: 향후 개발 계획
+- **PAGES.md**: 페이지 레이아웃 및 네비게이션 구조
+- **PROJECT_STRUCTURE.md**: 이 파일 - 프로젝트 구조 문서
+- **SCENARIOS.md**: 사용자 시나리오 및 워크플로우
+- **SECURITY.md**: 보안 정책 및 절차
+- **TECHNICAL_REQUIREMENTS.md**: 기술 사양 및 요구 사항
+- **TESTING_STRATEGY.md**: 테스팅 접근 방식 및 방법론
+- **USER_GUIDE.md**: 최종 사용자 문서
 
-### Source Code
+### 소스 코드
 
-#### Main Process (`src/main/`)
+#### 메인 프로세스 (`src/main/`)
 
-The main process is responsible for application lifecycle, window management, and system integration.
+메인 프로세스는 애플리케이션 수명 주기, 윈도우 관리 및 시스템 통합을 담당합니다.
 
-- **index.js**: Application entry point
-- **config.js**: Configuration management using electron-store
-- **windows.js**: Window creation and management
-- **tray.js**: System tray icon and menu
-- **shortcuts.js**: Global shortcut registration and handling
-- **ipc.js**: Inter-process communication setup
-- **executor.js**: Action execution orchestration
+- **index.js**: 애플리케이션 진입점
+- **config.js**: electron-store를 사용한 구성 관리
+- **windows.js**: 윈도우 생성 및 관리
+- **tray.js**: 시스템 트레이 아이콘 및 메뉴
+- **shortcuts.js**: 글로벌 단축키 등록 및 처리
+- **ipc.js**: 프로세스 간 통신 설정
+- **executor.js**: 액션 실행 조정
 
-#### Action Handlers (`src/main/actions/`)
+#### 액션 핸들러 (`src/main/actions/`)
 
-Action handlers implement specific action types.
+액션 핸들러는 특정 액션 유형을 구현합니다.
 
-- **exec.js**: Execute shell commands
-- **open.js**: Open URLs, files, and folders
-- **shortcut.js**: Simulate keyboard shortcuts
-- **script.js**: Execute custom scripts
+- **exec.js**: 셸 명령 실행
+- **open.js**: URL, 파일 및 폴더 열기
+- **shortcut.js**: 키보드 단축키 시뮬레이션
+- **script.js**: 사용자 정의 스크립트 실행
 
-#### Renderer Process (`src/renderer/`)
+#### 렌더러 프로세스 (`src/renderer/`)
 
-The renderer process handles the user interface.
+렌더러 프로세스는 사용자 인터페이스를 처리합니다.
 
-##### Preload Scripts (`src/renderer/preload/`)
+##### 프리로드 스크립트 (`src/renderer/preload/`)
 
-Preload scripts provide a secure bridge between renderer and main processes.
+프리로드 스크립트는 렌더러와 메인 프로세스 간의 안전한 브리지를 제공합니다.
 
-- **toast.js**: Preload script for the Toast window
-- **settings.js**: Preload script for the Settings window
+- **toast.js**: Toast 윈도우용 프리로드 스크립트
+- **settings.js**: 설정 윈도우용 프리로드 스크립트
 
-##### Pages (`src/renderer/pages/`)
+##### 페이지 (`src/renderer/pages/`)
 
-Pages contain the HTML, CSS, and JavaScript for each window.
+페이지에는 각 윈도우의 HTML, CSS 및 JavaScript가 포함되어 있습니다.
 
-###### Toast Window (`src/renderer/pages/toast/`)
+###### Toast 윈도우 (`src/renderer/pages/toast/`)
 
-- **index.html**: HTML structure for the Toast window
-- **styles.css**: CSS styles for the Toast window
-- **index.js**: JavaScript for the Toast window
+- **index.html**: Toast 윈도우의 HTML 구조
+- **styles.css**: Toast 윈도우의 CSS 스타일
+- **index.js**: Toast 윈도우의 JavaScript
 
-###### Settings Window (`src/renderer/pages/settings/`)
+###### 설정 윈도우 (`src/renderer/pages/settings/`)
 
-- **index.html**: HTML structure for the Settings window
-- **styles.css**: CSS styles for the Settings window
-- **index.js**: JavaScript for the Settings window
+- **index.html**: 설정 윈도우의 HTML 구조
+- **styles.css**: 설정 윈도우의 CSS 스타일
+- **index.js**: 설정 윈도우의 JavaScript
 
-### Assets (`assets/`)
+### 자산 (`assets/`)
 
-- **icons/**: Application icons in various formats
-  - **icon.svg**: Vector icon
-  - **icon.icns**: macOS icon
-  - **icon.ico**: Windows icon
-  - **tray-icon.png**: System tray icon
-  - **tray-icon-Template.png**: macOS template icon for dark mode
+- **icons/**: 다양한 형식의 애플리케이션 아이콘
+  - **icon.svg**: 벡터 아이콘
+  - **icon.icns**: macOS 아이콘
+  - **icon.ico**: Windows 아이콘
+  - **tray-icon.png**: 시스템 트레이 아이콘
+  - **tray-icon-Template.png**: 다크 모드용 macOS 템플릿 아이콘
 
-### Tests (`tests/`)
+### 테스트 (`tests/`)
 
-- **unit/**: Unit tests for individual functions and components
-- **integration/**: Integration tests for component interactions
-- **e2e/**: End-to-end tests for user workflows
-- **mocks/**: Mock objects and functions for testing
-- **setup.js**: Test setup configuration
+- **unit/**: 개별 함수 및 컴포넌트에 대한 단위 테스트
+- **integration/**: 컴포넌트 상호 작용에 대한 통합 테스트
+- **e2e/**: 사용자 워크플로우에 대한 엔드 투 엔드 테스트
+- **mocks/**: 테스트용 모의 객체 및 함수
+- **setup.js**: 테스트 설정 구성
 
-## File Details
+## 파일 상세 정보
 
-### Main Process Files
+### 메인 프로세스 파일
 
 #### `src/index.js`
 
-The entry point for the Electron application. It initializes the app, creates windows, and sets up event listeners.
+Electron 애플리케이션의 진입점입니다. 앱을 초기화하고, 윈도우를 생성하며, 이벤트 리스너를 설정합니다.
 
-Key responsibilities:
-- Initialize the application
-- Create windows
-- Register global shortcuts
-- Set up IPC handlers
-- Handle application lifecycle events
+주요 책임:
+- 애플리케이션 초기화
+- 윈도우 생성
+- 글로벌 단축키 등록
+- IPC 핸들러 설정
+- 애플리케이션 수명 주기 이벤트 처리
 
 #### `src/main/config.js`
 
-Manages application configuration using electron-store.
+electron-store를 사용하여 애플리케이션 구성을 관리합니다.
 
-Key responsibilities:
-- Define configuration schema
-- Provide default values
-- Validate configuration
-- Handle configuration migration
-- Import/export configuration
+주요 책임:
+- 구성 스키마 정의
+- 기본값 제공
+- 구성 유효성 검사
+- 구성 마이그레이션 처리
+- 구성 가져오기/내보내기
 
 #### `src/main/windows.js`
 
-Manages window creation, positioning, and lifecycle.
+윈도우 생성, 위치 지정 및 수명 주기를 관리합니다.
 
-Key responsibilities:
-- Create Toast and Settings windows
-- Position windows based on configuration
-- Show and hide windows
-- Handle window events
+주요 책임:
+- Toast 및 설정 윈도우 생성
+- 구성에 따른 윈도우 위치 지정
+- 윈도우 표시 및 숨기기
+- 윈도우 이벤트 처리
 
 #### `src/main/tray.js`
 
-Manages the system tray icon and menu.
+시스템 트레이 아이콘 및 메뉴를 관리합니다.
 
-Key responsibilities:
-- Create and update the tray icon
-- Build the tray context menu
-- Handle tray events
+주요 책임:
+- 트레이 아이콘 생성 및 업데이트
+- 트레이 컨텍스트 메뉴 구성
+- 트레이 이벤트 처리
 
 #### `src/main/shortcuts.js`
 
-Manages global keyboard shortcuts.
+글로벌 키보드 단축키를 관리합니다.
 
-Key responsibilities:
-- Register and unregister global shortcuts
-- Handle shortcut events
-- Position the Toast window
+주요 책임:
+- 글로벌 단축키 등록 및 해제
+- 단축키 이벤트 처리
+- Toast 윈도우 위치 지정
 
 #### `src/main/ipc.js`
 
-Sets up IPC channels and handlers.
+IPC 채널 및 핸들러를 설정합니다.
 
-Key responsibilities:
-- Define IPC channels
-- Handle IPC messages
-- Forward actions to the Executor
-- Send configuration updates to renderers
+주요 책임:
+- IPC 채널 정의
+- IPC 메시지 처리
+- 액션을 실행기에 전달
+- 구성 업데이트를 렌더러에 전송
 
 #### `src/main/executor.js`
 
-Orchestrates action execution.
+액션 실행을 조정합니다.
 
-Key responsibilities:
-- Validate actions
-- Determine action type
-- Forward actions to specific handlers
-- Handle action results
+주요 책임:
+- 액션 유효성 검사
+- 액션 유형 결정
+- 액션을 특정 핸들러에 전달
+- 액션 결과 처리
 
-### Action Handler Files
+### 액션 핸들러 파일
 
 #### `src/main/actions/exec.js`
 
-Handles executing shell commands.
+셸 명령 실행을 처리합니다.
 
-Key responsibilities:
-- Execute shell commands
-- Handle command output
-- Support working directory
-- Support terminal execution
+주요 책임:
+- 셸 명령 실행
+- 명령 출력 처리
+- 작업 디렉토리 지원
+- 터미널 실행 지원
 
 #### `src/main/actions/open.js`
 
-Handles opening URLs, files, and folders.
+URL, 파일 및 폴더 열기를 처리합니다.
 
-Key responsibilities:
-- Open URLs in the default browser
-- Open files with associated applications
-- Open folders in the file explorer
+주요 책임:
+- 기본 브라우저에서 URL 열기
+- 관련 애플리케이션으로 파일 열기
+- 파일 탐색기에서 폴더 열기
 
 #### `src/main/actions/shortcut.js`
 
-Handles simulating keyboard shortcuts.
+키보드 단축키 시뮬레이션을 처리합니다.
 
-Key responsibilities:
-- Parse shortcut strings
-- Simulate key presses
-- Handle platform-specific shortcuts
+주요 책임:
+- 단축키 문자열 파싱
+- 키 누르기 시뮬레이션
+- 플랫폼별 단축키 처리
 
 #### `src/main/actions/script.js`
 
-Handles executing custom scripts.
+사용자 정의 스크립트 실행을 처리합니다.
 
-Key responsibilities:
-- Execute JavaScript scripts
-- Execute AppleScript (macOS)
-- Execute PowerShell scripts (Windows)
-- Execute Bash scripts (macOS/Linux)
+주요 책임:
+- JavaScript 스크립트 실행
+- AppleScript 실행(macOS)
+- PowerShell 스크립트 실행(Windows)
+- Bash 스크립트 실행(macOS/Linux)
 
-### Renderer Process Files
+### 렌더러 프로세스 파일
 
 #### `src/renderer/preload/toast.js`
 
-Preload script for the Toast window.
+Toast 윈도우용 프리로드 스크립트입니다.
 
-Key responsibilities:
-- Expose IPC methods to the renderer
-- Handle configuration updates
-- Execute actions
-- Control window visibility
+주요 책임:
+- 렌더러에 IPC 메서드 노출
+- 구성 업데이트 처리
+- 액션 실행
+- 윈도우 가시성 제어
 
 #### `src/renderer/preload/settings.js`
 
-Preload script for the Settings window.
+설정 윈도우용 프리로드 스크립트입니다.
 
-Key responsibilities:
-- Expose IPC methods to the renderer
-- Get and set configuration
-- Test actions
-- Show dialogs
-- Control application
+주요 책임:
+- 렌더러에 IPC 메서드 노출
+- 구성 가져오기 및 설정
+- 액션 테스트
+- 대화 상자 표시
+- 애플리케이션 제어
 
 #### `src/renderer/pages/toast/index.html`
 
-HTML structure for the Toast window.
+Toast 윈도우의 HTML 구조입니다.
 
-Key elements:
-- Toast container
-- Search input
-- Button container
-- Status container
-- Button template
+주요 요소:
+- Toast 컨테이너
+- 검색 입력
+- 버튼 컨테이너
+- 상태 컨테이너
+- 버튼 템플릿
 
 #### `src/renderer/pages/toast/styles.css`
 
-CSS styles for the Toast window.
+Toast 윈도우의 CSS 스타일입니다.
 
-Key features:
-- Light and dark theme support
-- Responsive layout
-- Button styling
-- Animation effects
+주요 기능:
+- 라이트 및 다크 테마 지원
+- 반응형 레이아웃
+- 버튼 스타일링
+- 애니메이션 효과
 
 #### `src/renderer/pages/toast/index.js`
 
-JavaScript for the Toast window.
+Toast 윈도우의 JavaScript입니다.
 
-Key responsibilities:
-- Initialize the UI
-- Handle button clicks
-- Handle keyboard navigation
-- Execute actions
-- Filter buttons based on search
+주요 책임:
+- UI 초기화
+- 버튼 클릭 처리
+- 키보드 탐색 처리
+- 액션 실행
+- 검색에 따른 버튼 필터링
 
 #### `src/renderer/pages/settings/index.html`
 
-HTML structure for the Settings window.
+설정 윈도우의 HTML 구조입니다.
 
-Key elements:
-- Settings tabs
-- Form controls
-- Button editor dialog
-- Action parameter templates
+주요 요소:
+- 설정 탭
+- 폼 컨트롤
+- 버튼 편집기 대화 상자
+- 액션 매개변수 템플릿
 
 #### `src/renderer/pages/settings/styles.css`
 
-CSS styles for the Settings window.
+설정 윈도우의 CSS 스타일입니다.
 
-Key features:
-- Light and dark theme support
-- Form styling
-- Dialog styling
-- Tab navigation
+주요 기능:
+- 라이트 및 다크 테마 지원
+- 폼 스타일링
+- 대화 상자 스타일링
+- 탭 네비게이션
 
 #### `src/renderer/pages/settings/index.js`
 
-JavaScript for the Settings window.
+설정 윈도우의 JavaScript입니다.
 
-Key responsibilities:
-- Initialize the UI
-- Handle form submission
-- Validate inputs
-- Save configuration
-- Manage buttons
+주요 책임:
+- UI 초기화
+- 폼 제출 처리
+- 입력 유효성 검사
+- 구성 저장
+- 버튼 관리
 
-## Build and Configuration Files
+## 빌드 및 구성 파일
 
 ### `package.json`
 
-Defines project metadata, dependencies, and scripts.
+프로젝트 메타데이터, 의존성 및 스크립트를 정의합니다.
 
-Key sections:
-- Project metadata
-- Dependencies
-- Development dependencies
-- Scripts
-- Build configuration
+주요 섹션:
+- 프로젝트 메타데이터
+- 의존성
+- 개발 의존성
+- 스크립트
+- 빌드 구성
 
 ### `.eslintrc.js`
 
-ESLint configuration for code linting.
+코드 린팅을 위한 ESLint 구성입니다.
 
-Key features:
-- JavaScript rules
-- Electron-specific rules
-- Code style rules
+주요 기능:
+- JavaScript 규칙
+- Electron 특정 규칙
+- 코드 스타일 규칙
 
 ### `.prettierrc`
 
-Prettier configuration for code formatting.
+코드 포맷팅을 위한 Prettier 구성입니다.
 
-Key settings:
-- Tab width
-- Use of semicolons
-- Quote style
-- Trailing commas
+주요 설정:
+- 탭 너비
+- 세미콜론 사용
+- 따옴표 스타일
+- 후행 쉼표
 
 ### `jest.config.js`
 
-Jest configuration for testing.
+테스팅을 위한 Jest 구성입니다.
 
-Key settings:
-- Test environment
-- Coverage settings
-- Module aliases
-- Test matchers
+주요 설정:
+- 테스트 환경
+- 커버리지 설정
+- 모듈 별칭
+- 테스트 매처
 
-## Conclusion
+## 결론
 
-This project structure follows a modular design with clear separation of concerns. The main process handles system-level operations, while the renderer processes handle the user interface. The action system is designed to be extensible, making it easy to add new action types in the future.
+이 프로젝트 구조는 명확한 관심사 분리를 통한 모듈식 설계를 따릅니다. 메인 프로세스는 시스템 수준 작업을 처리하고, 렌더러 프로세스는 사용자 인터페이스를 처리합니다. 액션 시스템은 확장 가능하도록 설계되어 향후 새로운 액션 유형을 쉽게 추가할 수 있습니다.
 
-The documentation is comprehensive, covering architecture, API, configuration, and user guides. The testing strategy includes unit, integration, and end-to-end tests to ensure code quality and reliability.
+문서는 포괄적이며 아키텍처, API, 구성 및 사용자 가이드를 다룹니다. 테스팅 전략은 코드 품질과 신뢰성을 보장하기 위해 단위, 통합 및 엔드 투 엔드 테스트를 포함합니다.

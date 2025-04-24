@@ -1,14 +1,14 @@
-# Toast App Architecture
+# Toast 앱 아키텍처
 
-This document describes the high-level architecture of Toast App, including its components, data flow, and design decisions.
+이 문서는 Toast 앱의 고수준 아키텍처를 설명하며, 컴포넌트, 데이터 흐름 및 설계 결정을 포함합니다.
 
-## Overview
+## 개요
 
-Toast App is an Electron-based desktop application that provides a customizable shortcut launcher for macOS and Windows. The application follows a modular architecture with clear separation of concerns between the main process and renderer processes.
+Toast 앱은 macOS 및 Windows용 사용자 정의 단축키 실행기를 제공하는 Electron 기반 데스크톱 애플리케이션입니다. 이 애플리케이션은 메인 프로세스와 렌더러 프로세스 간의 명확한 관심사 분리와 함께 모듈식 아키텍처를 따릅니다.
 
-## System Architecture
+## 시스템 아키텍처
 
-### High-Level Components
+### 고수준 컴포넌트
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -31,30 +31,30 @@ Toast App is an Electron-based desktop application that provides a customizable 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Main Process
+### 메인 프로세스
 
-The main process is responsible for:
+메인 프로세스는 다음을 담당합니다:
 
-1. Application lifecycle management
-2. Window management
-3. System tray integration
-4. Global shortcut registration
-5. Configuration management
-6. Action execution
-7. Inter-process communication (IPC)
+1. 애플리케이션 수명 주기 관리
+2. 윈도우 관리
+3. 시스템 트레이 통합
+4. 전역 단축키 등록
+5. 구성 관리
+6. 액션 실행
+7. 프로세스 간 통신(IPC)
 
-### Renderer Processes
+### 렌더러 프로세스
 
-Toast App has two main renderer processes:
+Toast 앱에는 두 가지 주요 렌더러 프로세스가 있습니다:
 
-1. **Toast Window**: The popup window that displays buttons and executes actions
-2. **Settings Window**: The window for configuring the application
+1. **Toast 윈도우**: 버튼을 표시하고 액션을 실행하는 팝업 윈도우
+2. **설정 윈도우**: 애플리케이션을 구성하기 위한 윈도우
 
-Each renderer process has its own HTML, CSS, and JavaScript files, and communicates with the main process via IPC.
+각 렌더러 프로세스는 자체 HTML, CSS 및 JavaScript 파일을 가지며, IPC를 통해 메인 프로세스와 통신합니다.
 
-## Component Architecture
+## 컴포넌트 아키텍처
 
-### Main Process Components
+### 메인 프로세스 컴포넌트
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -83,91 +83,91 @@ Each renderer process has its own HTML, CSS, and JavaScript files, and communica
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### Config Manager (`src/main/config.js`)
+#### 구성 관리자 (`src/main/config.js`)
 
-Handles configuration storage, validation, and migration using electron-store.
+electron-store를 사용하여 구성 저장, 유효성 검사 및 마이그레이션을 처리합니다.
 
-**Responsibilities:**
-- Store and retrieve configuration
-- Validate configuration against schema
-- Provide default values
-- Handle configuration migration
-- Import/export configuration
+**책임:**
+- 구성 저장 및 검색
+- 스키마에 대한 구성 유효성 검사
+- 기본값 제공
+- 구성 마이그레이션 처리
+- 구성 가져오기/내보내기
 
-**Configuration Schema:**
-- **globalHotkey**: Global keyboard shortcut to trigger the Toast popup
-- **pages**: Array of page configurations, each containing buttons
-- **appearance**: Visual appearance settings (theme, position, size, opacity, buttonLayout)
-- **advanced**: Advanced behavior settings (launchAtLogin, hideAfterAction, etc.)
-- **subscription**: Subscription status and features
-- **firstLaunchCompleted**: Flag indicating whether the first launch setup has been completed
+**구성 스키마:**
+- **globalHotkey**: Toast 팝업을 트리거하는 전역 키보드 단축키
+- **pages**: 버튼을 포함하는 페이지 구성 배열
+- **appearance**: 시각적 외관 설정(테마, 위치, 크기, 불투명도, 버튼 레이아웃)
+- **advanced**: 고급 동작 설정(시작 시 실행, 액션 후 숨기기 등)
+- **subscription**: 구독 상태 및 기능
+- **firstLaunchCompleted**: 첫 실행 설정이 완료되었는지 여부를 나타내는 플래그
 
-#### Windows Manager (`src/main/windows.js`)
+#### 윈도우 관리자 (`src/main/windows.js`)
 
-Manages the creation, positioning, and lifecycle of application windows.
+애플리케이션 윈도우의 생성, 위치 지정 및 수명 주기를 관리합니다.
 
-**Responsibilities:**
-- Create Toast and Settings windows
-- Position windows based on configuration
-- Show and hide windows
-- Handle window events
-- Send configuration to renderer processes
+**책임:**
+- Toast 및 설정 윈도우 생성
+- 구성에 따른 윈도우 위치 지정
+- 윈도우 표시 및 숨기기
+- 윈도우 이벤트 처리
+- 렌더러 프로세스에 구성 전송
 
-#### Tray Manager (`src/main/tray.js`)
+#### 트레이 관리자 (`src/main/tray.js`)
 
-Manages the system tray icon and menu.
+시스템 트레이 아이콘과 메뉴를 관리합니다.
 
-**Responsibilities:**
-- Create and update the tray icon
-- Build the tray context menu
-- Handle tray events
+**책임:**
+- 트레이 아이콘 생성 및 업데이트
+- 트레이 컨텍스트 메뉴 구성
+- 트레이 이벤트 처리
 
-#### Shortcuts Manager (`src/main/shortcuts.js`)
+#### 단축키 관리자 (`src/main/shortcuts.js`)
 
-Manages global keyboard shortcuts.
+전역 키보드 단축키를 관리합니다.
 
-**Responsibilities:**
-- Register and unregister global shortcuts
-- Handle shortcut events
-- Position the Toast window based on configuration (center, top, bottom, cursor)
-- Toggle Toast window visibility
+**책임:**
+- 전역 단축키 등록 및 해제
+- 단축키 이벤트 처리
+- 구성에 따른 Toast 윈도우 위치 지정(중앙, 상단, 하단, 커서)
+- Toast 윈도우 가시성 전환
 
-#### IPC Handler (`src/main/ipc.js`)
+#### IPC 핸들러 (`src/main/ipc.js`)
 
-Handles inter-process communication between the main process and renderer processes.
+메인 프로세스와 렌더러 프로세스 간의 프로세스 간 통신을 처리합니다.
 
-**Responsibilities:**
-- Set up IPC channels
-- Handle IPC messages
-- Forward actions to the Executor
-- Send configuration updates to renderers
-- Provide methods for renderer processes to manipulate configuration
-- Handle keyboard shortcut recording
+**책임:**
+- IPC 채널 설정
+- IPC 메시지 처리
+- 실행기에 액션 전달
+- 렌더러에 구성 업데이트 전송
+- 렌더러 프로세스가 구성을 조작하기 위한 메서드 제공
+- 키보드 단축키 녹화 처리
 
-#### Executor (`src/main/executor.js`)
+#### 실행기 (`src/main/executor.js`)
 
-Executes actions based on their type.
+액션 유형에 따라 액션을 실행합니다.
 
-**Responsibilities:**
-- Validate actions
-- Execute actions
-- Handle action results
-- Forward actions to specific action handlers
-- Execute chained actions in sequence
+**책임:**
+- 액션 유효성 검사
+- 액션 실행
+- 액션 결과 처리
+- 특정 액션 핸들러에 액션 전달
+- 체인 액션을 순차적으로 실행
 
-#### Actions (`src/main/actions/*.js`)
+#### 액션 (`src/main/actions/*.js`)
 
-Implements specific action types.
+특정 액션 유형을 구현합니다.
 
-**Responsibilities:**
-- Execute specific action types (application, exec, open, shortcut, script, chain)
-- Handle action-specific parameters
-- Return standardized results
-- Handle platform-specific behavior
+**책임:**
+- 특정 액션 유형 실행(애플리케이션, 실행, 열기, 단축키, 스크립트, 체인)
+- 액션별 매개변수 처리
+- 표준화된 결과 반환
+- 플랫폼별 동작 처리
 
-#### Authentication System (`src/main/auth-manager.js` and `src/main/auth.js`)
+#### 인증 시스템 (`src/main/auth-manager.js` 및 `src/main/auth.js`)
 
-The authentication system manages user authentication with the Toast Web service and handles subscription status through several integrated components:
+인증 시스템은 Toast 웹 서비스와의 사용자 인증을 관리하고 여러 통합 컴포넌트를 통해 구독 상태를 처리합니다:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -190,69 +190,89 @@ The authentication system manages user authentication with the Toast Web service
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Authentication Components:**
+**인증 컴포넌트:**
 
-1. **Auth Manager (`auth-manager.js`)**: Central coordinator for authentication operations
-   - Synchronizes authentication state between windows
-   - Manages login/logout process
-   - Coordinates token refreshing
-   - Notifies UI components of authentication state changes
-   - Prevents window operations during authentication flows
+1. **인증 관리자 (`auth-manager.js`)**: 인증 작업의 중앙 코디네이터
+   - 창 간에 인증 상태 동기화
+   - 로그인/로그아웃 프로세스 관리
+   - 토큰 새로고침 조정
+   - UI 컴포넌트에 인증 상태 변경 알림
+   - 인증 흐름 중 창 작업 방지
 
-2. **Auth Module (`auth.js`)**: Core authentication implementation
-   - Implements OAuth 2.0 authentication flow
-   - Securely manages tokens using atomic storage
-   - Handles token validation and refresh
-   - Manages subscription levels and permissions
-   - Implements protocol handler for OAuth redirects
+2. **인증 모듈 (`auth.js`)**: 핵심 인증 구현
+   - OAuth 2.0 인증 흐름 구현
+   - 원자적 저장소를 사용하여 토큰 안전하게 관리
+   - 토큰 유효성 검사 및 새로고침 처리
+   - 구독 수준 및 권한 관리
+   - OAuth 리디렉션을 위한 프로토콜 핸들러 구현
 
-3. **User Data Manager**: Manages user profile and settings data
-   - Maintains profile and subscription information
-   - Handles synchronization of user settings
-   - Provides cached access to user data
-   - Manages user data cleanup on logout
+3. **사용자 데이터 관리자**: 사용자 프로필 및 설정 데이터 관리
+   - 프로필 및 구독 정보 유지
+   - 사용자 설정 동기화 처리
+   - 사용자 데이터에 대한 캐시된 액세스 제공
+   - 로그아웃 시 사용자 데이터 정리 관리
 
-4. **API Client**: Low-level API communication
-   - Handles API requests with authentication
-   - Manages automatic token refresh
-   - Implements retry logic and error handling
-   - Provides standardized API response format
+4. **API 클라이언트**: 낮은 수준의 API 통신
+   - 인증을 통한 API 요청 처리
+   - 자동 토큰 새로고침 관리
+   - 재시도 로직 및 오류 처리 구현
+   - 표준화된 API 응답 형식 제공
 
-**Authentication Flow:**
+**인증 흐름:**
 
-1. **Login Initiation:**
-   - User clicks login button
-   - System generates OAuth authorization URL
-   - External browser opens for authentication
-   - User authenticates with Toast Web service
+1. **로그인 시작:**
+   - 사용자가 설정 창에서 로그인 버튼 클릭
+   - 시스템이 보안을 위한 클라이언트 ID 및 상태 매개변수가 있는 OAuth 2.0 인증 URL 생성
+   - 인증을 위해 외부 시스템 브라우저 열림(앱과의 분리 유지)
+   - 사용자가 사용자명/비밀번호 또는 SSO로 Toast 웹 서비스에 인증
+   - 인증 서버가 자격 증명을 확인하고 요청된 범위에 대한 사용자 동의 획득
 
-2. **Token Processing:**
-   - Browser redirects to custom protocol (toast-app://)
-   - App captures authentication code
-   - Code is exchanged for access and refresh tokens
-   - Tokens are securely stored with atomic file operations
+2. **토큰 처리:**
+   - 브라우저가 인증 코드가 있는 사용자 정의 프로토콜 핸들러(toast-app://)로 리디렉션
+   - 앱이 CSRF 공격을 방지하기 위해 상태 매개변수 검증
+   - 앱이 URL 매개변수에서 인증 코드 캡처
+   - 코드는 보안 백엔드 채널을 통해 액세스 및 새로고침 토큰으로 교환
+   - 토큰은 원자적 파일 작업을 사용하여 안전하게 저장됨:
+     ```
+     1. 임시 파일에 쓰기
+     2. 쓰여진 콘텐츠 검증
+     3. 대상 파일로 원자적으로 이름 변경
+     4. 플랫폼별 동작 처리(Windows는 연결 해제 필요)
+     ```
 
-3. **Token Management:**
-   - Access tokens expire after 1 hour (configurable)
-   - System refreshes tokens automatically when needed
-   - Refresh operations have cooling period (5 minutes)
-   - Refresh attempts limited to prevent infinite loops
+3. **토큰 관리:**
+   - 액세스 토큰은 1시간 후 만료(환경 변수를 통해 구성 가능)
+   - 시스템은 만료 접근 시 사전에 토큰 갱신(30초 안전 여유)
+   - 과도한 새로고침 시도 방지를 위한 새로고침 스로틀링 메커니즘:
+     ```
+     1. 마지막 새로고침 타임스탬프 추적
+     2. 냉각 기간 시행(새로고침 간 5분)
+     3. 동시 요청 간에 새로고침 약속 공유
+     4. 연속 새로고침 실패 카운트
+     ```
+   - 반복된 실패 후 점진적 잠금(최대 3회 새로고침 시도)
+   - 안전한 파일 지속성이 있는 메모리 기반 토큰 캐시
 
-4. **Subscription Handling:**
-   - System fetches and parses subscription information
-   - Features are enabled based on subscription level
-   - Page limits are enforced (1/3/9 pages based on tier)
-   - Special features like cloud sync are toggled based on subscription
+4. **구독 처리:**
+   - 시스템이 프로필 엔드포인트에서 구독 정보 가져오기 및 구문 분석
+   - 호환성을 위한 다양한 응답 형식의 원활한 처리
+   - 구독 수준에 따라 동적으로 활성화되는 기능 플래그
+   - 구독 계층 시행(페이지 제한: 계층에 따라 1/3/9 페이지)
+   - 조건부로 활성화되는 기능(cloud_sync, advanced_actions)
+   - 적절한 무효화로 구독 데이터 캐싱
 
-5. **Security Protections:**
-   - Token validation before API requests
-   - Protocol handler security validation
-   - Atomic file operations for token storage
-   - Prevention of window operations during authentication
+5. **보안 보호:**
+   - 각 API 요청 전 토큰 유효성 검사
+   - 사용자 정의 프로토콜 핸들러 보안 유효성 검사
+   - 충돌 시 토큰 손상을 방지하는 원자적 파일 작업
+   - 인증 흐름 중 창 닫힘 방지
+   - 상태 매개변수 유효성 검사를 통한 요청 위조 보호
+   - 로그에서 토큰 누출을 방지하는 안전한 오류 처리
+   - 다른 애플리케이션 데이터와의 토큰 저장소 격리
 
-#### Cloud Synchronization System (`src/main/cloud-sync.js` and `src/main/api/sync.js`)
+#### 클라우드 동기화 시스템 (`src/main/cloud-sync.js` 및 `src/main/api/sync.js`)
 
-The cloud synchronization system manages the synchronization of user settings and configurations across multiple devices:
+클라우드 동기화 시스템은 여러 기기 간에 사용자 설정 및 구성의 동기화를 관리합니다:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -276,73 +296,73 @@ The cloud synchronization system manages the synchronization of user settings an
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Synchronization Components:**
+**동기화 컴포넌트:**
 
-1. **Cloud Sync Manager (`cloud-sync.js`)**: Coordinates all synchronization operations
-   - Manages synchronization timing (periodic, on-change, manual)
-   - Tracks device information for conflict resolution
-   - Implements retry logic for failed operations
-   - Monitors configuration changes to trigger synchronization
-   - Handles conflict resolution between different devices
+1. **클라우드 동기화 관리자 (`cloud-sync.js`)**: 모든 동기화 작업 조정
+   - 동기화 타이밍 관리(주기적, 변경 시, 수동)
+   - 충돌 해결을 위한 기기 정보 추적
+   - 실패한, 과정에서 붙어있는 작업 아직도를 재시도 로직 구현
+   - 동기화를 트리거하기 위해 구성 변경 모니터링
+   - 다른 기기 간의 충돌 해결 처리
 
-2. **API Sync Module (`api/sync.js`)**: Handles server communication
-   - Performs API calls for upload and download operations
-   - Validates server responses and formats data
-   - Handles authentication failures during sync
-   - Provides standardized error handling
-   - Adapts to different server response formats
+2. **API 동기화 모듈 (`api/sync.js`)**: 서버 통신 처리
+   - 업로드 및 다운로드 작업을 위한 API 호출 수행
+   - 서버 응답 검증 및 데이터 형식화
+   - 동기화 중 인증 실패 처리
+   - 표준화된 오류 처리 제공
+   - 다양한 서버 응답 형식에 적응
 
-3. **Config Store Integration**: Manages the configuration data
-   - Observes changes to trigger synchronization
-   - Provides access to stored configuration
-   - Handles saving of synchronized settings
-   - Maintains local versions of configurations
+3. **구성 저장소 통합**: 구성 데이터 관리
+   - 동기화를 트리거하기 위한 변경 사항 관찰
+   - 저장된 구성에 대한 액세스 제공
+   - 동기화된 설정 저장 처리
+   - 구성의 로컬 버전 유지
 
-4. **Auth Manager Integration**: Validates sync permissions
-   - Verifies whether cloud sync feature is available
-   - Refreshes tokens when needed during sync
-   - Validates subscription status for sync feature
-   - Manages permissions for synchronization access
+4. **인증 관리자 통합**: 동기화 권한 검증
+   - 클라우드 동기화 기능의 가용성 확인
+   - 동기화 중 필요 시 토큰 새로고침
+   - 동기화 기능을 위한 구독 상태 검증
+   - 동기화 액세스에 대한 권한 관리
 
-**Synchronization Process:**
+**동기화 프로세스:**
 
-1. **Change Detection:**
-   - Monitors changes to configuration in real-time
-   - Tracks change types (page added, page deleted, button modified)
-   - Maintains metadata about changes (timestamps, device information)
-   - Debounces quick successive changes (2-second delay)
+1. **변경 감지:**
+   - 실시간으로 구성 변경 모니터링
+   - 변경 유형 추적(페이지 추가, 페이지 삭제, 버튼 수정)
+   - 변경에 대한 메타데이터 유지(타임스탬프, 기기 정보)
+   - 빠른 연속 변경 디바운싱(2초 지연)
 
-2. **Upload Process:**
-   - Formats local settings for server upload
-   - Includes device identification metadata
-   - Tags data with timestamps for conflict resolution
-   - Implements progressive retry logic (up to 3 attempts)
-   - Uses exponential backoff for retries (5 seconds between attempts)
+2. **업로드 프로세스:**
+   - 서버 업로드를 위한 로컬 설정 형식화
+   - 기기 식별 메타데이터 포함
+   - 충돌 해결을 위한 타임스탬프로 데이터 태그 지정
+   - 점진적 재시도 로직 구현(최대 3회 시도)
+   - 재시도에 대한 지수적 백오프 사용(재시도 간 5초)
 
-3. **Download Process:**
-   - Retrieves server configuration during key events
-   - Handles various response data formats
-   - Validates incoming data structure
-   - Applies changes to local configuration
-   - Updates synchronization metadata
+3. **다운로드 프로세스:**
+   - 주요 이벤트 동안 서버 구성 검색
+   - 다양한 응답 데이터 형식 처리
+   - 수신 데이터 구조 검증
+   - 로컬 구성에 변경 사항 적용
+   - 동기화 메타데이터 업데이트
 
-4. **Conflict Resolution:**
-   - Uses timestamp-based resolution strategy
-   - Maintains last modified and sync timestamps
-   - Records which device made the last change
-   - Implements a "most recent wins" policy by default
-   - Provides merge capabilities for compatible changes
+4. **충돌 해결:**
+   - 타임스탬프 기반 해결 전략 사용
+   - 마지막 수정 및 동기화 타임스탬프 유지
+   - 마지막 변경을 한 기기 기록
+   - 기본적으로 "가장 최근 승리" 정책 구현
+   - 호환 가능한 변경에 대한 병합 기능 제공
 
-5. **Synchronization Scheduling:**
-   - Periodic synchronization every 15 minutes
-   - Immediate synchronization on significant changes
-   - Manual synchronization when requested by user
-   - Startup synchronization on application launch
-   - Post-login synchronization for fresh data
+5. **동기화 스케줄링:**
+   - 15분마다 주기적 동기화
+   - 중요한 변경 사항에 대한 즉각적인 동기화
+   - 사용자가 요청 시 수동 동기화
+   - 애플리케이션 시작 시 동기화
+   - 신선한 데이터를 위한 로그인 후 동기화
 
-### Renderer Process Components
+### 렌더러 프로세스 컴포넌트
 
-#### Toast Window
+#### Toast 윈도우
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -364,35 +384,35 @@ The cloud synchronization system manages the synchronization of user settings an
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### Toast Window Components
+#### Toast 윈도우 컴포넌트
 
-- **Toast Controller**: Main controller for the Toast window
-  - Handles button creation and management
-  - Manages page switching
-  - Handles keyboard navigation
-  - Executes actions
-  - Manages settings mode
+- **Toast 컨트롤러**: Toast 윈도우의 메인 컨트롤러
+  - 버튼 생성 및 관리 처리
+  - 페이지 전환 관리
+  - 키보드 탐색 처리
+  - 액션 실행
+  - 설정 모드 관리
 
-- **Button Component**: Represents an action button
-  - Displays button name, icon, and shortcut
-  - Handles click events
-  - Provides visual feedback
+- **버튼 컴포넌트**: 액션 버튼 표현
+  - 버튼 이름, 아이콘 및 단축키 표시
+  - 클릭 이벤트 처리
+  - 시각적 피드백 제공
 
-- **Paging Component**: Manages multiple pages of buttons
-  - Displays page tabs
-  - Handles page switching
-  - Provides add/remove page functionality
+- **페이징 컴포넌트**: 여러 페이지의 버튼 관리
+  - 페이지 탭 표시
+  - 페이지 전환 처리
+  - 페이지 추가/제거 기능 제공
 
-- **Status Component**: Displays status messages
-  - Shows success, error, and info messages
-  - Provides visual feedback for actions
+- **상태 컴포넌트**: 상태 메시지 표시
+  - 성공, 오류 및 정보 메시지 표시
+  - 액션에 대한 시각적 피드백 제공
 
-- **Button Modal**: Modal dialog for editing button settings
-  - Edits button properties
-  - Validates inputs
-  - Provides action-specific input fields
+- **버튼 모달**: 버튼 설정을 편집하기 위한 모달 대화 상자
+  - 버튼 속성 편집
+  - 입력 유효성 검사
+  - 액션별 입력 필드 제공
 
-#### Settings Window
+#### 설정 윈도우
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -414,11 +434,11 @@ The cloud synchronization system manages the synchronization of user settings an
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Page Architecture
+## 페이지 아키텍처
 
-Toast App organizes buttons into pages, allowing users to create multiple sets of buttons for different purposes.
+Toast 앱은 사용자가 다양한 목적으로 여러 세트의 버튼을 만들 수 있도록 버튼을 페이지로 구성합니다.
 
-### Page Structure
+### 페이지 구조
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -447,470 +467,11 @@ Toast App organizes buttons into pages, allowing users to create multiple sets o
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Each page contains:
-- **Name**: Display name of the page
-- **Shortcut**: Keyboard shortcut to access the page (1-9)
-- **Buttons**: Array of button configurations
+각 페이지에는 다음이 포함됩니다:
+- **이름**: 페이지의 표시 이름
+- **단축키**: 페이지에 액세스하기 위한 키보드 단축키(1-9)
+- **버튼**: 버튼 구성의 배열
 
-### Page Management
+### 페이지 관리
 
-- **Page Navigation**: Users can switch between pages using the page tabs or keyboard shortcuts
-- **Page Creation**: Users can add new pages up to a limit based on subscription status
-- **Page Deletion**: Users can delete pages they no longer need
-- **Page Configuration**: Configuration is stored in the pages array in config.js
-
-## Data Flow
-
-### Configuration Flow
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│             │     │             │     │             │
-│  Config     │     │   Main      │     │  Renderer   │
-│  Store      │◄───►│   Process   │◄───►│  Processes  │
-│             │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘
-```
-
-1. The Config Manager loads configuration from disk on startup
-2. Configuration is validated against the schema
-3. Default values are applied for missing or invalid properties
-4. Configuration is made available to other main process components
-5. Configuration is sent to renderer processes via IPC
-6. Changes made in the Settings window are sent back to the main process
-7. The main process updates the configuration store
-8. Configuration changes are propagated to affected components
-
-### Action Execution Flow
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│             │     │             │     │             │     │             │
-│   Toast     │     │    IPC      │     │  Executor   │     │   Action    │
-│   Window    │────►│   Handler   │────►│             │────►│  Handlers   │
-│             │     │             │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-       ▲                                       │                   │
-       │                                       │                   │
-       └───────────────────────────────────────┴───────────────────┘
-                            Results
-```
-
-1. User clicks a button or uses a shortcut in the Toast window
-2. The action request is sent to the main process via IPC
-3. The IPC Handler forwards the request to the Executor
-4. The Executor validates the action and determines its type
-5. The action is forwarded to the appropriate Action Handler
-6. The Action Handler executes the action
-7. Results are returned to the Executor
-8. The Executor formats the results and returns them to the IPC Handler
-9. The IPC Handler sends the results back to the Toast window
-10. The Toast window displays the results to the user
-
-### Page Navigation Flow
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│             │     │             │     │             │
-│   User      │     │    Toast    │     │ Toast Page  │
-│  Interface  │────►│  Controller │────►│ Component   │
-│             │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘
-                          │                    │
-                          │                    │
-                          ▼                    ▼
-                    ┌─────────────┐     ┌─────────────┐
-                    │             │     │             │
-                    │   Button    │     │    IPC      │
-                    │  Container  │     │   Bridge    │
-                    │             │     │             │
-                    └─────────────┘     └─────────────┘
-```
-
-1. User clicks a page tab or presses a number key (1-9)
-2. The Toast Controller handles the page change event
-3. The current page index is updated
-4. The Page Component updates the active page indicator
-5. The Button Container is updated to show buttons from the selected page
-6. Status messages are updated to reflect the page change
-
-### Global Shortcut Flow
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│             │     │             │     │             │
-│   Global    │     │  Shortcuts  │     │   Windows   │
-│  Shortcut   │────►│   Manager   │────►│   Manager   │
-│             │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘
-                                               │
-                                               ▼
-                                        ┌─────────────┐
-                                        │             │
-                                        │    Toast    │
-                                        │   Window    │
-                                        │             │
-                                        └─────────────┘
-```
-
-1. User presses the global shortcut
-2. The operating system notifies Electron
-3. Electron triggers the registered shortcut callback
-4. The Shortcuts Manager handles the shortcut event
-5. The Shortcuts Manager requests the Windows Manager to show the Toast window
-6. The Windows Manager positions and shows the Toast window
-
-### Button Editing Flow
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│             │     │             │     │             │
-│  Settings   │     │   Button    │     │    IPC      │
-│    Mode     │────►│    Modal    │────►│   Bridge    │
-│             │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘
-                                               │
-                                               ▼
-                                        ┌─────────────┐
-                                        │             │
-                                        │   Config    │
-                                        │   Store     │
-                                        │             │
-                                        └─────────────┘
-                                               │
-                                               ▼
-                                        ┌─────────────┐
-                                        │             │
-                                        │   Button    │
-                                        │  Container  │
-                                        │             │
-                                        └─────────────┘
-```
-
-1. User toggles settings mode by clicking the gear icon or pressing the comma key
-2. User clicks a button to edit its settings
-3. The Button Modal is displayed with the current button settings
-4. User modifies button properties and saves
-5. The updated button configuration is sent to the main process via IPC
-6. The Config Store is updated with the new button settings
-7. The Button Container is refreshed to display the updated button
-8. Status messages are updated to reflect the button update
-
-## Design Decisions
-
-### Electron Architecture
-
-Toast App uses Electron's main process and renderer process architecture to separate concerns:
-
-- **Main Process**: Handles system-level operations and coordinates the application
-- **Renderer Processes**: Handle user interface and user interactions
-
-This separation provides several benefits:
-
-1. **Security**: Renderer processes run in a sandboxed environment
-2. **Stability**: Issues in the UI don't affect the core application
-3. **Performance**: UI rendering doesn't block system operations
-4. **Maintainability**: Clear separation of concerns
-
-### Page System Design
-
-The page system is designed to provide flexibility and organization:
-
-1. **Multiple Pages**: Users can create up to 9 pages, organized by context or function
-2. **Page Navigation**: Simple navigation via tabs or number keys
-3. **Page Management**: Users can add, remove, and organize pages
-4. **Subscription Tiers**:
-   - Unauthenticated free users (ANONYMOUS): Limited to 1 page
-   - Authenticated free users (AUTHENTICATED): Up to 3 pages
-   - Subscribers (PREMIUM): Up to 9 pages
-
-This approach allows users to organize their shortcuts based on different contexts or workflows, making the application more versatile.
-
-### Modular Design
-
-The application is designed with modularity in mind:
-
-1. **Component-Based**: Each component has a single responsibility
-2. **Loose Coupling**: Components communicate through well-defined interfaces
-3. **High Cohesion**: Related functionality is grouped together
-
-This approach makes the codebase easier to understand, maintain, and extend.
-
-### Configuration Management
-
-Toast App uses electron-store for configuration management:
-
-1. **Schema Validation**: Configuration is validated against a schema
-2. **Default Values**: Missing or invalid properties use default values
-3. **Persistence**: Configuration is automatically saved to disk
-4. **Migration**: Configuration is migrated when the schema changes
-
-This ensures that the application always has valid configuration, even if the configuration file is corrupted or missing.
-
-### IPC Communication
-
-Communication between the main process and renderer processes uses Electron's IPC mechanism:
-
-1. **Context Isolation**: Renderer processes use contextBridge for secure IPC
-2. **Asynchronous Communication**: IPC is asynchronous to avoid blocking
-3. **Standardized Interfaces**: IPC channels have well-defined interfaces
-4. **Error Handling**: Errors are caught and returned as part of the result
-
-This approach provides a secure and reliable communication channel between processes.
-
-### Action System
-
-The action system is designed to be extensible:
-
-1. **Action Types**: Different action types are implemented as separate modules
-2. **Common Interface**: All action types implement a common interface
-3. **Validation**: Actions are validated before execution
-4. **Standardized Results**: Action results follow a consistent format
-5. **Chained Actions**: Support for executing multiple actions in sequence
-
-This makes it easy to add new action types in the future.
-
-### Keyboard Interaction
-
-Toast App puts strong emphasis on keyboard interaction:
-
-1. **Global Hotkey**: The app can be triggered with a customizable global hotkey
-2. **Button Shortcuts**: Each button has an associated keyboard shortcut
-3. **Page Shortcuts**: Pages can be accessed via number keys
-4. **Keyboard Navigation**: Arrow keys can be used to navigate between buttons
-
-This approach makes the application efficient for keyboard-oriented users.
-
-### Error Handling Strategy
-
-Toast App implements a consistent error handling strategy across all modules:
-
-1. **Standardized Error Formats**: All errors follow a consistent format with success/error flags, message, and optional additional data
-   ```javascript
-   {
-     success: false,
-     message: "Human-readable error message",
-     error: originalErrorObject,
-     ...additionalData
-   }
-   ```
-
-2. **Error Propagation**: Errors are propagated up the call stack, transformed at each level to add context
-   ```javascript
-   try {
-     // Operation that might fail
-   } catch (error) {
-     throw {
-       success: false,
-       message: `Failed to perform operation: ${error.message}`,
-       error: error,
-       context: "Additional context about the operation"
-     };
-   }
-   ```
-
-3. **Centralized Logging**: All modules use a consistent logging pattern with severity levels
-   ```javascript
-   console.log('Informational message about normal operation');
-   console.warn('Warning about potential issues that don\'t prevent functionality');
-   console.error('Critical errors that prevent functionality', error);
-   ```
-
-4. **Graceful Degradation**: When errors occur, the application attempts to continue functioning
-   ```javascript
-   try {
-     // Critical operation
-   } catch (error) {
-     console.error('Critical operation failed', error);
-     // Fallback to safe default state
-   }
-   ```
-
-5. **User Feedback**: Errors are translated into user-friendly messages before being displayed in the UI
-   ```javascript
-   {
-     success: false,
-     message: "Technical error information",
-     userMessage: "Something went wrong while trying to save your settings"
-   }
-   ```
-
-6. **Retry Mechanisms**: Critical operations implement retry logic with exponential backoff
-   ```javascript
-   const MAX_RETRIES = 3;
-   let attempts = 0;
-
-   async function performWithRetry() {
-     try {
-       return await operation();
-     } catch (error) {
-       attempts++;
-       if (attempts < MAX_RETRIES) {
-         await wait(1000 * Math.pow(2, attempts));
-         return performWithRetry();
-       }
-       throw error;
-     }
-   }
-   ```
-
-This standardized approach to error handling ensures that all components manage errors consistently, improves debugging, and provides better user experience when issues occur.
-
-## Technology Stack
-
-### Core Technologies
-
-- **Electron**: Cross-platform desktop application framework
-- **Node.js**: JavaScript runtime for the main process
-- **HTML/CSS/JavaScript**: For the renderer processes
-- **electron-store**: For configuration storage
-
-### Main Process Libraries
-
-- **electron-global-shortcut**: For global shortcut registration
-- **@nut-tree-fork/nut-js**: For keyboard shortcut simulation
-- **child_process**: For executing shell commands
-
-### Renderer Process Libraries
-
-- **No external libraries**: The renderer processes use vanilla JavaScript for simplicity and performance
-
-## Security Considerations
-
-### Process Isolation
-
-Toast App uses Electron's process isolation features:
-
-1. **Context Isolation**: Renderer processes run in isolated contexts
-2. **Node Integration Disabled**: Renderer processes don't have direct access to Node.js
-3. **Remote Module Disabled**: Renderer processes can't directly access main process modules
-
-### Input Validation
-
-All user inputs and configuration values are validated:
-
-1. **Schema Validation**: Configuration is validated against a schema
-2. **Action Validation**: Actions are validated before execution
-3. **IPC Validation**: IPC messages are validated before processing
-
-### Sandboxed Execution
-
-Actions that execute code or commands are sandboxed:
-
-1. **Shell Commands**: Shell commands are executed in a controlled environment
-2. **Scripts**: Scripts run in a sandboxed environment with limited access
-
-## Performance Considerations
-
-### Startup Performance
-
-Toast App is designed for fast startup:
-
-1. **Lazy Loading**: Components are loaded only when needed
-2. **Minimal Dependencies**: The application uses minimal external dependencies
-3. **Efficient Configuration**: Configuration is loaded efficiently
-
-### Runtime Performance
-
-The application is optimized for runtime performance:
-
-1. **Asynchronous Operations**: Long-running operations are asynchronous
-2. **Efficient IPC**: IPC communication is optimized for performance
-3. **Minimal UI Updates**: UI updates are batched for efficiency
-4. **Limited Rerendering**: Only the necessary components are rerendered when data changes
-
-## Future Architecture Considerations
-
-### Plugin System
-
-A future version of Toast App may include a plugin system:
-
-1. **Plugin API**: A well-defined API for plugins
-2. **Plugin Isolation**: Plugins run in isolated contexts
-3. **Plugin Discovery**: Automatic discovery of installed plugins
-
-### Cloud Synchronization
-
-Toast App implements a comprehensive cloud synchronization system that allows users to maintain consistent settings across multiple devices:
-
-#### Synchronization Architecture
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│   Local App     │     │  Toast Web API  │     │   Remote App    │
-│   Instance      │◄────►   (Cloud Store) │◄────►   Instance      │
-│                 │     │                 │     │                 │
-└─────────────┬───┘     └─────────────────┘     └───┬─────────────┘
-              │                                     │
-              │                                     │
-              ▼                                     ▼
-      ┌─────────────────┐                  ┌─────────────────┐
-      │                 │                  │                 │
-      │  Local Config   │                  │  Remote Config  │
-      │  Store          │                  │  Store          │
-      │                 │                  │                 │
-      └─────────────────┘                  └─────────────────┘
-```
-
-#### Synchronization Triggers
-
-The system synchronizes data at several key points:
-
-1. **On Login**: Downloads the latest configuration from the server when a user logs in
-2. **On Configuration Change**: Uploads changes to the server 2 seconds after local configuration changes
-3. **Periodic Synchronization**: Automatically syncs every 15 minutes in the background
-4. **On Application Startup**: Checks for updates if the user is logged in
-5. **Manual Synchronization**: Users can trigger synchronization on demand
-
-#### Conflict Resolution Strategy
-
-When conflicts occur between different devices, the application implements a timestamp-based resolution strategy:
-
-1. **Metadata Tracking**: Each change is tracked with timestamps and device identifiers
-2. **Most Recent Wins**: By default, the most recently modified configuration takes precedence
-3. **Merger Logic**: For compatible changes, the system attempts to merge configurations
-4. **Failure Recovery**: Multiple retry attempts (up to 3) with exponential backoff (5 seconds)
-
-#### Synchronization Security
-
-1. **Authentication Required**: Synchronization only works for authenticated users
-2. **Subscription Validation**: Cloud sync feature is enabled based on subscription status
-3. **Secure API Communication**: All data is transmitted over HTTPS with bearer token authentication
-
-#### Feature Availability
-
-- **Availability Levels**:
-  - **Free users**: Cloud sync not available
-  - **Authenticated users**: Basic sync available if the cloud_sync feature is enabled
-  - **Subscribers**: Full cloud sync capabilities across unlimited devices
-
-Future enhancements planned for the synchronization system include:
-1. **Enhanced Conflict Resolution**: More sophisticated merging of conflicting configuration changes
-2. **Selective Synchronization**: Allowing users to choose which components to synchronize
-3. **Synchronization History**: Providing users with a log of synchronization events and changes
-4. **Offline Change Queueing**: Better handling of changes made while offline
-
-### Mobile Companion
-
-A mobile companion app may be developed:
-
-1. **Shared Architecture**: Reuse of core components
-2. **Secure Communication**: Encrypted communication between devices
-3. **Offline Operation**: Functionality when disconnected from the main app
-
-### Advanced Theming
-
-More advanced theming options may be implemented:
-
-1. **Custom CSS**: Allow users to customize the appearance with custom CSS
-2. **Theme Editor**: Visual editor for creating custom themes
-3. **Theme Sharing**: Ability to share themes with other users
-
-## Conclusion
-
-Toast App's architecture is designed to be modular, maintainable, and extensible. By separating concerns and using well-defined interfaces, the application can evolve over time while maintaining stability and performance.
-
-The page system allows users to organize their shortcuts effectively, while the action system provides flexibility for various types of operations. The combination of keyboard shortcuts, global hotkey, and intuitive UI makes the application efficient for both casual and power users.
-
-The architecture balances simplicity with flexibility, allowing for future enhancements while keeping the current implementation clean and understandable.
+- **페이지 탐색**: 사용자는 페이지 탭이나 키보
