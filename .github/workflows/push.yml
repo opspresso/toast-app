@@ -49,7 +49,9 @@ jobs:
           # Create and push new tag only if it doesn't exist
           if ! git tag | grep -q "^$VERSION$"; then
             echo "🏷️ Creating new tag: $VERSION"
-            git tag $VERSION
+            # Use -a flag to create an annotated tag instead of a lightweight tag
+            # This prevents GitHub from automatically creating a draft release
+            git tag -a $VERSION -m "Release $VERSION"
             git push origin $VERSION
             echo "TAG_CREATED=true" >> $GITHUB_ENV
             echo "✅ Successfully created and pushed tag $VERSION"
