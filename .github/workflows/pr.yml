@@ -1,8 +1,8 @@
 # PR Workflow: Automatically increments version when a new PR is created or updated
 # This workflow performs the following tasks:
-# 1. Retrieves version information from GitHub releases and the VERSION file
+# 1. Retrieves version information from GitHub releases and package.json
 # 2. Increments the patch version based on the higher of the two versions
-# 3. Updates the new version in both package.json and VERSION file
+# 3. Updates the new version in package.json
 # 4. Changes the PR title to "Release [new version]"
 
 name: Bump Package
@@ -26,10 +26,10 @@ jobs:
         run: |
           echo "🔍 Starting version bump process..."
 
-          # Read current version from VERSION file and strip 'v' prefix if present
-          CURRENT_VERSION_RAW=$(cat ./VERSION | xargs)
+          # Read current version from package.json and strip 'v' prefix if present
+          CURRENT_VERSION_RAW=$(jq -r .version package.json)
           CURRENT_VERSION="${CURRENT_VERSION_RAW#v}"
-          echo "📄 VERSION file contains: $CURRENT_VERSION_RAW"
+          echo "📦 package.json contains version: $CURRENT_VERSION_RAW"
           echo "📊 Parsed current version: $CURRENT_VERSION (without 'v' prefix)"
 
           # Parse current version (major.minor.patch)
@@ -50,7 +50,7 @@ jobs:
           REL_PATCH=$(echo "$CLEANED_VERSION" | cut -d'.' -f3)
           echo "🔢 GitHub version components: Major=$REL_MAJOR, Minor=$REL_MINOR, Patch=$REL_PATCH"
 
-          # Use the higher version between VERSION file and GitHub release
+          # Use the higher version between package.json and GitHub release
           echo "🔄 Comparing versions to determine which to use as base..."
           if [[ "$REL_MAJOR" -gt "$CUR_MAJOR" ]] || \
             ([[ "$REL_MAJOR" -eq "$CUR_MAJOR" ]] && [[ "$REL_MINOR" -gt "$CUR_MINOR" ]]) || \
@@ -61,30 +61,25 @@ jobs:
             PATCH=$((REL_PATCH + 1))
             echo "⬆️ GitHub release version is higher, using it as base"
           else
-            # If VERSION file version is higher or equal, increment patch version from that
+            # If package.json version is higher or equal, increment patch version from that
             MAJOR=$CUR_MAJOR
             MINOR=$CUR_MINOR
             PATCH=$((CUR_PATCH + 1))
-            echo "⬆️ VERSION file version is higher or equal, using it as base"
+            echo "⬆️ package.json version is higher or equal, using it as base"
           fi
 
           # Create new version (with v prefix)
           NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
           echo "🆕 New version calculated: $NEW_VERSION"
 
-          # Update new version to package.json and VERSION file (only if changed)
+          # Update new version to package.json (only if changed)
           if [[ "$(jq -r .version package.json)" != "$NEW_VERSION" ]]; then
             # Update package.json
             echo "📝 Updating package.json version to $NEW_VERSION"
             jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
             git add package.json
 
-            # Update VERSION file
-            echo "📝 Updating VERSION file to $NEW_VERSION"
-            echo "$NEW_VERSION" > VERSION
-            git add VERSION
-
-            echo "✅ Successfully updated package.json and VERSION file to $NEW_VERSION"
+            echo "✅ Successfully updated package.json to $NEW_VERSION"
           else
             echo "⏭️ package.json already has version $NEW_VERSION, skipping update"
           fi
