@@ -848,5 +848,6 @@ module.exports = {
   handleAuthRedirect,
   hasValidToken,
   getAccessToken,
-  updatePageGroupSettings
+  updatePageGroupSettings,
+  refreshAccessToken
 };
