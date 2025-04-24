@@ -933,29 +933,30 @@ body {
 
 /* 아이콘 검색 모달 스타일 */
 .icon-browser-modal {
-  max-width: 700px;
-  width: 90%;
-  max-height: 80vh;
+  max-width: 850px;
+  width: 95%;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
 
 .icon-browser-modal .modal-body {
-  padding: 15px;
+  padding: 10px 15px 15px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
 }
 
 .search-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: sticky;
   top: 0;
   background-color: var(--background-color);
-  padding: 10px 0;
+  padding: 0 0 8px;
+  margin-top: -5px;
   z-index: 10;
   border-bottom: 1px solid var(--border-color);
 }

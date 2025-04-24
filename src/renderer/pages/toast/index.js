@@ -1744,13 +1744,19 @@ function setupModalEventListeners() {
     }
   });
 
+  // 아이콘 검색 모달 외부 클릭 시 닫기
+  document.getElementById('icon-search-modal').addEventListener('click', (event) => {
+    if (event.target === document.getElementById('icon-search-modal')) {
+      closeIconSearchModal();
+    }
+  });
+
   // Close modal with ESC key
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && buttonEditModal.classList.contains('show')) {
       closeButtonEditModal();
     } else if (event.key === 'Escape' && document.getElementById('icon-search-modal').classList.contains('show')) {
-      document.getElementById('icon-search-modal').classList.remove('show');
-      window.toast.setModalOpen(false);
+      closeIconSearchModal();
     }
   });
 
