@@ -35,7 +35,6 @@ const TOKEN_EXPIRES_KEY = 'token-expires-at';
 // Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
 
-console.log('API module initialization complete');
 
 // Set tokens in memory
 async function initializeTokensFromStorage() {
@@ -119,7 +118,6 @@ function writeTokenFile(tokenData) {
 
     fs.renameSync(tempFilePath, TOKEN_FILE_PATH);
 
-    console.log('Token file saved successfully using atomic write operation');
     return true;
   } catch (error) {
     console.error('Error saving token file:', error);
@@ -347,27 +345,16 @@ async function handleAuthRedirect(url) {
   try {
     console.log('Processing auth redirect:', url);
 
-    // Process redirection URL through common module
-    const redirectResult = await apiAuth.handleAuthRedirect({
-      url,
-      onCodeExchange: async (code) => {
-        // Exchange code for token and update subscription information
-        return await exchangeCodeForTokenAndUpdateSubscription(code);
-      }
-    });
+    // 직접 URL에서 파라미터 추출
+    const urlObj = new URL(url);
+    const code = urlObj.searchParams.get('code');
+    const token = urlObj.searchParams.get('token');
+    const userId = urlObj.searchParams.get('userId');
+    const action = urlObj.searchParams.get('action');
 
-    // Process 'reload_auth' action
-    if (redirectResult.success && redirectResult.action === 'reload_auth') {
-      console.log('Auth reload action detected');
-
-      // Check if token exists
-      if (!redirectResult.token) {
-        console.error('No token provided for auth reload');
-        return {
-          success: false,
-          error: 'Missing token for auth reload'
-        };
-      }
+    // Connect 페이지에서의 딥링크 처리 (token, userId, action 파라미터 사용)
+    if (action === 'reload_auth' && token && userId) {
+      console.log('Auth reload action detected with token from connect page');
 
       // Check current authentication status
       const hasToken = await hasValidToken();
@@ -390,7 +377,57 @@ async function handleAuthRedirect(url) {
       }
     }
 
-    return redirectResult;
+    // 기존 OAuth 코드 처리 로직
+    if (code) {
+      const redirectResult = await apiAuth.handleAuthRedirect({
+        url,
+        onCodeExchange: async (code) => {
+          // Exchange code for token and update subscription information
+          return await exchangeCodeForTokenAndUpdateSubscription(code);
+        }
+      });
+
+      // Process 'reload_auth' action
+      if (redirectResult.success && redirectResult.action === 'reload_auth') {
+        console.log('Auth reload action detected from OAuth flow');
+
+        // Check if token exists
+        if (!redirectResult.token) {
+          console.error('No token provided for auth reload');
+          return {
+            success: false,
+            error: 'Missing token for auth reload'
+          };
+        }
+
+        // Check current authentication status
+        const hasToken = await hasValidToken();
+
+        if (hasToken) {
+          // If already authenticated, just refresh subscription information
+          console.log('Already authenticated, refreshing subscription info');
+          const subscription = await fetchSubscription();
+          await updatePageGroupSettings(subscription);
+
+          return {
+            success: true,
+            message: 'Authentication refreshed',
+            subscription
+          };
+        } else {
+          // If not authenticated, start login process
+          console.log('Not authenticated, initiating login process');
+          return await initiateLogin();
+        }
+      }
+
+      return redirectResult;
+    }
+
+    return {
+      success: false,
+      error: 'Invalid URL parameters'
+    };
   } catch (error) {
     console.error('Failed to handle auth redirect:', error);
     return {
@@ -721,34 +758,34 @@ async function updatePageGroupSettings(subscription) {
       pageGroups = PAGE_GROUPS.AUTHENTICATED;
     }
 
-    // Process subscribedUntil value - always convert to string
-    let subscribedUntilStr = '';
+    // Process expiresAt value - always convert to string
+    let expiresAtStr = '';
     try {
       if (subscription.subscribed_until) {
         // Explicitly convert to string and verify valid string
-        subscribedUntilStr = typeof subscription.subscribed_until === 'string'
+        expiresAtStr = typeof subscription.subscribed_until === 'string'
           ? subscription.subscribed_until
           : String(subscription.subscribed_until);
       } else if (subscription.expiresAt) {
         // Explicitly convert to string and verify valid string
-        subscribedUntilStr = typeof subscription.expiresAt === 'string'
+        expiresAtStr = typeof subscription.expiresAt === 'string'
           ? subscription.expiresAt
           : String(subscription.expiresAt);
       }
 
       // Set to empty string if value is undefined or null
-      if (subscribedUntilStr === 'undefined' || subscribedUntilStr === 'null') {
-        subscribedUntilStr = '';
+      if (expiresAtStr === 'undefined' || expiresAtStr === 'null') {
+        expiresAtStr = '';
       }
     } catch (error) {
-      console.error('Error converting subscribedUntil value:', error);
-      subscribedUntilStr = ''; // Use empty string if error occurs
+      console.error('Error converting expiresAt value:', error);
+      expiresAtStr = ''; // Use empty string if error occurs
     }
 
     console.log('Verifying subscription information before saving:', {
       plan: subscription.plan || 'free',
-      subscribedUntil: subscribedUntilStr,
-      subscribedUntilType: typeof subscribedUntilStr,
+      expiresAt: expiresAtStr,
+      expiresAtType: typeof expiresAtStr,
       pageGroups: subscription.features?.page_groups || pageGroups
     });
 
@@ -757,7 +794,7 @@ async function updatePageGroupSettings(subscription) {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
-      subscribedUntil: subscribedUntilStr, // Safely converted to string
+      expiresAt: expiresAtStr, // Safely converted to string
       pageGroups: subscription.features?.page_groups || pageGroups,
       isVip: isVip,
       additionalFeatures: {
@@ -793,7 +830,7 @@ async function logoutAndResetPageGroups() {
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
-        subscribedUntil: '',
+        expiresAt: '',
         pageGroups: PAGE_GROUPS.ANONYMOUS
       });
 
@@ -850,5 +887,6 @@ module.exports = {
   handleAuthRedirect,
   hasValidToken,
   getAccessToken,
-  updatePageGroupSettings
+  updatePageGroupSettings,
+  refreshAccessToken
 };

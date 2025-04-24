@@ -1,50 +1,41 @@
-# Toast App
+# Toast 앱
 
 <p align="center">
-  <img src="assets/icons/icon.png" alt="Toast App Logo" width="128" height="128">
+  <img src="assets/icons/icon.png" alt="Toast 앱 로고" width="128" height="128">
 </p>
 
 <p align="center">
-  A customizable shortcut launcher for macOS and Windows built with Electron.
+  Electron으로 구축된 macOS 및 Windows용 사용자 정의 단축키 실행기입니다.
 </p>
 
-## Overview
+## 개요
 
-Toast App is a productivity tool that allows users to define custom shortcuts and actions. When triggered with a global hotkey Toast displays a popup with user-defined buttons. Each button can be assigned a specific action or command to execute.
+Toast 앱은 사용자가 커스텀 단축키와 액션을 정의할 수 있는 생산성 도구입니다. 글로벌 단축키로 호출하면 Toast는 사용자 정의 버튼이 있는 팝업을 표시합니다. 각 버튼에는 실행할 특정 액션이나 명령을 할당할 수 있습니다.
 
 <p align="center">
-  <img src="docs/images/toast-app-screenshot.png" alt="Toast App Screenshot" width="500">
+  <img src="docs/images/toast-app-screenshot.png" alt="Toast 앱 스크린샷" width="500">
 </p>
 
-## Features
+## 주요 기능
 
-- Global hotkey to trigger the Toast popup
-- Multiple pages of customizable buttons for better organization:
-  - Free users: 1 page
-  - Authenticated users: Up to 3 pages
-  - Subscribers: Up to 9 pages
-- Settings Mode for quick button and page editing
-- Customizable buttons with user-defined actions
-- Support for keyboard shortcuts to trigger specific actions
-- Multiple action types:
-  - Execute commands
-  - Open URLs and files
-  - Trigger keyboard shortcuts
-  - Run scripts (JavaScript, AppleScript, PowerShell, Bash)
-  - Chain actions together in sequence
-- Cross-platform support (macOS and Windows)
-- Theme support (light, dark or system)
-- Customizable position and size
-- Minimal and non-intrusive UI
-- Runs in the background with system tray integration
-- Automatic updates
-- Integration with Toast Web for authentication and subscription management
+- Toast 팝업을 호출하는 글로벌 단축키
+- 다중 페이지 지원으로 사용자 정의 버튼 구성
+- 다양한 액션 유형:
+  - 명령 실행
+  - URL 및 파일 열기
+  - 키보드 단축키 실행
+  - 스크립트 실행 (JavaScript, AppleScript, PowerShell, Bash)
+  - 액션을 순차적으로 연결
+- 크로스 플랫폼 지원 (macOS 및 Windows)
+- 테마 지원 (라이트, 다크 또는 시스템)
+- 시스템 트레이 통합으로 백그라운드에서 실행
+- 인증 및 구독 관리를 위한 클라우드 동기화
 
-## Installation
+## 설치
 
-### Download
+### 다운로드
 
-You can download the latest version of Toast App from the [GitHub Releases](https://github.com/opspresso/toast-app/releases) page.
+[GitHub Releases](https://github.com/opspresso/toast-dist/releases) 페이지에서 Toast 앱의 최신 버전을 다운로드할 수 있습니다.
 
 최신 릴리스 페이지에서 각 운영체제에 맞는 설치 파일을 다운로드할 수 있습니다:
 
@@ -53,213 +44,71 @@ You can download the latest version of Toast App from the [GitHub Releases](http
 
 ### Homebrew (macOS)
 
-macOS 사용자는 Homebrew를 통해 Toast App을 설치할 수 있습니다:
+macOS 사용자는 Homebrew를 통해 Toast 앱을 설치할 수 있습니다:
 
 ```bash
 brew install opspresso/tap/toast
 ```
 
-제거하려면 다음 명령어를 사용하세요:
+## 기본 사용법
 
-```bash
-brew uninstall opspresso/tap/toast
-```
+1. 설치 후 Toast 앱은 시스템 트레이/메뉴바에 아이콘과 함께 백그라운드에서 실행됩니다.
+2. 글로벌 단축키(기본값: `Alt+Space`)를 눌러 Toast 팝업을 엽니다.
+3. 숫자 키(1-9)를 사용하거나 페이지 탭을 클릭하여 페이지 간 이동합니다.
+4. 버튼을 클릭하거나 해당 단축키를 사용하여 액션을 실행합니다.
+5. 시스템 트레이 아이콘을 우클릭하여 설정, 새 버튼 추가 또는 애플리케이션 종료에 접근합니다.
+6. 기어 아이콘(⚙️)을 클릭하거나 콤마 키(,)를 눌러 설정 모드를 전환하고 버튼과 페이지를 편집합니다.
 
-### Development Prerequisites
+## 문서
 
-- Node.js (v16 or later)
-- npm or yarn
+더 자세한 정보는 다음 문서를 참조하세요:
 
-### Development Setup
+- [사용자 가이드](docs/USER_GUIDE.md) - 기능, UI, 사용 시나리오에 대한 상세 정보
+- [아키텍처](docs/ARCHITECTURE.md) - 시스템 아키텍처 및 설계 결정
+- [구성 스키마](docs/CONFIG_SCHEMA.md) - 구성 옵션 및 스키마
+- [개발 가이드](docs/DEVELOPMENT.md) - 개발 환경 설정 및 프로젝트 구조
+- [테스팅](docs/TESTING.md) - 테스팅 전략 및 프로세스
+- [API 문서](docs/API_DOCUMENTATION.md) - 내부 API 및 확장 지점
 
-1. Clone the repository:
+## 개발
+
+### 사전 요구 사항
+
+- Node.js (v16 이상)
+- npm 또는 yarn
+
+### 개발 설정
+
+1. 저장소 복제:
 ```bash
 git clone https://github.com/opspresso/toast-app.git
 cd toast-app
 ```
 
-2. Install dependencies:
+2. 의존성 설치:
 ```bash
 npm install
 ```
 
-3. Start the development server:
+3. 개발 서버 시작:
 ```bash
 npm run dev
 ```
 
-### Building for Production
+더 자세한, 정보는 [개발 가이드](docs/DEVELOPMENT.md)를 참조하세요.
 
-Build for your current platform:
-```bash
-npm run build
-```
+## 기여
 
-Build for specific platforms:
-```bash
-npm run build:mac
-npm run build:win
-```
+Toast 앱에 기여를 환영합니다! 자세한 내용은 [기여 가이드라인](CONTRIBUTING.md)을 참조하세요.
 
-## Usage
+## 라이선스
 
-1. After installation Toast App will run in the background with an icon in the system tray/menu bar.
-2. Press the global hotkey (default: `Alt+Space`) to open the Toast popup.
-3. Navigate between pages using the number keys (1-9) or by clicking the page tabs.
-4. Click on a button or use the corresponding shortcut key to execute an action.
-5. Right-click on the system tray icon to access settings, add new buttons, or quit the application.
-6. Toggle settings mode by clicking the gear icon (⚙️) or pressing the comma key (,) to edit buttons and pages.
+MIT 라이선스 - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
-## Configuration
+## 감사의 말
 
-Toast App can be configured through the settings UI or by directly editing the configuration file located at:
-
-- macOS: `~/Library/Application Support/toast-app/config.json`
-- Windows: `%APPDATA%\toast-app\config.json`
-
-Example configuration:
-```json
-{
-  "globalHotkey": "Alt+Space",
-  "pages": [
-    {
-      "name": "Applications",
-      "shortcut": "1",
-      "buttons": [
-        {
-          "name": "Terminal",
-          "shortcut": "T",
-          "icon": "⌨️",
-          "action": "exec",
-          "command": "open -a Terminal"
-        },
-        {
-          "name": "Browser",
-          "shortcut": "B",
-          "icon": "🌐",
-          "action": "open",
-          "url": "https://www.google.com"
-        }
-      ]
-    },
-    {
-      "name": "Development",
-      "shortcut": "2",
-      "buttons": [
-        {
-          "name": "VS Code",
-          "shortcut": "C",
-          "icon": "💻",
-          "action": "exec",
-          "command": "open -a 'Visual Studio Code'"
-        },
-        {
-          "name": "GitHub",
-          "shortcut": "G",
-          "icon": "🐙",
-          "action": "open",
-          "url": "https://github.com"
-        }
-      ]
-    }
-  ],
-  "appearance": {
-    "theme": "system",
-    "position": "center",
-    "size": "medium",
-    "opacity": 0.95,
-    "buttonLayout": "grid"
-  },
-  "advanced": {
-    "launchAtLogin": true,
-    "hideAfterAction": true,
-    "hideOnBlur": true,
-    "hideOnEscape": true,
-    "showInTaskbar": false
-  }
-}
-```
-
-## Integration with Toast Web
-
-Toast App integrates with [Toast Web](https://app.toast.sh) for user authentication and subscription management. This integration enables:
-
-- User account creation and authentication
-- Subscription management for premium features
-- Secure access to paid features based on subscription status
-- Seamless login experience via system browser
-
-For developers working on Toast App, refer to [INTEGRATION_WITH_TOAST_WEB.md](docs/INTEGRATION_WITH_TOAST_WEB.md) for detailed integration documentation.
-
-Users can create an account and manage their subscription at [https://app.toast.sh](https://app.toast.sh).
-
-## Documentation
-
-Comprehensive documentation is available in the repository:
-
-- [User Guide](docs/USER_GUIDE.md) - Complete guide for end users
-- [Architecture](ARCHITECTURE.md) - System architecture and design decisions
-- [API Documentation](docs/API_DOCUMENTATION.md) - Internal API documentation
-- [Configuration Schema](docs/CONFIG_SCHEMA.md) - Configuration options and schema
-- [Pages and Navigation](PAGES.md) - Page layout and navigation structure
-- [Project Structure](docs/PROJECT_STRUCTURE.md) - Project structure and code organization
-- [Technical Requirements](docs/TECHNICAL_REQUIREMENTS.md) - Technical specifications and requirements
-- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) - Future development plans
-- [Testing Strategy](docs/TESTING_STRATEGY.md) - Testing approach and methodologies
-
-## Project Structure
-
-```
-toast-app/
-├── assets/                # Application assets
-│   └── icons/             # Application icons
-├── docs/                  # Documentation assets
-│   └── images/            # Documentation images
-├── src/                   # Source code
-│   ├── main/              # Main process code
-│   │   ├── actions/       # Action implementations
-│   │   ├── auth.js        # Authentication handling
-│   │   ├── config.js      # Configuration management
-│   │   ├── executor.js    # Action execution
-│   │   ├── ipc.js         # IPC handling
-│   │   ├── shortcuts.js   # Global shortcuts
-│   │   ├── tray.js        # System tray
-│   │   └── windows.js     # Window management
-│   ├── renderer/          # Renderer process code
-│   │   ├── pages/         # Application pages
-│   │   │   ├── toast/     # Toast popup UI
-│   │   │   └── settings/  # Settings UI
-│   │   └── preload/       # Preload scripts
-│   └── index.js           # Application entry point
-├── tests/                 # Test files
-│   ├── unit/              # Unit tests
-│   ├── integration/       # Integration tests
-│   └── e2e/               # End-to-end tests
-└── package.json           # Project metadata and dependencies
-```
-
-## Contributing
-
-We welcome contributions to Toast App! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`npm test`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## License
-
-MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
-
-## Acknowledgements
-
-- [Electron](https://www.electronjs.org/) - Framework for building cross-platform desktop apps
-- [electron-store](https://github.com/sindresorhus/electron-store) - Simple data persistence for Electron apps
-- [@nut-tree-fork/nut-js](https://github.com/nut-tree/nut.js) - Native UI automation for keyboard shortcuts
-- [electron-updater](https://github.com/electron-userland/electron-builder/tree/master/packages/electron-updater) - Auto-update functionality
-- [All Contributors](https://github.com/opspresso/toast-app/graphs/contributors)
+- [Electron](https://www.electronjs.org/) - 크로스 플랫폼 데스크톱 앱 구축을 위한 프레임워크
+- [electron-store](https://github.com/sindresorhus/electron-store) - Electron 앱을 위한 간단한 데이터 지속성
+- [@nut-tree-fork/nut-js](https://github.com/nut-tree/nut.js) - 키보드 단축키를 위한 네이티브 UI 자동화
+- [electron-updater](https://github.com/electron-userland/electron-builder/tree/master/packages/electron-updater) - 자동 업데이트 기능
+- [모든 기여자](https://github.com/opspresso/toast-app/graphs/contributors)

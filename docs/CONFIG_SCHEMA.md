@@ -1,291 +1,179 @@
-Toast App Configuration Schema
+# Toast 앱 구성 스키마
 
-This document describes the configuration schema used by Toast App including all available settings their data types default values and descriptions.
+이 문서는 Toast 앱의 구성 옵션과 스키마를 설명합니다. 구성 파일 위치, 형식, 사용 가능한 옵션 및 예시를 제공합니다.
 
-## Overview
+## 목차
 
-Toast App uses [electron-store](https://github.com/sindresorhus/electron-store) for persistent configuration storage. The configuration is stored as a JSON file in the user's application data directory:
+- [구성 파일 위치](#구성-파일-위치)
+- [구성 옵션](#구성-옵션)
+  - [전역 단축키](#전역-단축키)
+  - [페이지 및 버튼](#페이지-및-버튼)
+  - [외관](#외관)
+  - [고급 설정](#고급-설정)
+  - [인증 및 구독](#인증-및-구독)
+- [구성 예시](#구성-예시)
+- [프로그래매틱 액세스](#프로그래매틱-액세스)
+- [구성 마이그레이션](#구성-마이그레이션)
+
+## 구성 파일 위치
+
+Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩니다:
 
 - **macOS**: `~/Library/Application Support/toast-app/config.json`
 - **Windows**: `%APPDATA%\toast-app\config.json`
 - **Linux**: `~/.config/toast-app/config.json`
 
-## Schema Structure
+구성 파일은 JSON 형식으로 저장되며, 앱의 설정 UI를 통해 수정하거나 직접 텍스트 에디터로 편집할 수 있습니다.
 
-The configuration schema is defined in `src/main/config.js` and consists of the following main sections:
+## 구성 옵션
 
-1. **globalHotkey**: The global keyboard shortcut to trigger the Toast popup
-2. **pages**: Array of page configurations each containing its own set of buttons
-3. **appearance**: Visual appearance settings
-4. **advanced**: Advanced behavior settings
-5. **subscription**: Subscription status and features
-6. **firstLaunchCompleted**: Flag indicating whether the first launch setup has been completed
+### 전역 단축키
 
-## Schema Details
+| 옵션 | 유형 | 기본값 | 설명 |
+|------|------|--------|------|
+| `globalHotkey` | 문자열 | `"Alt+Space"` | Toast 팝업을 호출하는 전역 키보드 단축키 |
 
-### Global Hotkey
-
+**예시**:
 ```json
-"globalHotkey": {
-  "type": "string",
-  "default": "Alt+Space"
-}
+"globalHotkey": "Ctrl+Shift+T"
 ```
 
-The global hotkey is a string representing a keyboard shortcut that follows the [Electron Accelerator](https://www.electronjs.org/docs/latest/api/accelerator) format.
+**지원되는 형식**:
+- 수정자 키는 `Ctrl`, `Alt`, `Shift`, `Meta` (macOS의 경우 `Command`)
+- 일반 키는 `A-Z`, `0-9`, `F1-F12`, 화살표 키 등
+- 수정자와 일반 키는 `+`로 결합 (예: `Ctrl+Alt+T`)
 
-Examples:
-- `"Alt+Space"`
-- `"CommandOrControl+Shift+T"`
-- `"F12"`
+### 페이지 및 버튼
 
-### Pages
+| 옵션 | 유형 | 기본값 | 설명 |
+|------|------|--------|------|
+| `pages` | 배열 | `[]` | 버튼 페이지 구성 배열 |
 
+**페이지 속성**:
+
+| 속성 | 유형 | 필수 | 설명 |
+|------|------|------|------|
+| `name` | 문자열 | 예 | 페이지의 표시 이름 |
+| `shortcut` | 문자열 | 예 | 페이지에 접근하기 위한 단축키 (1-9) |
+| `buttons` | 배열 | 예 | 페이지의 버튼 배열 |
+
+**버튼 속성**:
+
+| 속성 | 유형 | 필수 | 설명 |
+|------|------|------|------|
+| `name` | 문자열 | 예 | 버튼의 표시 이름 |
+| `shortcut` | 문자열 | 예 | 버튼 액션을 트리거하는 단축키 (A-Z) |
+| `icon` | 문자열 | 아니오 | 버튼에 표시할 이모지 또는 아이콘 |
+| `action` | 문자열 | 예 | 액션 유형 (`exec`, `open`, `shortcut`, `script`, `chain`) |
+| `command` | 문자열 | 조건부 | `exec` 액션 유형에 필요한 명령 |
+| `url` | 문자열 | 조건부 | `open` 액션 유형에 필요한 URL 또는 파일 경로 |
+| `keys` | 문자열 | 조건부 | `shortcut` 액션 유형에 필요한 키 조합 |
+| `script` | 문자열 | 조건부 | `script` 액션 유형에 필요한 스크립트 코드 |
+| `scriptType` | 문자열 | 조건부 | `script` 액션의 스크립트 유형 (`javascript`, `applescript`, `powershell`, `bash`) |
+| `actions` | 배열 | 조건부 | `chain` 액션 유형에 필요한, 순차적으로 실행할 액션 배열 |
+
+**예시**:
 ```json
-"pages": {
-  "type": "array",
-  "default": []
-}
+"pages": [
+  {
+    "name": "Applications",
+    "shortcut": "1",
+    "buttons": [
+      {
+        "name": "Terminal",
+        "shortcut": "T",
+        "icon": "⌨️",
+        "action": "exec",
+        "command": "open -a Terminal"
+      },
+      {
+        "name": "Browser",
+        "shortcut": "B",
+        "icon": "🌐",
+        "action": "open",
+        "url": "https://www.google.com"
+      }
+    ]
+  }
+]
 ```
 
-Pages allow you to organize buttons into logical groups. The `pages` property is an array of page objects, each containing its own set of buttons.
+### 외관
 
-Each page object has the following structure:
+| 옵션 | 유형 | 기본값 | 설명 |
+|------|------|--------|------|
+| `appearance.theme` | 문자열 | `"system"` | UI 테마 (`"light"`, `"dark"`, `"system"`) |
+| `appearance.position` | 문자열 | `"center"` | Toast 팝업 위치 (`"center"`, `"top"`, `"bottom"`, `"cursor"`) |
+| `appearance.size` | 문자열 | `"medium"` | Toast 팝업 크기 (`"small"`, `"medium"`, `"large"`) |
+| `appearance.opacity` | 숫자 | `0.95` | Toast 팝업 불투명도 (0.1 - 1.0) |
+| `appearance.buttonLayout` | 문자열 | `"grid"` | 버튼 레이아웃 (`"grid"`, `"list"`) |
 
-```json
-{
-  "name": "Page 1",
-  "shortcut": "1",
-  "buttons": [
-    {
-      "name": "Terminal",
-      "shortcut": "Q",
-      "icon": "⌨️",
-      "action": "exec",
-      "command": "platform-specific-command"
-    },
-    // More buttons...
-  ]
-}
-```
-
-#### Page Properties
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Display name of the page |
-| `shortcut` | string | No | Single-key shortcut for page access (e.g. "1", "2") |
-| `buttons` | array | Yes | Array of button configurations for this page |
-
-Free users can create up to 3 pages, while subscribers can create up to 9 pages.
-
-#### Button Properties
-
-Each button object can have the following properties:
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `name` | string | Yes | Display name of the button |
-| `shortcut` | string | Yes | Single-key shortcut (e.g. "Q", "W") |
-| `icon` | string | No | Emoji or icon name |
-| `action` | string | Yes | Action type: "exec", "open", "shortcut", "script", or "chain" |
-| `command` | string | For "exec" | Shell command to execute |
-| `workingDir` | string | No | Working directory for command execution |
-| `runInTerminal` | boolean | No | Whether to run the command in a terminal |
-| `url` | string | For "open" | URL to open |
-| `path` | string | For "open" | File or folder path to open |
-| `application` | string | No | Application to use for opening |
-| `keyShortcut` | string | For "shortcut" | Keyboard shortcut to simulate |
-| `script` | string | For "script" | Script content |
-| `scriptType` | string | For "script" | Script language: "javascript", "applescript", "powershell", or "bash" |
-| `actions` | array | For "chain" | Array of actions to execute in sequence |
-| `stopOnError` | boolean | For "chain" | Whether to stop chain execution on error |
-
-The application supports up to 9 pages with each page containing up to 15 buttons arranged in a 5x3 grid by default.
-
-### Chain Action Structure
-
-The "chain" action type allows executing a series of actions in sequence. The structure is as follows:
-
-```json
-{
-  "name": "Chain Example",
-  "shortcut": "C",
-  "icon": "🔗",
-  "action": "chain",
-  "actions": [
-    {
-      "action": "exec",
-      "command": "echo 'Step 1'"
-    },
-    {
-      "action": "open",
-      "url": "https://example.com"
-    },
-    {
-      "action": "shortcut",
-      "keyShortcut": "Ctrl+C"
-    }
-  ],
-  "stopOnError": true
-}
-```
-
-Each action in the chain can be any of the supported action types (exec, open, shortcut, script). The `stopOnError` property determines whether execution should continue if one of the actions fails.
-
-### Appearance
-
+**예시**:
 ```json
 "appearance": {
-  "type": "object",
-  "properties": {
-    "theme": {
-      "type": "string",
-      "enum": ["light", "dark", "system"],
-      "default": "system"
-    },
-    "position": {
-      "type": "string",
-      "enum": ["center", "top", "bottom", "cursor"],
-      "default": "center"
-    },
-    "size": {
-      "type": "string",
-      "enum": ["small", "medium", "large"],
-      "default": "medium"
-    },
-    "opacity": {
-      "type": "number",
-      "minimum": 0.1,
-      "maximum": 1.0,
-      "default": 0.95
-    },
-    "buttonLayout": {
-      "type": "string",
-      "enum": ["grid", "list"],
-      "default": "grid"
-    }
-  },
-  "default": {
-    "theme": "system",
-    "position": "center",
-    "size": "medium",
-    "opacity": 0.95,
-    "buttonLayout": "grid"
-  }
+  "theme": "dark",
+  "position": "center",
+  "size": "medium",
+  "opacity": 0.9,
+  "buttonLayout": "grid"
 }
 ```
 
-#### Theme Options
+### 고급 설정
 
-- `"light"`: Light theme
-- `"dark"`: Dark theme
-- `"system"`: Follow system theme
+| 옵션 | 유형 | 기본값 | 설명 |
+|------|------|--------|------|
+| `advanced.launchAtLogin` | 불리언 | `true` | 로그인 시 앱 자동 시작 여부 |
+| `advanced.hideAfterAction` | 불리언 | `true` | 액션 실행 후 Toast 팝업 자동 숨김 여부 |
+| `advanced.hideOnBlur` | 불리언 | `true` | 포커스 상실 시 Toast 팝업 숨김 여부 |
+| `advanced.hideOnEscape` | 불리언 | `true` | Escape 키 누를 때 Toast 팝업 숨김 여부 |
+| `advanced.showInTaskbar` | 불리언 | `false` | 작업 표시줄/독에 Toast 창 표시 여부 |
 
-#### Position Options
-
-- `"center"`: Center of the screen
-- `"top"`: Top center of the screen
-- `"bottom"`: Bottom center of the screen
-- `"cursor"`: Near the cursor position
-
-#### Size Options
-
-- `"small"`: 350x400 pixels
-- `"medium"`: 400x500 pixels
-- `"large"`: 500x600 pixels
-
-#### Button Layout Options
-
-- `"grid"`: Buttons arranged in a grid
-- `"list"`: Buttons arranged in a vertical list
-
-### Advanced
-
+**예시**:
 ```json
 "advanced": {
-  "type": "object",
-  "properties": {
-    "launchAtLogin": {
-      "type": "boolean",
-      "default": false
-    },
-    "hideAfterAction": {
-      "type": "boolean",
-      "default": true
-    },
-    "hideOnBlur": {
-      "type": "boolean",
-      "default": true
-    },
-    "hideOnEscape": {
-      "type": "boolean",
-      "default": true
-    },
-    "showInTaskbar": {
-      "type": "boolean",
-      "default": false
-    }
-  },
-  "default": {
-    "launchAtLogin": false,
-    "hideAfterAction": true,
-    "hideOnBlur": true,
-    "hideOnEscape": true,
-    "showInTaskbar": false
-  }
+  "launchAtLogin": true,
+  "hideAfterAction": true,
+  "hideOnBlur": true,
+  "hideOnEscape": true,
+  "showInTaskbar": false
 }
 ```
 
-#### Advanced Settings
+### 인증 및 구독
 
-- `launchAtLogin`: Start the application when the user logs in
-- `hideAfterAction`: Hide the Toast window after executing an action
-- `hideOnBlur`: Hide the Toast window when it loses focus
-- `hideOnEscape`: Hide the Toast window when the Escape key is pressed
-- `showInTaskbar`: Show the Toast window in the taskbar/dock
+| 옵션 | 유형 | 기본값 | 설명 |
+|------|------|--------|------|
+| `subscription.isAuthenticated` | 불리언 | `false` | 사용자 인증 상태 |
+| `subscription.level` | 문자열 | `"free"` | 구독 수준 (`"free"`, `"basic"`, `"premium"`) |
+| `subscription.pageGroups` | 숫자 | 사용자 타입별 | 사용자가 생성할 수 있는 페이지 그룹의 최대 수 |
+| `subscription.features` | 객체 | `{}` | 활성화된 기능 플래그 |
+| `subscription.email` | 문자열 | `null` | 인증된 사용자 이메일 |
+| `subscription.expiresAt` | 문자열 | `null` | 구독 만료 날짜 (ISO 문자열) |
 
-### Subscription
-
+**예시**:
 ```json
 "subscription": {
-  "type": "object",
-  "properties": {
-    "isSubscribed": {
-      "type": "boolean",
-      "default": false
-    },
-    "subscribedUntil": {
-      "type": "string",
-      "default": ""
-    },
-    "pageGroups": {
-      "type": "number",
-      "default": 1
-    }
+  "isAuthenticated": true,
+  "level": "premium",
+  "pageGroups": 9,
+  "features": {
+    "cloud_sync": true,
+    "advanced_actions": true
   },
-  "default": {
-    "isSubscribed": false,
-    "subscribedUntil": "",
-    "pageGroups": 1
-  }
+  "email": "user@example.com",
+  "expiresAt": "2023-12-31T23:59:59Z"
 }
 ```
 
-The subscription section contains information about the user's subscription status, which is now obtained through the profile API. Free users are limited to 3 pages while subscribed users can create up to 9 pages.
+**pageGroups 기본값**:
+- 익명 사용자: 1
+- 인증된 일반 사용자: 3
+- 프리미엄 사용자: 9
 
-### First Launch Completed
+## 구성 예시
 
-```json
-"firstLaunchCompleted": {
-  "type": "boolean",
-  "default": false
-}
-```
-
-This flag is set to `true` after the first launch setup is completed. It is used to determine whether to show the settings window on startup.
-
-## Example Configuration
+다음은 전체 구성 파일의 예시입니다:
 
 ```json
 {
@@ -297,24 +185,17 @@ This flag is set to `true` after the first launch setup is completed. It is used
       "buttons": [
         {
           "name": "Terminal",
-          "shortcut": "Q",
+          "shortcut": "T",
           "icon": "⌨️",
           "action": "exec",
           "command": "open -a Terminal"
         },
         {
           "name": "Browser",
-          "shortcut": "W",
+          "shortcut": "B",
           "icon": "🌐",
           "action": "open",
           "url": "https://www.google.com"
-        },
-        {
-          "name": "File Explorer",
-          "shortcut": "E",
-          "icon": "📁",
-          "action": "exec",
-          "command": "open ."
         }
       ]
     },
@@ -323,36 +204,18 @@ This flag is set to `true` after the first launch setup is completed. It is used
       "shortcut": "2",
       "buttons": [
         {
-          "name": "VSCode",
-          "shortcut": "Q",
+          "name": "VS Code",
+          "shortcut": "C",
           "icon": "💻",
           "action": "exec",
           "command": "open -a 'Visual Studio Code'"
         },
         {
           "name": "GitHub",
-          "shortcut": "W",
+          "shortcut": "G",
           "icon": "🐙",
           "action": "open",
           "url": "https://github.com"
-        },
-        {
-          "name": "Dev Workflow",
-          "shortcut": "E",
-          "icon": "🔗",
-          "action": "chain",
-          "actions": [
-            {
-              "action": "exec",
-              "command": "cd ~/projects/myapp && code ."
-            },
-            {
-              "action": "exec",
-              "command": "cd ~/projects/myapp && npm start",
-              "runInTerminal": true
-            }
-          ],
-          "stopOnError": true
         }
       ]
     }
@@ -372,78 +235,47 @@ This flag is set to `true` after the first launch setup is completed. It is used
     "showInTaskbar": false
   },
   "subscription": {
-    "isSubscribed": false,
-    "subscribedUntil": "",
-    "pageGroups": 1
+    "isAuthenticated": false,
+    "level": "free",
+    "pageGroups": 1,
+    "features": {},
+    "email": null,
+    "expiresAt": null
   },
   "firstLaunchCompleted": true
 }
 ```
 
-## Configuration API
+## 프로그래매틱 액세스
 
-The configuration can be accessed and modified using the following API:
-
-### Main Process
+Toast 앱 내에서 구성에 프로그래매틱 방식으로 액세스하려면 `config.js` 모듈을 사용하세요:
 
 ```javascript
-const { createConfigStore } = require('./main/config');
-const config = createConfigStore();
+const config = require('./config');
 
-// Get a value
+// 구성 값 가져오기
 const globalHotkey = config.get('globalHotkey');
 
-// Set a value
-config.set('globalHotkey', 'Alt+Shift+Space');
+// 구성 값 설정하기
+config.set('appearance.theme', 'dark');
 
-// Get all pages
-const pages = config.get('pages');
+// 여러 값 한 번에 설정하기
+config.set({
+  'appearance.theme': 'dark',
+  'appearance.position': 'center'
+});
 
-// Add a page
-pages.push(newPage);
-config.set('pages', pages);
+// 기본 구성으로 재설정
+config.reset();
 ```
 
-### Renderer Process (via IPC)
+## 구성 마이그레이션
 
-```javascript
-// Get a value
-const globalHotkey = await window.settings.getConfig('globalHotkey');
+Toast 앱은 구성 스키마 변경 시 자동 마이그레이션을 지원합니다. 이전 버전의 구성 파일은 자동으로 현재 스키마로 업데이트됩니다.
 
-// Set a value
-await window.settings.setConfig('globalHotkey', 'Alt+Shift+Space');
+구성 백업은 다음 위치에 저장됩니다:
+- **macOS**: `~/Library/Application Support/toast-app/config.backup.json`
+- **Windows**: `%APPDATA%\toast-app\config.backup.json`
+- **Linux**: `~/.config/toast-app/config.backup.json`
 
-// Get all configuration
-const config = await window.settings.getConfig();
-
-// Reset to defaults
-await window.settings.resetConfig();
-```
-
-## Configuration Validation
-
-The configuration is validated against the schema when it is loaded. If a value is invalid or missing, the default value is used instead.
-
-## Configuration Migration
-
-When the schema changes in a new version, the configuration is automatically migrated to the new schema. Missing properties are added with their default values and invalid values are replaced with their default values.
-
-## Configuration Backup
-
-The configuration is automatically backed up before any changes are made. The backup is stored in the same directory as the configuration file with a `.backup` extension.
-
-## Configuration Import/Export
-
-The configuration can be imported from and exported to a JSON file using the following API:
-
-```javascript
-const { importConfig, exportConfig } = require('./main/config');
-
-// Import configuration
-importConfig(config, '/path/to/config.json');
-
-// Export configuration
-exportConfig(config, '/path/to/config.json');
-```
-
-These functions are also available in the renderer process via IPC.
+구성 마이그레이션 오류가 발생하면 백업 파일을 원래 config.json 파일로 복원할 수 있습니다.

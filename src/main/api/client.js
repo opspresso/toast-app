@@ -1,70 +1,70 @@
 /**
- * Toast API - API 클라이언트 기본 모듈
+ * Toast API - API Client Base Module
  *
- * 모든 API 호출의 기본이 되는 클라이언트 설정과 공통 함수를 제공합니다.
+ * Provides client configuration and common functions for all API calls.
  */
 
 const axios = require('axios');
 const { getEnv } = require('../config/env');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
-// 기본 URL 및 엔드포인트 설정
+// Base URL and endpoint configuration
 const TOAST_URL = getEnv('TOAST_URL', 'https://app.toast.sh');
 const API_BASE_URL = `${TOAST_URL}/api`;
 
-// API 엔드포인트
+// API endpoints
 const ENDPOINTS = {
-  // OAuth 관련
+  // OAuth related
   OAUTH_AUTHORIZE: `${API_BASE_URL}/oauth/authorize`,
   OAUTH_TOKEN: `${API_BASE_URL}/oauth/token`,
   OAUTH_REVOKE: `${API_BASE_URL}/oauth/revoke`,
 
-  // 사용자 관련
+  // User related
   USER_PROFILE: `${API_BASE_URL}/users/profile`,
-  // 구독 정보는 프로필 API로 통합됨
+  // Subscription information is integrated with the profile API
 
-  // 설정 관련
+  // Settings related
   SETTINGS: `${API_BASE_URL}/users/settings`
 };
 
-// 토큰 관리 (메모리)
+// Token management (in memory)
 let currentToken = null;
 let currentRefreshToken = null;
 
 /**
- * 액세스 토큰 설정
- * @param {string} token - 설정할 액세스 토큰
+ * Set access token
+ * @param {string} token - Access token to set
  */
 function setAccessToken(token) {
   currentToken = token;
 }
 
 /**
- * 리프레시 토큰 설정
- * @param {string} token - 설정할 리프레시 토큰
+ * Set refresh token
+ * @param {string} token - Refresh token to set
  */
 function setRefreshToken(token) {
   currentRefreshToken = token;
 }
 
 /**
- * 현재 액세스 토큰 가져오기
- * @returns {string|null} 현재 액세스 토큰 또는 null
+ * Get current access token
+ * @returns {string|null} Current access token or null
  */
 function getAccessToken() {
   return currentToken;
 }
 
 /**
- * 현재 리프레시 토큰 가져오기
- * @returns {string|null} 현재 리프레시 토큰 또는 null
+ * Get current refresh token
+ * @returns {string|null} Current refresh token or null
  */
 function getRefreshToken() {
   return currentRefreshToken;
 }
 
 /**
- * 토큰 초기화 (로그아웃)
+ * Clear tokens (logout)
  */
 function clearTokens() {
   currentToken = null;
@@ -72,8 +72,8 @@ function clearTokens() {
 }
 
 /**
- * API 요청을 위한 인증 헤더 생성
- * @returns {Object} 인증 헤더
+ * Generate authentication headers for API requests
+ * @returns {Object} Authentication headers
  */
 function getAuthHeaders() {
   if (!currentToken) {
@@ -87,9 +87,9 @@ function getAuthHeaders() {
 }
 
 /**
- * 기본 API 클라이언트 인스턴스 생성
- * @param {Object} options - axios 인스턴스 생성 옵션
- * @returns {AxiosInstance} axios 인스턴스
+ * Create a base API client instance
+ * @param {Object} options - Options for creating an axios instance
+ * @returns {AxiosInstance} Axios instance
  */
 function createApiClient(options = {}) {
   const defaultOptions = {
@@ -130,8 +130,6 @@ async function authenticatedRequest(apiCall, options = {}) {
   const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
   if (!currentToken) {
-    console.error('No access token available');
-
     if (allowUnauthenticated && defaultValue) {
       return defaultValue;
     }
@@ -147,11 +145,9 @@ async function authenticatedRequest(apiCall, options = {}) {
   try {
     return await apiCall();
   } catch (error) {
-    console.log('API call error:', error.response?.status, error.message);
 
     // Handle 401 unauthorized error
     if (error.response && error.response.status === 401) {
-      console.log('401 error detected, token issue suspected');
 
       // Special handling for subscription API requests
       if (isSubscriptionRequest) {
@@ -163,7 +159,6 @@ async function authenticatedRequest(apiCall, options = {}) {
       const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
 
       if (timeSinceLastRefresh < tokenRefreshTracking.refreshCooldownMs) {
-        console.warn(`Token refresh attempted too soon (${Math.floor(timeSinceLastRefresh / 1000)}s ago). Skipping to prevent loop.`);
 
         if (allowUnauthenticated && defaultValue) {
           return defaultValue;
@@ -178,7 +173,6 @@ async function authenticatedRequest(apiCall, options = {}) {
       }
 
       if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
-        console.error(`Too many consecutive auth failures (${tokenRefreshTracking.requestsAfterRefresh}). Possible refresh loop detected.`);
 
         // Reset token to force re-login
         clearTokens();
@@ -194,7 +188,6 @@ async function authenticatedRequest(apiCall, options = {}) {
 
       // Call re-authentication callback
       if (onUnauthorized && typeof onUnauthorized === 'function') {
-        console.log('Attempting token refresh...');
         tokenRefreshTracking.lastRefreshTime = now;
 
         const refreshResult = await onUnauthorized();
@@ -211,7 +204,6 @@ async function authenticatedRequest(apiCall, options = {}) {
 
             return result;
           } catch (retryError) {
-            console.error('API request failed after token refresh:', retryError.message);
 
             if (allowUnauthenticated && defaultValue) {
               return defaultValue;
@@ -226,7 +218,6 @@ async function authenticatedRequest(apiCall, options = {}) {
             };
           }
         } else {
-          console.error('Token refresh failed:', refreshResult?.error || 'Unknown error');
 
           // Reset tokens on refresh failure
           clearTokens();
