@@ -247,16 +247,16 @@ async function storeToken(token, expiresIn = 3600) {
     // Store new token
     tokenData[TOKEN_KEY] = token;
 
-  // Calculate and store expiration time
-  let expiresAt;
-  if (expiresIn <= 0) {
-    // Treat negative or zero values as unlimited expiration time (use a very distant future date)
-    expiresAt = 8640000000000000; // Maximum date supported by JavaScript (about 270 million years)
-    console.log('Token expiration time set to unlimited.');
-  } else {
-    expiresAt = Date.now() + (expiresIn * 1000);
-  }
-  tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
+    // Calculate and store expiration time
+    let expiresAt;
+    if (expiresIn <= 0) {
+      // Treat negative or zero values as unlimited expiration time (use a very distant future date)
+      expiresAt = 8640000000000000; // Maximum date supported by JavaScript (about 270 million years)
+      console.log('Token expiration time set to unlimited.');
+    } else {
+      expiresAt = Date.now() + (expiresIn * 1000);
+    }
+    tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
 
     // Save to file
     if (!writeTokenFile(tokenData)) {
@@ -426,7 +426,7 @@ async function exchangeCodeForToken(code) {
     // Store token and expiration time in secure storage
     // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
     await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-    console.log(`Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + ' hours' : expires_in ? expires_in/3600 + ' hours' : '1 hour'})`);
+    console.log(`Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`);
 
     // Store refresh token (if available)
     if (refresh_token) {
@@ -533,7 +533,7 @@ async function refreshAccessToken() {
 
         // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
         await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-        console.log(`New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN/3600 + ' hours' : expires_in ? expires_in/3600 + ' hours' : '1 hour'})`);
+        console.log(`New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`);
 
         // Store new refresh token (if available)
         if (refresh_token) {

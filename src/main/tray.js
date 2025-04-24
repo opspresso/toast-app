@@ -4,7 +4,7 @@
  * This module handles the system tray icon and menu.
  */
 
-const { Tray, Menu, app, shell } = require('electron');
+const { Tray, Menu, app } = require('electron');
 const path = require('path');
 
 let trayInstance = null;
