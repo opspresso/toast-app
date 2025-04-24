@@ -34,20 +34,24 @@ jobs:
           # Remove 'v' prefix from tag name
           TAG_VERSION="${GITHUB_REF#refs/tags/}"
           TAG_VERSION="${TAG_VERSION#v}"
-          echo "Tag version: $TAG_VERSION"
+          echo "🏷️ Detected tag version: $TAG_VERSION"
 
           # Get version from package.json and remove 'v' prefix
           PKG_VERSION=$(jq -r .version package.json)
           PKG_VERSION="${PKG_VERSION#v}"
-          echo "Package.json version: $PKG_VERSION"
+          echo "📦 Found package.json version: $PKG_VERSION"
 
           # Verify versions match
+          echo "🔍 Verifying version consistency..."
           if [[ "$TAG_VERSION" != "$PKG_VERSION" ]]; then
+            echo "❌ ERROR: Version mismatch detected!"
             echo "::error::Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
+            echo "🛑 Build process cannot continue with inconsistent versions"
             exit 1
           fi
 
           echo "✅ Version verification passed: $TAG_VERSION"
+          echo "🚀 Proceeding with build for version $TAG_VERSION"
 
       - name: Setup Node.js 📦
         uses: actions/setup-node@v4
