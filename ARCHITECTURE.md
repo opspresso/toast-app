@@ -165,30 +165,180 @@ Implements specific action types.
 - Return standardized results
 - Handle platform-specific behavior
 
-#### Auth Manager (`src/main/auth-manager.js` and `src/main/auth.js`)
+#### Authentication System (`src/main/auth-manager.js` and `src/main/auth.js`)
 
-Manages authentication with Toast Web service and subscription status.
+The authentication system manages user authentication with the Toast Web service and handles subscription status through several integrated components:
 
-**Responsibilities:**
-- Handle user authentication flow
-- Maintain authentication tokens
-- Validate and refresh tokens
-- Fetch user profile and subscription information
-- Notify UI components of authentication state changes
-- Manage login/logout process
-- Prevent window operations during authentication flows
+```
+┌──────────────────────────────────────────────────────────────┐
+│                   Authentication System                      │
+│                                                              │
+│  ┌────────────────┐      ┌────────────────┐                  │
+│  │                │      │                │                  │
+│  │  Auth Manager  │◄────►│  Auth Module   │                  │
+│  │                │      │                │                  │
+│  └───────┬────────┘      └────────┬───────┘                  │
+│          │                        │                          │
+│          ▼                        ▼                          │
+│  ┌────────────────┐      ┌────────────────┐                  │
+│  │                │      │                │                  │
+│  │   User Data    │      │  API Client    │                  │
+│  │    Manager     │      │                │                  │
+│  │                │      │                │                  │
+│  └────────────────┘      └────────────────┘                  │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
 
-#### Cloud Sync (`src/main/cloud-sync.js`)
+**Authentication Components:**
 
-Manages cloud synchronization of user settings and configuration.
+1. **Auth Manager (`auth-manager.js`)**: Central coordinator for authentication operations
+   - Synchronizes authentication state between windows
+   - Manages login/logout process
+   - Coordinates token refreshing
+   - Notifies UI components of authentication state changes
+   - Prevents window operations during authentication flows
 
-**Responsibilities:**
-- Synchronize user settings with cloud storage
-- Implement sync strategies (periodic, on-change, manual)
-- Handle conflict resolution between local and remote settings
-- Provide real-time status updates for sync operations
-- Implement retry mechanisms for failed sync operations
-- Ensure synchronization feature is available based on subscription status
+2. **Auth Module (`auth.js`)**: Core authentication implementation
+   - Implements OAuth 2.0 authentication flow
+   - Securely manages tokens using atomic storage
+   - Handles token validation and refresh
+   - Manages subscription levels and permissions
+   - Implements protocol handler for OAuth redirects
+
+3. **User Data Manager**: Manages user profile and settings data
+   - Maintains profile and subscription information
+   - Handles synchronization of user settings
+   - Provides cached access to user data
+   - Manages user data cleanup on logout
+
+4. **API Client**: Low-level API communication
+   - Handles API requests with authentication
+   - Manages automatic token refresh
+   - Implements retry logic and error handling
+   - Provides standardized API response format
+
+**Authentication Flow:**
+
+1. **Login Initiation:**
+   - User clicks login button
+   - System generates OAuth authorization URL
+   - External browser opens for authentication
+   - User authenticates with Toast Web service
+
+2. **Token Processing:**
+   - Browser redirects to custom protocol (toast-app://)
+   - App captures authentication code
+   - Code is exchanged for access and refresh tokens
+   - Tokens are securely stored with atomic file operations
+
+3. **Token Management:**
+   - Access tokens expire after 1 hour (configurable)
+   - System refreshes tokens automatically when needed
+   - Refresh operations have cooling period (5 minutes)
+   - Refresh attempts limited to prevent infinite loops
+
+4. **Subscription Handling:**
+   - System fetches and parses subscription information
+   - Features are enabled based on subscription level
+   - Page limits are enforced (1/3/9 pages based on tier)
+   - Special features like cloud sync are toggled based on subscription
+
+5. **Security Protections:**
+   - Token validation before API requests
+   - Protocol handler security validation
+   - Atomic file operations for token storage
+   - Prevention of window operations during authentication
+
+#### Cloud Synchronization System (`src/main/cloud-sync.js` and `src/main/api/sync.js`)
+
+The cloud synchronization system manages the synchronization of user settings and configurations across multiple devices:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                 Cloud Synchronization System                 │
+│                                                              │
+│  ┌────────────────┐      ┌────────────────┐                  │
+│  │                │      │                │                  │
+│  │  Cloud Sync    │◄────►│  API Sync      │                  │
+│  │  Manager       │      │  Module        │                  │
+│  │                │      │                │                  │
+│  └───────┬────────┘      └────────┬───────┘                  │
+│          │                        │                          │
+│          ▼                        ▼                          │
+│  ┌────────────────┐      ┌────────────────┐                  │
+│  │                │      │                │                  │
+│  │     Config     │      │  Auth Manager  │                  │
+│  │     Store      │      │                │                  │
+│  │                │      │                │                  │
+│  └────────────────┘      └────────────────┘                  │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Synchronization Components:**
+
+1. **Cloud Sync Manager (`cloud-sync.js`)**: Coordinates all synchronization operations
+   - Manages synchronization timing (periodic, on-change, manual)
+   - Tracks device information for conflict resolution
+   - Implements retry logic for failed operations
+   - Monitors configuration changes to trigger synchronization
+   - Handles conflict resolution between different devices
+
+2. **API Sync Module (`api/sync.js`)**: Handles server communication
+   - Performs API calls for upload and download operations
+   - Validates server responses and formats data
+   - Handles authentication failures during sync
+   - Provides standardized error handling
+   - Adapts to different server response formats
+
+3. **Config Store Integration**: Manages the configuration data
+   - Observes changes to trigger synchronization
+   - Provides access to stored configuration
+   - Handles saving of synchronized settings
+   - Maintains local versions of configurations
+
+4. **Auth Manager Integration**: Validates sync permissions
+   - Verifies whether cloud sync feature is available
+   - Refreshes tokens when needed during sync
+   - Validates subscription status for sync feature
+   - Manages permissions for synchronization access
+
+**Synchronization Process:**
+
+1. **Change Detection:**
+   - Monitors changes to configuration in real-time
+   - Tracks change types (page added, page deleted, button modified)
+   - Maintains metadata about changes (timestamps, device information)
+   - Debounces quick successive changes (2-second delay)
+
+2. **Upload Process:**
+   - Formats local settings for server upload
+   - Includes device identification metadata
+   - Tags data with timestamps for conflict resolution
+   - Implements progressive retry logic (up to 3 attempts)
+   - Uses exponential backoff for retries (5 seconds between attempts)
+
+3. **Download Process:**
+   - Retrieves server configuration during key events
+   - Handles various response data formats
+   - Validates incoming data structure
+   - Applies changes to local configuration
+   - Updates synchronization metadata
+
+4. **Conflict Resolution:**
+   - Uses timestamp-based resolution strategy
+   - Maintains last modified and sync timestamps
+   - Records which device made the last change
+   - Implements a "most recent wins" policy by default
+   - Provides merge capabilities for compatible changes
+
+5. **Synchronization Scheduling:**
+   - Periodic synchronization every 15 minutes
+   - Immediate synchronization on significant changes
+   - Manual synchronization when requested by user
+   - Startup synchronization on application launch
+   - Post-login synchronization for fresh data
 
 ### Renderer Process Components
 
@@ -681,15 +831,65 @@ A future version of Toast App may include a plugin system:
 
 ### Cloud Synchronization
 
-Toast App already includes cloud synchronization for subscribers:
+Toast App implements a comprehensive cloud synchronization system that allows users to maintain consistent settings across multiple devices:
 
-1. **Secure Storage**: Encrypted storage of configuration in the cloud
-2. **Automatic Sync**: Synchronizes settings across devices when logging in
-3. **Feature Availability**: Available for subscribers and authenticated users with cloud_sync feature enabled
+#### Synchronization Architecture
 
-Future enhancements may include:
-1. **Conflict Resolution Improvements**: Enhanced handling of conflicts between different devices
-2. **Selective Sync**: Allowing users to choose what to synchronize
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│                 │     │                 │     │                 │
+│   Local App     │     │  Toast Web API  │     │   Remote App    │
+│   Instance      │◄────►   (Cloud Store) │◄────►   Instance      │
+│                 │     │                 │     │                 │
+└─────────────┬───┘     └─────────────────┘     └───┬─────────────┘
+              │                                     │
+              │                                     │
+              ▼                                     ▼
+      ┌─────────────────┐                  ┌─────────────────┐
+      │                 │                  │                 │
+      │  Local Config   │                  │  Remote Config  │
+      │  Store          │                  │  Store          │
+      │                 │                  │                 │
+      └─────────────────┘                  └─────────────────┘
+```
+
+#### Synchronization Triggers
+
+The system synchronizes data at several key points:
+
+1. **On Login**: Downloads the latest configuration from the server when a user logs in
+2. **On Configuration Change**: Uploads changes to the server 2 seconds after local configuration changes
+3. **Periodic Synchronization**: Automatically syncs every 15 minutes in the background
+4. **On Application Startup**: Checks for updates if the user is logged in
+5. **Manual Synchronization**: Users can trigger synchronization on demand
+
+#### Conflict Resolution Strategy
+
+When conflicts occur between different devices, the application implements a timestamp-based resolution strategy:
+
+1. **Metadata Tracking**: Each change is tracked with timestamps and device identifiers
+2. **Most Recent Wins**: By default, the most recently modified configuration takes precedence
+3. **Merger Logic**: For compatible changes, the system attempts to merge configurations
+4. **Failure Recovery**: Multiple retry attempts (up to 3) with exponential backoff (5 seconds)
+
+#### Synchronization Security
+
+1. **Authentication Required**: Synchronization only works for authenticated users
+2. **Subscription Validation**: Cloud sync feature is enabled based on subscription status
+3. **Secure API Communication**: All data is transmitted over HTTPS with bearer token authentication
+
+#### Feature Availability
+
+- **Availability Levels**:
+  - **Free users**: Cloud sync not available
+  - **Authenticated users**: Basic sync available if the cloud_sync feature is enabled
+  - **Subscribers**: Full cloud sync capabilities across unlimited devices
+
+Future enhancements planned for the synchronization system include:
+1. **Enhanced Conflict Resolution**: More sophisticated merging of conflicting configuration changes
+2. **Selective Synchronization**: Allowing users to choose which components to synchronize
+3. **Synchronization History**: Providing users with a log of synchronization events and changes
+4. **Offline Change Queueing**: Better handling of changes made while offline
 
 ### Mobile Companion
 
