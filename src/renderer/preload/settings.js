@@ -107,3 +107,17 @@ ipcRenderer.on('auth-state-changed', (event, data) => {
     detail: data
   }));
 });
+
+// Settings synchronization event handler
+ipcRenderer.on('settings-synced', (event, data) => {
+  window.dispatchEvent(new CustomEvent('settings-synced', {
+    detail: data
+  }));
+});
+
+// Configuration updated event handler
+ipcRenderer.on('config-updated', (event, data) => {
+  window.dispatchEvent(new CustomEvent('config-updated', {
+    detail: data
+  }));
+});
