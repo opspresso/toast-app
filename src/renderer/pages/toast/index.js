@@ -2,7 +2,7 @@
  * Toast - Toast Window JavaScript
  */
 
-// Toast URL 설정
+// Toast URL configuration
 const TOAST_URL = window.toast?.apiBaseUrl || 'https://app.toast.sh';
 const SUBSCRIPTION_URL = `${TOAST_URL}/subscription`;
 const DASHBOARD_URL = `${TOAST_URL}/dashboard`;
@@ -290,10 +290,10 @@ function updateClock() {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
 
-  // AM/PM 결정
+  // Determine AM/PM
   const ampm = hours >= 12 ? 'PM' : 'AM';
 
-  // 12시간제로 변환
+  // Convert to 12-hour format
   const hours12 = hours % 12 || 12;
   const hours12Str = String(hours12).padStart(2, '0');
 
@@ -407,17 +407,17 @@ function setupEventListeners() {
   // Set up modal event listeners
   setupModalEventListeners();
 
-  // HTML에 스크립트를 추가하는 대신 프로그래밍 방식으로 FlatColorIcons 객체 처리
+  // Process FlatColorIcons object programmatically instead of adding script to HTML
   if (window.IconsCatalog && window.AllIcons) {
-    // FlatColorIcons 객체가 없으면 생성
+    // Create FlatColorIcons object if it doesn't exist
     window.FlatColorIcons = {};
 
-    // 모든 아이콘에 대해 FlatColorIcons 객체에 경로 추가
+    // Add paths to FlatColorIcons object for all icons
     Object.keys(window.AllIcons).forEach(iconName => {
       window.FlatColorIcons[iconName] = window.AllIcons[iconName];
     });
 
-    console.log('FlatColorIcons 객체가 초기화되었습니다.');
+    console.log('FlatColorIcons object has been initialized.');
   }
 
   // Keyboard page switching (1-9 key events)
@@ -884,7 +884,7 @@ function updateProfileDisplay() {
   subscriptionStatus.className = 'subscription-value subscription-status-inactive';
   subscriptionPlan.className = 'subscription-value';
 
-  // 버튼 초기 상태 설정
+  // Initialize button initial state
   if (subscribeButton) {
     subscribeButton.style.display = 'none';
   }
@@ -921,12 +921,12 @@ function updateProfileDisplay() {
       pages: subscriptionPages.textContent
     });
 
-    // 구독하기 버튼 표시 - 구독중이 아닌 경우 (익명 사용자 포함)
+    // Show subscribe button - when not subscribed (including anonymous users)
     if (!isActive && subscribeButton) {
       subscribeButton.style.display = 'block';
     }
 
-    // 대시보드 버튼 표시 - 구독중인 경우만
+    // Show dashboard button - only for subscribed users
     if (isActive && dashboardButton) {
       dashboardButton.style.display = 'block';
     }
@@ -1531,7 +1531,7 @@ function createButtonElement(button) {
   // Set button icon
   const iconElement = buttonElement.querySelector('.button-icon');
 
-  // FlatColorIcons 형식 아이콘 처리
+  // Process FlatColorIcons format icon
   if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
     const iconName = button.icon.split('.')[1]; // 'FlatColorIcons.home' -> 'home'
     if (window.AllIcons && window.AllIcons[iconName]) {
@@ -1540,12 +1540,12 @@ function createButtonElement(button) {
       img.src = window.AllIcons[iconName];
       img.alt = button.name || iconName;
       img.onerror = function () {
-        // 이미지 로드에 실패한 경우 기본 아이콘 표시
+        // Display default icon if image loading fails
         iconElement.textContent = '🔍';
       };
       iconElement.appendChild(img);
     } else {
-      // 아이콘을 찾을 수 없는 경우 아이콘 이름만 표시
+      // Display only icon name if icon not found
       iconElement.textContent = iconName || '❓';
     }
   }
@@ -1708,7 +1708,7 @@ function setupModalEventListeners() {
         const options = {
           title: 'Select File or Folder',
           defaultPath: window.toast?.platform === 'darwin' ? '/Users' : 'C:\\',
-          properties: ['openFile', 'openDirectory'] // 파일 또는 폴더 선택 가능
+          properties: ['openFile', 'openDirectory'] // Select file or folder
         };
 
         // Call ipcRenderer to save current toast window position
@@ -1745,7 +1745,7 @@ function setupModalEventListeners() {
     }
   });
 
-  // 아이콘 검색 모달 외부 클릭 시 닫기
+  // Close icon search modal when clicking outside
   iconSearchModal.addEventListener('click', (event) => {
     if (event.target === iconSearchModal) {
       closeIconSearchModal();
@@ -1755,7 +1755,7 @@ function setupModalEventListeners() {
   // Close modal with ESC key
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      // 우선순위에 따라 모달 닫기
+      // Close modals according to priority
       if (iconSearchModal.classList.contains('show')) {
         closeIconSearchModal();
         event.stopPropagation();
@@ -1769,7 +1769,7 @@ function setupModalEventListeners() {
     }
   });
 
-  // 아이콘 찾기 모달 이벤트 리스너
+  // Icon search modal event listeners
   const browseIconButton = document.getElementById('browse-icon-button');
   const closeIconSearch = document.getElementById('close-icon-search');
   const closeIconBrowser = document.getElementById('close-icon-browser');
@@ -1777,62 +1777,62 @@ function setupModalEventListeners() {
   const categorySelect = document.getElementById('category-select');
   const iconsContainer = document.getElementById('icons-container');
 
-  // 아이콘 찾기 버튼 클릭 이벤트
+  // Icon search button click event
   browseIconButton.addEventListener('click', () => {
-    // 아이콘 컨테이너 초기화 및 아이콘 그리드 렌더링
+    // Initialize icon container and render icon grid
     renderIconsGrid();
 
-    // 아이콘 검색 모달 표시
+    // Show icon search modal
     iconSearchModal.classList.add('show');
     window.toast.setModalOpen(true);
 
-    // 검색 필드에 포커스
+    // Focus on search field
     setTimeout(() => {
       iconSearchInput.focus();
     }, 300);
   });
 
-  // 아이콘 검색 모달 닫기 버튼 이벤트
+  // Icon search modal close button event
   closeIconSearch.addEventListener('click', closeIconSearchModal);
   closeIconBrowser.addEventListener('click', closeIconSearchModal);
 
-  // 아이콘 검색 필드 입력 이벤트
+  // Icon search field input event
   iconSearchInput.addEventListener('input', () => {
     renderIconsGrid();
   });
 
-  // 카테고리 선택 변경 이벤트
+  // Category selection change event
   categorySelect.addEventListener('change', () => {
     renderIconsGrid();
   });
 
-  // 아이콘 검색 모달 닫기 함수
+  // Icon search modal close function
   function closeIconSearchModal() {
     iconSearchModal.classList.remove('show');
     window.toast.setModalOpen(false);
   }
 
-  // 아이콘 그리드 렌더링 함수
+  // Icon grid rendering function
   function renderIconsGrid() {
-    // 컨테이너 초기화
+    // Initialize container
     iconsContainer.innerHTML = '';
 
     const searchQuery = iconSearchInput.value.trim().toLowerCase();
     const selectedCategory = categorySelect.value;
 
-    // 모든 카테고리 또는 선택된 카테고리만 표시
+    // Display all categories or only selected category
     if (selectedCategory === 'all') {
-      // 모든 카테고리 표시
+      // Display all categories
       Object.keys(window.IconsCatalog).forEach(category => {
         renderCategoryIcons(category, searchQuery);
       });
     } else {
-      // 선택된 카테고리만 표시
+      // Display only selected category
       renderCategoryIcons(selectedCategory, searchQuery);
     }
   }
 
-  // 카테고리 아이콘 렌더링 함수
+  // Category icon rendering function
   function renderCategoryIcons(categoryKey, searchQuery) {
     if (!window.IconsCatalog || !window.IconsCatalog[categoryKey]) return;
 
@@ -1840,62 +1840,62 @@ function setupModalEventListeners() {
     const icons = category.icons;
     const filteredIcons = {};
 
-    // 검색어로 아이콘 필터링
+    // Filter icons by search query
     Object.keys(icons).forEach(iconKey => {
       if (!searchQuery || iconKey.toLowerCase().includes(searchQuery)) {
         filteredIcons[iconKey] = icons[iconKey];
       }
     });
 
-    // 필터링된 아이콘이 있는 경우만 카테고리 추가
+    // Add category only if there are filtered icons
     if (Object.keys(filteredIcons).length > 0) {
-      // 카테고리 제목 추가
+      // Add category title
       const categoryTitle = document.createElement('div');
       categoryTitle.className = 'icon-category-title';
       categoryTitle.textContent = category.name;
       iconsContainer.appendChild(categoryTitle);
 
-      // 아이콘 추가
+      // Add icons
       Object.keys(filteredIcons).forEach(iconKey => {
         const iconPath = filteredIcons[iconKey];
         const iconValue = `FlatColorIcons.${iconKey}`;
 
-        // 아이콘 항목 생성
+        // Create icon item
         const iconItem = document.createElement('div');
         iconItem.className = 'icon-item';
         iconItem.setAttribute('data-icon', iconValue);
 
-        // 현재 선택된 아이콘인지 확인
+        // Check if this is the currently selected icon
         if (editButtonIconInput.value === iconValue) {
           iconItem.classList.add('selected');
         }
 
-        // 아이콘 이미지 생성
+        // Create icon image
         const img = document.createElement('img');
         img.src = iconPath;
         img.alt = iconKey;
 
-        // 아이콘 클릭 이벤트
+        // Icon click event
         iconItem.addEventListener('click', () => {
-          // 이전 선택된 아이콘에서 선택 제거
+          // Remove selection from previously selected icon
           document.querySelectorAll('.icons-container .icon-item.selected').forEach(item => {
             item.classList.remove('selected');
           });
 
-          // 현재 아이콘 선택
+          // Select current icon
           iconItem.classList.add('selected');
 
-          // 아이콘 필드에 값 설정
+          // Set value to icon field
           editButtonIconInput.value = iconValue;
 
-          // 모달 닫기
+          // Close modal
           closeIconSearchModal();
 
-          // 상태 메시지 표시
-          showStatus(`아이콘 선택됨`, 'info');
+          // Show status message
+          showStatus(`Icon selected`, 'info');
         });
 
-        // 아이콘 항목에 이미지만 추가 (이름 제거)
+        // Add only image to icon item (remove name)
         iconItem.appendChild(img);
         iconsContainer.appendChild(iconItem);
       });
@@ -1933,11 +1933,11 @@ function editButtonSettings(button) {
   editButtonScriptTypeSelect.value = button.scriptType || 'javascript';
   editButtonScriptParamsInput.value = button.scriptParams ? JSON.stringify(button.scriptParams, null, 2) : '';
 
-  // shortcut 액션 타입 제거
+  // Remove shortcut action type
 
   editButtonApplicationInput.value = button.applicationPath || '';
   editButtonApplicationParametersInput.value = button.applicationParameters || '';
-  editButtonStopOnErrorCheckbox.checked = button.stopOnError !== false; // 기본값 true
+  editButtonStopOnErrorCheckbox.checked = button.stopOnError !== false; // default value true
 
   // Show input fields appropriate for current action type
   showActionFields(button.action || 'exec');
@@ -2042,24 +2042,24 @@ function saveButtonSettings() {
     case 'exec':
       updatedButton.command = editButtonCommandInput.value.trim();
 
-      // 작업 디렉토리 추가 (선택적)
+      // Add working directory (optional)
       if (editButtonWorkingDirInput.value.trim()) {
         updatedButton.workingDir = editButtonWorkingDirInput.value.trim();
       }
 
-      // 터미널에서 실행 여부 추가
+      // Add run in terminal option
       updatedButton.runInTerminal = editButtonRunInTerminalCheckbox.checked;
       break;
 
     case 'open':
-      // URL 또는 path 중 하나 필요 (둘 다는 아님)
+      // URL or path is required (not both)
       if (editButtonUrlInput.value.trim()) {
         updatedButton.url = editButtonUrlInput.value.trim();
       } else if (editButtonPathInput.value.trim()) {
         updatedButton.path = editButtonPathInput.value.trim();
       }
 
-      // 애플리케이션 설정 (선택적)
+      // Application setting (optional)
       if (editButtonOpenApplicationInput.value.trim()) {
         updatedButton.application = editButtonOpenApplicationInput.value.trim();
       }
@@ -2069,7 +2069,7 @@ function saveButtonSettings() {
       updatedButton.script = editButtonScriptInput.value.trim();
       updatedButton.scriptType = editButtonScriptTypeSelect.value;
 
-      // 스크립트 파라미터 추가 (JSON 형식으로 파싱)
+      // Add script parameters (parse as JSON format)
       if (editButtonScriptParamsInput.value.trim()) {
         try {
           updatedButton.scriptParams = JSON.parse(editButtonScriptParamsInput.value.trim());
@@ -2083,15 +2083,15 @@ function saveButtonSettings() {
     case 'application':
       updatedButton.applicationPath = editButtonApplicationInput.value.trim();
 
-      // 애플리케이션 파라미터 추가 (선택적)
+      // Add application parameters (optional)
       if (editButtonApplicationParametersInput.value.trim()) {
         updatedButton.applicationParameters = editButtonApplicationParametersInput.value.trim();
       }
       break;
 
     case 'chain':
-      // 체인 액션 추가 기능 구현 필요
-      updatedButton.actions = []; // 실제 구현에서는 GUI에서 추가된 액션 목록을 가져옴
+      // Chain action add functionality needs to be implemented
+      updatedButton.actions = []; // In actual implementation, get the list of actions added from GUI
       updatedButton.stopOnError = editButtonStopOnErrorCheckbox.checked;
       break;
   }
