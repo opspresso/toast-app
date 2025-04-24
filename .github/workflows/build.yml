@@ -196,3 +196,31 @@ jobs:
           GITOPS_REPO: "opspresso/homebrew-tap" # Homebrew tap repository
           PROJECT: "toast" # Project name
           VERSION: ${{ github.ref_name }} # Current tag version
+
+      - name: Delete existing draft releases 🧹
+        run: |
+          echo "🔍 Checking for existing draft releases for tag ${{ github.ref_name }}..."
+
+          # Get list of releases for this tag
+          RELEASES=$(curl -s -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" | \
+            jq -r '.[] | select(.tag_name == "${{ github.ref_name }}") | {id: .id, draft: .draft, name: .name}')
+
+          # Check if there are any draft releases
+          DRAFT_RELEASES=$(echo "$RELEASES" | jq -r 'select(.draft == true) | .id')
+
+          if [ -n "$DRAFT_RELEASES" ]; then
+            echo "🗑️ Found draft releases to delete:"
+            echo "$RELEASES" | jq -r 'select(.draft == true) | "ID: \(.id), Name: \(.name)"'
+
+            # Delete each draft release
+            for RELEASE_ID in $DRAFT_RELEASES; do
+              echo "🗑️ Deleting draft release with ID: $RELEASE_ID"
+              curl -s -X DELETE -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+            done
+
+            echo "✅ Successfully deleted draft releases"
+          else
+            echo "✅ No draft releases found for tag ${{ github.ref_name }}"
+          fi
