@@ -133,12 +133,18 @@ function createConfigStore() {
  * @param {Store} config - Configuration store instance
  */
 function resetToDefaults(config) {
+  // Preserve current pages settings
+  const currentPages = config.get('pages');
+
   // Clear all existing settings
   config.clear();
 
   // Set default values for each key
   config.set('globalHotkey', schema.globalHotkey.default);
-  config.set('pages', schema.pages.default);
+
+  // Preserve pages if they exist, otherwise use the default (empty array)
+  config.set('pages', currentPages || schema.pages.default);
+
   config.set('appearance', schema.appearance.default);
   config.set('advanced', schema.advanced.default);
   config.set('firstLaunchCompleted', false);
