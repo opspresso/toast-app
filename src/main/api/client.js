@@ -130,8 +130,6 @@ async function authenticatedRequest(apiCall, options = {}) {
   const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
   if (!currentToken) {
-    console.error('No access token available');
-
     if (allowUnauthenticated && defaultValue) {
       return defaultValue;
     }
@@ -147,11 +145,9 @@ async function authenticatedRequest(apiCall, options = {}) {
   try {
     return await apiCall();
   } catch (error) {
-    console.log('API call error:', error.response?.status, error.message);
 
     // Handle 401 unauthorized error
     if (error.response && error.response.status === 401) {
-      console.log('401 error detected, token issue suspected');
 
       // Special handling for subscription API requests
       if (isSubscriptionRequest) {
@@ -163,7 +159,6 @@ async function authenticatedRequest(apiCall, options = {}) {
       const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
 
       if (timeSinceLastRefresh < tokenRefreshTracking.refreshCooldownMs) {
-        console.warn(`Token refresh attempted too soon (${Math.floor(timeSinceLastRefresh / 1000)}s ago). Skipping to prevent loop.`);
 
         if (allowUnauthenticated && defaultValue) {
           return defaultValue;
@@ -178,7 +173,6 @@ async function authenticatedRequest(apiCall, options = {}) {
       }
 
       if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
-        console.error(`Too many consecutive auth failures (${tokenRefreshTracking.requestsAfterRefresh}). Possible refresh loop detected.`);
 
         // Reset token to force re-login
         clearTokens();
@@ -194,7 +188,6 @@ async function authenticatedRequest(apiCall, options = {}) {
 
       // Call re-authentication callback
       if (onUnauthorized && typeof onUnauthorized === 'function') {
-        console.log('Attempting token refresh...');
         tokenRefreshTracking.lastRefreshTime = now;
 
         const refreshResult = await onUnauthorized();
@@ -211,7 +204,6 @@ async function authenticatedRequest(apiCall, options = {}) {
 
             return result;
           } catch (retryError) {
-            console.error('API request failed after token refresh:', retryError.message);
 
             if (allowUnauthenticated && defaultValue) {
               return defaultValue;
@@ -226,7 +218,6 @@ async function authenticatedRequest(apiCall, options = {}) {
             };
           }
         } else {
-          console.error('Token refresh failed:', refreshResult?.error || 'Unknown error');
 
           // Reset tokens on refresh failure
           clearTokens();

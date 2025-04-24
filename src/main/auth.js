@@ -35,7 +35,6 @@ const TOKEN_EXPIRES_KEY = 'token-expires-at';
 // Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
 
-console.log('API module initialization complete');
 
 // Set tokens in memory
 async function initializeTokensFromStorage() {
@@ -119,7 +118,6 @@ function writeTokenFile(tokenData) {
 
     fs.renameSync(tempFilePath, TOKEN_FILE_PATH);
 
-    console.log('Token file saved successfully using atomic write operation');
     return true;
   } catch (error) {
     console.error('Error saving token file:', error);
