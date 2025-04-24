@@ -345,27 +345,16 @@ async function handleAuthRedirect(url) {
   try {
     console.log('Processing auth redirect:', url);
 
-    // Process redirection URL through common module
-    const redirectResult = await apiAuth.handleAuthRedirect({
-      url,
-      onCodeExchange: async (code) => {
-        // Exchange code for token and update subscription information
-        return await exchangeCodeForTokenAndUpdateSubscription(code);
-      }
-    });
+    // 직접 URL에서 파라미터 추출
+    const urlObj = new URL(url);
+    const code = urlObj.searchParams.get('code');
+    const token = urlObj.searchParams.get('token');
+    const userId = urlObj.searchParams.get('userId');
+    const action = urlObj.searchParams.get('action');
 
-    // Process 'reload_auth' action
-    if (redirectResult.success && redirectResult.action === 'reload_auth') {
-      console.log('Auth reload action detected');
-
-      // Check if token exists
-      if (!redirectResult.token) {
-        console.error('No token provided for auth reload');
-        return {
-          success: false,
-          error: 'Missing token for auth reload'
-        };
-      }
+    // Connect 페이지에서의 딥링크 처리 (token, userId, action 파라미터 사용)
+    if (action === 'reload_auth' && token && userId) {
+      console.log('Auth reload action detected with token from connect page');
 
       // Check current authentication status
       const hasToken = await hasValidToken();
@@ -388,7 +377,57 @@ async function handleAuthRedirect(url) {
       }
     }
 
-    return redirectResult;
+    // 기존 OAuth 코드 처리 로직
+    if (code) {
+      const redirectResult = await apiAuth.handleAuthRedirect({
+        url,
+        onCodeExchange: async (code) => {
+          // Exchange code for token and update subscription information
+          return await exchangeCodeForTokenAndUpdateSubscription(code);
+        }
+      });
+
+      // Process 'reload_auth' action
+      if (redirectResult.success && redirectResult.action === 'reload_auth') {
+        console.log('Auth reload action detected from OAuth flow');
+
+        // Check if token exists
+        if (!redirectResult.token) {
+          console.error('No token provided for auth reload');
+          return {
+            success: false,
+            error: 'Missing token for auth reload'
+          };
+        }
+
+        // Check current authentication status
+        const hasToken = await hasValidToken();
+
+        if (hasToken) {
+          // If already authenticated, just refresh subscription information
+          console.log('Already authenticated, refreshing subscription info');
+          const subscription = await fetchSubscription();
+          await updatePageGroupSettings(subscription);
+
+          return {
+            success: true,
+            message: 'Authentication refreshed',
+            subscription
+          };
+        } else {
+          // If not authenticated, start login process
+          console.log('Not authenticated, initiating login process');
+          return await initiateLogin();
+        }
+      }
+
+      return redirectResult;
+    }
+
+    return {
+      success: false,
+      error: 'Invalid URL parameters'
+    };
   } catch (error) {
     console.error('Failed to handle auth redirect:', error);
     return {
