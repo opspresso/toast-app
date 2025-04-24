@@ -344,7 +344,7 @@ function cleanupOnLogout() {
 
     // 저장된 파일 삭제
     deleteFile(PROFILE_FILE_PATH);
-    deleteFile(SETTINGS_FILE_PATH);
+    // deleteFile(SETTINGS_FILE_PATH); // 삭제 하지 않음
 
     console.log('사용자 데이터 정리 완료');
     return true;

@@ -588,31 +588,24 @@ function cleanupOnLogout() {
     stopSettingsRefresh();
     console.log('Periodic refresh timers stopped');
 
-    // 3. Delete saved files
+    // 3. Delete profile file only (preserve settings)
     const profileDeleted = deleteFile(PROFILE_FILE_PATH);
-    const settingsDeleted = deleteFile(SETTINGS_FILE_PATH);
 
     console.log('File deletion results:', {
       profileDeleted: profileDeleted ? 'Success' : 'Failed or file not found',
-      settingsDeleted: settingsDeleted ? 'Success' : 'Failed or file not found'
+      settingsPreserved: 'Settings file preserved as requested'
     });
 
     // 4. Final result report
     const finalCheck = {
       profileFileExists: fileExists(PROFILE_FILE_PATH),
       settingsFileExists: fileExists(SETTINGS_FILE_PATH),
-      allDataCleared: !fileExists(PROFILE_FILE_PATH) && !fileExists(SETTINGS_FILE_PATH)
+      profileDataCleared: !fileExists(PROFILE_FILE_PATH)
     };
 
     console.log('User data cleanup completion status:', finalCheck);
 
-    if (finalCheck.allDataCleared) {
-      console.log('All user data was successfully cleaned up');
-    } else {
-      console.warn('Some user data files were not cleaned up. Verification needed.');
-    }
-
-    return finalCheck.allDataCleared;
+    return finalCheck.profileDataCleared;
   } catch (error) {
     console.error('Error cleaning up data on logout:', error);
     return false;
