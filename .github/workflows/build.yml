@@ -12,7 +12,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*.*.*' # version tags with major.minor.patch format
+      - 'v*' # Any tag starting with 'v'
 
 jobs:
   build:
