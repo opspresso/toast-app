@@ -27,9 +27,19 @@ jobs:
         id: get_version
         run: |
           # Get version from package.json
-          VERSION=$(jq -r .version package.json)
+          PKG_VERSION=$(jq -r .version package.json)
+          echo "📦 Retrieved version from package.json: $PKG_VERSION"
+
+          # Ensure version has 'v' prefix for tagging
+          if [[ "$PKG_VERSION" != v* ]]; then
+            VERSION="v$PKG_VERSION"
+            echo "🔄 Adding 'v' prefix for tagging: $VERSION"
+          else
+            VERSION="$PKG_VERSION"
+            echo "✅ Version already has 'v' prefix: $VERSION"
+          fi
+
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "📦 Retrieved version from package.json: $VERSION"
 
           # Setup git user
           echo "👤 Setting up git user for commit"
