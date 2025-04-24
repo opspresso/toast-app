@@ -33,14 +33,14 @@ Welcome to Toast App a customizable shortcut launcher for macOS and Windows. Thi
 
 #### macOS
 
-1. Download the latest `Toast-App-x.x.x.dmg` file from the [releases page](https://github.com/opspresso/toast-app/releases).
+1. Download the latest `Toast-App-x.x.x.dmg` file from the [releases page](https://github.com/opspresso/toast-dist/releases).
 2. Open the DMG file and drag Toast App to your Applications folder.
 3. Open Toast App from your Applications folder.
 4. If you see a security warning go to System Preferences > Security & Privacy and click "Open Anyway".
 
 #### Windows
 
-1. Download the latest `Toast-App-Setup-x.x.x.exe` file from the [releases page](https://github.com/opspresso/toast-app/releases).
+1. Download the latest `Toast-App-Setup-x.x.x.exe` file from the [releases page](https://github.com/opspresso/toast-dist/releases).
 2. Run the installer and follow the on-screen instructions.
 3. Toast App will start automatically after installation.
 

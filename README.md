@@ -44,7 +44,7 @@ Toast App is a productivity tool that allows users to define custom shortcuts an
 
 ### Download
 
-You can download the latest version of Toast App from the [GitHub Releases](https://github.com/opspresso/toast-app/releases) page.
+You can download the latest version of Toast App from the [GitHub Releases](https://github.com/opspresso/toast-dist/releases) page.
 
 최신 릴리스 페이지에서 각 운영체제에 맞는 설치 파일을 다운로드할 수 있습니다:
 
@@ -189,7 +189,7 @@ Toast App integrates with [Toast Web](https://app.toast.sh) for user authenticat
 - Secure access to paid features based on subscription status
 - Seamless login experience via system browser
 
-For developers working on Toast App, refer to [INTEGRATION_WITH_TOAST_WEB.md](docs/INTEGRATION_WITH_TOAST_WEB.md) for detailed integration documentation.
+For developers working on Toast App, refer to the documentation available in the repository.
 
 Users can create an account and manage their subscription at [https://app.toast.sh](https://app.toast.sh).
 
