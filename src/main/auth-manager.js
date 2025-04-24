@@ -261,15 +261,17 @@ async function logout() {
       userDataManager.cleanupOnLogout();
       console.log('User data cleanup completed due to logout');
 
-      // Reset subscription information (change to anonymous state)
+      // Get current configuration
       const config = createConfigStore();
+
+      // Reset subscription information but preserve pages
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
-        subscribedUntil: '',
-        pageGroups: DEFAULT_ANONYMOUS_SUBSCRIPTION.features.page_groups
+        subscribedUntil: ''
+        // pageGroups field removed to preserve pages configuration
       });
-      console.log('Subscription information reset complete');
+      console.log('Subscription information reset complete (pages preserved)');
 
       // Send app authentication state change notification
       notifyAuthStateChange({
@@ -319,15 +321,20 @@ async function logoutAndResetPageGroups() {
       userDataManager.cleanupOnLogout();
       console.log('User data cleanup completed due to logout');
 
-      // Reset subscription information (change to anonymous state)
+      // Get current configuration
       const config = createConfigStore();
+
+      // Get current pages configuration
+      const currentPages = config.get('pages');
+
+      // Reset subscription information but preserve pages
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
-        subscribedUntil: '',
-        pageGroups: DEFAULT_ANONYMOUS_SUBSCRIPTION.features.page_groups
+        subscribedUntil: ''
+        // pageGroups field removed to preserve pages configuration
       });
-      console.log('Subscription information reset complete');
+      console.log('Subscription information reset complete (pages preserved)');
 
       // Send app authentication state change notification
       notifyAuthStateChange({
