@@ -467,6 +467,7 @@ body {
     var(--background-color) 0%,
     var(--background-color) 100%
   );
+  grid-auto-rows: 90px; /* 고정 높이 설정 - 76px에서 90px로 증가 */
 }
 
 /* Grid layout for buttons */
@@ -483,20 +484,23 @@ body {
 .toast-button {
   background-color: var(--button-bg);
   border-radius: 12px;
-  padding: 12px 10px 10px;
+  padding: 16px 10px 14px; /* 상하 패딩 증가 (12px 10px 10px → 16px 10px 14px) */
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: background-color 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+              border-color 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+              box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
-  min-height: 76px;
+  height: 90px; /* 76px에서 90px로 증가 */
   box-shadow: var(--button-shadow);
   border: 1px solid var(--border-color);
   overflow: hidden;
   width: 100%;
+  box-sizing: border-box; /* 패딩과 테두리를 포함한 크기 계산 */
 }
 
 .toast-button::before {
@@ -512,7 +516,6 @@ body {
 
 .toast-button:hover {
   background-color: var(--button-hover-bg);
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-color);
 }
@@ -533,7 +536,7 @@ body {
 .button-icon {
   font-size: 24px;
   margin-bottom: 8px;
-  transition: transform 0.2s ease;
+  transition: color 0.2s ease;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
   z-index: 2;
   width: 24px;
@@ -551,7 +554,8 @@ body {
 }
 
 .toast-button:hover .button-icon {
-  transform: scale(1.15);
+  color: var(--primary-color);
+  transition: color 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .button-name {
