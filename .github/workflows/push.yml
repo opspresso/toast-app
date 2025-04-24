@@ -1,4 +1,11 @@
-name: Bump Version
+# Main Branch Push Workflow: Performs tagging and release when code is merged to the main branch
+# This workflow performs the following tasks:
+# 1. Gets version from package.json and updates the VERSION file
+# 2. Creates and pushes a Git tag with that version (only if it doesn't already exist)
+# 3. Automatically creates a GitHub release when a new tag is created
+# This workflow uses the version information updated by the PR workflow to create releases
+
+name: Tag and Release
 
 on:
   push:
@@ -7,23 +14,56 @@ on:
       - master
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetch complete history
 
-      - name: Read Version 📖
-        id: read_version
+      - name: Get Version and Create Tag 🏷️
+        id: get_version
         run: |
-          jq -r .version package.json > VERSION
+          # Get version from package.json
+          VERSION=$(jq -r .version package.json)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version from package.json: $VERSION"
 
-      - name: Release Version 🚀
-        uses: opspresso/action-builder@master
+          # Update VERSION file to match package.json version
+          echo "$VERSION" > VERSION
+
+          # Setup git user
+          git config --local user.name "nalbam-bot"
+          git config --local user.email "bot@nalbam.com"
+
+          # Commit and push VERSION file if changed
+          git add VERSION
+          if ! git diff --cached --quiet; then
+            git commit -m "Update VERSION file to $VERSION"
+            git push
+          fi
+
+          # Create and push new tag only if it doesn't exist
+          if ! git tag | grep -q "^$VERSION$"; then
+            echo "Creating new tag: $VERSION"
+            git tag $VERSION
+            git push origin $VERSION
+            echo "TAG_CREATED=true" >> $GITHUB_ENV
+          else
+            echo "Tag $VERSION already exists, skipping tag creation"
+            echo "TAG_CREATED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release 🚀
+        if: env.TAG_CREATED == 'true' # Only create release if a new tag was created
+        uses: softprops/action-gh-release@v1
         with:
-          args: --release
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true # Automatically generate release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
