@@ -22,6 +22,8 @@ const { createToastWindow, createSettingsWindow, showSettingsWindow, closeAllWin
 const { setupIpcHandlers } = require('./main/ipc');
 const authManager = require('./main/auth-manager');
 const auth = require('./main/auth');
+const cloudSync = require('./main/cloud-sync');
+const userDataManager = require('./main/user-data-manager');
 
 // Hide Dock icon on macOS
 if (process.platform === 'darwin' && app.dock) {
@@ -106,8 +108,13 @@ function initialize() {
   // Set up IPC handlers
   setupIpcHandlers(windows);
 
-  // Initialize authentication manager (including cloud sync)
+  // Initialize authentication manager and cloud sync
   authManager.initialize(windows);
+
+  // 클라우드 싱크 초기화 및 인증 관리자와 연결
+  const syncManager = cloudSync.initCloudSync(authManager, userDataManager);
+  authManager.setSyncManager(syncManager);
+  console.log('Cloud sync module initialized and connected to auth manager');
 
   // Load environment configuration files and apply to app
   loadEnvironmentConfig();

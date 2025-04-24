@@ -152,9 +152,42 @@ function initializeUI() {
  * Initialize Cloud Sync UI
  */
 function initializeCloudSyncUI() {
-  console.log('initializeCloudSyncUI 호출');
+  console.log('initializeCloudSyncUI 호출 - 구독:', authState.subscription ? authState.subscription.plan : 'none');
 
   try {
+    // premium 구독 사용자는 항상 Cloud Sync 기능 활성화
+    if (authState.subscription && authState.subscription.plan) {
+      const plan = authState.subscription.plan.toLowerCase();
+      if (plan.includes('premium') || plan.includes('pro')) {
+        // 구독 상태일 경우 항상 체크박스 활성화
+        console.log('Premium/Pro 구독 감지 - Cloud Sync 활성화');
+        enableCloudSyncCheckbox.disabled = false;
+
+        // authState.subscription.features가 없으면 생성
+        if (!authState.subscription.features) {
+          authState.subscription.features = {};
+        }
+        // cloud_sync 기능 활성화
+        authState.subscription.features.cloud_sync = true;
+
+        // 저장 - authState에 cloud_sync 기능 추가
+        if (authState.subscription.additionalFeatures) {
+          authState.subscription.additionalFeatures.cloudSync = true;
+        } else {
+          authState.subscription.additionalFeatures = { cloudSync: true };
+        }
+
+        // 구성에 구독 정보 저장
+        window.settings.setConfig('subscription', authState.subscription);
+      }
+    }
+
+    // VIP 사용자 확인
+    if (authState.subscription && (authState.subscription.isVip || authState.subscription.vip)) {
+      console.log('VIP 사용자 감지 - Cloud Sync 활성화');
+      enableCloudSyncCheckbox.disabled = false;
+    }
+
     // Cloud Sync enabled/disabled
     const cloudSyncEnabled = config.cloudSync?.enabled !== false;
     enableCloudSyncCheckbox.checked = cloudSyncEnabled;
@@ -260,7 +293,7 @@ function updateSyncStatusUI(status) {
     : 'Cloud Sync Disabled';
 
   // Update last synced time
-  const lastSyncTime = status.timestamp ? new Date(status.timestamp) : null;
+  const lastSyncTime = status.lastSyncTime ? new Date(status.lastSyncTime) : null;
   lastSyncedTime.textContent = lastSyncTime
     ? `Last Synced: ${lastSyncTime.toLocaleString()}`
     : 'Last Synced: Not yet synchronized';
@@ -273,25 +306,73 @@ function updateSyncStatusUI(status) {
   // Enable/disable buttons based on status
   let hasCloudSyncPermission = false;
 
-  // // Check subscription in various formats
-  // if (
-  //   authState.subscription?.isSubscribed === true ||
-  //   authState.subscription?.active === true ||
-  //   authState.subscription?.is_subscribed === true
-  // ) {
-  //   hasCloudSyncPermission = true;
-  // }
+  // 디버깅: 구독 상태 정보 로깅
+  console.log('구독 정보 확인:', authState.subscription);
 
-  const canUseCloudSync = hasCloudSyncPermission;
+  // 1. 직접적인 구독 상태 확인
+  if (
+    authState.subscription?.isSubscribed === true ||
+    authState.subscription?.active === true ||
+    authState.subscription?.is_subscribed === true
+  ) {
+    hasCloudSyncPermission = true;
+    console.log('구독 활성화 상태 확인됨');
+  }
+
+  // VIP 사용자 확인 (최우선)
+  if (authState.subscription?.isVip === true ||
+      authState.subscription?.vip === true) {
+    hasCloudSyncPermission = true;
+    console.log('VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
+  }
+
+  // 2. 구독 플랜 확인 (premium/pro 플랜은 cloud_sync 기능을 기본 제공)
+  if (authState.subscription?.plan) {
+    const plan = authState.subscription.plan.toLowerCase();
+    if (plan.includes('premium') || plan.includes('pro')) {
+      hasCloudSyncPermission = true;
+      console.log('Premium/Pro 플랜 확인됨');
+    }
+  }
+
+  // 3. features 객체에서 cloud_sync 기능 확인
+  if (authState.subscription?.features) {
+    if (authState.subscription.features.cloud_sync === true) {
+      hasCloudSyncPermission = true;
+      console.log('cloud_sync 기능 활성화됨 (features 객체)');
+    }
+  }
+
+  // 4. features_array에서 cloud_sync 기능 확인
+  if (Array.isArray(authState.subscription?.features_array)) {
+    if (authState.subscription.features_array.includes('cloud_sync')) {
+      hasCloudSyncPermission = true;
+      console.log('cloud_sync 기능 활성화됨 (features_array)');
+    }
+  }
+
+  // 5. additionalFeatures 객체에서 cloudSync 기능 확인
+  if (authState.subscription?.additionalFeatures) {
+    if (authState.subscription.additionalFeatures.cloudSync === true) {
+      hasCloudSyncPermission = true;
+      console.log('cloudSync 기능 활성화됨 (additionalFeatures)');
+    }
+  }
+
+  // 로깅: 최종 권한 확인
+  console.log(`Cloud Sync 권한: ${hasCloudSyncPermission ? '있음' : '없음'}, 로그인 상태: ${authState.isLoggedIn ? '로그인됨' : '로그아웃됨'}`);
+
+  const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
 
   console.log('canUseCloudSync:', canUseCloudSync);
 
-  enableCloudSyncCheckbox.disabled = !hasCloudSyncPermission;
+  enableCloudSyncCheckbox.disabled = !canUseCloudSync;
   enableCloudSyncCheckbox.checked = status.enabled;
 
-  // manualSyncUploadButton.disabled = !canUseCloudSync || !status.enabled;
-  // manualSyncDownloadButton.disabled = !canUseCloudSync || !status.enabled;
-  // manualSyncResolveButton.disabled = !canUseCloudSync || !status.enabled;
+  // 동기화 버튼 활성화/비활성화
+  manualSyncUploadButton.disabled = !canUseCloudSync || !status.enabled;
+  manualSyncDownloadButton.disabled = !canUseCloudSync || !status.enabled;
+  manualSyncResolveButton.disabled = !canUseCloudSync || !status.enabled;
 }
 
 /**
@@ -692,6 +773,47 @@ function setupEventListeners() {
     link.addEventListener('click', () => {
       const tabId = link.getAttribute('data-tab');
       switchTab(tabId);
+
+      // Cloud Sync 탭 선택 시 구독 정보 확인 및 UI 갱신
+      if (tabId === 'cloud-sync') {
+        console.log('Cloud Sync 탭 선택됨 - 구독 상태 확인 및 UI 갱신');
+
+        // Premium 사용자 강제 활성화
+        if (authState.subscription?.plan) {
+          const plan = String(authState.subscription.plan).toLowerCase();
+          if (plan.includes('premium') || plan.includes('pro')) {
+            console.log('Premium/Pro 구독 감지 - Cloud Sync 강제 활성화');
+            enableCloudSyncCheckbox.disabled = false;
+
+            // 구독 정보에 cloud_sync 기능 추가
+            if (!authState.subscription.features) {
+              authState.subscription.features = {};
+            }
+            authState.subscription.features.cloud_sync = true;
+
+            // 서버에서 동기화 상태 다시 확인
+            window.settings.getSyncStatus().then(status => {
+              console.log('Cloud Sync 탭 선택 시 동기화 상태 확인 결과:', status);
+              updateSyncStatusUI(status);
+            });
+          }
+        }
+
+        // VIP 사용자 확인 및 강제 활성화
+        if (authState.subscription?.isVip === true ||
+            authState.subscription?.vip === true) {
+          console.log('VIP 사용자 감지 - Cloud Sync 강제 활성화');
+          enableCloudSyncCheckbox.disabled = false;
+        }
+
+        // 구독 상태 활성화 확인
+        if (authState.subscription?.isSubscribed === true ||
+            authState.subscription?.active === true ||
+            authState.subscription?.is_subscribed === true) {
+          console.log('구독 활성화 상태 확인됨 - Cloud Sync 강제 활성화');
+          enableCloudSyncCheckbox.disabled = false;
+        }
+      }
     });
   });
 
@@ -811,6 +933,39 @@ function setupEventListeners() {
       // Load user data and update UI when authentication info is refreshed
       loadUserDataAndUpdateUI();
     }
+  });
+
+  // 구독 정보 및 설정 업데이트 이벤트 리스너
+  window.addEventListener('config-updated', (event) => {
+    console.log('설정 업데이트 이벤트 감지:', event.detail);
+
+    // 설정 데이터 업데이트
+    if (event.detail) {
+      config = event.detail;
+
+      // UI 업데이트
+      initializeUI();
+
+      // 구독 정보가 있으면 구독 UI도 업데이트
+      if (event.detail.subscription) {
+        authState.subscription = event.detail.subscription;
+        updateSubscriptionUI(event.detail.subscription);
+
+        // 클라우드 싱크 UI 업데이트
+        initializeCloudSyncUI();
+      }
+    }
+  });
+
+  // 설정 동기화 이벤트 리스너
+  window.addEventListener('settings-synced', (event) => {
+    console.log('설정 동기화 이벤트 감지:', event.detail);
+
+    // 동기화 상태 새로고침
+    window.settings.getSyncStatus().then(status => {
+      console.log('새로운 동기화 상태:', status);
+      updateSyncStatusUI(status);
+    });
   });
 }
 
@@ -1114,18 +1269,60 @@ async function handleCloudSyncToggle() {
     // Check if user has subscription permission
     let hasCloudSyncPermission = false;
 
-    // Check subscription in various formats
-    if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
-      hasCloudSyncPermission = authState.subscription.features.cloud_sync === true;
-    } else if (Array.isArray(authState.subscription?.features_array)) {
-      hasCloudSyncPermission = authState.subscription.features_array.includes('cloud_sync');
-    } else if (
+    // 디버깅 로그 추가
+    console.log('handleCloudSyncToggle: 구독 정보 확인:', JSON.stringify(authState.subscription || {}));
+
+    // VIP 사용자 확인 (최우선)
+    if (authState.subscription?.isVip === true ||
+        authState.subscription?.vip === true) {
+      hasCloudSyncPermission = true;
+      console.log('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
+    }
+
+    // Premium 플랜 확인
+    if (authState.subscription?.plan) {
+      const plan = authState.subscription.plan.toLowerCase();
+      if (plan.includes('premium') || plan.includes('pro')) {
+        hasCloudSyncPermission = true;
+        console.log('handleCloudSyncToggle: Premium/Pro 플랜 확인됨');
+      }
+    }
+
+    // 구독 상태 확인
+    if (
       authState.subscription?.isSubscribed === true ||
       authState.subscription?.active === true ||
       authState.subscription?.is_subscribed === true
     ) {
       hasCloudSyncPermission = true;
+      console.log('handleCloudSyncToggle: 구독 활성화 상태 확인됨');
     }
+
+    // Cloud Sync 기능 특화 확인
+    if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
+      if (authState.subscription.features.cloud_sync === true) {
+        hasCloudSyncPermission = true;
+        console.log('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features 객체)');
+      }
+    }
+
+    // features_array 확인
+    if (Array.isArray(authState.subscription?.features_array)) {
+      if (authState.subscription.features_array.includes('cloud_sync')) {
+        hasCloudSyncPermission = true;
+        console.log('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features_array)');
+      }
+    }
+
+    // additionalFeatures 확인
+    if (authState.subscription?.additionalFeatures && typeof authState.subscription.additionalFeatures === 'object') {
+      if (authState.subscription.additionalFeatures.cloudSync === true) {
+        hasCloudSyncPermission = true;
+        console.log('handleCloudSyncToggle: cloudSync 기능 활성화됨 (additionalFeatures)');
+      }
+    }
+
+    console.log('handleCloudSyncToggle: 최종 클라우드 싱크 권한:', hasCloudSyncPermission);
 
     if (!hasCloudSyncPermission) {
       syncStatusText.textContent = "Premium subscription required";

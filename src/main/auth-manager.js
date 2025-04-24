@@ -146,6 +146,31 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Set cloud_sync feature
           updatedSubscription.features.cloud_sync = hasSyncFeature;
 
+          // Ensure expiresAt is a string (prevent schema violation)
+          if (updatedSubscription.expiresAt !== undefined) {
+            if (typeof updatedSubscription.expiresAt !== 'string') {
+              updatedSubscription.expiresAt = String(updatedSubscription.expiresAt || '');
+            }
+
+            // Set to empty string if value is 'undefined' or 'null'
+            if (updatedSubscription.expiresAt === 'undefined' || updatedSubscription.expiresAt === 'null') {
+              updatedSubscription.expiresAt = '';
+            }
+          } else {
+            updatedSubscription.expiresAt = '';
+          }
+
+          // Same for subscribed_until if it exists
+          if (updatedSubscription.subscribed_until !== undefined) {
+            if (typeof updatedSubscription.subscribed_until !== 'string') {
+              updatedSubscription.subscribed_until = String(updatedSubscription.subscribed_until || '');
+            }
+
+            if (updatedSubscription.subscribed_until === 'undefined' || updatedSubscription.subscribed_until === 'null') {
+              updatedSubscription.subscribed_until = '';
+            }
+          }
+
           // Save updated subscription info to settings store
           const config = createConfigStore();
           config.set('subscription', updatedSubscription);
@@ -492,7 +517,7 @@ function notifyLogout() {
 /**
  * Send settings synchronization notification to both windows
  */
-function notifySettingsSynced() {
+function notifySettingsSynced(configData = null) {
   if (!windows) return;
 
   const syncData = {
@@ -500,14 +525,42 @@ function notifySettingsSynced() {
     message: 'Settings have been successfully synchronized with the cloud.'
   };
 
-  // Send notification to toast window
+  // 설정 데이터가 없으면 ConfigStore에서 가져옴
+  if (!configData) {
+    const config = createConfigStore();
+    configData = {
+      pages: config.get('pages'),
+      appearance: config.get('appearance'),
+      advanced: config.get('advanced'),
+      subscription: config.get('subscription')
+    };
+  }
+
+  // 동기화 데이터를 설정 데이터에 병합
+  const fullData = {
+    ...syncData,
+    config: configData
+  };
+
+  console.log('Settings to be synced to UI:', Object.keys(configData || {}).join(', '));
+
+  // Send notification to toast window with full config data
   if (windows.toast && !windows.toast.isDestroyed()) {
+    // 설정 업데이트 알림 전송
     windows.toast.webContents.send('settings-synced', syncData);
+
+    // 전체 설정 데이터로 UI 갱신 알림 전송
+    windows.toast.webContents.send('config-updated', configData);
+    console.log('Full config update notification sent to toast window');
   }
 
   // Send notification to settings window
   if (windows.settings && !windows.settings.isDestroyed()) {
     windows.settings.webContents.send('settings-synced', syncData);
+
+    // 설정 창도 전체 설정으로 업데이트
+    windows.settings.webContents.send('config-updated', configData);
+    console.log('Full config update notification sent to settings window');
   }
 
   console.log('Settings synchronization notification sent');

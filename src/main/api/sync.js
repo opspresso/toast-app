@@ -32,25 +32,66 @@ const state = {
  */
 async function isCloudSyncEnabled({ hasValidToken, configStore }) {
   try {
-    // Check authentication status
+    // 로그에 함수 호출 기록
+    console.log('isCloudSyncEnabled: 클라우드 동기화 가능 여부 확인 중');
+
+    // 인증 상태 확인
     const isAuthenticated = await hasValidToken();
     if (!isAuthenticated) {
+      console.log('isCloudSyncEnabled: 인증 토큰 없음, 동기화 불가');
       return false;
     }
 
-    // Check subscription information
-    const subscription = configStore.get('subscription') || {};
+    console.log('isCloudSyncEnabled: 유효한 인증 토큰 확인됨');
 
-    // Check if cloud_sync feature is enabled
+    // 구독 정보 확인
+    const subscription = configStore.get('subscription') || {};
+    console.log('isCloudSyncEnabled: 구독 정보 확인:', JSON.stringify(subscription));
+
+    // 구독 활성화 상태 확인 (다양한 형식 지원)
     let hasSyncFeature = false;
 
-    // Support for various subscription information formats
+    // 1. 직접적인 구독 상태 확인
     if (subscription.isSubscribed === true ||
-      subscription.active === true ||
-      subscription.is_subscribed === true) {
+        subscription.active === true ||
+        subscription.is_subscribed === true) {
       hasSyncFeature = true;
+      console.log('isCloudSyncEnabled: 활성화된 구독 발견');
     }
 
+    // 2. features 객체에서 cloud_sync 기능 확인
+    if (subscription.features &&
+        typeof subscription.features === 'object' &&
+        subscription.features.cloud_sync === true) {
+      hasSyncFeature = true;
+      console.log('isCloudSyncEnabled: features 객체에서 cloud_sync=true 발견');
+    }
+
+    // 3. features_array에서 cloud_sync 기능 확인
+    if (Array.isArray(subscription.features_array) &&
+        subscription.features_array.includes('cloud_sync')) {
+      hasSyncFeature = true;
+      console.log('isCloudSyncEnabled: features_array에서 cloud_sync 발견');
+    }
+
+    // 4. additionalFeatures 객체 확인
+    if (subscription.additionalFeatures &&
+        typeof subscription.additionalFeatures === 'object' &&
+        subscription.additionalFeatures.cloudSync === true) {
+      hasSyncFeature = true;
+      console.log('isCloudSyncEnabled: additionalFeatures에서 cloudSync=true 발견');
+    }
+
+    // 5. 계정이 구독자이면 기본적으로 동기화 기능 활성화
+    if (subscription.plan &&
+        (subscription.plan.toLowerCase().includes('premium') ||
+         subscription.plan.toLowerCase().includes('pro'))) {
+      hasSyncFeature = true;
+      console.log('isCloudSyncEnabled: premium/pro 플랜 발견, 동기화 기능 활성화');
+    }
+
+    // 결과 반환
+    console.log(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`);
     return hasSyncFeature;
   } catch (error) {
     console.error('Error checking synchronization availability:', error);
@@ -143,65 +184,144 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
       const settings = response.data;
 
+      // 상세 디버깅 로그
+      console.log('Cloud sync - Downloaded settings structure:',
+        Object.keys(settings || {}).length > 0
+        ? `Contains keys: ${Object.keys(settings).join(', ')}`
+        : 'Empty or invalid response');
+
       // Validation check
       if (!settings) {
         throw new Error('Invalid settings data: Response is empty');
       }
 
-      // Handle various data structures
+      // 표준화된 데이터 추출 시도
       let pagesData = null;
+      let appearanceData = null;
+      let advancedData = null;
+      let syncMetadata = {
+        lastSyncedAt: Date.now(),
+        lastSyncedDevice: getDeviceInfo()
+      };
 
-      // settings.data.pages format
-      if (settings.data && Array.isArray(settings.data.pages)) {
-        pagesData = settings.data.pages;
-      }
-      // settings.pages format
-      else if (Array.isArray(settings.pages)) {
+      // 1. 서버 응답 데이터 구조 파싱
+      // 1.1 표준 구조 확인 (최신 API 형식)
+      if (settings.pages && Array.isArray(settings.pages)) {
+        console.log('Found standard pages structure');
         pagesData = settings.pages;
+        appearanceData = settings.appearance || null;
+        advancedData = settings.advanced || null;
+
+        // 메타데이터 추출
+        if (settings.lastSyncedAt) syncMetadata.lastSyncedAt = settings.lastSyncedAt;
+        if (settings.lastModifiedAt) syncMetadata.lastModifiedAt = settings.lastModifiedAt;
+        if (settings.lastSyncedDevice) syncMetadata.lastSyncedDevice = settings.lastSyncedDevice;
+        if (settings.lastModifiedDevice) syncMetadata.lastModifiedDevice = settings.lastModifiedDevice;
       }
-      // settings itself is an array
+      // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
+      else if (settings.data) {
+        console.log('Found nested data structure');
+        const data = settings.data;
+
+        if (Array.isArray(data.pages)) {
+          pagesData = data.pages;
+        } else if (Array.isArray(data)) {
+          pagesData = data;
+        }
+
+        appearanceData = data.appearance || settings.appearance || null;
+        advancedData = data.advanced || settings.advanced || null;
+
+        // 메타데이터 추출
+        if (data.lastSyncedAt) syncMetadata.lastSyncedAt = data.lastSyncedAt;
+        if (data.lastModifiedAt) syncMetadata.lastModifiedAt = data.lastModifiedAt;
+        if (data.lastSyncedDevice) syncMetadata.lastSyncedDevice = data.lastSyncedDevice;
+        if (data.lastModifiedDevice) syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
+      }
+      // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
       else if (Array.isArray(settings)) {
+        console.log('Found array-only structure');
         pagesData = settings;
       }
-      // Search for field with array of objects
+      // 1.4 기타 구조 - 모든 배열 필드 검색
       else {
+        console.log('Searching for page array in unknown structure');
         const arrayFields = Object.entries(settings)
           .filter(([key, value]) => Array.isArray(value))
           .map(([key, value]) => ({ key, value }));
 
         if (arrayFields.length > 0) {
-          pagesData = arrayFields[0].value;
+          // 페이지 데이터로 추정되는 첫 번째 배열 사용
+          const pagesField = arrayFields.find(field =>
+            field.key === 'pages' ||
+            (field.value.length > 0 && field.value[0].name && field.value[0].buttons)
+          ) || arrayFields[0];
+
+          console.log(`Using array field '${pagesField.key}' as pages data`);
+          pagesData = pagesField.value;
         }
+
+        // appearance와 advanced 설정 검색
+        Object.entries(settings).forEach(([key, value]) => {
+          if (key === 'appearance' && typeof value === 'object') {
+            appearanceData = value;
+          } else if (key === 'advanced' && typeof value === 'object') {
+            advancedData = value;
+          }
+        });
       }
 
-      // Case where page data cannot be found
+      // 페이지 데이터 검증
       if (!pagesData) {
-        console.error('Page data not found:', JSON.stringify(settings));
-        throw new Error('Invalid settings data: No page information');
+        console.error('Page data not found in response:', JSON.stringify(settings));
+        throw new Error('Invalid settings data: No page information found in any expected format');
       }
 
-      // Save page data
+      // 페이지 데이터 구조 검증
+      const isValidPageData = Array.isArray(pagesData) && pagesData.every(page =>
+        typeof page === 'object' && page !== null &&
+        (page.name !== undefined || page.buttons !== undefined)
+      );
 
+      if (!isValidPageData) {
+        console.error('Invalid page data structure:', JSON.stringify(pagesData.slice(0, 2)));
+        throw new Error('Invalid settings data: Page structure is not in expected format');
+      }
+
+      console.log(`Found ${pagesData.length} pages in sync data`);
+
+      // configStore에 데이터 저장
       configStore.set('pages', pagesData);
+      console.log('Pages data saved to config store');
 
-      // Save appearance and advanced settings if they exist
-      if (settings.appearance) {
-        configStore.set('appearance', settings.appearance);
+      // appearance 설정 저장 (있는 경우)
+      if (appearanceData) {
+        configStore.set('appearance', appearanceData);
+        console.log('Appearance settings saved to config store');
       }
 
-      if (settings.advanced) {
-        configStore.set('advanced', settings.advanced);
+      // advanced 설정 저장 (있는 경우)
+      if (advancedData) {
+        configStore.set('advanced', advancedData);
+        console.log('Advanced settings saved to config store');
       }
 
-      // Record synchronization completion time
-      state.lastSyncTime = Date.now();
+      // 동기화 상태 업데이트
+      state.lastSyncTime = syncMetadata.lastSyncedAt;
       state.lastSyncStatus = {
         success: true,
         timestamp: state.lastSyncTime,
         error: null
       };
 
-      return { success: true, data: settings };
+      console.log('Settings download completed successfully');
+
+      // 서버 응답과 메타데이터를 함께 반환
+      return {
+        success: true,
+        data: settings,
+        syncMetadata
+      };
     }, { onUnauthorized });
   } catch (error) {
     console.error('Settings download error:', error);

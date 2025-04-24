@@ -492,43 +492,131 @@ function setupIpcHandlers(windows) {
     return true;
   });
 
+  // Cloud Sync Manager 저장 변수
+  let cloudSyncManager = null;
+
+  // 윈도우 초기화 이후 Cloud Sync Manager 초기화
+  const cloudSync = require('./cloud-sync');
+  cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager);
+
+  // Settings Synced 이벤트 핸들러 전달
+  ipcMain.on('settings-synced', (event, data) => {
+    if (windows.toast && !windows.toast.isDestroyed()) {
+      windows.toast.webContents.send('settings-synced', data);
+    }
+    if (windows.settings && !windows.settings.isDestroyed()) {
+      windows.settings.webContents.send('settings-synced', data);
+    }
+  });
+
   // Get sync status
   ipcMain.handle('get-sync-status', async () => {
-    // try {
-    //   const cloudSync = require('./cloud-sync');
-    //   const syncManager = cloudSync.initCloudSync();
-    //   return syncManager.getCurrentStatus();
-    // } catch (error) {
-    //   console.error('Error getting sync status:', error);
-    //   return {
-    //     enabled: false,
-    //     online: false,
-    //     deviceId: null,
-    //     lastSyncTime: 0
-    //   };
-    // }
-    return {
-      enabled: false,
-      online: false,
-      deviceId: getDeviceIdentifier(),
-      lastSyncTime: Date.now()
-    };
+    try {
+      // 이미 초기화된 cloudSyncManager 사용
+      if (cloudSyncManager) {
+        // getCurrentStatus() 메서드로 현재 상태 조회
+        return cloudSyncManager.getCurrentStatus();
+      } else {
+        console.warn('Cloud sync manager not initialized, returning default status');
+        return {
+          enabled: false,
+          deviceId: getDeviceIdentifier(),
+          lastSyncTime: 0,
+          lastChangeType: null
+        };
+      }
+    } catch (error) {
+      console.error('Error getting sync status:', error);
+      return {
+        enabled: false,
+        deviceId: getDeviceIdentifier(),
+        lastSyncTime: Date.now()
+      };
+    }
+  });
+
+  // Set cloud sync enabled/disabled
+  ipcMain.handle('set-cloud-sync-enabled', async (event, enabled) => {
+    try {
+      // 동기화 설정 변경 로그
+      console.log(`Setting cloud sync to ${enabled ? 'enabled' : 'disabled'}`);
+
+      // 이미 초기화된 cloudSyncManager 사용
+      if (cloudSyncManager) {
+        // enable/disable 메서드를 사용하여 클라우드 동기화 활성화/비활성화
+        if (enabled) {
+          cloudSyncManager.enable();
+        } else {
+          cloudSyncManager.disable();
+        }
+
+        // 구성 저장소에도 설정 저장
+        config.set('cloudSync.enabled', enabled);
+
+        // 현재 상태 반환
+        return {
+          success: true,
+          status: cloudSyncManager.getCurrentStatus()
+        };
+      } else {
+        // 매니저가 초기화되지 않은 경우
+        console.warn('Cloud sync manager not initialized, cannot enable/disable');
+        return {
+          success: false,
+          error: 'Cloud sync manager not initialized'
+        };
+      }
+    } catch (error) {
+      console.error('Error setting cloud sync enabled:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
+    }
   });
 
   // Manual sync (upload, download, resolve)
   ipcMain.handle('manual-sync', async (event, action) => {
     try {
-      const cloudSync = require('./cloud-sync');
-      const syncManager = cloudSync.initCloudSync(authManager, userDataManager);
-
-      // Validate action
+      // 유효성 검사
       if (!['upload', 'download', 'resolve'].includes(action)) {
         throw new Error(`Invalid sync action: ${action}`);
       }
 
-      // Perform manual sync action
-      const result = await syncManager.manualSync(action);
-      return result;
+      // 이미 초기화된 cloudSyncManager 사용
+      if (cloudSyncManager) {
+        // 수동 동기화 실행
+        console.log(`Performing manual sync action: ${action}`);
+        const result = await cloudSyncManager.manualSync(action);
+
+        // 동기화 결과가 성공이면 UI 업데이트 메시지 전송
+        if (result.success) {
+          // 현재 설정 데이터 수집
+          const configData = {
+            pages: config.get('pages'),
+            appearance: config.get('appearance'),
+            advanced: config.get('advanced'),
+            subscription: config.get('subscription')
+          };
+
+          // 동기화 완료 알림 (설정 데이터 포함)
+          if (windows.toast && !windows.toast.isDestroyed()) {
+            windows.toast.webContents.send('config-updated', configData);
+          }
+          if (windows.settings && !windows.settings.isDestroyed()) {
+            windows.settings.webContents.send('config-updated', configData);
+          }
+        }
+
+        return result;
+      } else {
+        // 매니저가 초기화되지 않은 경우
+        console.warn('Cloud sync manager not initialized, cannot perform manual sync');
+        return {
+          success: false,
+          error: 'Cloud sync manager not initialized'
+        };
+      }
     } catch (error) {
       console.error(`Error performing manual sync (${action}):`, error);
       return {
