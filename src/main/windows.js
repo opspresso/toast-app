@@ -102,7 +102,6 @@ function setupToastWindowEvents(toastWindow, config) {
     const loginInProgress = isLoginProcessActive();
 
     if (loginInProgress) {
-      console.log('로그인 요청 중에는 창을 닫지 않습니다.');
       return;
     }
 
@@ -120,7 +119,6 @@ function setupToastWindowEvents(toastWindow, config) {
     const loginInProgress = isLoginProcessActive();
 
     if (loginInProgress) {
-      console.log('로그인 요청 중에는 창을 닫지 않습니다.');
       event.preventDefault();
       return;
     }
@@ -199,7 +197,6 @@ function setupSettingsWindowEvents(settingsWindow) {
     const loginInProgress = isLoginProcessActive();
 
     if (loginInProgress) {
-      console.log('로그인 요청 중에는 창을 닫지 않습니다.');
       event.preventDefault();
       return;
     }

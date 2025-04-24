@@ -125,6 +125,9 @@ function initialize() {
         const urlObj = new URL(url);
         const code = urlObj.searchParams.get('code');
         const error = urlObj.searchParams.get('error');
+        const token = urlObj.searchParams.get('token');
+        const userId = urlObj.searchParams.get('userId');
+        const action = urlObj.searchParams.get('action');
 
         console.log('Code extraction from protocol:', code ? 'Exists' : 'None');
 
@@ -134,20 +137,29 @@ function initialize() {
           return;
         }
 
-        if (!code) {
-          console.error('Authentication code is not in the URL');
-          authManager.notifyLoginError('Authentication code is missing');
+        if (code) {
+          // 기존 OAuth 코드 처리 로직
+          console.log('Starting authentication code exchange:', code.substring(0, 6) + '...');
+          authManager.exchangeCodeForTokenAndUpdateSubscription(code).then(result => {
+            console.log('Authentication code exchange result:', result.success ? 'Success' : 'Failed');
+          }).catch(err => {
+            console.error('Authentication code exchange error:', err);
+            authManager.notifyLoginError(err.message || 'An error occurred during authentication processing');
+          });
+        } else if (action === 'reload_auth' && token && userId) {
+          // connect 페이지에서 온 딥링크 처리
+          console.log('Processing auth reload request with token:', token);
+          auth.handleAuthRedirect(url).then(result => {
+            console.log('Auth reload result:', result.success ? 'Success' : 'Failed');
+          }).catch(err => {
+            console.error('Auth reload error:', err);
+            authManager.notifyLoginError(err.message || 'An error occurred during auth reload');
+          });
+        } else {
+          console.error('Authentication code or reload parameters are not in the URL');
+          authManager.notifyLoginError('Authentication parameters are missing');
           return;
         }
-
-        // Directly pass the extracted code to authManager
-        console.log('Starting authentication code exchange:', code.substring(0, 6) + '...');
-        authManager.exchangeCodeForTokenAndUpdateSubscription(code).then(result => {
-          console.log('Authentication code exchange result:', result.success ? 'Success' : 'Failed');
-        }).catch(err => {
-          console.error('Authentication code exchange error:', err);
-          authManager.notifyLoginError(err.message || 'An error occurred during authentication processing');
-        });
       } catch (error) {
         console.error('URL parsing error:', error);
         authManager.notifyLoginError(error.message || 'An error occurred while processing the URL');

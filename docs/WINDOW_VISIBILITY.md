@@ -35,7 +35,6 @@ toastWindow.on('blur', () => {
   const loginInProgress = isLoginProcessActive();
 
   if (loginInProgress) {
-    console.log('로그인 요청 중에는 창을 닫지 않습니다.');
     return;
   }
 
@@ -173,11 +172,10 @@ function closeButtonEditModal() {
 OAuth 인증 과정과 같이 로그인이 진행 중일 때는 창이 숨겨지지 않습니다:
 
 ```javascript
-// windows.js에서 창 숨김 방지
+// windows.js
 const loginInProgress = isLoginProcessActive();
 
 if (loginInProgress) {
-  console.log('로그인 요청 중에는 창을 닫지 않습니다.');
   return;
 }
 ```

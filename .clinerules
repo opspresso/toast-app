@@ -17,14 +17,14 @@
 
 ## Language Standard
 
-- Use English exclusively: All code, comments, documentation and commit messages must be written in English.
+- **Important** Write code and UI messages in English.
 - Variable and function names: Use descriptive English terms following the project's naming conventions.
-- Documentation: All documentation files should be written in English for consistency and accessibility.
 
 ## Documentation Standards
 
 - Keep all documentation up to date and version-controlled.
-- Each document should serve a clear purpose:
+- Each document should serve a clear purpose.
+- When adding new documents, place them under the docs/ directory.
 
 ### `README.md`
 - Project overview and purpose

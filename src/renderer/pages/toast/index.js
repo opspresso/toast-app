@@ -1053,7 +1053,7 @@ async function handleLogout() {
             isAuthenticated: false,
             isSubscribed: false,
             plan: 'free',
-            subscribedUntil: '',
+            expiresAt: '',
             pageGroups: 1,
             isVip: false,
             additionalFeatures: {

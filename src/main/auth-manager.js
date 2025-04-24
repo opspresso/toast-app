@@ -268,7 +268,7 @@ async function logout() {
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
-        subscribedUntil: ''
+        expiresAt: ''
         // pageGroups field removed to preserve pages configuration
       });
       console.log('Subscription information reset complete (pages preserved)');
@@ -331,7 +331,7 @@ async function logoutAndResetPageGroups() {
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
-        subscribedUntil: ''
+        expiresAt: ''
         // pageGroups field removed to preserve pages configuration
       });
       console.log('Subscription information reset complete (pages preserved)');

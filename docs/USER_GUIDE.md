@@ -1,671 +1,440 @@
-Toast App User Guide
+# Toast 앱 사용자 가이드
+
+이 가이드는 Toast 앱의 사용 방법을 상세히 설명합니다. UI 구성요소, 기능, 일반적인 사용 시나리오를 다룹니다.
+
+## 목차
+
+- [UI 구성요소](#ui-구성요소)
+  - [Toast 윈도우](#toast-윈도우)
+  - [설정 윈도우](#설정-윈도우)
+  - [시스템 트레이 메뉴](#시스템-트레이-메뉴)
+- [기본 기능](#기본-기능)
+  - [전역 단축키](#전역-단축키)
+  - [페이지 및 버튼](#페이지-및-버튼)
+  - [액션 유형](#액션-유형)
+  - [네비게이션](#네비게이션)
+- [사용 시나리오](#사용-시나리오)
+  - [첫 설정](#첫-설정)
+  - [애플리케이션 열기](#애플리케이션-열기)
+  - [웹사이트 열기](#웹사이트-열기)
+  - [셸 명령 실행](#셸-명령-실행)
+  - [키보드 단축키 사용](#키보드-단축키-사용)
+  - [사용자 정의 스크립트 실행](#사용자-정의-스크립트-실행)
+  - [버튼 검색 및 필터링](#버튼-검색-및-필터링)
+  - [구성 가져오기 및 내보내기](#구성-가져오기-및-내보내기)
+- [인증 및 구독](#인증-및-구독)
+  - [계정 등급 및 혜택](#계정-등급-및-혜택)
+  - [인증 과정](#인증-과정)
+  - [클라우드 동기화](#클라우드-동기화)
+- [고급 사용법](#고급-사용법)
+  - [외관 사용자 지정](#외관-사용자-지정)
+  - [고급 구성](#고급-구성)
+  - [워크플로우 통합](#워크플로우-통합)
+- [문제 해결](#문제-해결)
+
+## UI 구성요소
+
+### Toast 윈도우
+
+Toast 윈도우는 사용자가 액션을 실행하기 위해 상호작용하는 주요 인터페이스입니다.
+
+#### 레이아웃
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                       Toast                              × │
+├───────────────────────────────────────────────────────────┤
+│ ┌───────────────────────────────────────────────────────┐ │
+│ │   1   │   2   │   3   │   +   │   -                   │ │
+│ └───────────────────────────────────────────────────────┘ │
+│                                                           │
+│ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐     │
+│ │   📁    │   │   🌐    │   │   ⌨️    │   │   📝    │     │
+│ │         │   │         │   │         │   │         │     │
+│ │ Files Q │   │Browser W│   │Terminal E│   │ Notes R │     │
+│ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
+│                                                           │
+│ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐     │
+│ │   🔊    │   │   🔍    │   │   🔧    │   │   📸    │     │
+│ │         │   │         │   │         │   │         │     │
+│ │ Music A │   │Search S │   │Settings D│   │ Capture F│    │
+│ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
+│                                                           │
+│ ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐     │
+│ │   🗓️    │   │   💬    │   │   📊    │   │   📡    │     │
+│ │         │   │         │   │         │   │         │     │
+│ │Calendar Z│   │ Chat X  │   │ Stats C │   │Network V│     │
+│ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
+│                                                           │
+│ 상태: 준비됨                                  설정 ⚙️   │
+└───────────────────────────────────────────────────────────┘
+```
+
+#### 구성요소
+
+- **헤더**: 윈도우 제목과 닫기 버튼
+- **페이지 네비게이션**: 페이지 간 전환을 위한 번호 버튼 및 페이지 추가/제거 버튼
+- **버튼 그리드**: 구성된 버튼을 그리드 또는 목록 레이아웃으로 표시
+- **상태 표시줄**: 마지막 액션의 상태와 설정 모드 토글 버튼
+
+### 설정 윈도우
+
+설정 윈도우는 애플리케이션을 구성하기 위한 인터페이스입니다.
+
+#### 레이아웃
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Toast 설정                              │
+├─────────────┬───────────────────────────────────────────────┤
+│             │                                               │
+│  일반       │  일반 설정                                    │
+│             │                                               │
+│  버튼       │  전역 단축키: [Alt+Space]  [기록] [지우기]    │
+│             │                                               │
+│  외관       │  ☑ 로그인 시 시작                             │
+│             │                                               │
+│  고급       │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+│             │                                               │
+├─────────────┴───────────────────────────────────────────────┤
+│  [저장]                                      [취소]         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-Welcome to Toast App a customizable shortcut launcher for macOS and Windows. This guide will help you get started and make the most of Toast App's features.
+#### 구성요소
 
-## Table of Contents
+- **헤더**: 윈도우 제목과 저장/취소 버튼
+- **사이드바**: 일반, 버튼, 외관, 고급 설정 탭
+- **메인 콘텐츠**: 선택한 탭에 따른 설정 옵션
+- **버튼 편집기**: 버튼 속성을 편집하기 위한 대화 상자
 
-1. [Installation](#installation)
-2. [Getting Started](#getting-started)
-3. [Using Toast App](#using-toast-app)
-4. [Configuring Buttons](#configuring-buttons)
-5. [Managing Pages](#managing-pages)
-6. [Action Types](#action-types)
-7. [Appearance Settings](#appearance-settings)
-8. [Advanced Settings](#advanced-settings)
-9. [Keyboard Shortcuts](#keyboard-shortcuts)
-10. [Settings Mode](#settings-mode)
-11. [Cloud Sync](#cloud-sync)
-12. [Importing and Exporting](#importing-and-exporting)
-13. [Auto-Updates](#auto-updates)
-14. [Troubleshooting](#troubleshooting)
-15. [FAQ](#faq)
+### 시스템 트레이 메뉴
 
-## Installation
+```
+┌─────────────────┐
+│  Toast 열기     │
+├─────────────────┤
+│  설정           │
+├─────────────────┤
+│  Toast 정보     │
+├─────────────────┤
+│  종료           │
+└─────────────────┘
+```
 
-### System Requirements
+## 기본 기능
 
-- **macOS**: 10.14 (Mojave) or later
-- **Windows**: Windows 10 or later
-- **Disk Space**: 100 MB for installation
-- **Memory**: 512 MB RAM minimum, 1 GB recommended
+### 전역 단축키
 
-### Installation Steps
+Toast 앱의 핵심 기능은 글로벌 단축키를 통해 애플리케이션에 빠르게 액세스하는 것입니다.
 
-#### macOS
+- **기본 단축키**: Alt+Space (설정에서 변경 가능)
+- **기능**: 단축키를 누르면 Toast 윈도우가 나타나거나 숨겨짐
+- **구성**: 설정 창의 일반 탭에서 구성 가능
+
+### 페이지 및 버튼
 
-1. Download the latest `Toast-App-x.x.x.dmg` file from the [releases page](https://github.com/opspresso/toast-app/releases).
-2. Open the DMG file and drag Toast App to your Applications folder.
-3. Open Toast App from your Applications folder.
-4. If you see a security warning go to System Preferences > Security & Privacy and click "Open Anyway".
+Toast 앱은 버튼을 여러 페이지로 구성하여 더 나은 조직화를 제공합니다.
+
+#### 페이지 관리
+
+- **페이지 탐색**: 숫자 키(1-9)나 페이지 탭 클릭으로 페이지 간 이동
+- **페이지 추가**: + 버튼 클릭 또는 Shift+Plus 키
+- **페이지 제거**: - 버튼 클릭 또는 설정 모드에서 마이너스 키
+- **페이지 제한**:
+  - 무료 사용자: 1 페이지
+  - 인증된 사용자: 최대 3 페이지
+  - 구독자: 최대 9 페이지
 
-#### Windows
+#### 버튼 관리
+
+- **버튼 구성요소**: 아이콘, 이름, 단축키
+- **단축키**: 각 버튼은 단일 키 단축키(Q-Z, A-M)로 실행 가능
+- **편집**: 설정 모드에서 버튼 클릭하여 편집
+
+### 액션 유형
+
+Toast 앱은 다양한 유형의 액션을 지원합니다:
+
+- **명령 실행**: 시스템 명령어나 스크립트 실행
+- **URL/파일 열기**: 웹사이트나 로컬 파일 열기
+- **키보드 단축키**: 시스템 단축키 트리거
+- **스크립트 실행**: JavaScript, AppleScript, PowerShell, Bash 스크립트 실행
+- **액션 연결**: 여러 액션을 순차적으로 실행
+
+### 네비게이션
+
+#### 키보드 네비게이션
+
+- **화살표 키**: 버튼 간 이동
+- **Enter**: 선택한 버튼 실행
+- **Escape**: Toast 윈도우 닫기
+- **숫자 키(1-9)**: 페이지 전환
+- **콤마(,)**: 설정 모드 전환
+
+#### 마우스 네비게이션
+
+- **클릭**: 버튼 실행 또는 설정 모드에서 편집
+- **페이지 번호 클릭**: 페이지 전환
+- **설정 아이콘 클릭**: 설정 모드 전환
+
+## 사용 시나리오
+
+### 첫 설정
+
+**목표**: Toast 앱을 처음으로 설치하고 설정하기
+
+1. **다운로드 및 설치**
+   - 웹사이트나 GitHub에서 설치 프로그램 다운로드
+   - 설치 프로그램 실행
+   - 설치 완료 후 애플리케이션 자동 실행
+
+2. **초기 구성**
+   - 첫 실행 시 설정 창 자동 열림
+   - 전역 단축키 구성 (기본값: Alt+Space)
+   - 로그인 시 실행 옵션 선택
+   - 기본 버튼 검토
+
+3. **설정 저장**
+   - 설정 저장 후 애플리케이션 시스템 트레이로 최소화
+   - 백그라운드에서 실행 중 알림 표시
+
+### 애플리케이션 열기
+
+**목표**: Toast 앱을 사용하여 자주 사용하는 애플리케이션 빠르게 열기
+
+1. **애플리케이션 버튼 생성**
+   - 시스템 트레이 아이콘 우클릭 후 설정 선택
+   - 버튼 탭에서 새 버튼 추가
+   - 버튼 구성:
+     - 이름: "Chrome"
+     - 단축키: "C"
+     - 아이콘: "🌐"
+     - 액션 유형: "명령 실행"
+     - 명령: `open -a "Google Chrome"` (macOS) 또는 `start chrome` (Windows)
+   - 저장
+
+2. **버튼 사용**
+   - 전역 단축키 누름
+   - "Chrome" 버튼 클릭 또는 "C" 키 누름
+   - Google Chrome 실행 및 Toast 창 자동 닫힘
+
+### 웹사이트 열기
+
+**목표**: Toast 앱을 사용하여 자주 방문하는 웹사이트 빠르게 열기
+
+1. **웹사이트 버튼 생성**
+   - 설정 창에서 새 버튼 추가
+   - 버튼 구성:
+     - 이름: "GitHub"
+     - 단축키: "G"
+     - 아이콘: "🐙"
+     - 액션 유형: "URL/파일 열기"
+     - URL: "https://github.com"
+   - 저장
+
+2. **버튼 사용**
+   - 전역 단축키 누름
+   - "GitHub" 버튼 클릭 또는 "G" 키 누름
+   - 기본 웹 브라우저가 열리고 GitHub로 이동
+
+### 셸 명령 실행
+
+**목표**: Toast 앱을 사용하여 자주 사용하는 셸 명령 실행
+
+1. **명령 버튼 생성**
+   - 설정 창에서 새 버튼 추가
+   - 버튼 구성:
+     - 이름: "파일 목록"
+     - 단축키: "L"
+     - 아이콘: "📋"
+     - 액션 유형: "명령 실행"
+     - 명령: `ls -la` (macOS/Linux) 또는 `dir` (Windows)
+     - 터미널에서 실행: 체크
+   - 저장
+
+2. **버튼 사용**
+   - 전역 단축키 누름
+   - "파일 목록" 버튼 클릭 또는 "L" 키 누름
+   - 터미널 창이 열리고 명령 실행
+
+### 키보드 단축키 사용
+
+**목표**: Toast 앱을 사용하여 시스템 전체 키보드 단축키 트리거
+
+1. **단축키 버튼 생성**
+   - 설정 창에서 새 버튼 추가
+   - 버튼 구성:
+     - 이름: "스크린샷"
+     - 단축키: "S"
+     - 아이콘: "📷"
+     - 액션 유형: "키보드 단축키"
+     - 키: "Cmd+Shift+4" (macOS) 또는 "Win+Shift+S" (Windows)
+   - 저장
+
+2. **버튼 사용**
+   - 전역 단축키 누름
+   - "스크린샷" 버튼 클릭 또는 "S" 키 누름
+   - 시스템 스크린샷 도구 트리거
+
+### 사용자 정의 스크립트 실행
+
+**목표**: Toast 앱을 사용하여 사용자 정의 스크립트 실행
+
+1. **스크립트 버튼 생성**
+   - 설정 창에서 새 버튼 추가
+   - 버튼 구성:
+     - 이름: "날씨"
+     - 단축키: "W"
+     - 아이콘: "🌤️"
+     - 액션 유형: "사용자 정의 스크립트"
+     - 스크립트 유형: "JavaScript"
+     - 스크립트:
+       ```javascript
+       const response = await fetch('https://api.openweathermap.org/data/2.5/weather?q=London&appid=YOUR_API_KEY&units=metric');
+       const data = await response.json();
+       return `Current weather in London: ${data.main.temp}°C, ${data.weather[0].description}`;
+       ```
+   - "액션 테스트" 클릭하여 스크립트 테스트
+   - 저장
 
-1. Download the latest `Toast-App-Setup-x.x.x.exe` file from the [releases page](https://github.com/opspresso/toast-app/releases).
-2. Run the installer and follow the on-screen instructions.
-3. Toast App will start automatically after installation.
+2. **버튼 사용**
+   - 전역 단축키 누름
+   - "날씨" 버튼 클릭 또는 "W" 키 누름
+   - 스크립트 실행 및 결과 상태 표시줄에 표시
 
-## Getting Started
+### 버튼 검색 및 필터링
 
-When you first launch Toast App you'll see a welcome screen that guides you through the initial setup:
+**목표**: 많은 버튼이 구성된 경우 특정 버튼 빠르게 찾기
 
-1. **Set Global Hotkey**: Choose a keyboard shortcut to trigger Toast App (default: Alt+Space).
-2. **Launch at Login**: Choose whether to start Toast App automatically when you log in.
-3. **Default Buttons**: Toast App comes with a set of default buttons to get you started. These are organized in a standard keyboard layout (QWERTY) for easy access.
+1. **검색 사용**
+   - 전역 단축키 누름
+   - 검색창에 키워드 입력 시작
+   - 이름이나 단축키에 키워드가 포함된 버튼만 필터링되어 표시
+   - Enter 키를 눌러 첫 번째 일치 버튼 실행
 
-After completing the initial setup Toast App will run in the background with an icon in your system tray (Windows) or menu bar (macOS).
+### 구성 가져오기 및 내보내기
 
-## Using Toast App
+**목표**: 컴퓨터 간에 Toast 앱 구성 전송
 
-### Opening the Toast Popup
+1. **구성 내보내기**
+   - 설정 창의 버튼 탭에서 "내보내기" 클릭
+   - 구성 파일 저장 위치 선택 및 저장
+   - 구성이 JSON 파일로 내보내짐
 
-Press the global hotkey (default: Alt+Space) to open the Toast popup window. The popup will appear at the position specified in your settings (default: center of the screen).
+2. **구성 가져오기**
+   - 설정 창의 버튼 탭에서 "가져오기" 클릭
+   - 이전에 내보낸 구성 파일 선택 및 열기
+   - 가져온 구성 적용을 위해 "저장" 클릭
 
-### Using Buttons
+## 인증 및 구독
 
-The Toast popup displays your configured buttons. You can:
+Toast 앱은 사용자 인증 및 구독 관리를 위해 Toast 웹 서비스와 통합됩니다.
 
-- **Click a button** with your mouse to execute its action.
-- **Press the shortcut key** shown on the button to execute its action.
-- **Use arrow keys** to navigate between buttons and press Enter to execute.
+### 계정 등급 및 혜택
 
-### Navigating Pages
+1. **무료 사용자 (계정 없음)**
+   - 1 페이지의 단축키 액세스
+   - 기본 단축키 기능
+   - 로컬 구성만 가능
 
-Toast App organizes buttons into pages for better organization:
+2. **인증된 사용자 (무료 계정)**
+   - 3 페이지의 단축키 액세스
+   - 모든 기본 기능
+   - 기기 간 프로파일 동기화
 
-- Use the **number keys (1-9)** to switch between pages.
-- Click on the **page tabs** at the top of the popup.
-- Each page can contain up to 15 buttons (in a 5x3 grid by default).
+3. **프리미엄 구독자**
+   - 9 페이지의 단축키 액세스
+   - 모든 설정의 클라우드 동기화
+   - 고급 액션 및 통합
+   - 우선 지원
 
-### Searching
+### 인증 과정
 
-If you have many buttons you can use the search bar at the top of the Toast popup:
+1. 설정 창에서 "로그인" 버튼 클릭
+2. 기본 브라우저가 Toast 웹 로그인 페이지로 열림
+3. 로그인 후, 자동으로 Toast 앱으로 리디렉션
+4. 인증 상태와 구독 혜택이 즉시 적용
 
-1. Start typing to search for buttons by name or shortcut.
-2. The button list will filter as you type.
-3. Press Enter to execute the first matching button.
+### 클라우드 동기화
 
-### Closing the Toast Popup
+프리미엄 구독자는 자동 클라우드 동기화의 혜택을 받습니다:
 
-The Toast popup will close automatically after:
+- **실시간 동기화**: 변경 사항이 수 초 내에 동기화
+- **기기 간 일관성**: 모든 기기에서 동일한 설정 사용
+- **충돌 해결**: 다른 기기에서 변경 시 가장 최근 변경 사항 적용
+- **자동 백업**: 설정이 자동으로 클라우드에 백업
 
-- Executing an action (if "Hide after action" is enabled)
-- Clicking outside the popup (if "Hide on blur" is enabled)
-- Pressing the Escape key (if "Hide on Escape" is enabled)
+## 고급 사용법
 
-You can also click the X button in the top-right corner to close the popup.
+### 외관 사용자 지정
 
-## Configuring Buttons
+다양한 외관 설정을 통해 Toast 앱의 모양과 동작을 사용자 지정할 수 있습니다:
 
-### Accessing Settings
+- **테마**: 라이트, 다크 또는 시스템 테마
+- **위치**: 화면의 중앙, 상단, 하단 또는 커서 위치
+- **크기**: 작게, 중간, 크게
+- **불투명도**: 윈도우 투명도 조정
+- **버튼 레이아웃**: 그리드 또는 목록 레이아웃
 
-To configure buttons and other settings:
+설정 창의 외관 탭에서 이러한 설정을 구성할 수 있습니다.
 
-1. Right-click the Toast App icon in your system tray or menu bar.
-2. Select "Settings" from the context menu.
+### 고급 구성
 
-### Adding a Button
+고급 설정을 통해 애플리케이션의 동작을 더 세밀하게 제어할 수 있습니다:
 
-1. In the Settings window go to the "Buttons" tab.
-2. Click the "Add Button" button.
-3. In the dialog that appears configure your button:
-   - **Name**: The display name of the button.
-   - **Shortcut Key**: A single key to trigger the button (e.g. T B C).
-   - **Icon**: An emoji or icon name to display on the button.
-   - **Action Type**: Choose the type of action (see [Action Types](#action-types)).
-   - **Action Parameters**: Configure the parameters for the selected action type.
-4. Click "Save" to add the button.
+- **액션 후 숨기기**: 액션 실행 후 Toast 윈도우 자동으로 닫기
+- **포커스 상실 시 숨기기**: 외부 클릭 시 윈도우 닫기
+- **Escape 키로 숨기기**: Escape 키로 윈도우 닫기
+- **작업 표시줄에 표시**: 작업 표시줄/독에 Toast 윈도우 표시 여부
 
-### Editing a Button
+설정 창의 고급 탭에서 이러한 설정을 구성할 수 있습니다.
 
-1. In the Settings window go to the "Buttons" tab.
-2. Find the button you want to edit in the list.
-3. Click the "Edit" button next to it.
-4. Modify the button configuration in the dialog.
-5. Click "Save" to update the button.
+### 워크플로우 통합
 
-Alternatively, you can use Settings Mode for quicker editing (see [Settings Mode](#settings-mode)).
+Toast 앱을 개발 워크플로우에 통합하여 생산성을 높일 수 있습니다:
 
-### Deleting a Button
+- **개발 버튼 구성**: 서버 시작, 테스트 실행, 빌드 등
+- **문서 접근**: 자주 사용하는 문서 페이지에 빠르게 접근
+- **개발 도구 열기**: VS Code, 터미널 등 개발 도구 빠르게 실행
 
-1. In the Settings window go to the "Buttons" tab.
-2. Find the button you want to delete in the list.
-3. Click the "Delete" button next to it.
-4. Confirm the deletion when prompted.
+이러한 워크플로우 통합을 통해 개발 과정에서 시간을 절약하고 효율성을 높일 수 있습니다.
 
-### Testing a Button
+## 문제 해결
 
-When configuring a button you can test it before saving:
+### 전역 단축키 문제
 
-1. Configure the button parameters.
-2. Click the "Test Action" button in the dialog.
-3. The action will be executed and you'll see the result.
+**증상**: 전역 단축키가 Toast 창을 트리거하지 않음
 
-### Default Buttons
+**해결 방법**:
+1. 시스템 트레이 아이콘 우클릭 후 설정 선택
+2. 일반 탭에서 전역 단축키 확인
+3. 다른 애플리케이션과 충돌하지 않는 새 단축키 설정
+4. 저장 후 테스트
 
-Toast App comes with a set of default buttons organized in a standard keyboard layout (QWERTY) for easy access. These buttons are automatically added to your first page when you start the app for the first time.
+### 액션이 실행되지 않는 문제
 
-#### Default Button Layout
+**증상**: 버튼이 액션을 실행하지 않음
 
-The default buttons are arranged in three rows, matching the top three rows of a standard QWERTY keyboard:
+**해결 방법**:
+1. 설정 창에서 문제 버튼 편집
+2. 액션 구성 검토
+3. "액션 테스트" 클릭하여 오류 메시지 확인
+4. 오류에 기반하여 구성 수정
+5. 저장 후 다시 테스트
 
-1. **Top Row (QWERT)**:
-   - **Q**: Toast - Opens the Toast Website in the default browser (https://app.toast.sh)
-   - **W**:
-   - **E**:
-   - **R**:
-   - **T**: iTerm - Opens the system iTerm app
+### 기타 일반적인 문제
 
-2. **Middle Row (ASDFG)**:
-   - **A**: App Store - Opens the system App Store
-   - **S**: Slack - Opens the system Slack app
-   - **D**: Dictionary - Opens the system Dictionary app
-   - **F**: Finder - Opens the system file explorer (Finder on macOS, Explorer on Windows)
-   - **G**: GitHub - Opens GitHub website in the default browser
-
-3. **Bottom Row (ZXCVB)**:
-   - **Z**: Zoom - Opens Zoom app
-   - **X**: Mail - Opens the system Mail app
-   - **C**: Calendar - Opens the system Calendar app
-   - **V**: VSCode - Opens Visual Studio Code
-   - **B**: Chrome - Opens the system Chrome browser
-
-#### Platform-Specific Commands
-
-The default buttons use platform-specific commands to ensure they work correctly on both macOS and Windows:
-
-- On **macOS**, commands typically use the `open -a "Application Name"` format
-- On **Windows**, commands use either `start application` or specific protocol handlers like `ms-photos:`
-
-For example, the VSCode button uses:
-- `open -a "Visual Studio Code"` on macOS
-- `start code` on Windows
-
-#### Customizing Default Buttons
-
-You can modify any of the default buttons to better suit your needs:
-
-1. Enter Settings Mode by clicking the gear icon (⚙️) or pressing the comma (,) key
-2. Click on any default button to edit its properties
-3. Change the name, icon, action type, or command as needed
-4. Click "Save" to update the button
-
-If you want to restore the default buttons after making changes, you can reset your configuration in the Advanced settings tab.
-
-## Managing Pages
-
-Toast App supports organizing your buttons into multiple pages, making it easier to group related actions.
-
-### Viewing Pages
-
-- When the Toast popup is open, you can see the page tabs at the top.
-- Each page has a number shortcut (1-9) for quick access.
-- Page limits depend on your account status:
-  - **Free Users**: Limited to 1 page
-  - **Authenticated Users**: Can create up to 3 pages
-  - **Subscribers**: Can create up to 9 pages
-
-### Adding a Page
-
-1. Open the Toast popup using your global hotkey.
-2. Enter Settings Mode by clicking the gear icon (⚙️) or pressing the comma (,) key.
-3. Click the "+" tab at the top of the popup.
-4. Enter a name for the new page.
-5. Click "Save" to create the page.
-
-Alternatively, in the Settings window:
-1. Go to the "Buttons" tab.
-2. Click the "Manage Pages" button.
-3. Click "Add Page".
-4. Enter a name for the new page.
-5. Click "Save".
-
-### Renaming a Page
-
-1. Open the Toast popup and enter Settings Mode.
-2. Right-click on the page tab you want to rename.
-3. Select "Rename Page" from the context menu.
-4. Enter a new name.
-5. Click "Save".
-
-### Deleting a Page
-
-1. Open the Toast popup and enter Settings Mode.
-2. Right-click on the page tab you want to delete.
-3. Select "Delete Page" from the context menu.
-4. Confirm the deletion when prompted.
-
-### Reordering Pages
-
-1. Open the Toast popup and enter Settings Mode.
-2. Drag and drop page tabs to reorder them.
-
-## Action Types
-
-Toast App supports several types of actions:
-
-### Execute Command
-
-Executes a shell command on your system.
-
-**Parameters:**
-- **Command**: The shell command to execute.
-- **Working Directory** (optional): The directory in which to run the command.
-- **Run in Terminal**: Whether to run the command in a terminal window.
-
-**Examples:**
-- `echo "Hello world!"` - Prints a message
-- `open -a "Google Chrome"` (macOS) or `start chrome` (Windows) - Opens Chrome
-- `ls -la` (macOS/Linux) or `dir` (Windows) - Lists files in the current directory
-
-### Open URL/File
-
-Opens a URL in your default browser or a file/folder with its associated application.
-
-**Parameters:**
-- **URL or File Path**: The URL or file path to open.
-- **Application** (optional): The application to use for opening.
-
-**Examples:**
-- `https://www.google.com` - Opens Google in your default browser
-- `/path/to/document.pdf` - Opens a PDF file
-- `/path/to/folder` - Opens a folder in your file explorer
-
-### Keyboard Shortcut
-
-Simulates pressing a keyboard shortcut.
-
-**Parameters:**
-- **Keys**: The keyboard shortcut to simulate (e.g. Ctrl+C Alt+Tab).
-
-**Examples:**
-- `Ctrl+C` - Simulates copying
-- `Alt+Tab` - Simulates switching windows
-- `Cmd+Space` (macOS) - Simulates opening Spotlight
-
-### Custom Script
-
-Executes a custom script in various languages.
-
-**Parameters:**
-- **Script Type**: The language of the script (JavaScript AppleScript PowerShell Bash).
-- **Script**: The script content.
-
-**Examples:**
-- JavaScript: `console.log("Hello from JavaScript!");`
-- AppleScript (macOS): `tell application "Finder" to open home`
-- PowerShell (Windows): `Get-Process | Sort-Object CPU -Descending | Select-Object -First 5`
-- Bash (macOS/Linux): `for i in {1..5}; do echo $i; done`
-
-### Action Chain
-
-Executes a series of actions in sequence.
-
-**Parameters:**
-- **Actions**: List of actions to execute in order.
-- **Stop on Error**: Whether to stop execution if an action fails.
-
-**Example:**
-- First action: Open a specific folder
-- Second action: Launch an application
-- Third action: Execute a keyboard shortcut
-
-To configure a chain action:
-1. Select "Action Chain" as the action type.
-2. Click "Add Action" to add actions to the chain.
-3. Configure each action as you would normally.
-4. Use the up/down arrows to reorder actions.
-5. Toggle "Stop on Error" to control error handling.
-
-## Appearance Settings
-
-### Theme
-
-Choose the visual theme for Toast App:
-
-- **System**: Follows your system's light/dark mode setting.
-- **Light**: Always uses the light theme.
-- **Dark**: Always uses the dark theme.
-
-### Position
-
-Choose where the Toast popup appears on your screen:
-
-- **Center**: In the center of the screen.
-- **Top**: At the top center of the screen.
-- **Bottom**: At the bottom center of the screen.
-- **Cursor**: Near your cursor position.
-
-### Size
-
-Choose the size of the Toast popup:
-
-- **Small**: 350x400 pixels.
-- **Medium**: 400x500 pixels.
-- **Large**: 500x600 pixels.
-
-### Opacity
-
-Adjust the transparency of the Toast popup using the slider (0.1 to 1.0).
-
-### Button Layout
-
-Choose how buttons are arranged in the Toast popup:
-
-- **Grid**: Buttons arranged in a grid (default).
-- **List**: Buttons arranged in a vertical list.
-
-## Advanced Settings
-
-### Launch at Login
-
-Enable this option to start Toast App automatically when you log in to your computer.
-
-### Hide After Action
-
-Enable this option to automatically hide the Toast popup after executing an action.
-
-### Hide on Blur
-
-Enable this option to automatically hide the Toast popup when it loses focus.
-
-### Hide on Escape
-
-Enable this option to hide the Toast popup when you press the Escape key.
-
-### Show in Taskbar
-
-Enable this option to show the Toast popup in the taskbar/dock.
-
-## Keyboard Shortcuts
-
-### Global Shortcuts
-
-- **Global Hotkey** (default: Alt+Space): Open the Toast popup.
-
-### Toast Popup Shortcuts
-
-- **Arrow Keys**: Navigate between buttons.
-- **Enter**: Execute the selected button.
-- **Escape**: Close the Toast popup (if enabled).
-- **Button Shortcuts**: Press the shortcut key shown on a button to execute it.
-- **Number Keys (1-9)**: Switch between pages.
-- **Comma (,)**: Toggle Settings Mode.
-- **Plus (+)**: Add a new page (in Settings Mode).
-- **Minus (-)**: Delete the current page (in Settings Mode).
-
-### Settings Window Shortcuts
-
-- **Ctrl+S** (Windows) or **Cmd+S** (macOS): Save settings.
-- **Escape**: Cancel and close the settings window.
-
-## Settings Mode
-
-Settings Mode allows you to quickly edit buttons directly from the Toast popup.
-
-### Entering Settings Mode
-
-There are two ways to enter Settings Mode:
-
-1. Click the gear icon (⚙️) in the lower-right corner of the Toast popup.
-2. Press the comma (,) key when the Toast popup is open.
-
-### Editing Buttons in Settings Mode
-
-When in Settings Mode:
-
-1. Click on any button to edit it.
-2. A dialog will appear with the button's current settings.
-3. Modify the settings as needed.
-4. Click "Save" to update the button.
-
-### Managing Pages in Settings Mode
-
-In Settings Mode, you can:
-
-- Click the "+" tab to add a new page.
-- Right-click on a page tab for options (Rename, Delete).
-- Drag page tabs to reorder them.
-
-### Exiting Settings Mode
-
-To exit Settings Mode:
-
-1. Click the gear icon (⚙️) again.
-2. Press the comma (,) key again.
-3. Press the Escape key.
-
-## Cloud Sync
-
-Toast App now supports cloud synchronization of your settings, allowing you to maintain consistent button configurations across multiple devices.
-
-### Cloud Sync Overview
-
-Cloud sync enables you to:
-- Automatically synchronize your button configurations (pages) across multiple devices
-- Maintain consistent theme and appearance settings
-- Seamlessly transition between different computers with the same setup
-
-### How Cloud Sync Works
-
-1. When you make changes to your button configurations or settings, they are automatically uploaded to the Toast Web server
-2. When you log in on another device, these settings are automatically downloaded and applied
-3. The system intelligently resolves conflicts by using the most recent changes
-
-### Enabling Cloud Sync
-
-To use cloud synchronization:
-
-1. You must have an active subscription or be an authenticated user
-2. In the Settings window, go to the "Account" tab
-3. Click "Log In" to authenticate with your Toast Web account
-4. Once logged in, cloud sync is automatically enabled
-
-### Controlling Cloud Sync
-
-You can manage cloud sync in the Advanced settings:
-
-1. In the Settings window, go to the "Advanced" tab
-2. Find the "Cloud Sync" section
-3. Toggle "Enable Cloud Synchronization" to turn the feature on or off
-4. Use the "Sync Now" button to manually trigger synchronization
-
-### What Gets Synchronized
-
-The following settings are synchronized across your devices:
-
-- **Pages and Buttons**: Your complete button configurations, including all pages, buttons, and their actions
-- **Theme Settings**: Your preferred theme (light/dark/system)
-- **Language Settings**: Your language preference
-
-Personal settings like window position, opacity, and launch-at-login are not synchronized as they are typically specific to each device.
-
-### Manual Sync Actions
-
-You can perform manual synchronization actions if needed:
-
-1. **Upload Settings**: Force your current settings to be uploaded to the cloud
-2. **Download Settings**: Force download the latest settings from the cloud
-3. **Resolve Conflicts**: Automatically determine which settings are the most recent and apply them
-
-To access these options, go to Settings > Advanced > Cloud Sync and click the dropdown menu next to "Sync Now".
-
-### Sync Status Indicators
-
-Toast App provides feedback about sync status:
-- A green checkmark indicates settings are in sync
-- A spinning icon indicates synchronization in progress
-- A red exclamation mark indicates a sync error
-
-### Troubleshooting Sync Issues
-
-If you encounter sync issues:
-
-1. Check your internet connection
-2. Verify that you're logged in (Settings > Account)
-3. Try manual synchronization (Settings > Advanced > Cloud Sync > Sync Now)
-4. If problems persist, you can reset sync by logging out and back in
-
-## Importing and Exporting
-
-### Exporting Configuration
-
-To export your configuration:
-
-1. In the Settings window go to the "Buttons" tab.
-2. Click the "Export" button.
-3. Choose a location to save the configuration file.
-4. Click "Save".
-
-The exported file contains all your pages, buttons, and settings, making it easy to back up or transfer your configuration.
-
-### Importing Configuration
-
-To import a configuration:
-
-1. In the Settings window go to the "Buttons" tab.
-2. Click the "Import" button.
-3. Select a configuration file to import.
-4. Click "Open".
-5. Choose whether to replace or merge with your existing configuration.
-
-## Auto-Updates
-
-Toast App includes an automatic update system to ensure you always have the latest features and bug fixes.
-
-### Update Process
-
-By default, Toast App automatically checks for updates when it starts:
-
-1. If an update is available, it will be downloaded in the background.
-2. Once downloaded, you'll be notified that an update is ready to install.
-3. You can choose to install the update immediately or later.
-4. If you choose "Later", the update will be installed the next time you restart the app.
-
-### Manual Update Check
-
-To manually check for updates:
-
-1. Right-click the Toast App icon in your system tray or menu bar.
-2. Select "Check for Updates" from the context menu.
-
-### Update Settings
-
-You can configure update behavior in the Advanced settings:
-
-1. In the Settings window, go to the "Advanced" tab.
-2. Find the "Updates" section.
-3. Configure the following options:
-   - **Automatically check for updates**: Enable/disable automatic update checks.
-   - **Download updates automatically**: Enable/disable automatic download of updates.
-   - **Update channel**: Choose between stable releases or beta versions.
-
-## Troubleshooting
-
-### Toast App Won't Start
-
-- Check if Toast App is already running in the background.
-- Try restarting your computer.
-- Reinstall Toast App.
-
-### Global Hotkey Doesn't Work
-
-- Check if the hotkey is already used by another application.
-- Try setting a different hotkey in the settings.
-- Restart Toast App after changing the hotkey.
-
-### Actions Don't Execute
-
-- Check if the action parameters are correct.
-- Test the action in the button editor.
-- Check your system permissions.
-
-### Toast Popup Doesn't Appear
-
-- Check if Toast App is running (look for the icon in your system tray or menu bar).
-- Try pressing the global hotkey again.
-- Check if the Toast window is off-screen (try changing the position setting).
-
-### Buttons Not Working
-
-- Check that the button's action is configured correctly.
-- Try using the keyboard shortcut instead of clicking.
-- Test the button in Settings Mode.
-
-### Pages Not Switching
-
-- Make sure you have multiple pages configured.
-- Try clicking the page tabs instead of using keyboard shortcuts.
-- Check if your subscription allows for multiple pages.
-
-## FAQ
-
-### Can I use Toast App on Linux?
-
-Toast App is primarily designed for macOS and Windows but limited Linux support is available. Some features may not work as expected on Linux.
-
-### Can I sync my configuration across devices?
-
-Yes! Toast App now supports cloud synchronization of your settings. With an active subscription or authenticated account, your button configurations and settings are automatically synchronized across all your devices.
-
-To use this feature:
-1. Log in to your Toast Web account (Settings > Account)
-2. Make changes on one device, and they'll automatically sync to your other devices
-3. See the [Cloud Sync](#cloud-sync) section for more details
-
-If you prefer manual control, you can still export your configuration from one device and import it on another.
-
-### Can I create custom themes?
-
-Custom themes are planned for a future release. Currently you can choose between light dark and system themes.
-
-### How many buttons can I add?
-
-There is no hard limit on the number of buttons you can add per page. However for better performance and usability we recommend keeping the number of buttons reasonable (under 15 per page).
-
-### How many pages can I create?
-
-Page limits depend on your account status:
-- **Free Users**: Limited to 1 page
-- **Authenticated Users**: Can create up to 3 pages after logging in
-- **Subscribers**: Can create up to 9 pages with an active subscription
-
-These limits help maintain application performance and provide incentive to authenticate and subscribe for additional functionality.
-
-### Can I use multiple global hotkeys?
-
-Currently Toast App supports a single global hotkey to open the popup. However you can use button shortcuts to quickly access specific actions once the popup is open.
-
-### Is my data sent to any servers?
-
-No Toast App is a completely offline application. Your configuration is stored locally on your computer and is not sent to any servers.
-
-### How do I uninstall Toast App?
-
-#### macOS
-
-1. Quit Toast App.
-2. Drag Toast App from your Applications folder to the Trash.
-3. Empty the Trash.
-
-#### Windows
-
-1. Open Control Panel > Programs > Programs and Features.
-2. Select Toast App from the list.
-3. Click "Uninstall" and follow the on-screen instructions.
-
-### Where is my configuration stored?
-
-Your configuration is stored in:
-
-- **macOS**: `~/Library/Application Support/toast-app/config.json`
-- **Windows**: `%APPDATA%\toast-app\config.json`
-
-## Getting Help
-
-If you encounter any issues or have questions not covered in this guide please:
-
-1. Check the [GitHub repository](https://github.com/opspresso/toast-app) for updates and known issues.
-2. Submit an issue on the [GitHub issues page](https://github.com/opspresso/toast-app/issues).
-3. Contact the developers at [support@example.com](mailto:support@example.com).
-
-Thank you for using Toast App!
+- **시작 문제**: 시스템 설정에서 시작 항목 확인
+- **로그인 문제**: 인터넷 연결 확인 및 웹 브라우저에서 Toast 웹 접속 테스트
+- **성능 문제**: 로그 확인 및 불필요한 버튼 제거하여 최적화
+- **동기화 문제**: 인증 상태 확인 및 수동 동기화 시도
