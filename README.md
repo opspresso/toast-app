@@ -180,18 +180,65 @@ Example configuration:
 }
 ```
 
-## Integration with Toast Web
+## Authentication and Subscription System
 
-Toast App integrates with [Toast Web](https://app.toast.sh) for user authentication and subscription management. This integration enables:
+Toast App integrates with [Toast Web](https://app.toast.sh) for user authentication and subscription management. The system offers a tiered approach to features based on your account status:
 
-- User account creation and authentication
-- Subscription management for premium features
-- Secure access to paid features based on subscription status
-- Seamless login experience via system browser
+### Account Tiers and Benefits
 
-For developers working on Toast App, refer to the documentation available in the repository.
+1. **Free Users (No Account)**
+   - Access to 1 page of shortcuts
+   - Basic shortcut functionality
+   - Local configuration only
 
-Users can create an account and manage their subscription at [https://app.toast.sh](https://app.toast.sh).
+2. **Authenticated Users (Free Account)**
+   - Access to 3 pages of shortcuts
+   - All basic features
+   - Profile synchronization across devices
+
+3. **Premium Subscribers**
+   - Access to 9 pages of shortcuts
+   - Cloud synchronization of all settings
+   - Advanced actions and integrations
+   - Priority support
+
+### Authentication Process
+
+Authentication is designed to be simple and secure:
+
+1. Click the "Log In" button in the settings window
+2. Your default browser will open to the Toast Web login page
+3. After logging in, you'll be redirected back to Toast App automatically
+4. Your authentication status and subscription benefits are immediately applied
+
+### Common Authentication Questions
+
+**Q: How do I know if I'm logged in?**
+A: Your account email and subscription status are displayed in the settings window.
+
+**Q: What happens if my internet connection is unavailable?**
+A: Toast App continues to work offline with your last synchronized settings.
+
+**Q: How do I log out?**
+A: Go to Settings → Account → Log Out. Your local settings will be preserved.
+
+### Cloud Synchronization
+
+Premium subscribers benefit from automatic cloud synchronization:
+
+- **Real-time sync**: Changes sync within seconds of being made
+- **Cross-device consistency**: Use the same settings on all your devices
+- **Conflict resolution**: If you make changes on different devices, the most recent changes will be applied
+- **Automatic backup**: Your settings are automatically backed up to the cloud
+
+### Security and Privacy
+
+- Authentication uses OAuth 2.0 for secure token-based access
+- Toast App never sees or stores your password
+- All data synchronization occurs over encrypted HTTPS connections
+- You can revoke access at any time through Toast Web account settings
+
+To create an account or manage your subscription, visit [https://app.toast.sh](https://app.toast.sh).
 
 ## Documentation
 
