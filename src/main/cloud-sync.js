@@ -1,27 +1,26 @@
 /**
  * Toast - Cloud Synchronization Module
  *
- * 이 모듈은 Toast-App의 설정(페이지와 버튼 정보 등)을 Toast-Web 서버와 동기화합니다.
- * 동기화 시점:
- * 1. 로그인 성공 시 (서버에서 다운로드)
- * 2. 설정 변경 시 (로컬 저장 후 서버 업로드)
- * 3. 주기적 동기화 (15분 간격)
- * 4. 앱 시작 시 (이미 로그인된 상태인 경우)
- * 5. 수동 동기화 요청 시
+ * This module synchronizes Toast-App settings (pages and button information, etc.) with the Toast-Web server.
+ * Synchronization points:
+ * 1. On successful login (download from server)
+ * 2. When settings change (local save then server upload)
+ * 3. Periodic synchronization (15-minute intervals)
+ * 4. At app startup (if already logged in)
+ * 5. On manual synchronization request
  */
 
-const { app } = require('electron');
 const os = require('os');
 const { sync: apiSync } = require('./api');
 const { createConfigStore } = require('./config');
 
-// 동기화 관련 상수
-const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
-const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
-const MAX_RETRY_COUNT = 3; // 최대 재시도 횟수
-const RETRY_DELAY_MS = 5000; // 재시도 간격 (5초)
+// Synchronization related constants
+const SYNC_INTERVAL_MS = 15 * 60 * 1000; // Automatic sync every 15 minutes
+const SYNC_DEBOUNCE_MS = 2000; // Sync 2 seconds after the last change
+const MAX_RETRY_COUNT = 3; // Maximum retry count
+const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
 
-// 동기화 모듈 상태
+// Synchronization module state
 const state = {
   enabled: true,
   isSyncing: false,
@@ -36,14 +35,14 @@ const state = {
   }
 };
 
-// 외부 모듈 참조
+// External module references
 let configStore = null;
 let authManager = null;
 let userDataManager = null;
 
 /**
- * 장치 식별자 생성
- * @returns {string} 장치 식별자
+ * Generate device identifier
+ * @returns {string} Device identifier
  */
 function getDeviceIdentifier() {
   const platform = process.platform;
@@ -53,20 +52,20 @@ function getDeviceIdentifier() {
 }
 
 /**
- * 현재 시간 타임스탬프 가져오기
- * @returns {number} 현재 시간 타임스탬프 (밀리초)
+ * Get current timestamp
+ * @returns {number} Current timestamp (milliseconds)
  */
 function getCurrentTimestamp() {
   return Date.now();
 }
 
 /**
- * 동기화가 가능한지 확인
- * @returns {Promise<boolean>} 동기화 가능 여부
+ * Check if synchronization is possible
+ * @returns {Promise<boolean>} Whether synchronization is possible
  */
 async function canSync() {
   if (!state.enabled || !authManager) {
-    console.log('동기화 비활성화 또는 인증 관리자 없음, 동기화 불가');
+    console.log('Synchronization disabled or no authentication manager, sync not possible');
     return false;
   }
 
@@ -76,58 +75,58 @@ async function canSync() {
       configStore
     });
   } catch (error) {
-    console.error('동기화 가능 여부 확인 오류:', error);
+    console.error('Error checking synchronization availability:', error);
     return false;
   }
 }
 
 /**
- * 주기적인 설정 동기화 시작
+ * Start periodic settings synchronization
  */
 function startPeriodicSync() {
   stopPeriodicSync();
 
   state.timers.sync = setInterval(async () => {
     if (await canSync()) {
-      console.log('주기적 설정 동기화 수행');
+      console.log('Performing periodic settings synchronization');
       await downloadSettings();
     }
   }, SYNC_INTERVAL_MS);
 
-  console.log(`주기적 동기화 시작 (${Math.floor(SYNC_INTERVAL_MS / 60000)}분 간격)`);
+  console.log(`Periodic synchronization started (${Math.floor(SYNC_INTERVAL_MS / 60000)}-minute interval)`);
 }
 
 /**
- * 주기적인 설정 동기화 중지
+ * Stop periodic settings synchronization
  */
 function stopPeriodicSync() {
   if (state.timers.sync) {
     clearInterval(state.timers.sync);
     state.timers.sync = null;
-    console.log('주기적 동기화 중지');
+    console.log('Periodic synchronization stopped');
   }
 }
 
 /**
- * 설정 변경 시 동기화 예약
- * @param {string} changeType - 변경 유형 (예: '페이지 추가', '버튼 수정' 등)
+ * Schedule synchronization when settings change
+ * @param {string} changeType - Change type (e.g., 'Page added', 'Button modified', etc.)
  */
 function scheduleSync(changeType) {
   state.lastChangeType = changeType;
 
-  // 이전 예약된 동기화 취소
+  // Cancel previously scheduled synchronization
   if (state.timers.debounce) {
     clearTimeout(state.timers.debounce);
   }
 
-  // 새로운 동기화 예약
+  // Schedule new synchronization
   state.timers.debounce = setTimeout(async () => {
-    console.log(`변경 유형 '${changeType}'에 대한 설정 업로드 시작`);
-    state.retryCount = 0; // 재시도 횟수 초기화
+    console.log(`Starting settings upload for change type '${changeType}'`);
+    state.retryCount = 0; // Reset retry count
     await uploadSettingsWithRetry();
   }, SYNC_DEBOUNCE_MS);
 
-  console.log(`${changeType} 변경 감지, ${SYNC_DEBOUNCE_MS / 1000}초 후 동기화 예약됨`);
+  console.log(`${changeType} change detected, synchronization scheduled in ${SYNC_DEBOUNCE_MS / 1000} seconds`);
 }
 
 /**
@@ -327,16 +326,16 @@ async function downloadSettings() {
 }
 
 /**
- * 설정 충돌 해결 및 동기화
- * @param {string} action - 동기화 액션 ('upload', 'download', 'resolve')
- * @returns {Promise<Object>} 동기화 결과
+ * Resolve settings conflicts and synchronize
+ * @param {string} action - Synchronization action ('upload', 'download', 'resolve')
+ * @returns {Promise<Object>} Synchronization result
  */
 async function syncSettings(action = 'resolve') {
-  console.log(`수동 동기화 요청: ${action}`);
+  console.log(`Manual synchronization request: ${action}`);
 
-  // // 추가 디버깅 정보
+  // // Additional debugging information
   // const syncCheckResult = await canSync();
-  // console.log('수동 동기화 canSync 결과:', syncCheckResult);
+  // console.log('Manual sync canSync result:', syncCheckResult);
 
   // if (!syncCheckResult) {
   //   return { success: false, error: 'Cloud sync not enabled' };
@@ -348,67 +347,67 @@ async function syncSettings(action = 'resolve') {
     } else if (action === 'download') {
       return await downloadSettings();
     } else {
-      // 충돌 해결 (타임스탬프 기반)
+      // Conflict resolution (timestamp-based)
 
-      // 1. 현재 로컬 설정 가져오기
+      // 1. Get current local settings
       const localSettings = await userDataManager.getUserSettings();
 
-      // 2. 서버 설정 다운로드 - data 객체 형식으로 일관화
+      // 2. Download server settings - standardize as data object format
       const serverResult = await apiSync.downloadSettings({
         hasValidToken: authManager.hasValidToken,
         onUnauthorized: authManager.refreshAccessToken,
         configStore,
-        directData: {} // 빈 객체를 전달해도 API에서는 GET 요청이므로 무시됨
+        directData: {} // Empty object is ignored in GET request
       });
 
       if (!serverResult.success) {
-        console.error('서버 설정 다운로드 실패:', serverResult.error);
+        console.error('Server settings download failed:', serverResult.error);
         return serverResult;
       }
 
-      // 3. 설정 병합
+      // 3. Merge settings
       const serverSettings = serverResult.data;
       const mergedSettings = mergeSettings(localSettings, serverSettings);
 
-      // 4. 병합된 설정 저장
+      // 4. Save merged settings
       userDataManager.updateSettings(mergedSettings);
 
-      // 5. 필요시 병합된 설정 업로드
+      // 5. Upload merged settings if needed
       if (localSettings && localSettings.lastModifiedAt > (serverSettings?.lastModifiedAt || 0)) {
-        console.log('로컬 설정이 더 최신입니다. 병합된 설정을 서버에 업로드합니다.');
+        console.log('Local settings are more recent. Uploading merged settings to server.');
         await uploadSettings();
       }
 
-      return { success: true, message: '설정 동기화 완료' };
+      return { success: true, message: 'Settings synchronization complete' };
     }
   } catch (error) {
-    console.error('수동 동기화 오류:', error);
+    console.error('Manual synchronization error:', error);
     return {
       success: false,
-      error: error.message || '알 수 없는 오류'
+      error: error.message || 'Unknown error'
     };
   }
 }
 
 /**
- * 충돌 해결 및 설정 병합
- * @param {Object} localSettings - 로컬 설정
- * @param {Object} serverSettings - 서버 설정
- * @returns {Object} 병합된 설정
+ * Resolve conflicts and merge settings
+ * @param {Object} localSettings - Local settings
+ * @param {Object} serverSettings - Server settings
+ * @returns {Object} Merged settings
  */
 function mergeSettings(localSettings, serverSettings) {
   if (!localSettings) return serverSettings;
   if (!serverSettings) return localSettings;
 
-  // 타임스탬프 기반 충돌 해결
+  // Timestamp-based conflict resolution
   const localTime = localSettings.lastModifiedAt || 0;
   const serverTime = serverSettings.lastModifiedAt || 0;
 
-  console.log(`설정 병합: 로컬(${new Date(localTime).toISOString()}) vs 서버(${new Date(serverTime).toISOString()})`);
+  console.log(`Settings merge: Local(${new Date(localTime).toISOString()}) vs Server(${new Date(serverTime).toISOString()})`);
 
-  // 서버 설정이 더 최신인 경우
+  // If server settings are more recent
   if (serverTime > localTime) {
-    console.log('서버 설정이 더 최신입니다. 서버 설정 우선 적용');
+    console.log('Server settings are more recent. Applying server settings with priority');
     return {
       ...localSettings,
       ...serverSettings,
@@ -416,8 +415,8 @@ function mergeSettings(localSettings, serverSettings) {
     };
   }
 
-  // 로컬 설정이 더 최신인 경우
-  console.log('로컬 설정이 더 최신입니다. 로컬 설정 우선 적용');
+  // If local settings are more recent
+  console.log('Local settings are more recent. Applying local settings with priority');
   return {
     ...serverSettings,
     ...localSettings,
@@ -426,12 +425,12 @@ function mergeSettings(localSettings, serverSettings) {
 }
 
 /**
- * 동기화 기능 활성화/비활성화
- * @param {boolean} enabled - 활성화 여부
+ * Enable/disable synchronization feature
+ * @param {boolean} enabled - Whether to enable
  */
 function setEnabled(enabled) {
   state.enabled = enabled;
-  console.log(`클라우드 동기화 ${enabled ? '활성화' : '비활성화'}`);
+  console.log(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
 
   if (enabled) {
     startPeriodicSync();
@@ -523,42 +522,42 @@ function setupConfigListeners() {
 }
 
 /**
- * 클라우드 동기화 초기화
- * @returns {Object} 동기화 관리자 객체
+ * Initialize cloud synchronization
+ * @returns {Object} Synchronization manager object
  */
 function initCloudSync(authManager, userDataManager) {
-  console.log('클라우드 동기화 초기화 시작');
+  console.log('Starting cloud synchronization initialization');
 
-  // 인증 관리자 참조 설정
+  // Set authentication manager reference
   setAuthManager(authManager);
 
-  // 사용자 데이터 관리자 참조 설정
+  // Set user data manager reference
   setUserDataManager(userDataManager);
 
-  // 설정 스토어 생성
+  // Create configuration store
   configStore = createConfigStore();
 
-  // 디바이스 정보 초기화
+  // Initialize device information
   state.deviceId = getDeviceIdentifier();
-  console.log(`장치 ID: ${state.deviceId}`);
+  console.log(`Device ID: ${state.deviceId}`);
 
-  // 설정 변경 감지 이벤트 등록
+  // Register settings change detection events
   setupConfigListeners();
 
-  // 인터페이스 객체 생성
+  // Create interface object
   const syncManager = {
-    // 기본 인터페이스
+    // Basic interface
     unsubscribe: () => {
-      // 타이머 중지
+      // Stop timer
       stopPeriodicSync();
 
-      // 디바운스 타이머 취소
+      // Cancel debounce timer
       if (state.timers.debounce) {
         clearTimeout(state.timers.debounce);
         state.timers.debounce = null;
       }
 
-      console.log('클라우드 동기화 구독 해제됨');
+      console.log('Cloud synchronization unsubscribed');
     },
     enable: () => {
       setEnabled(true);
@@ -571,12 +570,12 @@ function initCloudSync(authManager, userDataManager) {
       timestamp: state.lastSyncTime
     }),
     syncAfterLogin: async () => {
-      console.log('로그인 후 클라우드 동기화 수행');
+      console.log('Performing cloud synchronization after login');
 
-      // 로그인 후에는 다운로드 우선
+      // Prioritize download after login
       const result = await downloadSettings();
 
-      // 동기화 활성화
+      // Enable synchronization
       if (state.enabled) {
         startPeriodicSync();
       }
@@ -587,7 +586,7 @@ function initCloudSync(authManager, userDataManager) {
       return await syncSettings(action);
     },
 
-    // 추가 인터페이스
+    // Additional interface
     startPeriodicSync,
     stopPeriodicSync,
     getCurrentStatus: () => ({
@@ -602,26 +601,26 @@ function initCloudSync(authManager, userDataManager) {
 }
 
 /**
- * 인증 관리자 참조 설정
- * @param {Object} manager - 인증 관리자 인스턴스
+ * Set authentication manager reference
+ * @param {Object} manager - Authentication manager instance
  */
 function setAuthManager(manager) {
   authManager = manager;
-  console.log('인증 관리자 참조 설정 완료');
+  console.log('Authentication manager reference setup complete');
 }
 
 /**
- * 사용자 데이터 관리자 참조 설정
- * @param {Object} manager - 사용자 데이터 관리자 인스턴스
+ * Set user data manager reference
+ * @param {Object} manager - User data manager instance
  */
 function setUserDataManager(manager) {
   userDataManager = manager;
-  console.log('사용자 데이터 관리자 참조 설정 완료');
+  console.log('User data manager reference setup complete');
 }
 
 /**
- * 클라우드 동기화 설정 업데이트 (이전 버전과의 호환성 유지)
- * @param {boolean} enabled - 동기화 활성화 여부
+ * Update cloud synchronization settings (maintain compatibility with previous versions)
+ * @param {boolean} enabled - Whether to enable synchronization
  */
 function updateCloudSyncSettings(enabled) {
   setEnabled(enabled);

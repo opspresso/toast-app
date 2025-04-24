@@ -1,7 +1,7 @@
 /**
- * Toast API - 인증 관련 API 모듈
+ * Toast API - Authentication Related API Module
  *
- * 로그인, 토큰 관리, 사용자 정보 조회 등 인증 관련 API를 처리합니다.
+ * Handles authentication related APIs such as login, token management, and user information retrieval.
  */
 
 const { URL } = require('url');
@@ -16,17 +16,17 @@ const {
 } = require('./client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
-// 인증 관련 상수
+// Authentication related constants
 const REDIRECT_URI = 'toast-app://auth';
 
-// 로그인 상태 관리
+// Login state management
 
-// 로그인 진행 상태 추적
+// Login progress tracking
 let isLoginInProgress = false;
 let loginStartTimestamp = 0;
-const LOGIN_TIMEOUT_MS = 60000; // 로그인 최대 1분 제한
+const LOGIN_TIMEOUT_MS = 60000; // Maximum login timeout of 1 minute
 
-// 상태 저장소 (CSRF 보호용)
+// State store (for CSRF protection)
 const stateStore = new Store({
   name: 'auth-state',
   encryptionKey: 'toast-app-auth-state',
@@ -34,8 +34,8 @@ const stateStore = new Store({
 });
 
 /**
- * CSRF 방지를 위한 인증 상태 값 저장
- * @param {string} state - 저장할 상태 값
+ * Store authentication state value for CSRF prevention
+ * @param {string} state - State value to store
  */
 function storeStateParam(state) {
   try {
@@ -50,15 +50,15 @@ function storeStateParam(state) {
 }
 
 /**
- * 저장된 인증 상태 값 가져오기
- * @returns {string|null} 저장된 상태 값 또는 null
+ * Retrieve stored authentication state value
+ * @returns {string|null} Stored state value or null
  */
 function retrieveStoredState() {
   try {
     const state = stateStore.get('oauth-state');
     const createdAt = stateStore.get('state-created-at') || 0;
 
-    // 5분 이상 경과된 상태 값은 만료 처리
+    // Consider state expired if more than 5 minutes have passed
     const isExpired = Date.now() - createdAt > 5 * 60 * 1000;
 
     if (isExpired) {
@@ -75,18 +75,17 @@ function retrieveStoredState() {
   }
 }
 
-
 /**
- * 현재 로그인 진행 중인지 확인
- * @returns {boolean} 로그인 중이면 true
+ * Check if login process is currently active
+ * @returns {boolean} True if login is in progress
  */
 function isLoginProcessActive() {
   if (!isLoginInProgress) return false;
 
-  // 로그인 제한 시간 확인
+  // Check login time limit
   const elapsed = Date.now() - loginStartTimestamp;
   if (elapsed > LOGIN_TIMEOUT_MS) {
-    // 제한 시간이 지나면 로그인 상태 초기화
+    // Reset login state if timeout has passed
     isLoginInProgress = false;
     return false;
   }
@@ -95,54 +94,54 @@ function isLoginProcessActive() {
 }
 
 /**
- * 로그인 진행 상태 설정
- * @param {boolean} status - 활성화(true) 또는 비활성화(false)
+ * Set login progress state
+ * @param {boolean} status - Active (true) or inactive (false)
  */
 function setLoginInProgress(status) {
   isLoginInProgress = status;
 
   if (status) {
-    // 로그인 시작 시간 기록
+    // Record login start time
     loginStartTimestamp = Date.now();
-    console.log('로그인 진행 시작');
+    console.log('Login process started');
   } else {
-    console.log('로그인 진행 종료');
+    console.log('Login process ended');
   }
 }
 
 /**
- * 로그인 프로세스를 시작합니다 (OAuth 인증 페이지 열기)
- * @param {string} clientId - OAuth 클라이언트 ID
- * @returns {Promise<Object>} 로그인 프로세스 시작 결과 {url: string, state: string}
+ * Start login process (open OAuth authentication page)
+ * @param {string} clientId - OAuth client ID
+ * @returns {Promise<Object>} Login process start result {url: string, state: string}
  */
 function initiateLogin(clientId) {
   try {
-    // 상태 값은 CSRF 공격 방지를 위해 사용됨
+    // State value is used to prevent CSRF attacks
     const state = uuidv4();
 
-    // 상태 값 저장
+    // Store state value
     const stored = storeStateParam(state);
     if (!stored) {
       return {
         success: false,
-        error: '상태 값 저장에 실패했습니다. 다시 시도해주세요.'
+        error: 'Failed to store state value. Please try again.'
       };
     }
 
-    // 인증 URL 구성
+    // Build authentication URL
     const authUrl = new URL(ENDPOINTS.OAUTH_AUTHORIZE);
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('client_id', clientId);
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
-    authUrl.searchParams.append('scope', 'profile'); // subscription은 profile로 통합됨
+    authUrl.searchParams.append('scope', 'profile'); // subscription is integrated into profile
     authUrl.searchParams.append('state', state);
 
-    // 인증 URL 로깅
-    console.log('====== 인증 요청 정보 ======');
-    console.log('인증 요청 전체 URL:', authUrl.toString());
-    console.log('==========================');
+    // Log authentication URL
+    console.log('====== Authentication Request Info ======');
+    console.log('Full authentication request URL:', authUrl.toString());
+    console.log('========================================');
 
-    // 로그인 진행 상태 활성화
+    // Activate login progress state
     setLoginInProgress(true);
 
     return {
@@ -153,7 +152,7 @@ function initiateLogin(clientId) {
   } catch (error) {
     console.error('Failed to initiate login:', error);
 
-    // 오류 발생 시 로그인 상태 초기화
+    // Reset login state if error occurs
     setLoginInProgress(false);
 
     return {
@@ -164,21 +163,21 @@ function initiateLogin(clientId) {
 }
 
 /**
- * 인증 코드를 토큰으로 교환합니다
- * @param {Object} params - 토큰 교환 파라미터
- * @param {string} params.code - OAuth 인증 코드
- * @param {string} params.clientId - OAuth 클라이언트 ID
- * @param {string} params.clientSecret - OAuth 클라이언트 시크릿
- * @returns {Promise<Object>} 토큰 교환 결과
+ * Exchange authorization code for token
+ * @param {Object} params - Token exchange parameters
+ * @param {string} params.code - OAuth authorization code
+ * @param {string} params.clientId - OAuth client ID
+ * @param {string} params.clientSecret - OAuth client secret
+ * @returns {Promise<Object>} Token exchange result
  */
 async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   try {
 
-    console.log('인증 코드를 토큰으로 교환 시작:', code.substring(0, 8) + '...');
+    console.log('Starting exchange of authorization code for token:', code.substring(0, 8) + '...');
 
     const apiClient = createApiClient();
 
-    // 토큰 요청 데이터 준비
+    // Prepare token request data
     const data = new URLSearchParams();
     data.append('grant_type', 'authorization_code');
     data.append('code', code);
@@ -186,34 +185,34 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
     data.append('client_secret', clientSecret);
     data.append('redirect_uri', REDIRECT_URI);
 
-    console.log('토큰 요청 URL:', ENDPOINTS.OAUTH_TOKEN);
-    console.log('요청 데이터:', {
+    console.log('Token request URL:', ENDPOINTS.OAUTH_TOKEN);
+    console.log('Request data:', {
       grant_type: 'authorization_code',
       code: code.substring(0, 8) + '...',
       client_id: clientId,
       redirect_uri: REDIRECT_URI
     });
 
-    // 토큰 요청
+    // Token request
     const response = await apiClient.post(ENDPOINTS.OAUTH_TOKEN, data, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
 
-    console.log('토큰 요청 성공! 응답 상태:', response.status);
+    console.log('Token request successful! Response status:', response.status);
     const { access_token, refresh_token, expires_in } = response.data;
 
     if (!access_token) {
-      console.error('서버에서 액세스 토큰을 반환하지 않음!');
-      setLoginInProgress(false); // 로그인 상태 초기화
+      console.error('No access token returned from server!');
+      setLoginInProgress(false); // Reset login state
       return {
         success: false,
         error: 'No access token returned from server'
       };
     }
 
-    // 로그인 진행 상태 종료
+    // End login progress state
     setLoginInProgress(false);
 
     return {
@@ -223,10 +222,10 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       expires_in
     };
   } catch (error) {
-    console.error('토큰 교환 중 오류 발생:', error);
-    console.error('상세 오류 정보:', error.response?.data || '상세 정보 없음');
+    console.error('Error exchanging token:', error);
+    console.error('Detailed error information:', error.response?.data || 'No detailed information');
 
-    // 오류 발생 시 로그인 상태 초기화
+    // Reset login state if error occurs
     setLoginInProgress(false);
 
     return {
@@ -238,20 +237,20 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
 }
 
 /**
- * 리프레시 토큰을 사용하여 새 액세스 토큰을 얻습니다
- * @param {Object} params - 토큰 리프레시 파라미터
- * @param {string} params.refreshToken - 리프레시 토큰
- * @param {string} params.clientId - OAuth 클라이언트 ID
- * @param {string} params.clientSecret - OAuth 클라이언트 시크릿
- * @returns {Promise<Object>} 토큰 리프레시 결과
+ * Use refresh token to obtain a new access token
+ * @param {Object} params - Token refresh parameters
+ * @param {string} params.refreshToken - Refresh token
+ * @param {string} params.clientId - OAuth client ID
+ * @param {string} params.clientSecret - OAuth client secret
+ * @returns {Promise<Object>} Token refresh result
  */
 async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
   try {
 
-    console.log('토큰 리프레시 프로세스 시작');
+    console.log('Starting token refresh process');
 
     if (!refreshToken) {
-      console.error('리프레시 토큰이 없음');
+      console.error('No refresh token available');
       return {
         success: false,
         error: 'No refresh token available',
@@ -261,33 +260,33 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
 
     const apiClient = createApiClient();
 
-    // 토큰 갱신 요청 데이터 준비
+    // Prepare token renewal request data
     const data = new URLSearchParams();
     data.append('grant_type', 'refresh_token');
     data.append('refresh_token', refreshToken);
     data.append('client_id', clientId);
     data.append('client_secret', clientSecret);
 
-    // 요청 데이터 로깅 (민감 정보 제외)
-    console.log('토큰 리프레시 요청:', {
+    // Log request data (excluding sensitive information)
+    console.log('Token refresh request:', {
       url: ENDPOINTS.OAUTH_TOKEN,
       grant_type: 'refresh_token',
       client_id: clientId
     });
 
     try {
-      // 토큰 갱신 요청
+      // Token renewal request
       const response = await apiClient.post(ENDPOINTS.OAUTH_TOKEN, data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
 
-      console.log('토큰 갱신 응답 상태:', response.status);
+      console.log('Token renewal response status:', response.status);
       const { access_token, refresh_token } = response.data;
 
       if (!access_token) {
-        console.error('응답에 액세스 토큰 누락');
+        console.error('Access token missing in response');
         return {
           success: false,
           error: 'No access token in response',
@@ -295,7 +294,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         };
       }
 
-      console.log('새 액세스 토큰 수신:', access_token.substring(0, 10) + '...');
+      console.log('New access token received:', access_token.substring(0, 10) + '...');
 
       return {
         success: true,
@@ -303,14 +302,14 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         refresh_token
       };
     } catch (tokenRequestError) {
-      console.error('토큰 갱신 요청 실패:', tokenRequestError.message);
+      console.error('Token renewal request failed:', tokenRequestError.message);
 
       if (tokenRequestError.response?.status === 401) {
-        console.log('리프레시 토큰이 만료되었습니다. 재로그인 필요');
+        console.log('Refresh token has expired. Re-login required');
 
         return {
           success: false,
-          error: '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.',
+          error: 'Your login session has expired. Please log in again.',
           code: 'SESSION_EXPIRED',
           requireRelogin: true
         };
@@ -320,7 +319,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         tokenRequestError.message ||
         'Unknown error during token refresh';
 
-      console.log('오류 메시지:', errorMessage);
+      console.log('Error message:', errorMessage);
       return {
         success: false,
         error: errorMessage,
@@ -328,9 +327,9 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
       };
     }
   } catch (error) {
-    console.error('토큰 리프레시 과정 중 예외 발생:', error);
+    console.error('Exception occurred during token refresh process:', error);
 
-    // 치명적인 오류이지만 앱 실행은 유지
+    // Critical error but keep app running
     const errorMessage = error.message || 'Unknown error in refresh token process';
     return {
       success: false,
@@ -341,11 +340,11 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
 }
 
 /**
- * 인증 URL로부터 받은 리디렉션 처리
- * @param {Object} params - 리디렉션 처리 파라미터
- * @param {string} params.url - 리디렉션 URL
- * @param {Function} params.onCodeExchange - 코드 교환 처리 함수
- * @returns {Promise<Object>} 처리 결과
+ * Process redirection received from authentication URL
+ * @param {Object} params - Redirection processing parameters
+ * @param {string} params.url - Redirection URL
+ * @param {Function} params.onCodeExchange - Code exchange processing function
+ * @returns {Promise<Object>} Processing result
  */
 async function handleAuthRedirect({ url, onCodeExchange }) {
   try {
@@ -353,45 +352,45 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
 
     const urlObj = new URL(url);
 
-    // 인증 코드 추출
+    // Extract authentication code
     const code = urlObj.searchParams.get('code');
     const state = urlObj.searchParams.get('state');
     const error = urlObj.searchParams.get('error');
     const token = urlObj.searchParams.get('token');
     const action = urlObj.searchParams.get('action');
 
-    // action 파라미터가 있는 경우 특별 처리
+    // Special processing if action parameter exists
     if (action === 'reload_auth') {
       console.log('Auth reload action detected');
-      setLoginInProgress(false); // 로그인 상태 초기화
+      setLoginInProgress(false); // Reset login state
       return { success: true, action: 'reload_auth', token };
     }
 
-    // 오류 파라미터가 있는 경우
+    // If error parameter exists
     if (error) {
       console.error('Auth error from server:', error);
-      setLoginInProgress(false); // 로그인 상태 초기화
+      setLoginInProgress(false); // Reset login state
       return {
         success: false,
         error: error || 'Unknown error'
       };
     }
 
-    // 코드가 없는 경우
+    // If no code exists
     if (!code) {
       console.error('No auth code in redirect URL');
-      setLoginInProgress(false); // 로그인 상태 초기화
+      setLoginInProgress(false); // Reset login state
       return {
         success: false,
         error: 'Missing authorization code'
       };
     }
 
-    // 상태 값 검증 (CSRF 방지)
+    // Validate state value (CSRF prevention)
     const storedState = retrieveStoredState();
     if (!storedState || state !== storedState) {
       console.error('State mismatch. Possible CSRF attack');
-      setLoginInProgress(false); // 로그인 상태 초기화
+      setLoginInProgress(false); // Reset login state
       return {
         success: false,
         error: 'state_mismatch',
@@ -399,12 +398,12 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       };
     }
 
-    // 콜백 함수가 있으면 호출하여 코드 교환 처리
+    // Call callback function for code exchange processing if it exists
     if (onCodeExchange && typeof onCodeExchange === 'function') {
       return await onCodeExchange(code);
     }
 
-    // 콜백이 없는 경우에는 여기서 로그인 상태 초기화
+    // If no callback exists, reset login state here
     setLoginInProgress(false);
 
     return {
@@ -413,7 +412,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
     };
   } catch (error) {
     console.error('Failed to handle auth redirect:', error);
-    setLoginInProgress(false); // 로그인 상태 초기화
+    setLoginInProgress(false); // Reset login state
     return {
       success: false,
       error: error.message || 'Unknown error'
@@ -422,21 +421,21 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
 }
 
 /**
- * 사용자 프로필 정보를 가져옵니다
- * @param {Function} onUnauthorized - 인증 실패 시 호출할 콜백 함수
- * @returns {Promise<Object>} 사용자 프로필 정보
+ * Get user profile information
+ * @param {Function} onUnauthorized - Callback function to call when unauthorized
+ * @returns {Promise<Object>} User profile information
  */
 async function fetchUserProfile(onUnauthorized) {
 
   return authenticatedRequest(async () => {
     const headers = getAuthHeaders();
-    console.log('프로필 API 호출:', ENDPOINTS.USER_PROFILE);
+    console.log('Profile API call:', ENDPOINTS.USER_PROFILE);
 
     const apiClient = createApiClient();
     const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
-    console.log('프로필 API 응답 상태:', response.status);
+    console.log('Profile API response status:', response.status);
 
-    // API 응답 형식이 apiSuccess({ ... }) 형태인 경우 data 필드 추출
+    // Extract data field if API response format is apiSuccess({ ... })
     if (response.data && response.data.success === true && response.data.data) {
       return response.data.data;
     }
@@ -446,13 +445,13 @@ async function fetchUserProfile(onUnauthorized) {
 }
 
 /**
- * 구독 정보를 가져옵니다
- * @param {Function} onUnauthorized - 인증 실패 시 호출할 콜백 함수
- * @returns {Promise<Object>} 구독 정보
+ * Get subscription information
+ * @param {Function} onUnauthorized - Callback function to call when unauthorized
+ * @returns {Promise<Object>} Subscription information
  */
 async function fetchSubscription(onUnauthorized) {
 
-  // 구독 API에 대한 기본 응답 (인증 실패나 오류 발생 시 사용)
+  // Default response for subscription API (used for authentication failures or errors)
   const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
   const options = {
@@ -465,13 +464,13 @@ async function fetchSubscription(onUnauthorized) {
   return authenticatedRequest(async () => {
     try {
       const headers = getAuthHeaders();
-      console.log('프로필 API 호출 (구독 정보 포함):', ENDPOINTS.USER_PROFILE);
+      console.log('Profile API call (including subscription information):', ENDPOINTS.USER_PROFILE);
 
       const apiClient = createApiClient();
       const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
-      console.log('프로필 API 응답 상태:', response.status);
+      console.log('Profile API response status:', response.status);
 
-      // API 응답 형식이 apiSuccess({ ... }) 형태인 경우 data 필드 추출
+      // Extract data field if API response format is apiSuccess({ ... })
       let profileData;
       if (response.data && response.data.success === true && response.data.data) {
         profileData = response.data.data;
@@ -479,75 +478,75 @@ async function fetchSubscription(onUnauthorized) {
         profileData = response.data;
       }
 
-      // 프로필 데이터에서 구독 정보 추출
+      // Extract subscription information from profile data
       let subscriptionData = profileData.subscription || {};
 
-      console.log('구독 데이터 수신:', JSON.stringify(subscriptionData, null, 2));
+      console.log('Subscription data received:', JSON.stringify(subscriptionData, null, 2));
 
-      // 구독 데이터 검증 및 필드 호환성 보장
+      // Validate subscription data and ensure field compatibility
       const normalizedSubscription = {
         ...defaultSubscription,
         ...subscriptionData,
-        // 사용자 ID 정보 추가
+        // Add user ID information
         userId: profileData.id || profileData.userId || 'anonymous',
-        // 활성 여부 필드 동기화 (is_subscribed 또는 active)
+        // Synchronize active status fields (is_subscribed or active)
         active: subscriptionData.active || subscriptionData.is_subscribed || false,
         is_subscribed: subscriptionData.is_subscribed || subscriptionData.active || false,
-        // 만료일 필드 동기화 (expiresAt 또는 subscribed_until)
+        // Synchronize expiration date fields (expiresAt or subscribed_until)
         expiresAt: subscriptionData.expiresAt || subscriptionData.subscribed_until || null,
         subscribed_until: subscriptionData.subscribed_until || subscriptionData.expiresAt || null,
-        // VIP 상태 보존 (기본값은 false)
+        // Preserve VIP status (default is false)
         isVip: subscriptionData.isVip === true
       };
 
-      // VIP 사용자면 프리미엄 페이지 그룹 및 기능 보장
+      // Ensure premium page groups and features for VIP users
       if (normalizedSubscription.isVip) {
-        console.log('VIP 사용자 확인됨 - 프리미엄 혜택 적용');
+        console.log('VIP user detected - applying premium benefits');
         normalizedSubscription.active = true;
         normalizedSubscription.is_subscribed = true;
         normalizedSubscription.plan = 'premium';
       }
 
-      // features 객체가 없으면 기본값 사용
+      // Use default value if features object doesn't exist
       if (!normalizedSubscription.features) {
         normalizedSubscription.features = defaultSubscription.features;
       }
 
-      // features_array 필드가 없으면 기본값 사용
+      // Use default value if features_array field doesn't exist
       if (!normalizedSubscription.features_array) {
         normalizedSubscription.features_array = defaultSubscription.features_array;
       }
 
       return normalizedSubscription;
     } catch (error) {
-      console.error('구독 정보 조회 중 오류 발생:', error);
+      console.error('Error retrieving subscription information:', error);
       return defaultSubscription;
     }
   }, options);
 }
 
 /**
- * 로그아웃 처리 (서버 호출 없이 로컬 토큰만 초기화)
- * @returns {Promise<Object>} 로그아웃 결과
+ * Process logout (initialize only local tokens without server call)
+ * @returns {Promise<Object>} Logout result
  */
 async function logout() {
   try {
-    // 메모리에서 토큰 초기화 (서버 호출 없음)
+    // Initialize tokens in memory (no server call)
     clearTokens();
-    console.log('메모리 토큰 초기화 완료');
+    console.log('Memory token initialization complete');
 
-    // 로그인 진행 중이었다면 취소
+    // Cancel if login was in progress
     isLoginInProgress = false;
 
     return {
       success: true,
-      message: '로그아웃 성공'
+      message: 'Logout successful'
     };
   } catch (error) {
-    console.error('로그아웃 중 오류 발생:', error);
+    console.error('Error during logout:', error);
     return {
       success: false,
-      error: error.message || '로그아웃 중 오류가 발생했습니다'
+      error: error.message || 'An error occurred during logout'
     };
   }
 }
@@ -560,5 +559,5 @@ module.exports = {
   fetchUserProfile,
   fetchSubscription,
   logout,
-  isLoginProcessActive // 로그인 진행 중인지 확인하는 함수 외부로 노출
+  isLoginProcessActive // Export function to check if login is in progress
 };

@@ -122,7 +122,7 @@
           <label for="edit-button-icon">Icon</label>
           <div class="icon-input-container">
             <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL">
-            <button id="browse-icon-button" class="secondary-button">아이콘 찾기</button>
+            <button id="browse-icon-button" class="secondary-button">Find Icon</button>
           </div>
           <small class="field-hint">Use emoji (e.g. 🚀), image URL (https://...) or FlatColorIcons.name</small>
         </div>
@@ -236,36 +236,36 @@
     </div>
   </template>
 
-  <!-- 아이콘 검색 모달 -->
+  <!-- Icon search modal -->
   <div id="icon-search-modal" class="modal">
     <div class="modal-content icon-browser-modal">
       <div class="modal-header">
-        <h2>아이콘 검색</h2>
+        <h2>Icon Search</h2>
         <span class="close-modal" id="close-icon-search">&times;</span>
       </div>
       <div class="modal-body">
         <div class="search-container">
-          <input type="text" id="icon-search-input" placeholder="아이콘 이름으로 검색">
+          <input type="text" id="icon-search-input" placeholder="Search by icon name">
           <div class="category-filter">
-            <label for="category-select">카테고리:</label>
+            <label for="category-select">Category:</label>
             <select id="category-select">
-              <option value="all">모든 카테고리</option>
-              <option value="basicIcons">기본 아이콘</option>
-              <option value="business">비즈니스</option>
-              <option value="photoVideo">사진 및 비디오</option>
-              <option value="industry">산업</option>
-              <option value="mobile">모바일</option>
-              <option value="arrows">화살표</option>
-              <option value="data">데이터</option>
+              <option value="all">All Categories</option>
+              <option value="basicIcons">Basic Icons</option>
+              <option value="business">Business</option>
+              <option value="photoVideo">Photo and Video</option>
+              <option value="industry">Industry</option>
+              <option value="mobile">Mobile</option>
+              <option value="arrows">Arrows</option>
+              <option value="data">Data</option>
             </select>
           </div>
         </div>
         <div id="icons-container" class="icons-container">
-          <!-- 아이콘이 동적으로 여기에 로드됩니다 -->
+          <!-- Icons will be dynamically loaded here -->
         </div>
       </div>
       <div class="modal-footer">
-        <button id="close-icon-browser" class="secondary-button">취소</button>
+        <button id="close-icon-browser" class="secondary-button">Cancel</button>
       </div>
     </div>
   </div>

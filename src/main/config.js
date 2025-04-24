@@ -5,7 +5,6 @@
  */
 
 const Store = require('electron-store');
-const { app } = require('electron');
 
 // Default configuration schema
 const schema = {

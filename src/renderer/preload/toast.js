@@ -12,14 +12,14 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld(
   'toast',
   {
-    // 로그인 및 사용자 정보 관련 메서드
+    // Login and user information related methods
     initiateLogin: () => ipcRenderer.invoke('initiate-login'),
     fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
     fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
     getUserSettings: () => ipcRenderer.invoke('get-user-settings'),
     logout: () => ipcRenderer.invoke('logout'),
     invoke: (channel, ...args) => {
-      // 허용된 채널에 대해서만 invoke 호출
+      // Only call invoke for allowed channels
       const allowedChannels = [
         'logoutAndResetPageGroups',
         'resetToDefaults',
@@ -28,34 +28,34 @@ contextBridge.exposeInMainWorld(
       if (allowedChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args);
       }
-      throw new Error(`허용되지 않은 채널: ${channel}`);
+      throw new Error(`Disallowed channel: ${channel}`);
     },
 
-    // 앱 설정 기본값 초기화
+    // Reset app settings to defaults
     resetToDefaults: async (options = {}) => {
       try {
-        // 현재 설정 백업 (유지하려는 설정이 있을 경우)
+        // Backup current settings (if there are settings to keep)
         const backupSettings = {};
 
-        // 외관 설정 유지 옵션
+        // Option to keep appearance settings
         if (options.keepAppearance) {
           backupSettings.appearance = await ipcRenderer.invoke('get-config', 'appearance');
         }
 
-        // 설정 초기화 실행
+        // Execute settings reset
         await ipcRenderer.invoke('resetToDefaults');
 
-        // 백업한 설정 복원
+        // Restore backed up settings
         if (Object.keys(backupSettings).length > 0) {
           await ipcRenderer.invoke('save-config', backupSettings);
         }
 
-        return { success: true, message: '설정이 기본값으로 초기화되었습니다.' };
+        return { success: true, message: 'Settings have been reset to defaults.' };
       } catch (error) {
-        console.error('설정 초기화 오류:', error);
+        console.error('Settings reset error:', error);
         return {
           success: false,
-          error: error.message || '설정 초기화 중 오류가 발생했습니다.'
+          error: error.message || 'An error occurred while resetting settings.'
         };
       }
     },
@@ -77,10 +77,10 @@ contextBridge.exposeInMainWorld(
 
     // Window control
     hideWindow: async () => {
-      // 모달 상태 확인 후 모달이 열려있지 않은 경우에만 창 숨김
+      // Only hide window if no modals are open
       const isModalOpen = await ipcRenderer.invoke('is-modal-open');
       if (!isModalOpen) {
-        // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+        // Trigger event to exit edit mode before hiding window
         window.dispatchEvent(new Event('before-window-hide'));
         ipcRenderer.send('hide-toast');
       }
@@ -107,7 +107,7 @@ contextBridge.exposeInMainWorld(
       };
     },
 
-    // 인증 관련 이벤트 리스너
+    // Authentication related event listeners
     onLoginSuccess: (callback) => {
       ipcRenderer.on('login-success', (event, data) => callback(data));
       return () => {
@@ -149,15 +149,15 @@ contextBridge.exposeInMainWorld(
 window.addEventListener('keydown', (event) => {
   // Close window on Escape key if hideOnEscape is enabled
   if (event.key === 'Escape') {
-    // 먼저 모달 상태를 확인
+    // First check modal state
     ipcRenderer.invoke('is-modal-open')
       .then(isModalOpen => {
-        // 모달이 열려있지 않은 경우에만 hideOnEscape 설정 확인 및 창 숨김 처리
+        // Only check hideOnEscape setting and hide window if no modal is open
         if (!isModalOpen) {
           ipcRenderer.invoke('get-config', 'advanced.hideOnEscape')
             .then(hideOnEscape => {
               if (hideOnEscape !== false) {
-                // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+                // Trigger event to exit edit mode before hiding window
                 window.dispatchEvent(new Event('before-window-hide'));
                 ipcRenderer.send('hide-toast');
               }
@@ -167,7 +167,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-// 메인 프로세스로부터 before-hide 이벤트 수신
+// Receive before-hide event from main process
 ipcRenderer.on('before-hide', () => {
   window.dispatchEvent(new Event('before-window-hide'));
 });
