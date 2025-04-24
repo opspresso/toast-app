@@ -17,7 +17,7 @@
 
 ## Language Standard
 
-- Use English exclusively: All code, comments, documentation, commit messages, and pull request descriptions must be written in English.
+- Use English exclusively: All code, comments, documentation and commit messages must be written in English.
 - Variable and function names: Use descriptive English terms following the project's naming conventions.
 - Documentation: All documentation files should be written in English for consistency and accessibility.
 
