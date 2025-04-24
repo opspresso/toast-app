@@ -39,6 +39,7 @@ const closeProfileButton = document.getElementById('close-profile-button');
 
 // Modal related DOM elements
 const buttonEditModal = document.getElementById('button-edit-modal');
+const iconSearchModal = document.getElementById('icon-search-modal');
 const closeButtonEdit = document.getElementById('close-button-edit');
 const saveButtonEdit = document.getElementById('save-button-edit');
 const cancelButtonEdit = document.getElementById('cancel-button-edit');
@@ -1538,7 +1539,7 @@ function createButtonElement(button) {
       const img = document.createElement('img');
       img.src = window.AllIcons[iconName];
       img.alt = button.name || iconName;
-      img.onerror = function() {
+      img.onerror = function () {
         // 이미지 로드에 실패한 경우 기본 아이콘 표시
         iconElement.textContent = '🔍';
       };
@@ -1745,24 +1746,31 @@ function setupModalEventListeners() {
   });
 
   // 아이콘 검색 모달 외부 클릭 시 닫기
-  document.getElementById('icon-search-modal').addEventListener('click', (event) => {
-    if (event.target === document.getElementById('icon-search-modal')) {
+  iconSearchModal.addEventListener('click', (event) => {
+    if (event.target === iconSearchModal) {
       closeIconSearchModal();
     }
   });
 
   // Close modal with ESC key
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && buttonEditModal.classList.contains('show')) {
-      closeButtonEditModal();
-    } else if (event.key === 'Escape' && document.getElementById('icon-search-modal').classList.contains('show')) {
-      closeIconSearchModal();
+    if (event.key === 'Escape') {
+      // 우선순위에 따라 모달 닫기
+      if (iconSearchModal.classList.contains('show')) {
+        closeIconSearchModal();
+        event.stopPropagation();
+      } else if (buttonEditModal.classList.contains('show')) {
+        closeButtonEditModal();
+        event.stopPropagation();
+      } else if (profileModal.classList.contains('show')) {
+        hideProfileModal();
+        event.stopPropagation();
+      }
     }
   });
 
   // 아이콘 찾기 모달 이벤트 리스너
   const browseIconButton = document.getElementById('browse-icon-button');
-  const iconSearchModal = document.getElementById('icon-search-modal');
   const closeIconSearch = document.getElementById('close-icon-search');
   const closeIconBrowser = document.getElementById('close-icon-browser');
   const iconSearchInput = document.getElementById('icon-search-input');
