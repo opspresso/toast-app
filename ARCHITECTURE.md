@@ -74,11 +74,12 @@ Each renderer process has its own HTML, CSS, and JavaScript files, and communica
 │  │             │    │             │    │             │      │
 │  └─────────────┘    └─────────────┘    └─────────────┘      │
 │                                                             │
-│                     ┌─────────────┐                         │
-│                     │             │                         │
-│                     │   Actions   │                         │
-│                     │             │                         │
-│                     └─────────────┘                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │             │    │             │    │             │      │
+│  │    Auth     │    │   Cloud     │    │   Actions   │      │
+│  │   Manager   │    │    Sync     │    │             │      │
+│  │             │    │             │    │             │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -110,7 +111,6 @@ Manages the creation, positioning, and lifecycle of application windows.
 - Position windows based on configuration
 - Show and hide windows
 - Handle window events
-- Activate English keyboard input source for cross-platform compatibility
 - Send configuration to renderer processes
 
 #### Tray Manager (`src/main/tray.js`)
@@ -160,10 +160,35 @@ Executes actions based on their type.
 Implements specific action types.
 
 **Responsibilities:**
-- Execute specific action types (exec, open, shortcut, script, chain)
+- Execute specific action types (application, exec, open, shortcut, script, chain)
 - Handle action-specific parameters
 - Return standardized results
 - Handle platform-specific behavior
+
+#### Auth Manager (`src/main/auth-manager.js` and `src/main/auth.js`)
+
+Manages authentication with Toast Web service and subscription status.
+
+**Responsibilities:**
+- Handle user authentication flow
+- Maintain authentication tokens
+- Validate and refresh tokens
+- Fetch user profile and subscription information
+- Notify UI components of authentication state changes
+- Manage login/logout process
+- Prevent window operations during authentication flows
+
+#### Cloud Sync (`src/main/cloud-sync.js`)
+
+Manages cloud synchronization of user settings and configuration.
+
+**Responsibilities:**
+- Synchronize user settings with cloud storage
+- Implement sync strategies (periodic, on-change, manual)
+- Handle conflict resolution between local and remote settings
+- Provide real-time status updates for sync operations
+- Implement retry mechanisms for failed sync operations
+- Ensure synchronization feature is available based on subscription status
 
 ### Renderer Process Components
 
@@ -384,7 +409,6 @@ Each page contains:
 4. The Shortcuts Manager handles the shortcut event
 5. The Shortcuts Manager requests the Windows Manager to show the Toast window
 6. The Windows Manager positions and shows the Toast window
-7. The Windows Manager activates the English keyboard input source for consistent behavior
 
 ### Button Editing Flow
 
@@ -504,9 +528,83 @@ Toast App puts strong emphasis on keyboard interaction:
 2. **Button Shortcuts**: Each button has an associated keyboard shortcut
 3. **Page Shortcuts**: Pages can be accessed via number keys
 4. **Keyboard Navigation**: Arrow keys can be used to navigate between buttons
-5. **English Keyboard Activation**: The app ensures English keyboard input for consistent behavior
 
 This approach makes the application efficient for keyboard-oriented users.
+
+### Error Handling Strategy
+
+Toast App implements a consistent error handling strategy across all modules:
+
+1. **Standardized Error Formats**: All errors follow a consistent format with success/error flags, message, and optional additional data
+   ```javascript
+   {
+     success: false,
+     message: "Human-readable error message",
+     error: originalErrorObject,
+     ...additionalData
+   }
+   ```
+
+2. **Error Propagation**: Errors are propagated up the call stack, transformed at each level to add context
+   ```javascript
+   try {
+     // Operation that might fail
+   } catch (error) {
+     throw {
+       success: false,
+       message: `Failed to perform operation: ${error.message}`,
+       error: error,
+       context: "Additional context about the operation"
+     };
+   }
+   ```
+
+3. **Centralized Logging**: All modules use a consistent logging pattern with severity levels
+   ```javascript
+   console.log('Informational message about normal operation');
+   console.warn('Warning about potential issues that don\'t prevent functionality');
+   console.error('Critical errors that prevent functionality', error);
+   ```
+
+4. **Graceful Degradation**: When errors occur, the application attempts to continue functioning
+   ```javascript
+   try {
+     // Critical operation
+   } catch (error) {
+     console.error('Critical operation failed', error);
+     // Fallback to safe default state
+   }
+   ```
+
+5. **User Feedback**: Errors are translated into user-friendly messages before being displayed in the UI
+   ```javascript
+   {
+     success: false,
+     message: "Technical error information",
+     userMessage: "Something went wrong while trying to save your settings"
+   }
+   ```
+
+6. **Retry Mechanisms**: Critical operations implement retry logic with exponential backoff
+   ```javascript
+   const MAX_RETRIES = 3;
+   let attempts = 0;
+
+   async function performWithRetry() {
+     try {
+       return await operation();
+     } catch (error) {
+       attempts++;
+       if (attempts < MAX_RETRIES) {
+         await wait(1000 * Math.pow(2, attempts));
+         return performWithRetry();
+       }
+       throw error;
+     }
+   }
+   ```
+
+This standardized approach to error handling ensures that all components manage errors consistently, improves debugging, and provides better user experience when issues occur.
 
 ## Technology Stack
 
