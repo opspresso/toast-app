@@ -1,37 +1,37 @@
-# Toast App Testing Strategy
+# Toast 앱 테스팅 전략
 
-This document outlines the testing strategy for the Toast App, including testing approaches, tools, and best practices.
+이 문서는 Toast 앱의 테스팅 전략을 설명하며, 테스팅 접근 방식, 도구 및 모범 사례를 포함합니다.
 
-## Testing Goals
+## 테스팅 목표
 
-The primary goals of our testing strategy are to:
+테스팅 전략의 주요 목표는 다음과 같습니다:
 
-1. **Ensure Functionality**: Verify that all features work as expected
-2. **Prevent Regressions**: Catch regressions before they reach users
-3. **Maintain Quality**: Uphold code quality and performance standards
-4. **Cross-Platform Compatibility**: Ensure consistent behavior across platforms
-5. **User Experience**: Validate that the application provides a good user experience
+1. **기능 보장**: 모든 기능이 예상대로 작동하는지 확인
+2. **회귀 방지**: 사용자에게 도달하기 전에 회귀를 포착
+3. **품질 유지**: 코드 품질 및 성능 표준 유지
+4. **크로스 플랫폼 호환성**: 플랫폼 간 일관된 동작 보장
+5. **사용자 경험**: 애플리케이션이 좋은 사용자 경험을 제공하는지 검증
 
-## Testing Levels
+## 테스팅 수준
 
-### Unit Testing
+### 단위 테스팅
 
-Unit tests focus on testing individual components and functions in isolation.
+단위 테스트는 개별 컴포넌트와 함수를 격리된 상태에서 테스트하는 데 중점을 둡니다.
 
-#### Scope
+#### 범위
 
-- Configuration management functions
-- Action execution logic
-- Utility functions
-- Data validation
+- 구성 관리 함수
+- 액션 실행 로직
+- 유틸리티 함수
+- 데이터 유효성 검사
 
-#### Tools
+#### 도구
 
-- **Jest**: Primary testing framework
-- **Sinon**: For mocks, stubs, and spies
-- **Electron-Mocha**: For Electron-specific testing
+- **Jest**: 주요 테스팅 프레임워크
+- **Sinon**: 모의 객체, 스텁 및 스파이 생성을 위한 도구
+- **Electron-Mocha**: Electron 특정 테스팅을 위한 도구
 
-#### Example Unit Test
+#### 단위 테스트 예시
 
 ```javascript
 // Testing the validateAction function in executor.js
@@ -58,24 +58,24 @@ describe('validateAction', () => {
 });
 ```
 
-### Integration Testing
+### 통합 테스팅
 
-Integration tests verify that different parts of the application work together correctly.
+통합 테스트는 애플리케이션의 다른 부분들이 올바르게 함께 작동하는지 확인합니다.
 
-#### Scope
+#### 범위
 
-- IPC communication
-- Window management
-- Configuration persistence
-- Action execution flow
+- IPC 통신
+- 윈도우 관리
+- 구성 지속성
+- 액션 실행 흐름
 
-#### Tools
+#### 도구
 
-- **Spectron**: For testing Electron applications
-- **Electron-Mocha**: For running tests in Electron context
-- **Mock-FS**: For mocking the file system
+- **Spectron**: Electron 애플리케이션 테스팅을 위한 도구
+- **Electron-Mocha**: Electron 컨텍스트에서 테스트 실행을 위한 도구
+- **Mock-FS**: 파일 시스템 모의를 위한 도구
 
-#### Example Integration Test
+#### 통합 테스트 예시
 
 ```javascript
 // Testing the executeAction flow from IPC to action execution
@@ -109,26 +109,26 @@ describe('Action Execution Flow', () => {
 });
 ```
 
-### End-to-End Testing
+### 엔드 투 엔드 테스팅
 
-End-to-end tests validate complete user flows and scenarios.
+엔드 투 엔드 테스트는 완전한 사용자 흐름과 시나리오를 검증합니다.
 
-#### Scope
+#### 범위
 
-- Application startup and initialization
-- Global hotkey registration
-- Toast window display and interaction
-- Settings window functionality
-- Button creation and management
-- Action execution from UI
+- 애플리케이션 시작 및 초기화
+- 전역 단축키 등록
+- Toast 윈도우 표시 및 상호작용
+- 설정 윈도우 기능
+- 버튼 생성 및 관리
+- UI에서 액션 실행
 
-#### Tools
+#### 도구
 
-- **Spectron**: For automating Electron applications
-- **WebdriverIO**: For UI interaction
-- **Mocha**: For test structure
+- **Spectron**: Electron 애플리케이션 자동화를 위한 도구
+- **WebdriverIO**: UI 상호작용을 위한 도구
+- **Mocha**: 테스트 구조를 위한 도구
 
-#### Example E2E Test
+#### 엔드 투 엔드 테스트 예시
 
 ```javascript
 // Testing the global hotkey functionality
@@ -162,25 +162,25 @@ describe('Global Hotkey', () => {
 });
 ```
 
-### UI Component Testing
+### UI 컴포넌트 테스팅
 
-UI component tests focus on the behavior and appearance of UI components.
+UI 컴포넌트 테스트는 UI 컴포넌트의 동작과 외관에 초점을 맞춥니다.
 
-#### Scope
+#### 범위
 
-- Toast window components
-- Settings window components
-- Button rendering
-- Form controls
-- Dialogs
+- Toast 윈도우 컴포넌트
+- 설정 윈도우 컴포넌트
+- 버튼 렌더링
+- 폼 컨트롤
+- 대화 상자
 
-#### Tools
+#### 도구
 
-- **Testing Library**: For component testing
-- **Jest**: For assertions
-- **Electron-Mocha**: For running tests in Electron context
+- **Testing Library**: 컴포넌트 테스팅을 위한 도구
+- **Jest**: 어서션을 위한 도구
+- **Electron-Mocha**: Electron 컨텍스트에서 테스트 실행을 위한 도구
 
-#### Example UI Component Test
+#### UI 컴포넌트 테스트 예시
 
 ```javascript
 // Testing the Button component
@@ -210,24 +210,24 @@ describe('Button Component', () => {
 });
 ```
 
-### Accessibility Testing
+### 접근성 테스팅
 
-Accessibility tests ensure that the application is usable by people with disabilities.
+접근성 테스트는 애플리케이션이 장애가 있는 사람들도 사용할 수 있는지 확인합니다.
 
-#### Scope
+#### 범위
 
-- Keyboard navigation
-- Screen reader compatibility
-- Color contrast
-- Focus management
+- 키보드 탐색
+- 스크린 리더 호환성
+- 색상 대비
+- 포커스 관리
 
-#### Tools
+#### 도구
 
-- **axe-core**: For automated accessibility testing
-- **Lighthouse**: For accessibility audits
-- **Manual testing**: With screen readers and keyboard navigation
+- **axe-core**: 자동화된 접근성 테스팅을 위한 도구
+- **Lighthouse**: 접근성 감사를 위한 도구
+- **수동 테스팅**: 스크린 리더 및 키보드 탐색을 통한 테스트
 
-#### Example Accessibility Test
+#### 접근성 테스트 예시
 
 ```javascript
 // Testing keyboard navigation in the Toast window
@@ -256,25 +256,25 @@ describe('Keyboard Navigation', () => {
 });
 ```
 
-### Performance Testing
+### 성능 테스팅
 
-Performance tests measure the application's resource usage and responsiveness.
+성능 테스트는 애플리케이션의 리소스 사용량과 응답성을 측정합니다.
 
-#### Scope
+#### 범위
 
-- Startup time
-- Memory usage
-- CPU usage
-- Action execution time
-- UI responsiveness
+- 시작 시간
+- 메모리 사용량
+- CPU 사용량
+- 액션 실행 시간
+- UI 응답성
 
-#### Tools
+#### 도구
 
-- **Electron DevTools**: For profiling and monitoring
-- **Performance API**: For timing measurements
-- **Custom monitoring**: For resource usage tracking
+- **Electron DevTools**: 프로파일링 및 모니터링을 위한 도구
+- **Performance API**: 시간 측정을 위한 API
+- **사용자 정의 모니터링**: 리소스 사용량 추적을 위한 도구
 
-#### Example Performance Test
+#### 성능 테스트 예시
 
 ```javascript
 // Testing the startup time
@@ -300,106 +300,106 @@ describe('Application Startup', () => {
 });
 ```
 
-## Testing Environments
+## 테스팅 환경
 
-### Development Environment
+### 개발 환경
 
-- **Local Testing**: Developers run tests locally before committing code
-- **Pre-commit Hooks**: Run linting and unit tests automatically before commits
-- **Watch Mode**: Tests run automatically when files change
+- **로컬 테스팅**: 개발자가 코드를 커밋하기 전에 로컬에서 테스트 실행
+- **사전 커밋 훅**: 커밋 전에 린팅 및 단위 테스트 자동 실행
+- **감시 모드**: 파일 변경 시 테스트 자동 실행
 
-### Continuous Integration Environment
+### 지속적 통합 환경
 
-- **GitHub Actions**: Run tests on every push and pull request
-- **Matrix Testing**: Test on multiple platforms (macOS, Windows, Linux)
-- **Coverage Reports**: Generate and track test coverage
+- **GitHub Actions**: 모든 푸시 및 풀 요청에서 테스트 실행
+- **매트릭스 테스팅**: 여러 플랫폼(macOS, Windows, Linux)에서 테스트
+- **커버리지 보고서**: 테스트 커버리지 생성 및 추적
 
-### Production-like Environment
+### 프로덕션 유사 환경
 
-- **Packaged App Testing**: Test the packaged application
-- **User Acceptance Testing**: Manual testing of release candidates
-- **Beta Testing**: Distribute to beta testers for real-world feedback
+- **패키지된 앱 테스팅**: 패키지된 애플리케이션 테스트
+- **사용자 수용 테스팅**: 릴리스 후보에 대한 수동 테스트
+- **베타 테스팅**: 실제 사용 피드백을 위해 베타 테스터에게 배포
 
-## Test Data Management
+## 테스트 데이터 관리
 
-### Test Fixtures
+### 테스트 픽스처
 
-- **Configuration Fixtures**: Predefined configuration objects
-- **Action Fixtures**: Sample actions for different types
-- **Mock File System**: Virtual file system for testing file operations
+- **구성 픽스처**: 미리 정의된 구성 객체
+- **액션 픽스처**: 다양한 유형의 샘플 액션
+- **모의 파일 시스템**: 파일 작업 테스트를 위한 가상 파일 시스템
 
-### Test Doubles
+### 테스트 더블
 
-- **Mocks**: Replace external dependencies with controlled implementations
-- **Stubs**: Provide canned responses for method calls
-- **Spies**: Track method calls and arguments
+- **모의 객체**: 외부 의존성을 제어된 구현으로 대체
+- **스텁**: 메서드 호출에 대한 미리 정의된 응답 제공
+- **스파이**: 메서드 호출 및 인수 추적
 
-## Test Coverage
+## 테스트 커버리지
 
-We aim for the following test coverage targets:
+다음과 같은 테스트 커버리지 목표를 설정합니다:
 
-- **Unit Tests**: 80% code coverage
-- **Integration Tests**: Cover all critical paths
-- **E2E Tests**: Cover all main user scenarios
+- **단위 테스트**: 80% 코드 커버리지
+- **통합 테스트**: 모든 중요 경로 포함
+- **E2E 테스트**: 모든 주요 사용자 시나리오 포함
 
-Coverage is measured using Jest's coverage reporter and tracked in CI.
+커버리지는 Jest의 커버리지 리포터를 사용하여 측정하고 CI에서 추적합니다.
 
-## Testing Best Practices
+## 테스팅 모범 사례
 
-### General Practices
+### 일반 사례
 
-1. **Test Isolation**: Tests should not depend on each other
-2. **Deterministic Tests**: Tests should produce the same results every time
-3. **Fast Tests**: Tests should run quickly to encourage frequent testing
-4. **Readable Tests**: Tests should be easy to understand and maintain
+1. **테스트 격리**: 테스트는 서로 의존하지 않아야 함
+2. **결정적 테스트**: 테스트는 매번 동일한 결과를 산출해야 함
+3. **빠른 테스트**: 테스트는 빠르게 실행되어 빈번한 테스팅을 장려해야 함
+4. **읽기 쉬운 테스트**: 테스트는 이해하고 유지 관리하기 쉬워야 함
 
-### Electron-Specific Practices
+### Electron 특정 사례
 
-1. **Main Process Testing**: Test main process modules in isolation
-2. **Renderer Process Testing**: Test renderer process code in a browser-like environment
-3. **IPC Testing**: Mock IPC channels for testing cross-process communication
-4. **Window Management**: Test window creation, showing, hiding, and positioning
+1. **메인 프로세스 테스팅**: 메인 프로세스 모듈을 격리된 상태에서 테스트
+2. **렌더러 프로세스 테스팅**: 렌더러 프로세스 코드를 브라우저와 유사한 환경에서 테스트
+3. **IPC 테스팅**: 프로세스 간 통신 테스트를 위한 IPC 채널 모의
+4. **윈도우 관리**: 윈도우 생성, 표시, 숨기기 및 위치 지정 테스트
 
-## Test Automation
+## 테스트 자동화
 
-### Continuous Integration
+### 지속적 통합
 
-- **Pull Request Checks**: Run tests on every pull request
-- **Branch Protection**: Require passing tests before merging
-- **Scheduled Tests**: Run full test suite nightly
+- **풀 요청 검사**: 모든 풀 요청에서 테스트 실행
+- **브랜치 보호**: 병합 전 테스트 통과 요구
+- **예약된 테스트**: 야간에 전체 테스트 스위트 실행
 
-### Test Reporting
+### 테스트 보고
 
-- **Test Results**: Generate JUnit XML reports for CI integration
-- **Coverage Reports**: Generate HTML and JSON coverage reports
-- **Test Dashboards**: Visualize test results and trends
+- **테스트 결과**: CI 통합을 위한 JUnit XML 보고서 생성
+- **커버리지 보고서**: HTML 및 JSON 커버리지 보고서 생성
+- **테스트 대시보드**: 테스트 결과 및 추세 시각화
 
-## Manual Testing
+## 수동 테스팅
 
-Despite automated testing, some aspects require manual testing:
+자동화된 테스팅에도 불구하고, 일부 측면은 수동 테스팅이 필요합니다:
 
-1. **User Experience**: Subjective aspects of the UI and interactions
-2. **Platform-Specific Behavior**: Subtle differences between platforms
-3. **Global Hotkey Testing**: System-level keyboard shortcuts
-4. **Installation Testing**: Package installation process
+1. **사용자 경험**: UI 및 상호작용의 주관적 측면
+2. **플랫폼별 동작**: 플랫폼 간 미묘한 차이
+3. **전역 단축키 테스팅**: 시스템 수준 키보드 단축키
+4. **설치 테스팅**: 패키지 설치 프로세스
 
-## Testing Schedule
+## 테스팅 일정
 
-- **Pre-commit**: Linting and unit tests
-- **Pull Request**: Unit, integration, and selected E2E tests
-- **Nightly**: Full test suite including performance tests
-- **Release Candidate**: Full test suite plus manual testing
-- **Post-release**: Smoke tests to verify deployment
+- **커밋 전**: 린팅 및 단위 테스트
+- **풀 요청**: 단위, 통합 및 선택된 E2E 테스트
+- **야간**: 성능 테스트를 포함한 전체 테스트 스위트
+- **릴리스 후보**: 수동 테스팅을 포함한 전체 테스트 스위트
+- **릴리스 후**: 배포 확인을 위한 스모크 테스트
 
-## Test Maintenance
+## 테스트 유지 관리
 
-- **Test Refactoring**: Regularly refactor tests to keep them maintainable
-- **Test Review**: Review tests during code reviews
-- **Test Documentation**: Document testing approach and patterns
-- **Test Debt**: Track and address test technical debt
+- **테스트 리팩터링**: 테스트를 유지 관리 가능하게 유지하기 위해 정기적으로 리팩터링
+- **테스트 검토**: 코드 검토 중 테스트 검토
+- **테스트 문서화**: 테스팅 접근 방식 및 패턴 문서화
+- **테스트 부채**: 테스트 기술 부채 추적 및 해결
 
-## Conclusion
+## 결론
 
-This testing strategy provides a comprehensive approach to ensuring the quality and reliability of the Toast App. By combining different testing levels and techniques, we can catch issues early and deliver a high-quality product to users.
+이 테스팅 전략은 Toast 앱의 품질과 신뢰성을 보장하기 위한 포괄적인 접근 방식을 제공합니다. 다양한 테스팅 수준과 기법을 결합하여 초기에 문제를 포착하고 사용자에게 고품질 제품을 제공할 수 있습니다.
 
-The strategy should evolve as the application grows and as we learn from our testing experiences.
+이 전략은 애플리케이션이 성장하고 테스팅 경험에서 배우면서 진화해야 합니다.

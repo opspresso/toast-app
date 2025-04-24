@@ -1,98 +1,98 @@
-# Toast App Development Roadmap
+# Toast 앱 개발 로드맵
 
-This document outlines the planned development roadmap for Toast App, including upcoming features, improvements, and long-term goals.
+이 문서는 Toast 앱의 계획된 개발 로드맵을 설명하며, 예정된 기능, 개선사항 및 장기 목표를 포함합니다.
 
-## Version 1.0 (Current)
+## 버전 1.0 (현재)
 
-The initial release of Toast App includes the following core features:
+Toast 앱의 초기 릴리스에는 다음과 같은 핵심 기능이 포함되어 있습니다:
 
-- Global hotkey to trigger the Toast popup
-- Customizable buttons with user-defined actions
-- Support for multiple action types:
-  - Execute shell commands
-  - Open URLs and files
-  - Trigger keyboard shortcuts
-  - Run custom scripts (JavaScript, AppleScript, PowerShell, Bash)
-- Configurable appearance and behavior
-- System tray integration
-- Cross-platform support (macOS and Windows)
+- Toast 팝업을 트리거하는 전역 단축키
+- 사용자 정의 액션이 있는 사용자 지정 버튼
+- 다양한 액션 유형 지원:
+  - 셸 명령 실행
+  - URL 및 파일 열기
+  - 키보드 단축키 트리거
+  - 사용자 정의 스크립트 실행 (JavaScript, AppleScript, PowerShell, Bash)
+- 구성 가능한 외관 및 동작
+- 시스템 트레이 통합
+- 크로스 플랫폼 지원 (macOS 및 Windows)
 
-## Version 1.1 (Next Release)
+## 버전 1.1 (다음 릴리스)
 
-### Planned Features
+### 계획된 기능
 
-- **Button Categories**: Group buttons into categories for better organization
-- **Search Improvements**: Enhanced search functionality with fuzzy matching
-- **Keyboard Navigation**: Improved keyboard navigation and shortcuts
-- **Action Chains**: Allow creating sequences of actions triggered by a single button
-- **Drag and Drop**: Support for drag and drop to reorder buttons
-- **Import/Export Improvements**: Better handling of importing and exporting configurations
+- **버튼 카테고리**: 더 나은 구성을 위해 버튼을 카테고리로 그룹화
+- **검색 개선**: 퍼지 매칭을 포함한 향상된 검색 기능
+- **키보드 탐색**: 개선된 키보드 탐색 및 단축키
+- **액션 체인**: 단일 버튼으로 트리거되는 액션 시퀀스 생성 허용
+- **드래그 앤 드롭**: 버튼 재정렬을 위한 드래그 앤 드롭 지원
+- **가져오기/내보내기 개선**: 구성 가져오기 및 내보내기 처리 개선
 
-### Technical Improvements
+### 기술적 개선
 
-- **Performance Optimization**: Reduce startup time and memory usage
-- **Error Handling**: More robust error handling and user feedback
-- **Logging**: Improved logging for debugging
-- **Unit Tests**: Expand test coverage
+- **성능 최적화**: 시작 시간 및 메모리 사용량 감소
+- **오류 처리**: 더 강력한 오류 처리 및 사용자 피드백
+- **로깅**: 디버깅을 위한 개선된 로깅
+- **단위 테스트**: 테스트 커버리지 확장
 
-## Version 1.2
+## 버전 1.2
 
-### Planned Features
+### 계획된 기능
 
-- **Custom Themes**: Allow users to create and share custom themes
-- **Plugin System**: Basic plugin architecture for extending functionality
-- **Advanced Triggers**: Time-based and event-based triggers for actions
-- **Global Variables**: Support for variables in commands and scripts
-- **Snippets**: Text snippet expansion functionality
-- **History**: Action execution history and favorites
+- **사용자 정의 테마**: 사용자가 사용자 정의 테마를 만들고 공유할 수 있도록 허용
+- **플러그인 시스템**: 기능 확장을 위한 기본 플러그인 아키텍처
+- **고급 트리거**: 액션을 위한 시간 기반 및 이벤트 기반 트리거
+- **전역 변수**: 명령 및 스크립트에서 변수 지원
+- **스니펫**: 텍스트 스니펫 확장 기능
+- **기록**: 액션 실행 기록 및 즐겨찾기
 
-### Technical Improvements
+### 기술적 개선
 
-- **Code Refactoring**: Improve code organization and maintainability
-- **Documentation**: Comprehensive API documentation for plugin developers
-- **Accessibility**: Enhanced accessibility features
+- **코드 리팩터링**: 코드 구성 및 유지 관리성 향상
+- **문서화**: 플러그인 개발자를 위한 포괄적인 API 문서
+- **접근성**: 향상된 접근성 기능
 
-## Version 2.0 (Long-term)
+## 버전 2.0 (장기)
 
-### Major Features
+### 주요 기능
 
-- **Cloud Sync**: Synchronize settings and buttons across devices
-- **Mobile Companion**: Mobile app for remote triggering of actions
-- **Advanced Scripting**: Enhanced scripting capabilities with a built-in editor
-- **Workflow Automation**: Visual workflow builder for complex automation
-- **AI Integration**: Smart suggestions and automation based on usage patterns
-- **Collaboration**: Sharing buttons and workflows with other users
+- **클라우드 동기화**: 기기 간 설정 및 버튼 동기화
+- **모바일 컴패니언**: 액션의 원격 트리거를 위한 모바일 앱
+- **고급 스크립팅**: 내장 에디터를 통한 향상된 스크립팅 기능
+- **워크플로우 자동화**: 복잡한 자동화를 위한 시각적 워크플로우 빌더
+- **AI 통합**: 사용 패턴에 기반한 스마트 제안 및 자동화
+- **협업**: 다른 사용자와 버튼 및 워크플로우 공유
 
-### Technical Vision
+### 기술적 비전
 
-- **Modular Architecture**: Fully modular architecture for better extensibility
-- **Performance**: Further performance optimizations for large button collections
-- **Security**: Enhanced security model for script execution
-- **Cross-platform**: Expanded platform support (Linux, mobile)
+- **모듈식 아키텍처**: 더 나은 확장성을 위한 완전 모듈식 아키텍처
+- **성능**: 대규모 버튼 컬렉션을 위한 추가 성능 최적화
+- **보안**: 스크립트 실행을 위한 향상된 보안 모델
+- **크로스 플랫폼**: 확장된 플랫폼 지원 (Linux, 모바일)
 
-## Community Contributions
+## 커뮤니티 기여
 
-We welcome community contributions in the following areas:
+다음 영역에서 커뮤니티 기여를 환영합니다:
 
-- **Action Types**: New action types for specialized use cases
-- **Themes**: Custom themes and visual improvements
-- **Localization**: Translations for different languages
-- **Documentation**: User guides and tutorials
-- **Bug Reports**: Identifying and fixing issues
-- **Feature Requests**: Suggesting new features and improvements
+- **액션 유형**: 특수 사용 사례를 위한 새로운 액션 유형
+- **테마**: 사용자 정의 테마 및 시각적 개선
+- **현지화**: 다양한 언어에 대한 번역
+- **문서화**: 사용자 가이드 및 튜토리얼
+- **버그 리포트**: 문제 식별 및 수정
+- **기능 요청**: 새로운 기능 및 개선 사항 제안
 
-## Development Priorities
+## 개발 우선순위
 
-1. **Stability**: Ensure core functionality is stable and reliable
-2. **User Experience**: Focus on intuitive and efficient user experience
-3. **Performance**: Maintain low resource usage and fast response times
-4. **Extensibility**: Build a solid foundation for future extensions
-5. **Community**: Foster an active community of users and contributors
+1. **안정성**: 핵심 기능이 안정적이고 신뢰할 수 있도록 보장
+2. **사용자 경험**: 직관적이고 효율적인 사용자 경험에 집중
+3. **성능**: 낮은 리소스 사용량과 빠른 응답 시간 유지
+4. **확장성**: 향후 확장을 위한 견고한 기반 구축
+5. **커뮤니티**: 활발한 사용자 및 기여자 커뮤니티 육성
 
-## Release Schedule
+## 릴리스 일정
 
-- **Minor Releases (1.x.y)**: Approximately every 1-2 months
-- **Feature Releases (1.x.0)**: Approximately every 3-4 months
-- **Major Releases (x.0.0)**: Based on feature completeness, not time-bound
+- **마이너 릴리스 (1.x.y)**: 약 1-2개월마다
+- **기능 릴리스 (1.x.0)**: 약 3-4개월마다
+- **메이저 릴리스 (x.0.0)**: 시간이 아닌 기능 완성도에 따라 결정
 
-This roadmap is subject to change based on user feedback, technical constraints, and emerging priorities.
+이 로드맵은 사용자 피드백, 기술적 제약 사항 및 새로운 우선순위에 따라 변경될 수 있습니다.

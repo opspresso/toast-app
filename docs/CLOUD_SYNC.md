@@ -1,25 +1,25 @@
-# Cloud Synchronization Guide
+# 클라우드 동기화 가이드
 
-This document provides a detailed explanation of the cloud synchronization functionality implemented in Toast App (Electron application).
+이 문서는 Toast 앱(Electron 애플리케이션)에 구현된 클라우드 동기화 기능에 대한 상세한 설명을 제공합니다.
 
-## Table of Contents
+## 목차
 
-- [Overview](#overview)
-- [Cloud Synchronization Architecture](#cloud-synchronization-architecture)
-- [Synchronization Events](#synchronization-events)
-- [Settings Download API](#settings-download-api)
-- [Settings Upload API](#settings-upload-api)
-- [Synchronization Implementation](#synchronization-implementation)
-- [Local Data Management](#local-data-management)
-- [Error Handling Strategies](#error-handling-strategies)
-- [Security Considerations](#security-considerations)
-- [Unified Settings Store Implementation](#unified-settings-store-implementation)
+- [개요](#개요)
+- [클라우드 동기화 아키텍처](#클라우드-동기화-아키텍처)
+- [동기화 이벤트](#동기화-이벤트)
+- [설정 다운로드 API](#설정-다운로드-API)
+- [설정 업로드 API](#설정-업로드-API)
+- [동기화 구현](#동기화-구현)
+- [로컬 데이터 관리](#로컬-데이터-관리)
+- [오류 처리 전략](#오류-처리-전략)
+- [보안 고려사항](#보안-고려사항)
+- [통합 설정 저장소 구현](#통합-설정-저장소-구현)
 
-## Overview
+## 개요
 
-Toast App synchronizes user settings (page configurations, button layouts, themes, etc.) to the cloud, providing a consistent experience across multiple devices. This document explains the cloud synchronization implementation and related APIs.
+Toast 앱은 사용자 설정(페이지 구성, 버튼 레이아웃, 테마 등)을 클라우드에 동기화하여 여러 장치에서 일관된 경험을 제공합니다. 이 문서는 클라우드 동기화 구현과 관련 API를 설명합니다.
 
-## Cloud Synchronization Architecture
+## 클라우드 동기화 아키텍처
 
 ```mermaid
 sequenceDiagram
@@ -42,14 +42,14 @@ sequenceDiagram
     end
 ```
 
-## Synchronization Events
+## 동기화 이벤트
 
-Settings synchronization occurs at specific timing events:
+설정 동기화는 특정 타이밍 이벤트에 발생합니다:
 
-### Download from Server Triggers
-1. **On Successful Login**: When a user successfully logs in, the latest settings are immediately downloaded from the server.
+### 서버에서 다운로드 트리거
+1. **로그인 성공 시**: 사용자가 성공적으로 로그인하면 최신 설정이 즉시 서버에서 다운로드됩니다.
    ```javascript
-   // Example of settings download after login
+   // 로그인 후 설정 다운로드 예시
    async function handleLoginSuccess() {
      try {
        await downloadSettings();
@@ -60,19 +60,19 @@ Settings synchronization occurs at specific timing events:
    }
    ```
 
-### Local File Save Triggers
-1. **When Adding a Page**: When a user adds a new page, changes are immediately saved to the local file (user-settings.json).
-2. **When Deleting a Page**: When a user deletes a page, changes are immediately saved to the local file.
-3. **When Modifying Buttons**: When a user adds, edits, or deletes a button, changes are saved to the local file.
+### 로컬 파일 저장 트리거
+1. **페이지 추가 시**: 사용자가 새 페이지를 추가하면 변경사항이 즉시 로컬 파일(user-settings.json)에 저장됩니다.
+2. **페이지 삭제 시**: 사용자가 페이지를 삭제하면 변경사항이 즉시 로컬 파일에 저장됩니다.
+3. **버튼 수정 시**: 사용자가 버튼을 추가, 편집 또는 삭제하면 변경사항이 로컬 파일에 저장됩니다.
 
-Each change is immediately saved to the local file, with changes detected by configStore automatically saving to the user-settings.json file.
+각 변경사항은 즉시 로컬 파일에 저장되며, configStore에 의해 감지된 변경사항은 자동으로 user-settings.json 파일에 저장됩니다.
 
-### Server Synchronization Triggers
-1. **Periodic Synchronization**: Automatically attempts synchronization at set intervals (15 minutes).
-2. **On App Startup**: Synchronizes when the app starts if the user is already logged in.
-3. **On Network Recovery**: Attempts synchronization when transitioning from offline to online status.
+### 서버 동기화 트리거
+1. **주기적 동기화**: 설정된 간격(15분)으로 자동으로 동기화를 시도합니다.
+2. **앱 시작 시**: 사용자가 이미 로그인한 상태라면 앱 시작 시 동기화합니다.
+3. **네트워크 복구 시**: 오프라인에서 온라인 상태로 전환될 때 동기화를 시도합니다.
 
-## Settings Download API
+## 설정 다운로드 API
 
 ```http
 GET /api/users/settings HTTP/1.1
@@ -80,7 +80,7 @@ Host: app.toast.sh
 Authorization: Bearer ACCESS_TOKEN
 ```
 
-### Response
+### 응답
 
 ```json
 {
@@ -91,7 +91,7 @@ Authorization: Bearer ACCESS_TOKEN
 }
 ```
 
-## Settings Upload API
+## 설정 업로드 API
 
 ```http
 PUT /api/users/settings HTTP/1.1
@@ -106,7 +106,7 @@ Content-Type: application/json
 }
 ```
 
-### Response
+### 응답
 
 ```json
 {
@@ -116,35 +116,35 @@ Content-Type: application/json
 }
 ```
 
-## Synchronization Implementation
+## 동기화 구현
 
-Settings synchronization is managed in the `cloud-sync.js` module:
+설정 동기화는 `cloud-sync.js` 모듈에서 관리됩니다:
 
 ```javascript
 const { sync: apiSync } = require('./api');
 const { createConfigStore } = require('./config');
 
-// Synchronization related constants
-const SYNC_DEBOUNCE_MS = 2000; // Synchronize 2 seconds after the last change
-const PERIODIC_SYNC_INTERVAL_MS = 15 * 60 * 1000; // Automatic synchronization every 15 minutes
+// 동기화 관련 상수
+const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
+const PERIODIC_SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
 
-// Detecting setting changes and saving to local file
+// 설정 변경 감지 및 로컬 파일 저장
 configStore.onDidChange('pages', async (newValue, oldValue) => {
-  // Detect change type (page added, deleted, button modified)
+  // 변경 유형 감지(페이지 추가, 삭제, 버튼 수정)
   if (Array.isArray(newValue) && Array.isArray(oldValue)) {
     if (newValue.length > oldValue.length) {
-      // Page addition detected
+      // 페이지 추가 감지
       console.log('Page addition detected, saving to local file...');
     } else if (newValue.length < oldValue.length) {
-      // Page deletion detected
+      // 페이지 삭제 감지
       console.log('Page deletion detected, saving to local file...');
     } else if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
-      // Button modification detected
+      // 버튼 수정 감지
       console.log('Button modification detected, saving to local file...');
     }
   }
 
-  // Save to user-settings.json file
+  // user-settings.json 파일에 저장
   if (userDataManagerRef) {
     try {
       const currentSettings = await userDataManagerRef.getUserSettings();
@@ -165,39 +165,39 @@ configStore.onDidChange('pages', async (newValue, oldValue) => {
     }
   }
 
-  // Periodic server synchronization is performed with a separate timer
+  // 주기적 서버 동기화는 별도 타이머로 수행
 });
 ```
 
-## Local Data Management
+## 로컬 데이터 관리
 
-Toast App stores and manages user profiles, subscription information, settings, etc. as local files. This allows the app to function normally even in an offline state.
+Toast 앱은 사용자 프로필, 구독 정보, 설정 등을 로컬 파일로 저장하고 관리합니다. 이를 통해 오프라인 상태에서도 앱이 정상적으로 작동할 수 있습니다.
 
-### Local File Storage Location
+### 로컬 파일 저장 위치
 
-User data is stored in standard locations for each operating system:
+사용자 데이터는 각 운영 체제의 표준 위치에 저장됩니다:
 
 - **Windows**: `C:\Users\{Username}\AppData\Roaming\toast-app\`
 - **macOS**: `/Users/{Username}/Library/Application Support/toast-app/`
 - **Linux**: `/home/{username}/.config/toast-app/`
 
-### Types of Stored Files
+### 저장되는 파일 종류
 
-| Filename | Description | Contents |
+| 파일명 | 설명 | 내용 |
 |--------|------|------|
-| `auth-tokens.json` | Authentication token information | Access token, refresh token, expiration time |
-| `user-profile.json` | User profile information | Name, email, avatar, subscription information, etc. |
-| `user-settings.json` | User settings information | Page configuration, theme, shortcuts, timestamps, etc. |
-| `config.json` | App configuration information | General settings, window size, position, etc. |
+| `auth-tokens.json` | 인증 토큰 정보 | 액세스 토큰, 리프레시 토큰, 만료 시간 |
+| `user-profile.json` | 사용자 프로필 정보 | 이름, 이메일, 아바타, 구독 정보 등 |
+| `user-settings.json` | 사용자 설정 정보 | 페이지 구성, 테마, 단축키, 타임스탬프 등 |
+| `config.json` | 앱 구성 정보 | 일반 설정, 창 크기, 위치 등 |
 
-### Timestamp Management
+### 타임스탬프 관리
 
-All local settings files include timestamp information to prevent conflicts during synchronization and identify the latest data:
+모든 로컬 설정 파일에는 동기화 중 충돌을 방지하고 최신 데이터를 식별하기 위한 타임스탬프 정보가 포함됩니다:
 
 ```javascript
-// Example of adding timestamp when saving settings
+// 설정 저장 시 타임스탬프 추가 예시
 function saveSettings(settingsData) {
-  // Add current time as timestamp
+  // 현재 시간을 타임스탬프로 추가
   const dataWithTimestamp = {
     ...settingsData,
     lastModifiedAt: Date.now(),
@@ -207,12 +207,12 @@ function saveSettings(settingsData) {
   return writeToFile(SETTINGS_FILE_PATH, dataWithTimestamp);
 }
 
-// Example of checking timestamp when loading settings
+// 설정 로드 시 타임스탬프 확인 예시
 function loadSettings() {
   const settingsData = readFromFile(SETTINGS_FILE_PATH);
 
   if (settingsData && !settingsData.lastModifiedAt) {
-    // Add current time as timestamp if none exists
+    // 타임스탬프가 없으면 현재 시간 추가
     settingsData.lastModifiedAt = Date.now();
     settingsData.lastModifiedDevice = getDeviceIdentifier();
     writeToFile(SETTINGS_FILE_PATH, settingsData);
@@ -222,14 +222,14 @@ function loadSettings() {
 }
 ```
 
-Timestamps are used for:
+타임스탬프는 다음 용도로 사용됩니다:
 
-1. **Change Detection**: Compare local settings and server settings change times to identify the latest version
-2. **Conflict Resolution**: When changes occur simultaneously on multiple devices, merge or prioritize based on timestamps
-3. **Synchronization Optimization**: Prevent unnecessary network requests if no changes since last synchronization
+1. **변경 감지**: 로컬 설정과 서버 설정의 변경 시간을 비교하여 최신 버전 식별
+2. **충돌 해결**: 여러 장치에서 동시에 변경이 발생한 경우 타임스탬프를 기준으로 병합 또는 우선순위 지정
+3. **동기화 최적화**: 마지막 동기화 이후 변경이 없으면 불필요한 네트워크 요청 방지
 
 ```json
-// user-settings.json example
+// user-settings.json 예시
 {
   "pages": [...],
   "appearance": {
@@ -241,21 +241,21 @@ Timestamps are used for:
 }
 ```
 
-### File Management Module
+### 파일 관리 모듈
 
-User data file management is handled in the `user-data-manager.js` module:
+사용자 데이터 파일 관리는 `user-data-manager.js` 모듈에서 처리됩니다:
 
 ```javascript
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// File path constants
+// 파일 경로 상수
 const USER_DATA_PATH = app.getPath('userData');
 const PROFILE_FILE_PATH = path.join(USER_DATA_PATH, 'user-profile.json');
 const SETTINGS_FILE_PATH = path.join(USER_DATA_PATH, 'user-settings.json');
 
-// Read file
+// 파일 읽기
 function readFromFile(filePath) {
   try {
     if (!fs.existsSync(filePath)) {
@@ -269,7 +269,7 @@ function readFromFile(filePath) {
   }
 }
 
-// Write file
+// 파일 쓰기
 function writeToFile(filePath, data) {
   try {
     const dirPath = path.dirname(filePath);
@@ -284,7 +284,7 @@ function writeToFile(filePath, data) {
   }
 }
 
-// Delete file
+// 파일 삭제
 function deleteFile(filePath) {
   try {
     if (fs.existsSync(filePath)) {
@@ -299,27 +299,27 @@ function deleteFile(filePath) {
 }
 ```
 
-### Periodic Data Refresh
+### 주기적 데이터 새로고침
 
-Profile and settings information is automatically refreshed at set intervals:
+프로필 및 설정 정보는 설정된 간격으로 자동으로 새로고침됩니다:
 
 ```javascript
-// Periodic refresh settings
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // Refresh every 30 minutes
+// 주기적 새로고침 설정
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30분마다 새로고침
 let profileRefreshTimer = null;
 let settingsRefreshTimer = null;
 
-// Start periodic profile refresh
+// 주기적 프로필 새로고침 시작
 function startProfileRefresh() {
-  // Stop existing timer if running
+  // 이미 실행 중인 타이머가 있으면 중지
   stopProfileRefresh();
 
-  // Run immediately once, then start timer
+  // 최초 한 번 즉시 실행한 다음 타이머 시작
   getUserProfile(true).then(profile => {
     console.log('Initial profile refresh complete');
   });
 
-  // Set periodic refresh timer
+  // 주기적 새로고침 타이머 설정
   profileRefreshTimer = setInterval(async () => {
     try {
       await getUserProfile(true);
@@ -330,22 +330,22 @@ function startProfileRefresh() {
   }, REFRESH_INTERVAL_MS);
 }
 
-// Similar approach for settings information periodic refresh
+// 설정 정보도 유사한 방식으로 주기적 새로고침
 ```
 
-### Data Cleanup on Logout
+### 로그아웃 시 데이터 정리
 
 ```javascript
-// Data cleanup on logout
+// 로그아웃 시 데이터 정리
 function cleanupOnLogout() {
   try {
-    // Stop periodic refreshes
+    // 주기적 새로고침 중지
     stopProfileRefresh();
     stopSettingsRefresh();
 
-    // Delete saved files
+    // 저장된 파일 삭제
     deleteFile(PROFILE_FILE_PATH);
-    // deleteFile(SETTINGS_FILE_PATH); // Not deleted
+    // deleteFile(SETTINGS_FILE_PATH); // 삭제하지 않음
 
     console.log('User data cleanup complete');
     return true;
@@ -356,28 +356,28 @@ function cleanupOnLogout() {
 }
 ```
 
-## Error Handling Strategies
+## 오류 처리 전략
 
-Toast App handles various network errors and API response errors appropriately to maintain the user experience.
+Toast 앱은 다양한 네트워크 오류와 API 응답 오류를 적절하게 처리하여 사용자 경험을 유지합니다.
 
-### Main Error Handling Strategies
+### 주요 오류 처리 전략
 
-1. **Network Connection Errors**: Maintain offline functionality using locally stored data
-2. **Token Expiration Errors**: Automatically attempt renewal using refresh token
-3. **API Request Failures**: Appropriate retry logic and user notification
+1. **네트워크 연결 오류**: 로컬에 저장된 데이터를 사용하여 오프라인 기능 유지
+2. **토큰 만료 오류**: 리프레시 토큰을 사용하여 자동으로 갱신 시도
+3. **API 요청 실패**: 적절한 재시도 로직 및 사용자 알림
 
-### Error Handling Methods
+### 오류 처리 방법
 
-| Error Type | Description | Handling Method |
+| 오류 유형 | 설명 | 처리 방법 |
 |-----------|------|-----------|
-| `NETWORK_ERROR` | Network connection error | Use local data, synchronize upon reconnection |
-| `API_ERROR` | API server error | Retry after a certain time |
-| `CONFLICT` | Data conflict occurred | Apply the most recent data based on timestamps |
-| `QUOTA_EXCEEDED` | Data size limit exceeded | Clean up non-essential data and retry |
+| `NETWORK_ERROR` | 네트워크 연결 오류 | 로컬 데이터 사용, 재연결 시 동기화 |
+| `API_ERROR` | API 서버 오류 | 일정 시간 후 재시도 |
+| `CONFLICT` | 데이터 충돌 발생 | 타임스탬프를 기준으로 가장 최근 데이터 적용 |
+| `QUOTA_EXCEEDED` | 데이터 크기 제한 초과 | 필수적이지 않은 데이터 정리 후 재시도 |
 
-### Empty File Handling
+### 빈 파일 처리
 
-Provide default values to prevent errors when files are corrupted or empty:
+파일이 손상되었거나 비어있을 때 오류를 방지하기 위해 기본값 제공:
 
 ```javascript
 function getUserSettings() {
@@ -385,7 +385,7 @@ function getUserSettings() {
     const settingsData = readFromFile(SETTINGS_FILE_PATH);
 
     if (!settingsData) {
-      // Return default settings if file is missing or empty
+      // 파일이 없거나 비어있으면 기본 설정 반환
       return {
         pages: [],
         appearance: { theme: 'system' },
@@ -395,70 +395,70 @@ function getUserSettings() {
 
     return settingsData;
   } catch (error) {
-    // Return default settings on error
+    // 오류 발생 시 기본 설정 반환
     console.error('Error retrieving settings:', error);
     return getDefaultSettings();
   }
 }
 ```
 
-## Security Considerations
+## 보안 고려사항
 
-Measures to maintain cloud synchronization-related data security:
+클라우드 동기화 관련 데이터 보안을 유지하기 위한 조치:
 
-1. **Transmission Security**: All API communications are encrypted via HTTPS
-2. **Storage Security**: Local files are protected through OS user directory permissions
-3. **Authentication Security**: Synchronization is only possible through valid access tokens
-4. **Data Minimization**: Only essential data is synchronized to minimize sensitive information exposure
+1. **전송 보안**: 모든 API 통신은 HTTPS를 통해 암호화
+2. **저장 보안**: 로컬 파일은 OS 사용자 디렉토리 권한을 통해 보호
+3. **인증 보안**: 유효한 액세스 토큰을 통해서만 동기화 가능
+4. **데이터 최소화**: 필수 데이터만 동기화하여 민감한 정보 노출 최소화
 
-### Synchronization Conflict Resolution
+### 동기화 충돌 해결
 
-When settings are changed simultaneously on multiple devices, conflicts are resolved with the following strategies:
+여러 장치에서 동시에 설정이 변경될 때 다음과 같은 전략으로 충돌을 해결합니다:
 
-1. **Timestamp-Based**: Most recently changed settings take precedence
-2. **Merging Strategy**: When possible, non-conflicting fields are merged to preserve data
-3. **User Notification**: Users are notified when conflicts occur and provided with selection options
+1. **타임스탬프 기반**: 가장 최근에 변경된 설정이 우선
+2. **병합 전략**: 가능한 경우 충돌하지 않는 필드를 병합하여 데이터 보존
+3. **사용자 알림**: 충돌이 발생할 때 사용자에게 알리고 선택 옵션 제공
 
-## Unified Settings Store Implementation
+## 통합 설정 저장소 구현
 
-A unified settings store approach was implemented to improve cloud synchronization reliability and data consistency. This section explains the implementation method and details.
+클라우드 동기화 신뢰성과 데이터 일관성을 향상시키기 위해 통합 설정 저장소 접근 방식이 구현되었습니다. 이 섹션에서는 구현 방법과 세부 사항을 설명합니다.
 
-### Implementation Background
+### 구현 배경
 
-The previous system had the following issues:
+이전 시스템에는 다음과 같은 문제가 있었습니다:
 
-1. **Dual Settings Storage**:
-   - `config.json` (managed by electron-store): Stores app basic settings, UI settings, page information, etc.
-   - `user-settings.json` (directly saved to file system): Stores user settings information to be synchronized with API
+1. **이중 설정 저장**:
+   - `config.json`(electron-store로 관리): 앱 기본 설정, UI 설정, 페이지 정보 등 저장
+   - `user-settings.json`(파일 시스템에 직접 저장): API와 동기화할 사용자 설정 정보 저장
 
-2. **Synchronization Discrepancies**:
-   - `cloud-sync.js` detects configStore changes and saves to `user-settings.json` file
-   - `api/sync.js` directly saves settings downloaded from server to `configStore`
-   - Actual data is in `config.json`, but cloud synchronization references `user-settings.json`
+2. **동기화 불일치**:
+   - `cloud-sync.js`는 configStore 변경을 감지하여 `user-settings.json` 파일에 저장
+   - `api/sync.js`는 서버에서 다운로드한 설정을 직접 `configStore`에 저장
+   - 실제 데이터는 `config.json`에 있지만 클라우드 동기화는 `user-settings.json` 참조
 
-3. **Unnatural Synchronization Flow**:
-   - User change → configStore change → user-settings.json update → Upload to API
-   - Server download → Direct configStore update → Only user-settings.json timestamp update
-   - Potential data inconsistency due to this
+3. **부자연스러운 동기화 흐름**:
+   - 사용자 변경 → configStore 변경 → user-settings.json 업데이트 → API에 업로드
+   - 서버 다운로드 → 직접 configStore 업데이트 → user-settings.json 타임스탬프만 업데이트
+   - 이로 인한 잠재적 데이터 불일치 가능성
 
-### Unified Settings Store Implementation
+### 통합 설정 저장소 구현
 
-The unified settings store approach uses electron-store (configStore) as the primary data source, with `user-settings.json` used only for storing synchronization metadata.
+통합 설정 저장소 접근 방식은 electron-store(configStore)를 주 데이터 소스로 사용하고, `user-settings.json`은 동기화 메타데이터 저장용으로만 사용합니다.
 
-#### 1. Modified uploadSettings Function
+#### 1. 수정된 uploadSettings 함수
 
 ```javascript
-// Modified uploadSettings function in cloud-sync.js
+// cloud-sync.js의 수정된 uploadSettings 함수
 async function uploadSettings() {
-  // Extract data directly from configStore instead of previous code
+  // 이전 코드 대신 configStore에서 직접 데이터 추출
   const pages = configStore.get('pages') || [];
   const appearance = configStore.get('appearance');
   const advanced = configStore.get('advanced');
 
-  // Update timestamp
+  // 타임스탬프 업데이트
   const timestamp = getCurrentTimestamp();
 
-  // Compose data to upload
+  // 업로드할 데이터 구성
   const uploadData = {
     pages,
     lastSyncedDevice: state.deviceId,
@@ -467,9 +467,9 @@ async function uploadSettings() {
     advanced
   };
 
-  // API call...
+  // API 호출...
 
-  // On success, only save last synchronization information to user-settings.json
+  // 성공 시 user-settings.json에 마지막 동기화 정보만 저장
   const metaData = {
     lastSyncedAt: timestamp,
     lastSyncedDevice: state.deviceId
@@ -480,10 +480,10 @@ async function uploadSettings() {
 }
 ```
 
-#### 2. Added Synchronization Metadata Management Function
+#### 2. 동기화 메타데이터 관리 함수 추가
 
 ```javascript
-// Added metadata saving function to user-data-manager.js
+// user-data-manager.js에 메타데이터 저장 함수 추가
 function updateSyncMetadata(metadata) {
   try {
     const currentSettings = readFromFile(SETTINGS_FILE_PATH) || {};
@@ -501,43 +501,43 @@ function updateSyncMetadata(metadata) {
 }
 ```
 
-#### 3. Improved Settings Change Detection Logic
+#### 3. 개선된 설정 변경 감지 로직
 
 ```javascript
-// Modified setupConfigListeners function in cloud-sync.js
+// cloud-sync.js의 수정된 setupConfigListeners 함수
 function setupConfigListeners() {
-  // Page settings change detection
+  // 페이지 설정 변경 감지
   configStore.onDidChange('pages', async (newValue, oldValue) => {
-    // Skip synchronization if disabled or not logged in
+    // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 건너뛰기
     if (!state.enabled || !await canSync()) {
       return;
     }
 
-    // Change type detection...
+    // 변경 유형 감지...
 
-    // Update only metadata instead of duplicating all data to user-settings.json
+    // 모든 데이터를 user-settings.json에 복제하는 대신 메타데이터만 업데이트
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId
     });
 
-    // Schedule synchronization...
+    // 동기화 예약...
   });
 
-  // Modify other onDidChange event handlers similarly...
+  // 다른 onDidChange 이벤트 핸들러도 유사하게 수정...
 }
 ```
 
-#### 4. Improved Download Logic
+#### 4. 개선된 다운로드 로직
 
 ```javascript
-// Modified downloadSettings function in cloud-sync.js
+// cloud-sync.js의 수정된 downloadSettings 함수
 async function downloadSettings() {
-  // Existing logic...
+  // 기존 로직...
 
   if (result.success) {
-    // Update only metadata in user-settings.json
+    // user-settings.json에 메타데이터만 업데이트
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastSyncedAt: timestamp,
@@ -550,30 +550,30 @@ async function downloadSettings() {
 }
 ```
 
-### Implementation Changes Summary
+### 구현 변경 요약
 
 1. **api/sync.js**:
-   - No changes (already uses configStore for settings storage and retrieval)
+   - 변경 없음(이미 설정 저장 및 검색에 configStore 사용)
 
 2. **cloud-sync.js**:
-   - Changed data source from user-settings.json to configStore in `uploadSettings` function
-   - Only update metadata when detecting settings changes
+   - `uploadSettings` 함수에서 데이터 소스를 user-settings.json에서 configStore로 변경
+   - 설정 변경 감지 시 메타데이터만 업데이트
 
 3. **user-data-manager.js**:
-   - Added `updateSyncMetadata` function that only manages synchronization metadata
+   - 동기화 메타데이터만 관리하는 `updateSyncMetadata` 함수 추가
 
-### Migration Strategy
+### 마이그레이션 전략
 
-A migration strategy for smoothly transitioning from the existing data structure to the unified storage approach:
+기존 데이터 구조에서 통합 저장소 접근 방식으로 원활하게 전환하기 위한 마이그레이션 전략:
 
-1. **Data Migration Utility Development**:
-   - Automatically migrate data from user-settings.json to config.json at app startup if not already present
-   - Implement transparently for users
+1. **데이터 마이그레이션 유틸리티 개발**:
+   - 앱 시작 시 아직 존재하지 않는 경우 user-settings.json에서 config.json으로 데이터 자동 마이그레이션
+   - 사용자에게 투명하게 구현
 
-2. **Gradual Code Transition**:
-   - First stage: Modify uploadSettings and settings change detection logic
-   - Later gradually modify other related code
+2. **점진적 코드 전환**:
+   - 1단계: uploadSettings 및 설정 변경 감지 로직 수정
+   - 이후 관련 다른 코드 점진적으로 수정
 
-3. **Backward Compatibility**:
-   - Support both methods during transition period to maintain compatibility with previous versions
-   - Simplify user-settings.json data structure to metadata-only after a specific version
+3. **하위 호환성**:
+   - 이전 버전과의 호환성을 유지하기 위해 전환 기간 동안 두 방법 모두 지원
+   - 특정 버전 이후 user-settings.json 데이터 구조를 메타데이터 전용으로 단순화
