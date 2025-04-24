@@ -8,48 +8,6 @@ const BASE_PATH = '../../assets/flat-color-icons';
 
 // 모든 아이콘 카탈로그
 const IconsCatalog = {
-  // 사진 및 비디오 관련 아이콘
-  photoVideo: {
-    name: '사진 및 비디오',
-    icons: {
-      flash_on: `${BASE_PATH}/flash_on.svg`,
-      flash_off: `${BASE_PATH}/flash_off.svg`,
-      flash_auto: `${BASE_PATH}/flash_auto.svg`,
-      panorama: `${BASE_PATH}/panorama.svg`,
-      landscape: `${BASE_PATH}/landscape.svg`,
-      night_landscape: `${BASE_PATH}/night_landscape.svg`,
-      sports_mode: `${BASE_PATH}/sports_mode.svg`,
-      portrait_mode: `${BASE_PATH}/portrait_mode.svg`,
-      night_portrait: `${BASE_PATH}/night_portrait.svg`,
-      close_up_mode: `${BASE_PATH}/close_up_mode.svg`,
-      selfie: `${BASE_PATH}/selfie.svg`,
-      gallery: `${BASE_PATH}/gallery.svg`,
-      stack_of_photos: `${BASE_PATH}/stack_of_photos.svg`,
-      add_image: `${BASE_PATH}/add_image.svg`,
-      edit_image: `${BASE_PATH}/edit_image.svg`,
-      remove_image: `${BASE_PATH}/remove_image.svg`,
-      compact_camera: `${BASE_PATH}/compact_camera.svg`,
-      multiple_cameras: `${BASE_PATH}/multiple_cameras.svg`,
-      camera: `${BASE_PATH}/camera.svg`,
-      slr_back_side: `${BASE_PATH}/slr_back_side.svg`,
-      old_time_camera: `${BASE_PATH}/old_time_camera.svg`,
-      camera_addon: `${BASE_PATH}/camera_addon.svg`,
-      camera_identification: `${BASE_PATH}/camera_identification.svg`,
-      start: `${BASE_PATH}/start.svg`,
-      clapperboard: `${BASE_PATH}/clapperboard.svg`,
-      film: `${BASE_PATH}/film.svg`,
-      camcorder: `${BASE_PATH}/camcorder.svg`,
-      camcorder_pro: `${BASE_PATH}/camcorder_pro.svg`,
-      webcam: `${BASE_PATH}/webcam.svg`,
-      integrated_webcam: `${BASE_PATH}/integrated_webcam.svg`,
-      rotate_camera: `${BASE_PATH}/rotate_camera.svg`,
-      switch_camera: `${BASE_PATH}/switch_camera.svg`,
-      photo_reel: `${BASE_PATH}/photo_reel.svg`,
-      film_reel: `${BASE_PATH}/film_reel.svg`,
-      cable_release: `${BASE_PATH}/cable_release.svg`
-    }
-  },
-
   // 기본 아이콘
   basicIcons: {
     name: '기본 아이콘',
@@ -194,6 +152,48 @@ const IconsCatalog = {
       disclaimer: `${BASE_PATH}/disclaimer.svg`,
       callback: `${BASE_PATH}/callback.svg`,
       vip: `${BASE_PATH}/vip.svg`
+    }
+  },
+
+  // 사진 및 비디오 관련 아이콘
+  photoVideo: {
+    name: '사진 및 비디오',
+    icons: {
+      flash_on: `${BASE_PATH}/flash_on.svg`,
+      flash_off: `${BASE_PATH}/flash_off.svg`,
+      flash_auto: `${BASE_PATH}/flash_auto.svg`,
+      panorama: `${BASE_PATH}/panorama.svg`,
+      landscape: `${BASE_PATH}/landscape.svg`,
+      night_landscape: `${BASE_PATH}/night_landscape.svg`,
+      sports_mode: `${BASE_PATH}/sports_mode.svg`,
+      portrait_mode: `${BASE_PATH}/portrait_mode.svg`,
+      night_portrait: `${BASE_PATH}/night_portrait.svg`,
+      close_up_mode: `${BASE_PATH}/close_up_mode.svg`,
+      selfie: `${BASE_PATH}/selfie.svg`,
+      gallery: `${BASE_PATH}/gallery.svg`,
+      stack_of_photos: `${BASE_PATH}/stack_of_photos.svg`,
+      add_image: `${BASE_PATH}/add_image.svg`,
+      edit_image: `${BASE_PATH}/edit_image.svg`,
+      remove_image: `${BASE_PATH}/remove_image.svg`,
+      compact_camera: `${BASE_PATH}/compact_camera.svg`,
+      multiple_cameras: `${BASE_PATH}/multiple_cameras.svg`,
+      camera: `${BASE_PATH}/camera.svg`,
+      slr_back_side: `${BASE_PATH}/slr_back_side.svg`,
+      old_time_camera: `${BASE_PATH}/old_time_camera.svg`,
+      camera_addon: `${BASE_PATH}/camera_addon.svg`,
+      camera_identification: `${BASE_PATH}/camera_identification.svg`,
+      start: `${BASE_PATH}/start.svg`,
+      clapperboard: `${BASE_PATH}/clapperboard.svg`,
+      film: `${BASE_PATH}/film.svg`,
+      camcorder: `${BASE_PATH}/camcorder.svg`,
+      camcorder_pro: `${BASE_PATH}/camcorder_pro.svg`,
+      webcam: `${BASE_PATH}/webcam.svg`,
+      integrated_webcam: `${BASE_PATH}/integrated_webcam.svg`,
+      rotate_camera: `${BASE_PATH}/rotate_camera.svg`,
+      switch_camera: `${BASE_PATH}/switch_camera.svg`,
+      photo_reel: `${BASE_PATH}/photo_reel.svg`,
+      film_reel: `${BASE_PATH}/film_reel.svg`,
+      cable_release: `${BASE_PATH}/cable_release.svg`
     }
   },
 
