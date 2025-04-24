@@ -134,24 +134,22 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // Temporarily hide window (to display file selection dialog)
+  // Temporarily disable alwaysOnTop (to display file selection dialog on top)
   ipcMain.handle('hide-window-temporarily', async (event) => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
-        // Turn off alwaysOnTop property before hiding window
+        // Turn off alwaysOnTop property so dialog can appear on top
         windows.toast.setAlwaysOnTop(false);
-        // Hide window
-        windows.toast.hide();
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error hiding window temporarily:', error);
+      console.error('Error disabling alwaysOnTop temporarily:', error);
       return false;
     }
   });
 
-  // Display window again after dialog is closed
+  // Restore alwaysOnTop after dialog is closed
   ipcMain.handle('show-window-after-dialog', async (event, position) => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
@@ -160,22 +158,17 @@ function setupIpcHandlers(windows) {
           windows.toast.setPosition(position[0], position[1]);
         }
 
-        // Show window and focus
-        windows.toast.show();
-        windows.toast.focus();
-
         // Restore alwaysOnTop setting
-        setTimeout(() => {
-          if (windows.toast && !windows.toast.isDestroyed()) {
-            windows.toast.setAlwaysOnTop(true);
-          }
-        }, 100); // Set alwaysOnTop after slight delay
+        windows.toast.setAlwaysOnTop(true);
+
+        // Focus the window to bring it to front
+        windows.toast.focus();
 
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error showing window after dialog:', error);
+      console.error('Error restoring alwaysOnTop after dialog:', error);
       return false;
     }
   });
