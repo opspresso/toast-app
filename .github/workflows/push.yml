@@ -58,18 +58,6 @@ jobs:
             echo "TAG_CREATED=false" >> $GITHUB_ENV
           fi
 
-      # - name: Create GitHub Release 🚀
-      #   if: env.TAG_CREATED == 'true' # Only create release if a new tag was created
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     tag_name: ${{ env.VERSION }}
-      #     name: Release ${{ env.VERSION }}
-      #     draft: false
-      #     prerelease: false
-      #     generate_release_notes: true # Automatically generate release notes
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Trigger Build Workflow 🔄
         if: env.TAG_CREATED == 'true' # Only trigger if a new tag was created
         run: |
