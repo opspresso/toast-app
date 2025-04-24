@@ -13,6 +13,12 @@ on:
   push:
     tags:
       - 'v*' # Any tag starting with 'v'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build'
+        required: true
+        default: 'v0.0.0' # Default version for manual dispatch
 
 jobs:
   build:
