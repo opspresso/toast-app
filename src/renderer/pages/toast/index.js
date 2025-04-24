@@ -92,23 +92,23 @@ const defaultButtons = [
     url: 'https://app.toast.sh'
   },
   {
-    name: 'Empty',
+    name: '',
     shortcut: 'W',
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   },
   {
-    name: 'Empty',
+    name: '',
     shortcut: 'E',
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   },
   {
-    name: 'Empty',
+    name: '',
     shortcut: 'R',
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   },
@@ -197,9 +197,9 @@ const defaultButtons = [
 const emptyButtons = Array(15).fill(null).map((_, index) => {
   const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
   return {
-    name: `Button ${rowLetters[index]}`,
+    name: ``,
     shortcut: rowLetters[index],
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   };
@@ -285,13 +285,20 @@ function initClock() {
  */
 function updateClock() {
   const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
+  const hours = now.getHours();
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
 
-  // Update clock display
+  // AM/PM 결정
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  // 12시간제로 변환
+  const hours12 = hours % 12 || 12;
+  const hours12Str = String(hours12).padStart(2, '0');
+
+  // Update clock display with HTML formatting
   if (toastClock) {
-    toastClock.textContent = `${hours}:${minutes}:${seconds}`;
+    toastClock.innerHTML = `<span class="ampm">${ampm}</span> ${hours12Str}:${minutes}<span class="seconds">:${seconds}</span>`;
   }
 }
 

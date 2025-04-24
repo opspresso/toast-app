@@ -1,4 +1,4 @@
-Icon Files for Toast App
+# Icon Files for Toast App
 
 This directory should contain the following icon files:
 
