@@ -25,7 +25,8 @@
 ## Documentation Standards
 
 - Keep all documentation up to date and version-controlled.
-- Each document should serve a clear purpose:
+- Each document should serve a clear purpose.
+- When adding new documents, place them under the docs/ directory.
 
 ### `README.md`
 - Project overview and purpose
