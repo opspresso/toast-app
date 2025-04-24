@@ -12,7 +12,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld(
   'settings',
   {
-    // 인증 및 구독
+    // Authentication and subscription
     initiateLogin: () => ipcRenderer.invoke('initiate-login'),
     exchangeCodeForToken: (code) => ipcRenderer.invoke('exchange-code-for-token', code),
     logout: () => ipcRenderer.invoke('logout'),
@@ -72,36 +72,36 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// OAuth 리디렉션 처리를 위한 이벤트 핸들러
+// Event handler for OAuth redirection
 ipcRenderer.on('protocol-data', (event, url) => {
-  // 프로토콜 데이터 수신 시 이벤트 발생
+  // Trigger event when protocol data is received
   window.dispatchEvent(new CustomEvent('protocol-data', {
     detail: url
   }));
 });
 
-// 로그인 성공 이벤트 핸들러
+// Login success event handler
 ipcRenderer.on('login-success', (event, data) => {
   window.dispatchEvent(new CustomEvent('login-success', {
     detail: data
   }));
 });
 
-// 로그인 오류 이벤트 핸들러
+// Login error event handler
 ipcRenderer.on('login-error', (event, data) => {
   window.dispatchEvent(new CustomEvent('login-error', {
     detail: data
   }));
 });
 
-// 로그아웃 성공 이벤트 핸들러
+// Logout success event handler
 ipcRenderer.on('logout-success', (event, data) => {
   window.dispatchEvent(new CustomEvent('logout-success', {
     detail: data
   }));
 });
 
-// 인증 상태 변경 이벤트 핸들러
+// Authentication state change event handler
 ipcRenderer.on('auth-state-changed', (event, data) => {
   window.dispatchEvent(new CustomEvent('auth-state-changed', {
     detail: data

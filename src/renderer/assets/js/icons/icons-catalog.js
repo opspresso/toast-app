@@ -1,16 +1,16 @@
 /**
- * Flat Color Icons 카탈로그
- * HTML 파일에서 추출한 아이콘 정보를 카테고리별로 정리
+ * Flat Color Icons Catalog
+ * Icon information extracted from HTML files and organized by category
  */
 
-// 기본 경로 설정 (상대 경로)
+// Base path setting (relative path)
 const BASE_PATH = '../../assets/flat-color-icons';
 
-// 모든 아이콘 카탈로그
+// All icons catalog
 const IconsCatalog = {
-  // 기본 아이콘
+  // Basic icons
   basicIcons: {
-    name: '기본 아이콘',
+    name: 'Basic Icons',
     icons: {
       home: `${BASE_PATH}/home.svg`,
       icons8_cup: `${BASE_PATH}/icons8_cup.svg`,
@@ -71,9 +71,9 @@ const IconsCatalog = {
     }
   },
 
-  // 비즈니스 아이콘
+  // Business icons
   business: {
-    name: '비즈니스',
+    name: 'Business',
     icons: {
       graduation_cap: `${BASE_PATH}/graduation_cap.svg`,
       briefcase: `${BASE_PATH}/briefcase.svg`,
@@ -155,9 +155,9 @@ const IconsCatalog = {
     }
   },
 
-  // 사진 및 비디오 관련 아이콘
+  // Photo and video related icons
   photoVideo: {
-    name: '사진 및 비디오',
+    name: 'Photo and Video',
     icons: {
       flash_on: `${BASE_PATH}/flash_on.svg`,
       flash_off: `${BASE_PATH}/flash_off.svg`,
@@ -197,9 +197,9 @@ const IconsCatalog = {
     }
   },
 
-  // 산업 아이콘
+  // Industry icons
   industry: {
-    name: '산업',
+    name: 'Industry',
     icons: {
       biomass: `${BASE_PATH}/biomass.svg`,
       display: `${BASE_PATH}/display.svg`,
@@ -229,9 +229,9 @@ const IconsCatalog = {
     }
   },
 
-  // 모바일 아이콘
+  // Mobile icons
   mobile: {
-    name: '모바일',
+    name: 'Mobile',
     icons: {
       cell_phone: `${BASE_PATH}/cell_phone.svg`,
       iphone: `${BASE_PATH}/iphone.svg`,
@@ -271,9 +271,9 @@ const IconsCatalog = {
     }
   },
 
-  // 화살표 아이콘
+  // Arrow icons
   arrows: {
-    name: '화살표',
+    name: 'Arrows',
     icons: {
       left_up: `${BASE_PATH}/left_up.svg`,
       up: `${BASE_PATH}/up.svg`,
@@ -300,9 +300,9 @@ const IconsCatalog = {
     }
   },
 
-  // 데이터 관련 아이콘
+  // Data related icons
   data: {
-    name: '데이터',
+    name: 'Data',
     icons: {
       filing_cabinet: `${BASE_PATH}/filing_cabinet.svg`,
       database: `${BASE_PATH}/database.svg`,
@@ -354,17 +354,17 @@ const IconsCatalog = {
   }
 };
 
-// 전체 아이콘 목록 (검색용)
+// Complete icon list (for search)
 const AllIcons = {};
 
-// 모든 카테고리의 아이콘을 AllIcons 객체에 추가
+// Add icons from all categories to the AllIcons object
 Object.keys(IconsCatalog).forEach(category => {
   Object.keys(IconsCatalog[category].icons).forEach(icon => {
     AllIcons[icon] = IconsCatalog[category].icons[icon];
   });
 });
 
-// 아이콘 검색 함수
+// Icon search function
 function searchIcons(query) {
   if (!query || query.trim() === '') {
     return Object.keys(AllIcons).map(key => ({
@@ -382,7 +382,7 @@ function searchIcons(query) {
     }));
 }
 
-// 모듈 내보내기 (Electron 환경)
+// Module export (Electron environment)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     IconsCatalog,
@@ -390,7 +390,7 @@ if (typeof module !== 'undefined' && module.exports) {
     searchIcons
   };
 } else {
-  // 브라우저 환경에서는 window 객체에 추가
+  // In browser environment, add to window object
   window.IconsCatalog = IconsCatalog;
   window.AllIcons = AllIcons;
   window.searchIcons = searchIcons;

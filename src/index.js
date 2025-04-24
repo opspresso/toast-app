@@ -11,7 +11,7 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
-// 환경 변수 로드
+// Load environment variables
 loadEnv();
 
 // Import modules
@@ -23,7 +23,7 @@ const { setupIpcHandlers } = require('./main/ipc');
 const authManager = require('./main/auth-manager');
 const auth = require('./main/auth');
 
-// macOS에서 Dock 아이콘 숨기기
+// Hide Dock icon on macOS
 if (process.platform === 'darwin' && app.dock) {
   app.dock.hide();
 }
@@ -38,43 +38,43 @@ if (!app.requestSingleInstanceLock()) {
 const config = createConfigStore();
 
 /**
- * 환경 구성 파일을 로드하고 앱에 반영
+ * Load environment configuration files and apply to app
  */
 async function loadEnvironmentConfig() {
-  console.log('환경 구성 파일 로드 시작...');
+  console.log('Starting to load environment configuration files...');
   try {
-    // 1. 인증 토큰 로드
+    // 1. Load authentication token
     const hasToken = await auth.hasValidToken();
-    console.log('인증 토큰 확인 결과:', hasToken ? '토큰 있음' : '토큰 없음');
+    console.log('Authentication token check result:', hasToken ? 'Token exists' : 'No token');
 
-    // 2. 사용자 프로필 로드
+    // 2. Load user profile
     if (hasToken) {
       const userProfile = await authManager.fetchUserProfile();
-      console.log('사용자 프로필 로드 완료:', userProfile ? '성공' : '실패');
+      console.log('User profile loading complete:', userProfile ? 'Success' : 'Failed');
 
-      // 3. 사용자 설정 로드
+      // 3. Load user settings
       const userSettings = await authManager.getUserSettings();
-      console.log('사용자 설정 로드 완료:', userSettings ? '성공' : '실패');
+      console.log('User settings loading complete:', userSettings ? 'Success' : 'Failed');
 
-      // 인증 상태 알림
+      // Authentication state notification
       if (userProfile) {
         authManager.notifyAuthStateChange({
           isAuthenticated: true,
           profile: userProfile,
           settings: userSettings
         });
-        console.log('인증 상태 업데이트 알림 전송 완료');
+        console.log('Authentication state update notification sent');
       }
     } else {
-      console.log('유효한 토큰이 없어 인증 상태 초기화');
+      console.log('No valid token, initializing authentication state');
       authManager.notifyAuthStateChange({
         isAuthenticated: false
       });
     }
   } catch (error) {
-    console.error('환경 구성 파일 로드 중 오류:', error);
+    console.error('Error loading environment configuration files:', error);
   }
-  console.log('환경 구성 파일 로드 완료');
+  console.log('Environment configuration files loading complete');
 }
 
 /**
@@ -106,54 +106,54 @@ function initialize() {
   // Set up IPC handlers
   setupIpcHandlers(windows);
 
-  // 인증 관리자 초기화 (클라우드 동기화 포함)
+  // Initialize authentication manager (including cloud sync)
   authManager.initialize(windows);
 
-  // 환경 구성 파일 로드 및 앱에 반영
+  // Load environment configuration files and apply to app
   loadEnvironmentConfig();
 
-  // 프로토콜 핸들러 등록 (auth 모듈의 함수 호출)
+  // Register protocol handler (calling function in auth module)
   auth.registerProtocolHandler();
 
-  // URL 프로토콜 요청 처리 함수 설정
+  // Set up URL protocol request handling function
   global.handleProtocolRequest = (url) => {
-    console.log('프로토콜 요청 처리:', url);
+    console.log('Processing protocol request:', url);
 
-    // URL에서 인증 코드 직접 추출
+    // Directly extract authentication code from URL
     if (url.startsWith('toast-app://auth')) {
       try {
         const urlObj = new URL(url);
         const code = urlObj.searchParams.get('code');
         const error = urlObj.searchParams.get('error');
 
-        console.log('프로토콜에서 코드 추출:', code ? '있음' : '없음');
+        console.log('Code extraction from protocol:', code ? 'Exists' : 'None');
 
         if (error) {
-          console.error('인증 오류 파라미터:', error);
+          console.error('Authentication error parameter:', error);
           authManager.notifyLoginError(error);
           return;
         }
 
         if (!code) {
-          console.error('인증 코드가 URL에 없습니다');
-          authManager.notifyLoginError('인증 코드가 없습니다');
+          console.error('Authentication code is not in the URL');
+          authManager.notifyLoginError('Authentication code is missing');
           return;
         }
 
-        // 추출한 코드를 직접 authManager에 전달
-        console.log('인증 코드 교환 시작:', code.substring(0, 6) + '...');
+        // Directly pass the extracted code to authManager
+        console.log('Starting authentication code exchange:', code.substring(0, 6) + '...');
         authManager.exchangeCodeForTokenAndUpdateSubscription(code).then(result => {
-          console.log('인증 코드 교환 결과:', result.success ? '성공' : '실패');
+          console.log('Authentication code exchange result:', result.success ? 'Success' : 'Failed');
         }).catch(err => {
-          console.error('인증 코드 교환 오류:', err);
-          authManager.notifyLoginError(err.message || '인증 처리 중 오류가 발생했습니다');
+          console.error('Authentication code exchange error:', err);
+          authManager.notifyLoginError(err.message || 'An error occurred during authentication processing');
         });
       } catch (error) {
-        console.error('URL 파싱 오류:', error);
-        authManager.notifyLoginError(error.message || 'URL 처리 중 오류가 발생했습니다');
+        console.error('URL parsing error:', error);
+        authManager.notifyLoginError(error.message || 'An error occurred while processing the URL');
       }
     } else {
-      console.log('인증 URL이 아닌 프로토콜 요청:', url);
+      console.log('Non-authentication URL protocol request:', url);
     }
   };
 
@@ -220,9 +220,9 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
     windows.toast.focus();
   }
 
-  // 두 번째 인스턴스가 프로토콜 URL로 시작된 경우 처리
+  // Handle when second instance is started with protocol URL
   if (process.platform === 'win32' || process.platform === 'linux') {
-    // Windows와 Linux에서의 딥 링크 처리
+    // Deep link handling in Windows and Linux
     const url = commandLine.find(arg => arg.startsWith('toast-app://'));
     if (url && global.handleProtocolRequest) {
       global.handleProtocolRequest(url);
@@ -230,7 +230,7 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
   }
 });
 
-// macOS에서 프로토콜 URL 처리
+// Protocol URL handling on macOS
 app.on('open-url', (event, url) => {
   event.preventDefault();
   if (url.startsWith('toast-app://') && global.handleProtocolRequest) {
