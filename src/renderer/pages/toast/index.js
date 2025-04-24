@@ -92,23 +92,23 @@ const defaultButtons = [
     url: 'https://app.toast.sh'
   },
   {
-    name: 'Empty',
+    name: '',
     shortcut: 'W',
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   },
   {
-    name: 'Empty',
+    name: '',
     shortcut: 'E',
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   },
   {
-    name: 'Empty',
+    name: '',
     shortcut: 'R',
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   },
@@ -197,9 +197,9 @@ const defaultButtons = [
 const emptyButtons = Array(15).fill(null).map((_, index) => {
   const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
   return {
-    name: `Button ${rowLetters[index]}`,
+    name: ``,
     shortcut: rowLetters[index],
-    icon: '➕',
+    icon: '',
     action: 'exec',
     command: ''
   };

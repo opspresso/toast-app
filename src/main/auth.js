@@ -14,21 +14,23 @@ const { createConfigStore } = require('./config');
 // Import common API module
 const { client, auth: apiAuth } = require('./api');
 
-// Set token storage file path
-const USER_DATA_PATH = app.getPath('userData');
-const TOKEN_FILE_PATH = path.join(USER_DATA_PATH, 'auth-tokens.json');
-
-// Token key constants
-const TOKEN_KEY = 'auth-token';
-const REFRESH_TOKEN_KEY = 'refresh-token';
-const TOKEN_EXPIRES_KEY = 'token-expires-at';
-
 // ENV
 const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
 const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
 const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '3600'), 10); // Default 1 hour, can be overridden in environment variables
+const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
+
+// Set token storage file path
+const USER_DATA_PATH = app.getPath('userData');
+const TOKEN_FILENAME = CONFIG_SUFFIX ? `auth-tokens-${CONFIG_SUFFIX}.json` : 'auth-tokens.json';
+const TOKEN_FILE_PATH = path.join(USER_DATA_PATH, TOKEN_FILENAME);
+
+// Token key constants
+const TOKEN_KEY = 'auth-token';
+const REFRESH_TOKEN_KEY = 'refresh-token';
+const TOKEN_EXPIRES_KEY = 'token-expires-at';
 
 // Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
