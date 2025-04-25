@@ -300,17 +300,56 @@ async function downloadSettings() {
     });
 
     if (result.success) {
-      state.lastSyncTime = getCurrentTimestamp();
+      // 서버에서 받은 메타데이터가 있는 경우 활용
+      let syncMetadata = {};
 
-      // Update sync metadata only
-      const timestamp = getCurrentTimestamp();
-      userDataManager.updateSyncMetadata({
-        lastSyncedAt: timestamp,
-        lastModifiedAt: timestamp,
-        lastModifiedDevice: state.deviceId
-      });
+      if (result.syncMetadata) {
+        console.log('Using sync metadata from server response');
+        syncMetadata = {
+          lastSyncedAt: result.syncMetadata.lastSyncedAt || getCurrentTimestamp(),
+          lastSyncedDevice: state.deviceId
+        };
 
-      console.log('Settings download successful and sync metadata updated');
+        // 서버에서 마지막 수정 정보가 있으면 그대로 사용
+        if (result.syncMetadata.lastModifiedAt) {
+          syncMetadata.lastModifiedAt = result.syncMetadata.lastModifiedAt;
+          syncMetadata.lastModifiedDevice = result.syncMetadata.lastModifiedDevice || 'server';
+        }
+      } else {
+        console.log('No sync metadata in server response, using current timestamp');
+        // 서버 응답에 메타데이터가 없는 경우 현재 시간으로 설정
+        const timestamp = getCurrentTimestamp();
+        syncMetadata = {
+          lastSyncedAt: timestamp,
+          lastModifiedAt: timestamp,
+          lastSyncedDevice: state.deviceId,
+          lastModifiedDevice: state.deviceId
+        };
+      }
+
+      // 시간 정보 업데이트
+      state.lastSyncTime = syncMetadata.lastSyncedAt;
+
+      // 메타데이터 업데이트
+      userDataManager.updateSyncMetadata(syncMetadata);
+
+      console.log('Settings download successful and sync metadata updated:', syncMetadata);
+
+      // 인증 관리자를 통해 UI 업데이트 알림 전송
+      if (authManager && typeof authManager.notifySettingsSynced === 'function') {
+        // 다운로드된 설정으로 UI 업데이트
+        const configData = {
+          pages: configStore.get('pages'),
+          appearance: configStore.get('appearance'),
+          advanced: configStore.get('advanced'),
+          subscription: configStore.get('subscription')
+        };
+
+        authManager.notifySettingsSynced(configData);
+        console.log('UI update notification sent to toast window');
+      }
+    } else {
+      console.error('Settings download failed:', result.error);
     }
 
     return result;
@@ -574,6 +613,24 @@ function initCloudSync(authManager, userDataManager) {
 
       // Prioritize download after login
       const result = await downloadSettings();
+
+      // 다운로드 성공 후 추가적인 UI 업데이트를 위한 처리
+      if (result.success) {
+        // settings-window에 현재 설정을 전달하여 UI 업데이트
+        if (authManager && typeof authManager.notifySettingsSynced === 'function') {
+          // 현재 설정 데이터 수집
+          const configData = {
+            pages: configStore.get('pages'),
+            appearance: configStore.get('appearance'),
+            advanced: configStore.get('advanced'),
+            subscription: configStore.get('subscription')
+          };
+
+          // UI에 알림 전송 - 이것은 토스트 창의 버튼/페이지를 업데이트하기 위함
+          authManager.notifySettingsSynced(configData);
+          console.log('Login sync: UI update notification sent for current settings');
+        }
+      }
 
       // Enable synchronization
       if (state.enabled) {
