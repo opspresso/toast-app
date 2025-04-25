@@ -640,7 +640,7 @@ async function logout() {
       isAuthenticated: false,
       isSubscribed: false,
       expiresAt: '',
-      pageGroups: PAGE_GROUPS.ANONYMOUS
+      pageGroups: PAGE_GROUPS.ANONYMOUS,
     });
 
     console.log('Logged out and reset page group settings to defaults');

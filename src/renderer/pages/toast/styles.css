@@ -956,7 +956,6 @@ body {
   top: 0;
   background-color: var(--background-color);
   padding: 0 0 8px;
-  margin-top: -5px;
   z-index: 10;
   border-bottom: 1px solid var(--border-color);
 }
