@@ -2,7 +2,8 @@
  * Toast App - Authentication Module
  *
  * This module is for OAuth 2.0 authentication and subscription management.
- * It is implemented using the common API module.
+ * Handles token storage, retrieval, validation, and high-level authentication flow.
+ * Uses the API authentication module for direct API communications.
  */
 
 const { app, shell } = require('electron');
@@ -11,8 +12,9 @@ const os = require('os');
 const fs = require('fs');
 const { createConfigStore } = require('./config');
 
-// Import common API module
-const { client, auth: apiAuth } = require('./api');
+// Import API modules
+const client = require('./api/client');
+const apiAuth = require('./api/auth');
 
 // ENV
 const { getEnv } = require('./config/env');
@@ -298,17 +300,15 @@ async function storeRefreshToken(refreshToken) {
  * Delete tokens from local file
  * @returns {Promise<void>}
  */
-async function clearTokens() {
+async function clearLocalTokenStorage() {
   try {
-    // Reset client tokens
-    client.clearTokens();
-
     // Delete token file if it exists
     if (fs.existsSync(TOKEN_FILE_PATH)) {
       fs.unlinkSync(TOKEN_FILE_PATH);
+      console.log('Local token file cleared');
     }
   } catch (error) {
-    console.error('Failed to delete tokens:', error);
+    console.error('Failed to delete local token file:', error);
     throw error;
   }
 }
@@ -558,7 +558,14 @@ async function refreshAccessToken() {
         if (!refreshResult.success) {
           // If failed with 401 error, reset tokens
           if (refreshResult.code === 'SESSION_EXPIRED') {
-            await clearTokens();
+            // API 토큰 초기화
+            const apiLogoutResult = await apiAuth.logout();
+            if (!apiLogoutResult.success) {
+              console.warn('API logout warning during token reset:', apiLogoutResult.error);
+            }
+
+            // 로컬 토큰 파일 삭제
+            await clearLocalTokenStorage();
             console.log('Expired tokens reset complete');
           }
 
@@ -615,9 +622,17 @@ async function refreshAccessToken() {
  */
 async function logout() {
   try {
-    // Delete local tokens without server call
-    await clearTokens();
-    console.log('Local tokens deleted successfully');
+    // Call API logout to clear memory tokens
+    const apiLogoutResult = await apiAuth.logout();
+    if (!apiLogoutResult.success) {
+      console.warn('API logout warning:', apiLogoutResult.error);
+    }
+
+    // Delete local token storage
+    if (fs.existsSync(TOKEN_FILE_PATH)) {
+      fs.unlinkSync(TOKEN_FILE_PATH);
+      console.log('Local token file deleted successfully');
+    }
 
     // Reset page group settings
     const config = createConfigStore();

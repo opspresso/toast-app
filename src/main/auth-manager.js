@@ -9,7 +9,7 @@
 const auth = require('./auth');
 const userDataManager = require('./user-data-manager');
 const { createConfigStore } = require('./config');
-const { client } = require('./api');
+const client = require('./api/client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
 const cloudSync = require('./cloud-sync'); // Import cloud synchronization module
 
