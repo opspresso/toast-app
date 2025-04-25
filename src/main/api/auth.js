@@ -1,7 +1,8 @@
 /**
- * Toast API - Authentication Related API Module
+ * Toast API - Authentication API Module
  *
- * Handles authentication related APIs such as login, token management, and user information retrieval.
+ * Handles authentication related API calls only.
+ * This module focuses on direct API communication and does not handle token storage or system-level auth functions.
  */
 
 const { URL } = require('url');
@@ -246,7 +247,6 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
  */
 async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
   try {
-
     console.log('Starting token refresh process');
 
     if (!refreshToken) {
@@ -526,27 +526,27 @@ async function fetchSubscription(onUnauthorized) {
 }
 
 /**
- * Process logout (initialize only local tokens without server call)
+ * API logout (clear memory tokens only)
  * @returns {Promise<Object>} Logout result
  */
 async function logout() {
   try {
-    // Initialize tokens in memory (no server call)
+    // Only clear memory tokens (main auth module handles file storage)
     clearTokens();
-    console.log('Memory token initialization complete');
+    console.log('API memory token cleared');
 
     // Cancel if login was in progress
     isLoginInProgress = false;
 
     return {
       success: true,
-      message: 'Logout successful'
+      message: 'API logout successful'
     };
   } catch (error) {
-    console.error('Error during logout:', error);
+    console.error('Error during API logout:', error);
     return {
       success: false,
-      error: error.message || 'An error occurred during logout'
+      error: error.message || 'An error occurred during API logout'
     };
   }
 }

@@ -458,11 +458,6 @@ function setupIpcHandlers(windows) {
     return await authManager.logout();
   });
 
-  // Logout and reset page group settings
-  ipcMain.handle('logoutAndResetPageGroups', async () => {
-    return await authManager.logoutAndResetPageGroups();
-  });
-
   // Get user profile information
   ipcMain.handle('fetch-user-profile', async () => {
     return await authManager.fetchUserProfile();

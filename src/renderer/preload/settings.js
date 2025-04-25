@@ -16,7 +16,6 @@ contextBridge.exposeInMainWorld(
     initiateLogin: () => ipcRenderer.invoke('initiate-login'),
     exchangeCodeForToken: (code) => ipcRenderer.invoke('exchange-code-for-token', code),
     logout: () => ipcRenderer.invoke('logout'),
-    logoutAndResetPageGroups: () => ipcRenderer.invoke('logoutAndResetPageGroups'),
     fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
     fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
     getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
