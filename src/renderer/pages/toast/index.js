@@ -422,6 +422,13 @@ function setupEventListeners() {
 
   // Keyboard page switching (1-9 key events)
   document.addEventListener('keydown', (event) => {
+    // 모달이 열려 있으면 키보드 페이징 작동하지 않음
+    if (buttonEditModal.classList.contains('show') ||
+        profileModal.classList.contains('show') ||
+        iconSearchModal.classList.contains('show')) {
+      return;
+    }
+
     // Handle number keys 1-9
     if (/^[1-9]$/.test(event.key) && !event.ctrlKey && !event.altKey && !event.metaKey) {
       const pageNum = parseInt(event.key) - 1;
