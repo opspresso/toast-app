@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld(
     invoke: (channel, ...args) => {
       // Only call invoke for allowed channels
       const allowedChannels = [
-        'logoutAndResetPageGroups',
+        'logout',
         'resetToDefaults',
         'resetAppSettings'
       ];

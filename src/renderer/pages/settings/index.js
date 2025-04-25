@@ -321,7 +321,7 @@ function updateSyncStatusUI(status) {
 
   // VIP 사용자 확인 (최우선)
   if (authState.subscription?.isVip === true ||
-      authState.subscription?.vip === true) {
+    authState.subscription?.vip === true) {
     hasCloudSyncPermission = true;
     console.log('VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
   }
@@ -713,7 +713,7 @@ async function handleLogin() {
 async function handleLogout() {
   try {
     // Call the main process to log out (logout only locally)
-    await window.settings.logoutAndResetPageGroups();
+    await window.settings.logout();
 
     // Update UI
     updateAuthStateUI(false);
@@ -801,15 +801,15 @@ function setupEventListeners() {
 
         // VIP 사용자 확인 및 강제 활성화
         if (authState.subscription?.isVip === true ||
-            authState.subscription?.vip === true) {
+          authState.subscription?.vip === true) {
           console.log('VIP 사용자 감지 - Cloud Sync 강제 활성화');
           enableCloudSyncCheckbox.disabled = false;
         }
 
         // 구독 상태 활성화 확인
         if (authState.subscription?.isSubscribed === true ||
-            authState.subscription?.active === true ||
-            authState.subscription?.is_subscribed === true) {
+          authState.subscription?.active === true ||
+          authState.subscription?.is_subscribed === true) {
           console.log('구독 활성화 상태 확인됨 - Cloud Sync 강제 활성화');
           enableCloudSyncCheckbox.disabled = false;
         }
@@ -1274,7 +1274,7 @@ async function handleCloudSyncToggle() {
 
     // VIP 사용자 확인 (최우선)
     if (authState.subscription?.isVip === true ||
-        authState.subscription?.vip === true) {
+      authState.subscription?.vip === true) {
       hasCloudSyncPermission = true;
       console.log('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
     }
