@@ -29,6 +29,11 @@ const schema = {
         enum: ['center', 'top', 'bottom', 'cursor'],
         default: 'center'
       },
+      monitorPositions: {
+        type: 'object',
+        default: {},
+        description: 'Saved window positions for each monitor'
+      },
       size: {
         type: 'string',
         enum: ['small', 'medium', 'large'],

@@ -89,11 +89,41 @@ function createToastWindow(config) {
 }
 
 /**
+ * Save the current window position for the specific monitor
+ * @param {BrowserWindow} toastWindow - Toast window
+ * @param {Object} config - Configuration store
+ */
+function saveWindowPositionForMonitor(toastWindow, config) {
+  const { screen } = require('electron');
+
+  // Get the window's current position
+  const [x, y] = toastWindow.getPosition();
+
+  // Get the display containing the window
+  const windowDisplay = screen.getDisplayNearestPoint({ x, y });
+  const displayId = `${windowDisplay.id}`;
+
+  // Get current monitor positions or initialize if not exists
+  const monitorPositions = config.get('appearance.monitorPositions') || {};
+
+  // Save this position for the current monitor
+  monitorPositions[displayId] = { x, y };
+
+  // Update config
+  config.set('appearance.monitorPositions', monitorPositions);
+}
+
+/**
  * Set up event handlers for the Toast window
  * @param {BrowserWindow} toastWindow - Toast window
  * @param {Object} config - Configuration store
  */
 function setupToastWindowEvents(toastWindow, config) {
+  // Track window movement and save position when the window is moved
+  toastWindow.on('moved', () => {
+    saveWindowPositionForMonitor(toastWindow, config);
+  });
+
   // Hide window when it loses focus if hideOnBlur is enabled
   toastWindow.on('blur', () => {
     const hideOnBlur = config.get('advanced.hideOnBlur');
