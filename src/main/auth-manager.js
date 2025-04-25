@@ -320,69 +320,6 @@ async function logout() {
 }
 
 /**
- * Logout and reset page group settings
- * @returns {Promise<boolean>} Whether logout was successful
- */
-async function logoutAndResetPageGroups() {
-  try {
-    console.log('Starting logout and page group reset process');
-    const result = await auth.logoutAndResetPageGroups();
-
-    // Stop periodic synchronization and update cloud sync settings when logout is successful
-    if (result && syncManager) {
-      // Disable synchronization feature and stop periodic synchronization
-      if (typeof syncManager.updateCloudSyncSettings === 'function') {
-        syncManager.updateCloudSyncSettings(false);
-      }
-      if (typeof syncManager.stopPeriodicSync === 'function') {
-        syncManager.stopPeriodicSync();
-      }
-
-      console.log('Cloud synchronization disabled and periodic synchronization stopped due to logout');
-    }
-
-    // Clean up user data when logout is successful
-    if (result) {
-      userDataManager.cleanupOnLogout();
-      console.log('User data cleanup completed due to logout');
-
-      // Get current configuration
-      const config = createConfigStore();
-
-      // Get current pages configuration
-      const currentPages = config.get('pages');
-
-      // Reset subscription information but preserve pages
-      config.set('subscription', {
-        isAuthenticated: false,
-        isSubscribed: false,
-        expiresAt: ''
-        // pageGroups field removed to preserve pages configuration
-      });
-      console.log('Subscription information reset complete (pages preserved)');
-
-      // Send app authentication state change notification
-      notifyAuthStateChange({
-        isAuthenticated: false,
-        profile: DEFAULT_ANONYMOUS,
-        settings: null
-      });
-      console.log('Authentication state change notification sent');
-    }
-
-    // Send notification to both windows when logout is successful
-    if (result) {
-      notifyLogout();
-    }
-
-    return result;
-  } catch (error) {
-    console.error('Error in logoutAndResetPageGroups:', error);
-    return false;
-  }
-}
-
-/**
  * Get user profile information
  * @param {boolean} forceRefresh - Whether to force a refresh from API (default: false)
  * @returns {Promise<Object>} User profile information
@@ -650,7 +587,6 @@ module.exports = {
   exchangeCodeForToken,
   exchangeCodeForTokenAndUpdateSubscription,
   logout,
-  logoutAndResetPageGroups,
   fetchUserProfile,
   fetchSubscription,
   getUserSettings,

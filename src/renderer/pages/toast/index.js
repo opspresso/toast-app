@@ -1041,8 +1041,8 @@ async function handleLogout() {
 
       // Attempt to reset all settings
       try {
-        // Call logoutAndResetPageGroups (function provided in auth.js)
-        await window.toast.invoke('logoutAndResetPageGroups');
+      // Call logout (function provided in auth.js)
+      await window.toast.invoke('logout');
         console.log('Settings reset successful');
       } catch (resetError) {
         console.error('Error resetting settings:', resetError);

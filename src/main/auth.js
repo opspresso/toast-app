@@ -610,7 +610,7 @@ async function refreshAccessToken() {
 }
 
 /**
- * Handle logout (only delete tokens on client side)
+ * Handle logout (delete tokens and reset page group settings)
  * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
@@ -618,6 +618,17 @@ async function logout() {
     // Delete local tokens without server call
     await clearTokens();
     console.log('Local tokens deleted successfully');
+
+    // Reset page group settings
+    const config = createConfigStore();
+    config.set('subscription', {
+      isAuthenticated: false,
+      isSubscribed: false,
+      expiresAt: '',
+      pageGroups: PAGE_GROUPS.ANONYMOUS
+    });
+
+    console.log('Logged out and reset page group settings to defaults');
 
     return true;
   } catch (error) {
@@ -815,35 +826,6 @@ async function updatePageGroupSettings(subscription) {
   }
 }
 
-/**
- * Logout and reset page group settings
- * @returns {Promise<boolean>} Whether logout was successful
- */
-async function logoutAndResetPageGroups() {
-  try {
-    // Process logout
-    const logoutSuccess = await logout();
-
-    if (logoutSuccess) {
-      // Reset page group settings
-      const config = createConfigStore();
-      config.set('subscription', {
-        isAuthenticated: false,
-        isSubscribed: false,
-        expiresAt: '',
-        pageGroups: PAGE_GROUPS.ANONYMOUS
-      });
-
-      console.log('Logged out and reset page group settings to defaults');
-    }
-
-    return logoutSuccess;
-  } catch (error) {
-    console.error('Logout and reset page groups error:', error);
-    return false;
-  }
-}
-
 // Initialization: Load stored tokens into memory
 initializeTokensFromStorage().then(() => {
   console.log('Token state initialization complete');
@@ -880,7 +862,6 @@ module.exports = {
   exchangeCodeForToken,
   exchangeCodeForTokenAndUpdateSubscription,
   logout,
-  logoutAndResetPageGroups,
   fetchUserProfile,
   fetchSubscription,
   registerProtocolHandler,
