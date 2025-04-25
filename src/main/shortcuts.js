@@ -27,7 +27,7 @@ function registerGlobalShortcuts(config, windows) {
 
     // Register the global hotkey
     const registered = globalShortcut.register(globalHotkey, () => {
-      toggleToastWindow(windows.toast);
+      toggleToastWindow(windows.toast, config);
     });
 
     if (!registered) {
@@ -46,8 +46,9 @@ function registerGlobalShortcuts(config, windows) {
 /**
  * Toggle the visibility of the Toast window
  * @param {BrowserWindow} toastWindow - Toast window
+ * @param {Object} [config] - Configuration store (optional)
  */
-function toggleToastWindow(toastWindow) {
+function toggleToastWindow(toastWindow, config) {
   if (!toastWindow) {
     console.error('Toast window not available');
     return;
@@ -57,7 +58,7 @@ function toggleToastWindow(toastWindow) {
     toastWindow.hide();
   } else {
     // Position the window before showing it
-    positionToastWindow(toastWindow);
+    positionToastWindow(toastWindow, config);
 
     // Show and focus the window
     toastWindow.show();
@@ -100,7 +101,36 @@ function positionToastWindow(toastWindow, config) {
     return;
   }
 
-  // Get position setting from config
+  // Get the monitor positions saved for each display
+  const monitorPositions = config.get('appearance.monitorPositions') || {};
+  const displayId = `${currentDisplay.id}`;
+  const savedPosition = monitorPositions[displayId];
+
+  // If we have a saved position for this display, use it
+  if (savedPosition) {
+    // Get the current display work area to ensure position is within bounds
+    const displayWorkArea = currentDisplay.workArea;
+
+    // Ensure position is within screen bounds
+    let x = savedPosition.x;
+    let y = savedPosition.y;
+
+    // If the position would be off-screen, adjust it
+    if (x < displayWorkArea.x) x = displayWorkArea.x;
+    if (y < displayWorkArea.y) y = displayWorkArea.y;
+    if (x + windowBounds.width > displayWorkArea.x + displayWorkArea.width) {
+      x = displayWorkArea.x + displayWorkArea.width - windowBounds.width;
+    }
+    if (y + windowBounds.height > displayWorkArea.y + displayWorkArea.height) {
+      y = displayWorkArea.y + displayWorkArea.height - windowBounds.height;
+    }
+
+    // Set the window position to the saved position
+    toastWindow.setPosition(x, y);
+    return;
+  }
+
+  // If no saved position exists, use the global position setting
   const position = config.get('appearance.position') || 'center';
 
   // Get the current display work area
