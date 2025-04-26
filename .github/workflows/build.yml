@@ -85,6 +85,8 @@ jobs:
             dist/*.dmg
             dist/*.exe
             dist/*.zip
+            dist/*.yml
+            dist/*.yaml
           if-no-files-found: ignore # Don't fail if no files are found
 
   # Release job: Attach built artifacts to GitHub release
