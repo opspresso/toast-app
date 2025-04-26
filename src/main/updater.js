@@ -33,6 +33,10 @@ function initAutoUpdater(windows) {
   // autoUpdater에 로깅 함수 연결
   autoUpdater.logger = logger;
 
+  // 앱 ID 명시적으로 설정 (electron-updater가 올바른 ID를 사용하도록)
+  autoUpdater.appId = 'com.opspresso.toast-app';
+  logger.info(`Setting explicit appId for electron-updater: ${autoUpdater.appId}`);
+
   // 개발 환경에서도 업데이트 확인 가능하도록 설정
   autoUpdater.forceDevUpdateConfig = true; // 개발 환경에서도 업데이트 확인 강제
   autoUpdater.allowDowngrade = true; // 다운그레이드 허용
@@ -261,7 +265,17 @@ async function downloadUpdate() {
 
     // 업데이트 다운로드 시작
     logger.info('Starting automatic update download');
-    await autoUpdater.downloadUpdate();
+    logger.info(`Download target app ID: ${autoUpdater.appId}`);
+    logger.info(`Download cache directory: ${app.getPath('userData')}/toast-app-updater`);
+
+    try {
+      await autoUpdater.downloadUpdate();
+      logger.info('Update download completed successfully');
+    } catch (downloadError) {
+      logger.error(`Download error details: ${downloadError.toString()}`);
+      logger.error(`Error stack: ${downloadError.stack}`);
+      throw downloadError;
+    }
 
     return {
       success: true,
