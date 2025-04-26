@@ -78,7 +78,7 @@ jobs:
       - name: Listup artifacts 🔍
         run: |
           echo "📂 Artifacts directory contents:"
-          ls -la artifacts
+          ls -la dist
 
       - name: Upload artifacts 🚚
         uses: actions/upload-artifact@v4
