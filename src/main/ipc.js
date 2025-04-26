@@ -718,6 +718,65 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // Check for latest version from remote JSON
+  ipcMain.handle('check-latest-version', async () => {
+    try {
+      const https = require('https');
+
+      // URL for the versions.json file
+      const url = 'https://opspresso.github.io/toast-dist/versions.json';
+
+      // Function to get data from URL
+      const fetchJson = (url) => {
+        return new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            let data = '';
+
+            // A chunk of data has been received
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+
+            // The whole response has been received
+            res.on('end', () => {
+              try {
+                const jsonData = JSON.parse(data);
+                resolve(jsonData);
+              } catch (e) {
+                reject(new Error(`Failed to parse JSON: ${e.message}`));
+              }
+            });
+          }).on('error', (e) => {
+            reject(new Error(`Request failed: ${e.message}`));
+          });
+        });
+      };
+
+      // Fetch version data
+      const versionData = await fetchJson(url);
+
+      // Get current app version
+      const { app } = require('electron');
+      const currentVersion = app.getVersion();
+
+      // Return version information
+      return {
+        success: true,
+        latest: versionData.toast?.version || 'unknown',
+        current: currentVersion,
+        releaseDate: versionData.toast?.releaseDate || '',
+        description: versionData.toast?.description || '',
+        hasUpdate: versionData.toast?.version !== currentVersion
+      };
+    } catch (error) {
+      console.error('Error checking latest version:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
+    }
+  });
+
   // Get app info (author, homepage, etc.)
   ipcMain.handle('get-app-info', () => {
     try {

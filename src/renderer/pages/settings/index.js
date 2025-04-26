@@ -1657,34 +1657,44 @@ async function handleCheckUpdates() {
     const originalButtonText = checkUpdatesButton.textContent;
     checkUpdatesButton.textContent = '확인 중...';
 
-    // 업데이트 확인
-    const result = await window.settings.checkForUpdates();
+    // 원격 JSON에서 최신 버전 확인
+    const result = await window.settings.checkLatestVersion();
 
     // 로딩 숨기기
     setLoading(updateLoading, false);
 
-    if (result && result.hasUpdate) {
-      // 업데이트가 있는 경우
-      updateMessage.textContent = `새 버전 ${result.version || ''}이(가) 있습니다! 현재 버전: ${result.currentVersion || 'v0.5.5'}`;
-      updateActions.classList.remove('hidden');
+    if (result.success) {
+      // 현재 버전과 최신 버전 비교
+      const currentVersion = result.current;
+      const latestVersion = result.latest;
+      const releaseDate = result.releaseDate
+        ? new Date(result.releaseDate).toLocaleDateString()
+        : '알 수 없음';
 
-      // 다운로드 또는 설치 버튼 표시
-      if (result.downloaded) {
-        downloadUpdateButton.classList.add('hidden');
-        installUpdateButton.classList.remove('hidden');
-      } else {
+      if (currentVersion !== latestVersion && latestVersion !== 'unknown') {
+        // 업데이트가 있는 경우
+        updateMessage.innerHTML = `
+          <strong>새 버전이 있습니다!</strong><br>
+          현재 버전: ${currentVersion}<br>
+          최신 버전: ${latestVersion}<br>
+          출시일: ${releaseDate}<br>
+          ${result.description ? `<small>${result.description}</small>` : ''}
+        `;
+        updateActions.classList.remove('hidden');
         downloadUpdateButton.classList.remove('hidden');
         installUpdateButton.classList.add('hidden');
+      } else {
+        // 업데이트가 없는 경우
+        updateMessage.textContent = '최신 버전을 사용 중입니다.';
+        updateActions.classList.add('hidden');
+
+        // 3초 후 메시지 숨기기
+        setTimeout(() => {
+          updateStatus.classList.add('hidden');
+        }, 3000);
       }
     } else {
-      // 업데이트가 없는 경우
-      updateMessage.textContent = '최신 버전을 사용 중입니다.';
-      updateActions.classList.add('hidden');
-
-      // 3초 후 메시지 숨기기
-      setTimeout(() => {
-        updateStatus.classList.add('hidden');
-      }, 3000);
+      throw new Error(result.error || '버전 정보를 가져올 수 없습니다');
     }
 
     // 버튼 원래 상태로 복원
@@ -1692,7 +1702,6 @@ async function handleCheckUpdates() {
       checkUpdatesButton.textContent = originalButtonText;
       checkUpdatesButton.disabled = false;
     }, 1000);
-
   } catch (error) {
     console.error('업데이트 확인 중 오류 발생:', error);
 
