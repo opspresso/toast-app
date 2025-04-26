@@ -21,6 +21,11 @@ jobs:
         with:
           fetch-depth: 0 # Fetch complete history
 
+      - name: Setup Node.js 🐍
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Bump Version 🏷️
         id: bump
         run: |
@@ -77,7 +82,12 @@ jobs:
             # Update package.json
             echo "📝 Updating package.json version to $NEW_VERSION"
             jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
+
+            echo "🔄 Updated package-lock.json"
+            npm install --package-lock-only
+
             git add package.json
+            git add package-lock.json
 
             echo "✅ Successfully updated package.json to $NEW_VERSION"
           else
