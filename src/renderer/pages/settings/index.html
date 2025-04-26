@@ -25,6 +25,7 @@
             <li data-tab="account">Account & Subscription</li>
             <li data-tab="cloud-sync">Cloud Sync</li>
             <li data-tab="advanced">Advanced</li>
+            <li data-tab="about">About</li>
           </ul>
         </div>
 
@@ -247,6 +248,41 @@
                 <div id="sync-loading" class="loading-indicator hidden">
                   <div class="spinner"></div>
                   <p>Syncing...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- About Tab -->
+          <div id="about" class="settings-tab">
+            <h2>About Toast App</h2>
+
+            <div class="settings-group about-section">
+              <div class="app-logo">
+                <img src="../../assets/icon.png" alt="Toast App Logo" width="100">
+              </div>
+
+              <div class="app-info">
+                <p class="app-version"><strong>Version:</strong> <span id="app-version">v0.5.5</span></p>
+                <p class="app-description">A customizable shortcut launcher for macOS and Windows</p>
+                <p class="app-authors"><strong>Authors:</strong> nalbam &lt;me@nalbam.com&gt;, bruce &lt;bruce@daangn.com&gt;</p>
+                <p class="app-license"><strong>License:</strong> MIT</p>
+              </div>
+
+              <div class="app-links">
+                <button id="homepage-link" class="secondary-button">Homepage</button>
+                <button id="check-updates" class="primary-button">Check for Updates</button>
+              </div>
+
+              <div id="update-status" class="update-status hidden">
+                <p id="update-message"></p>
+                <div class="update-actions hidden" id="update-actions">
+                  <button id="download-update" class="primary-button">Download Update</button>
+                  <button id="install-update" class="primary-button">Install Update</button>
+                </div>
+                <div id="update-loading" class="loading-indicator hidden">
+                  <div class="spinner"></div>
+                  <p>Checking for updates...</p>
                 </div>
               </div>
             </div>

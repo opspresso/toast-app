@@ -701,6 +701,73 @@ button {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
+/* About tab styles */
+.about-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.app-logo {
+  margin-bottom: 24px;
+}
+
+.app-logo img {
+  border-radius: 12px;
+  box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.app-info {
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.app-version {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.app-description {
+  font-size: 14px;
+  color: var(--text-color);
+  margin-bottom: 16px;
+}
+
+.app-authors, .app-license {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.app-links {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.update-status {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 16px;
+}
+
+.update-status p {
+  margin-bottom: 16px;
+}
+
+.update-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .settings-content {
