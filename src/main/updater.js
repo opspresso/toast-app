@@ -185,150 +185,51 @@ async function checkForUpdates(silent = false) {
       sendStatusToWindows('checking-for-update', { status: 'checking' });
     }
 
-    try {
-      // 먼저 electron-updater로 업데이트 확인 시도
-      autoUpdater.logger.info('electron-updater를 통해 업데이트 확인');
-      const result = await autoUpdater.checkForUpdates();
+    // electron-updater로 업데이트 확인
+    autoUpdater.logger.info('electron-updater를 통해 업데이트 확인');
+    const result = await autoUpdater.checkForUpdates();
 
-      if (result && result.updateInfo) {
-        const currentVersion = app.getVersion();
-        const latestVersion = result.updateInfo.version;
+    if (result && result.updateInfo) {
+      const currentVersion = app.getVersion();
+      const latestVersion = result.updateInfo.version;
 
-        autoUpdater.logger.info(`업데이트 확인 결과: 현재 버전 ${currentVersion}, 최신 버전 ${latestVersion}`);
+      autoUpdater.logger.info(`업데이트 확인 결과: 현재 버전 ${currentVersion}, 최신 버전 ${latestVersion}`);
 
-        return {
-          success: true,
-          updateInfo: result.updateInfo,
-          versionInfo: {
-            current: currentVersion,
-            latest: latestVersion
-          },
-          hasUpdate: result.updateInfo.version !== currentVersion
-        };
-      }
-
-      // electron-updater 실패 시 manual 방식 사용
-      autoUpdater.logger.info('electron-updater 실패, 수동 방식으로 전환');
-    } catch (err) {
-      // electron-updater 오류 시 manual 방식 사용
-      // YML 파일 404 오류인 경우 정상적인 폴백으로 처리
-      if (err.toString().includes('latest-mac.yml') ||
-          err.toString().includes('latest-win.yml') ||
-          err.toString().includes('latest-linux.yml') ||
-          err.toString().includes('404')) {
-        autoUpdater.logger.info('매니페스트 파일(YML) 없음 - 수동 업데이트 방식으로 전환');
-      } else {
-        autoUpdater.logger.warn('electron-updater 오류, 수동 방식으로 전환:', err.toString());
-      }
-    }
-
-    // 개발 환경이나 패키지되지 않은 경우 직접 versions.json 확인
-    autoUpdater.logger.info('직접 versions.json 확인');
-
-    const https = require('https');
-    const versionsJsonUrl = 'https://opspresso.github.io/toast-dist/versions.json';
-
-    // 버전 정보 가져오기
-    const fetchJson = (url) => {
-      return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-          let data = '';
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          res.on('end', () => {
-            try {
-              const jsonData = JSON.parse(data);
-              resolve(jsonData);
-            } catch (e) {
-              reject(new Error(`Failed to parse JSON: ${e.message}`));
-            }
-          });
-        }).on('error', (e) => {
-          reject(new Error(`Request failed: ${e.message}`));
-        });
-      });
-    };
-
-    // 버전 비교 함수
-    const compareSemver = (v1, v2) => {
-      // Remove 'v' prefix if present
-      v1 = v1.replace(/^v/, '');
-      v2 = v2.replace(/^v/, '');
-
-      // Split versions into components
-      const v1Parts = v1.split('.');
-      const v2Parts = v2.split('.');
-
-      // Compare major.minor.patch
-      for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
-        const v1Part = parseInt(v1Parts[i] || 0, 10);
-        const v2Part = parseInt(v2Parts[i] || 0, 10);
-
-        if (v1Part > v2Part) {
-          return 1;  // v1 is newer
-        } else if (v1Part < v2Part) {
-          return -1; // v2 is newer
-        }
-      }
-      return 0; // Same version
-    };
-
-    // versions.json 파일에서 직접 확인
-    const versionData = await fetchJson(versionsJsonUrl);
-
-    if (!versionData || !versionData.toast || !versionData.toast.version) {
-      throw new Error('버전 정보를 찾을 수 없습니다.');
-    }
-
-    const currentVersion = app.getVersion();
-    const latestVersion = versionData.toast.version;
-
-    // 버전 비교
-    const versionCompare = latestVersion !== 'unknown'
-      ? compareSemver(latestVersion, currentVersion)
-      : 0;
-
-    autoUpdater.logger.info(`수동 업데이트 확인 결과: 현재 버전 ${currentVersion}, 최신 버전 ${latestVersion}, 비교 결과: ${versionCompare}`);
-
-    // 업데이트 가능 여부 확인 (versionCompare > 0이면 업데이트 가능)
-    const hasUpdate = versionCompare > 0;
-
-    if (hasUpdate) {
-      sendStatusToWindows('update-available', {
-        status: 'available',
-        info: {
-          version: latestVersion,
-          releaseDate: versionData.toast?.releaseDate || '',
-          releaseNotes: versionData.toast?.description || ''
-        }
-      });
+      return {
+        success: true,
+        updateInfo: result.updateInfo,
+        versionInfo: {
+          current: currentVersion,
+          latest: latestVersion
+        },
+        hasUpdate: result.updateInfo.version !== currentVersion
+      };
     } else {
-      sendStatusToWindows('update-not-available', {
-        status: 'not-available',
-        info: {
-          version: currentVersion
-        }
-      });
-    }
+      // 업데이트 정보가 없는 경우
+      autoUpdater.logger.info('업데이트 정보를 찾을 수 없습니다.');
 
-    return {
-      success: true,
-      updateInfo: {
-        version: latestVersion,
-        releaseDate: versionData.toast?.releaseDate || '',
-        releaseNotes: versionData.toast?.description || '',
-        path: versionData.toast?.downloadUrl || {}
-      },
-      versionInfo: {
-        current: currentVersion,
-        latest: latestVersion
-      },
-      hasUpdate: hasUpdate,
-      versionCompare: versionCompare
-    };
+      if (!silent) {
+        sendStatusToWindows('update-not-available', {
+          status: 'not-available',
+          info: {
+            version: app.getVersion()
+          }
+        });
+      }
+
+      return {
+        success: false,
+        error: '업데이트 정보를 찾을 수 없습니다.',
+        versionInfo: {
+          current: app.getVersion(),
+          latest: null
+        },
+        hasUpdate: false
+      };
+    }
   } catch (error) {
     console.error('업데이트 확인 오류:', error);
+    autoUpdater.logger.error('업데이트 확인 오류:', error.toString());
 
     // 오류 알림 (silent 모드가 아닌 경우에만)
     if (!silent) {
@@ -340,7 +241,11 @@ async function checkForUpdates(silent = false) {
 
     return {
       success: false,
-      error: error.toString()
+      error: error.toString(),
+      versionInfo: {
+        current: app.getVersion(),
+        latest: null
+      }
     };
   }
 }
@@ -354,110 +259,27 @@ async function downloadUpdate() {
     // 다운로드 시작
     sendStatusToWindows('download-started', { status: 'downloading' });
 
-    try {
-      // 먼저 electron-updater로 다운로드 시도
-      autoUpdater.logger.info('electron-updater를 통해 다운로드 시도');
+    // electron-updater로 다운로드
+    autoUpdater.logger.info('electron-updater를 통해 업데이트 다운로드');
 
-      // 업데이트 확인 - 다운로드 전에 반드시 호출해야 함
-      const updateCheckResult = await autoUpdater.checkForUpdates();
+    // 업데이트 확인 - 다운로드 전에 반드시 호출해야 함
+    const updateCheckResult = await autoUpdater.checkForUpdates();
 
-      if (updateCheckResult && updateCheckResult.updateInfo) {
-        // 최신 버전 정보 로깅
-        autoUpdater.logger.info(`업데이트 정보 확인됨: 버전 ${updateCheckResult.updateInfo.version}`);
-
-        // 업데이트 다운로드 시작
-        autoUpdater.logger.info('자동 업데이트 다운로드 시작');
-        await autoUpdater.downloadUpdate();
-
-        return {
-          success: true,
-          message: '업데이트 다운로드가 시작되었습니다.',
-          version: updateCheckResult.updateInfo.version
-        };
-      }
-
-      // electron-updater 실패 시 수동 다운로드로 전환
-      autoUpdater.logger.info('electron-updater 실패, 수동 다운로드로 전환');
-    } catch (err) {
-      // electron-updater 오류 시 수동 다운로드로 전환
-      autoUpdater.logger.warn('electron-updater 오류, 수동 다운로드로 전환:', err.toString());
+    if (!updateCheckResult || !updateCheckResult.updateInfo) {
+      throw new Error('업데이트 정보를 확인할 수 없습니다.');
     }
 
-    // 개발 환경이나 패키지되지 않은 경우 직접 versions.json에서 URL 가져와서 브라우저로 열기
-    autoUpdater.logger.info('수동 다운로드 방식으로 전환');
+    // 최신 버전 정보 로깅
+    autoUpdater.logger.info(`업데이트 정보 확인됨: 버전 ${updateCheckResult.updateInfo.version}`);
 
-    const https = require('https');
-    const { shell } = require('electron');
-    const versionsJsonUrl = 'https://opspresso.github.io/toast-dist/versions.json';
+    // 업데이트 다운로드 시작
+    autoUpdater.logger.info('자동 업데이트 다운로드 시작');
+    await autoUpdater.downloadUpdate();
 
-    // JSON 파일에서 다운로드 URL 가져오기
-    const fetchJson = (url) => {
-      return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-          let data = '';
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          res.on('end', () => {
-            try {
-              const jsonData = JSON.parse(data);
-              resolve(jsonData);
-            } catch (e) {
-              reject(new Error(`Failed to parse JSON: ${e.message}`));
-            }
-          });
-        }).on('error', (e) => {
-          reject(new Error(`Request failed: ${e.message}`));
-        });
-      });
-    };
-
-    // 버전 데이터 가져오기
-    const versionData = await fetchJson(versionsJsonUrl);
-
-    if (!versionData.toast?.downloadUrl) {
-      throw new Error('다운로드 URL을 찾을 수 없습니다');
-    }
-
-    // 플랫폼별 URL 가져오기
-    let downloadUrl;
-    switch (process.platform) {
-      case 'darwin': // macOS
-        downloadUrl = versionData.toast.downloadUrl.mac;
-        break;
-      case 'win32': // Windows
-        downloadUrl = versionData.toast.downloadUrl.win;
-        break;
-      case 'linux': // Linux
-        downloadUrl = versionData.toast.downloadUrl.linux;
-        break;
-      default:
-        throw new Error(`지원되지 않는 플랫폼: ${process.platform}`);
-    }
-
-    if (!downloadUrl) {
-      throw new Error(`현재 플랫폼(${process.platform})을 위한 다운로드가 없습니다`);
-    }
-
-    // 브라우저에서 URL 열기
-    await shell.openExternal(downloadUrl);
-
-    // 다운로드 성공 알림 전송
-    sendStatusToWindows('update-downloaded', {
-      status: 'downloaded',
-      info: {
-        version: versionData.toast.version,
-        releaseDate: versionData.toast.releaseDate,
-        releaseNotes: versionData.toast.description || '수동 다운로드 시작됨'
-      }
-    });
-
-    // 결과 반환
     return {
       success: true,
-      message: '브라우저에서 다운로드가 시작되었습니다',
-      manualDownload: true,
-      version: versionData.toast.version
+      message: '업데이트 다운로드가 시작되었습니다.',
+      version: updateCheckResult.updateInfo.version
     };
   } catch (error) {
     console.error('업데이트 다운로드 오류:', error);
