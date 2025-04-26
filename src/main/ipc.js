@@ -752,21 +752,52 @@ function setupIpcHandlers(windows) {
         });
       };
 
+      // Semantic version comparison function
+      const compareSemver = (v1, v2) => {
+        // Remove 'v' prefix if present
+        v1 = v1.replace(/^v/, '');
+        v2 = v2.replace(/^v/, '');
+
+        // Split versions into components
+        const v1Parts = v1.split('.');
+        const v2Parts = v2.split('.');
+
+        // Compare major.minor.patch
+        for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+          const v1Part = parseInt(v1Parts[i] || 0, 10);
+          const v2Part = parseInt(v2Parts[i] || 0, 10);
+
+          if (v1Part > v2Part) {
+            return 1;  // v1 is newer
+          } else if (v1Part < v2Part) {
+            return -1; // v2 is newer
+          }
+        }
+        return 0; // Same version
+      };
+
       // Fetch version data
       const versionData = await fetchJson(url);
 
       // Get current app version
       const { app } = require('electron');
       const currentVersion = app.getVersion();
+      const latestVersion = versionData.toast?.version || 'unknown';
+
+      // Compare versions using semver
+      const versionCompare = latestVersion !== 'unknown'
+        ? compareSemver(latestVersion, currentVersion)
+        : 0;
 
       // Return version information
       return {
         success: true,
-        latest: versionData.toast?.version || 'unknown',
+        latest: latestVersion,
         current: currentVersion,
         releaseDate: versionData.toast?.releaseDate || '',
         description: versionData.toast?.description || '',
-        hasUpdate: versionData.toast?.version !== currentVersion
+        hasUpdate: versionCompare > 0,  // latestVersion is newer than currentVersion
+        versionCompare: versionCompare  // Return comparison result: 1 (newer), 0 (same), -1 (older)
       };
     } catch (error) {
       console.error('Error checking latest version:', error);
