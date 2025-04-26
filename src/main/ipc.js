@@ -707,6 +707,17 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // Get app version
+  ipcMain.handle('get-app-version', () => {
+    try {
+      const { app } = require('electron');
+      return app.getVersion();
+    } catch (error) {
+      console.error('Error getting app version:', error);
+      return 'v0.0.0'; // 오류 발생 시 기본값
+    }
+  });
+
   // Test an action (for settings UI)
   ipcMain.handle('test-action', async (event, action) => {
     try {

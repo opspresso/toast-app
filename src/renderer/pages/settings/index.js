@@ -1589,11 +1589,17 @@ async function handleManualSyncDownload() {
 /**
  * Initialize About tab
  */
-function initializeAboutTab() {
+async function initializeAboutTab() {
   // 버전 표시
   if (appVersionElement) {
-    // package.json에서 가져온 버전 표시
-    appVersionElement.textContent = 'v0.5.5'; // 또는 window.settings.getVersion()
+    try {
+      // 앱 버전 자동으로 가져오기
+      const version = await window.settings.getVersion();
+      appVersionElement.textContent = version;
+    } catch (error) {
+      console.error('버전 정보를 가져오는 중 오류 발생:', error);
+      appVersionElement.textContent = 'v0.0.0'; // 오류 시 기본값
+    }
   }
 
   // 업데이트 상태 초기화
