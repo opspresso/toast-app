@@ -13,7 +13,7 @@ const { isLoginProcessActive } = require('./api/auth'); // 로그인 상태 체�
 // Store window references to prevent garbage collection
 const windows = {
   toast: null,
-  settings: null
+  settings: null,
 };
 
 /**
@@ -64,8 +64,8 @@ function createToastWindow(config) {
       preload: path.join(__dirname, '../renderer/preload/toast.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      enableRemoteModule: false
-    }
+      enableRemoteModule: false,
+    },
   });
 
   // Load the toast UI
@@ -144,7 +144,7 @@ function setupToastWindowEvents(toastWindow, config) {
   });
 
   // Prevent window from being destroyed, just hide it
-  toastWindow.on('close', (event) => {
+  toastWindow.on('close', event => {
     // 로그인 진행 중인지 확인
     const loginInProgress = isLoginProcessActive();
 
@@ -164,7 +164,7 @@ function setupToastWindowEvents(toastWindow, config) {
     toastWindow.webContents.send('config-updated', {
       pages: config.get('pages'),
       appearance: config.get('appearance'),
-      subscription: config.get('subscription')
+      subscription: config.get('subscription'),
     });
   });
 }
@@ -191,8 +191,8 @@ function createSettingsWindow(config) {
       preload: path.join(__dirname, '../renderer/preload/settings.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      enableRemoteModule: false
-    }
+      enableRemoteModule: false,
+    },
   });
 
   // Load the settings UI
@@ -222,7 +222,7 @@ function createSettingsWindow(config) {
  */
 function setupSettingsWindowEvents(settingsWindow) {
   // 창 닫기 시도 시 로그인 진행 중인지 확인
-  settingsWindow.on('close', (event) => {
+  settingsWindow.on('close', event => {
     // 로그인 진행 중인지 확인
     const loginInProgress = isLoginProcessActive();
 
@@ -351,5 +351,5 @@ module.exports = {
   showSettingsWindow,
   closeAllWindows,
   windows,
-  positionSettingsWindowOnToastDisplay
+  positionSettingsWindowOnToastDisplay,
 };

@@ -16,5 +16,5 @@ module.exports = {
   auth,
 
   // Settings synchronization API module
-  sync
+  sync,
 };

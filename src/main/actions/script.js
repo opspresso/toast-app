@@ -43,14 +43,14 @@ async function executeScript(action) {
       default:
         return {
           success: false,
-          message: `Unsupported script type: ${action.scriptType}`
+          message: `Unsupported script type: ${action.scriptType}`,
         };
     }
   } catch (error) {
     return {
       success: false,
       message: `Error executing script: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -70,7 +70,7 @@ async function executeJavaScript(script, params = {}) {
       process: {
         platform: process.platform,
         arch: process.arch,
-        env: process.env
+        env: process.env,
       },
       params: params,
       result: null,
@@ -80,7 +80,7 @@ async function executeJavaScript(script, params = {}) {
       clearInterval: clearInterval,
       Buffer: Buffer,
       __dirname: app.getAppPath(),
-      __filename: path.join(app.getAppPath(), 'script.js')
+      __filename: path.join(app.getAppPath(), 'script.js'),
     };
 
     // Create a context for the script
@@ -105,13 +105,13 @@ async function executeJavaScript(script, params = {}) {
 
     return {
       success: true,
-      message: 'JavaScript executed successfully'
+      message: 'JavaScript executed successfully',
     };
   } catch (error) {
     return {
       success: false,
       message: `Error executing JavaScript: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -126,7 +126,7 @@ async function executeAppleScript(script) {
   if (process.platform !== 'darwin') {
     return {
       success: false,
-      message: 'AppleScript is only supported on macOS'
+      message: 'AppleScript is only supported on macOS',
     };
   }
 
@@ -152,7 +152,7 @@ async function executeAppleScript(script) {
             success: false,
             message: error.message,
             error: error,
-            stderr: stderr
+            stderr: stderr,
           });
           return;
         }
@@ -161,7 +161,7 @@ async function executeAppleScript(script) {
           success: true,
           message: 'AppleScript executed successfully',
           stdout: stdout,
-          stderr: stderr
+          stderr: stderr,
         });
       });
     });
@@ -169,7 +169,7 @@ async function executeAppleScript(script) {
     return {
       success: false,
       message: `Error executing AppleScript: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -184,7 +184,7 @@ async function executePowerShell(script) {
   if (process.platform !== 'win32') {
     return {
       success: false,
-      message: 'PowerShell is only supported on Windows'
+      message: 'PowerShell is only supported on Windows',
     };
   }
 
@@ -210,7 +210,7 @@ async function executePowerShell(script) {
             success: false,
             message: error.message,
             error: error,
-            stderr: stderr
+            stderr: stderr,
           });
           return;
         }
@@ -219,7 +219,7 @@ async function executePowerShell(script) {
           success: true,
           message: 'PowerShell script executed successfully',
           stdout: stdout,
-          stderr: stderr
+          stderr: stderr,
         });
       });
     });
@@ -227,7 +227,7 @@ async function executePowerShell(script) {
     return {
       success: false,
       message: `Error executing PowerShell script: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -242,7 +242,7 @@ async function executeBash(script) {
   if (process.platform === 'win32') {
     return {
       success: false,
-      message: 'Bash is not supported on Windows'
+      message: 'Bash is not supported on Windows',
     };
   }
 
@@ -271,7 +271,7 @@ async function executeBash(script) {
             success: false,
             message: error.message,
             error: error,
-            stderr: stderr
+            stderr: stderr,
           });
           return;
         }
@@ -280,7 +280,7 @@ async function executeBash(script) {
           success: true,
           message: 'Bash script executed successfully',
           stdout: stdout,
-          stderr: stderr
+          stderr: stderr,
         });
       });
     });
@@ -288,11 +288,11 @@ async function executeBash(script) {
     return {
       success: false,
       message: `Error executing Bash script: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
 
 module.exports = {
-  executeScript
+  executeScript,
 };

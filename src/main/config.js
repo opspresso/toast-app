@@ -10,11 +10,11 @@ const Store = require('electron-store');
 const schema = {
   globalHotkey: {
     type: 'string',
-    default: 'Alt+Space'
+    default: 'Alt+Space',
   },
   pages: {
     type: 'array',
-    default: []
+    default: [],
   },
   appearance: {
     type: 'object',
@@ -22,107 +22,108 @@ const schema = {
       theme: {
         type: 'string',
         enum: ['light', 'dark', 'system'],
-        default: 'system'
+        default: 'system',
       },
       position: {
         type: 'string',
         enum: ['center', 'top', 'bottom', 'cursor'],
-        default: 'center'
+        default: 'center',
       },
       monitorPositions: {
         type: 'object',
         default: {},
-        description: 'Saved window positions for each monitor'
+        description: 'Saved window positions for each monitor',
       },
       size: {
         type: 'string',
         enum: ['small', 'medium', 'large'],
-        default: 'medium'
+        default: 'medium',
       },
       opacity: {
         type: 'number',
         minimum: 0.1,
         maximum: 1.0,
-        default: 0.95
+        default: 0.95,
       },
       buttonLayout: {
         type: 'string',
         enum: ['grid', 'list'],
-        default: 'grid'
-      }
+        default: 'grid',
+      },
     },
     default: {
       theme: 'system',
       position: 'center',
       size: 'medium',
       opacity: 0.95,
-      buttonLayout: 'grid'
-    }
+      buttonLayout: 'grid',
+    },
   },
   advanced: {
     type: 'object',
     properties: {
       launchAtLogin: {
         type: 'boolean',
-        default: false
+        default: false,
       },
       hideAfterAction: {
         type: 'boolean',
-        default: true
+        default: true,
       },
       hideOnBlur: {
         type: 'boolean',
-        default: true
+        default: true,
       },
       hideOnEscape: {
         type: 'boolean',
-        default: true
+        default: true,
       },
       showInTaskbar: {
         type: 'boolean',
-        default: false
-      }
+        default: false,
+      },
     },
     default: {
       launchAtLogin: false,
       hideAfterAction: true,
       hideOnBlur: true,
       hideOnEscape: true,
-      showInTaskbar: false
-    }
+      showInTaskbar: false,
+    },
   },
   subscription: {
     type: 'object',
     properties: {
       isSubscribed: {
         type: 'boolean',
-        default: false
+        default: false,
       },
       isAuthenticated: {
         type: 'boolean',
-        default: false
+        default: false,
       },
       expiresAt: {
         type: 'string',
-        default: ''
+        default: '',
       },
       pageGroups: {
         type: 'number',
         default: 1,
-        description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers'
-      }
+        description:
+          'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
+      },
     },
     default: {
       isSubscribed: false,
       isAuthenticated: false,
       expiresAt: '',
-      pageGroups: 1
-    }
+      pageGroups: 1,
+    },
   },
   firstLaunchCompleted: {
     type: 'boolean',
-    default: false
-  }
+    default: false,
+  },
 };
 
 /**
@@ -134,7 +135,7 @@ function createConfigStore() {
     // 먼저 스키마 검증 없이 구성을 로드하여 마이그레이션
     const migrationStore = new Store({
       schema: null, // 스키마 검증 비활성화
-      clearInvalidConfig: false
+      clearInvalidConfig: false,
     });
 
     // 구독 정보 마이그레이션 시도
@@ -164,10 +165,13 @@ function createConfigStore() {
     return new Store({ schema });
   } catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
-    console.error('Error creating config store with schema, falling back to schema-less store:', error);
+    console.error(
+      'Error creating config store with schema, falling back to schema-less store:',
+      error,
+    );
     return new Store({
       schema: null,
-      clearInvalidConfig: false
+      clearInvalidConfig: false,
     });
   }
 }
@@ -229,7 +233,7 @@ function importConfig(config, filePath) {
     if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
       config.set('appearance', {
         ...schema.appearance.default,
-        ...importedConfig.appearance
+        ...importedConfig.appearance,
       });
     } else {
       config.set('appearance', schema.appearance.default);
@@ -238,7 +242,7 @@ function importConfig(config, filePath) {
     if (importedConfig.advanced && typeof importedConfig.advanced === 'object') {
       config.set('advanced', {
         ...schema.advanced.default,
-        ...importedConfig.advanced
+        ...importedConfig.advanced,
       });
     } else {
       config.set('advanced', schema.advanced.default);
@@ -264,7 +268,7 @@ function exportConfig(config, filePath) {
       globalHotkey: config.get('globalHotkey'),
       pages: config.get('pages'),
       appearance: config.get('appearance'),
-      advanced: config.get('advanced')
+      advanced: config.get('advanced'),
     };
 
     fs.writeFileSync(filePath, JSON.stringify(configData, null, 2), 'utf8');
@@ -321,7 +325,8 @@ function sanitizeSubscription(subscription) {
 
   // pageGroups 필드는 숫자여야 함
   if (result.pageGroups !== undefined) {
-    result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
+    result.pageGroups =
+      Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
   } else {
     result.pageGroups = schema.subscription.properties.pageGroups.default;
   }
@@ -335,5 +340,5 @@ module.exports = {
   resetToDefaults,
   importConfig,
   exportConfig,
-  sanitizeSubscription
+  sanitizeSubscription,
 };

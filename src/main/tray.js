@@ -66,7 +66,7 @@ function updateTrayMenu(tray, windows) {
           windows.toast.show();
           windows.toast.focus();
         }
-      }
+      },
     },
     { type: 'separator' },
     {
@@ -74,22 +74,22 @@ function updateTrayMenu(tray, windows) {
       click: () => {
         const { ipcMain } = require('electron');
         ipcMain.emit('show-settings');
-      }
+      },
     },
     { type: 'separator' },
     {
       label: 'About Toast',
       click: () => {
         showAboutDialog();
-      }
+      },
     },
     { type: 'separator' },
     {
       label: 'Quit',
       click: () => {
         app.quit();
-      }
-    }
+      },
+    },
   ]);
 
   tray.setContextMenu(contextMenu);
@@ -103,7 +103,6 @@ function updateTrayMenu(tray, windows) {
 function setupTrayClickBehavior(tray, windows) {
   // On macOS, clicking the tray icon will show the context menu instead of toggling the window
   // This is consistent with the default behavior on Windows
-
   // No need to set up custom behavior, as we want to use the default behavior
   // (right-click on macOS and left-click on Windows shows the context menu)
 }
@@ -120,7 +119,7 @@ function showAboutDialog() {
     message: 'Toast',
     detail: `Version: ${app.getVersion()}\n\nA customizable shortcut launcher for macOS and Windows.`,
     buttons: ['OK'],
-    icon: path.join(__dirname, '../../assets/icons/icon.png')
+    icon: path.join(__dirname, '../../assets/icons/icon.png'),
   });
 }
 
@@ -137,5 +136,5 @@ function destroyTray() {
 module.exports = {
   createTray,
   updateTrayMenu,
-  destroyTray
+  destroyTray,
 };

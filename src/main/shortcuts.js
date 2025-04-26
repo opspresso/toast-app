@@ -153,8 +153,14 @@ function positionToastWindow(toastWindow, config) {
       y = cursorPosition.y - 10;
 
       // Ensure the window is within the screen bounds
-      x = Math.max(displayWorkArea.x, Math.min(x, displayWorkArea.x + displayWorkArea.width - windowBounds.width));
-      y = Math.max(displayWorkArea.y, Math.min(y, displayWorkArea.y + displayWorkArea.height - windowBounds.height));
+      x = Math.max(
+        displayWorkArea.x,
+        Math.min(x, displayWorkArea.x + displayWorkArea.width - windowBounds.width),
+      );
+      y = Math.max(
+        displayWorkArea.y,
+        Math.min(y, displayWorkArea.y + displayWorkArea.height - windowBounds.height),
+      );
       break;
     case 'center':
     default:
@@ -188,5 +194,5 @@ module.exports = {
   registerGlobalShortcuts,
   unregisterGlobalShortcuts,
   isShortcutRegistered,
-  positionToastWindow
+  positionToastWindow,
 };

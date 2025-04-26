@@ -67,8 +67,8 @@ const IconsCatalog = {
       calendar: `${BASE_PATH}/calendar.svg`,
       calculator: `${BASE_PATH}/calculator.svg`,
       minus: `${BASE_PATH}/minus.svg`,
-      plus: `${BASE_PATH}/plus.svg`
-    }
+      plus: `${BASE_PATH}/plus.svg`,
+    },
   },
 
   // Business icons
@@ -151,8 +151,8 @@ const IconsCatalog = {
       privacy: `${BASE_PATH}/privacy.svg`,
       disclaimer: `${BASE_PATH}/disclaimer.svg`,
       callback: `${BASE_PATH}/callback.svg`,
-      vip: `${BASE_PATH}/vip.svg`
-    }
+      vip: `${BASE_PATH}/vip.svg`,
+    },
   },
 
   // Photo and video related icons
@@ -193,8 +193,8 @@ const IconsCatalog = {
       switch_camera: `${BASE_PATH}/switch_camera.svg`,
       photo_reel: `${BASE_PATH}/photo_reel.svg`,
       film_reel: `${BASE_PATH}/film_reel.svg`,
-      cable_release: `${BASE_PATH}/cable_release.svg`
-    }
+      cable_release: `${BASE_PATH}/cable_release.svg`,
+    },
   },
 
   // Industry icons
@@ -225,8 +225,8 @@ const IconsCatalog = {
       do_not_mix: `${BASE_PATH}/do_not_mix.svg`,
       biohazard: `${BASE_PATH}/biohazard.svg`,
       circuit: `${BASE_PATH}/circuit.svg`,
-      engineering: `${BASE_PATH}/engineering.svg`
-    }
+      engineering: `${BASE_PATH}/engineering.svg`,
+    },
   },
 
   // Mobile icons
@@ -267,8 +267,8 @@ const IconsCatalog = {
       lock_landscape: `${BASE_PATH}/lock_landscape.svg`,
       voicemail: `${BASE_PATH}/voicemail.svg`,
       speaker: `${BASE_PATH}/speaker.svg`,
-      headset: `${BASE_PATH}/headset.svg`
-    }
+      headset: `${BASE_PATH}/headset.svg`,
+    },
   },
 
   // Arrow icons
@@ -296,8 +296,8 @@ const IconsCatalog = {
       left_up2: `${BASE_PATH}/left_up2.svg`,
       down_left: `${BASE_PATH}/down_left.svg`,
       undo: `${BASE_PATH}/undo.svg`,
-      redo: `${BASE_PATH}/redo.svg`
-    }
+      redo: `${BASE_PATH}/redo.svg`,
+    },
   },
 
   // Data related icons
@@ -349,9 +349,9 @@ const IconsCatalog = {
       import: `${BASE_PATH}/import.svg`,
       list: `${BASE_PATH}/list.svg`,
       template: `${BASE_PATH}/template.svg`,
-      view_details: `${BASE_PATH}/view_details.svg`
-    }
-  }
+      view_details: `${BASE_PATH}/view_details.svg`,
+    },
+  },
 };
 
 // Complete icon list (for search)
@@ -369,7 +369,7 @@ function searchIcons(query) {
   if (!query || query.trim() === '') {
     return Object.keys(AllIcons).map(key => ({
       name: key,
-      path: AllIcons[key]
+      path: AllIcons[key],
     }));
   }
 
@@ -378,7 +378,7 @@ function searchIcons(query) {
     .filter(key => key.toLowerCase().includes(query))
     .map(key => ({
       name: key,
-      path: AllIcons[key]
+      path: AllIcons[key],
     }));
 }
 
@@ -387,7 +387,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     IconsCatalog,
     AllIcons,
-    searchIcons
+    searchIcons,
   };
 } else {
   // In browser environment, add to window object

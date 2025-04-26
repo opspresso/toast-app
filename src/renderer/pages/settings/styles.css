@@ -30,7 +30,7 @@
 }
 
 /* Dark theme - override default with data-theme */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --background-color: #2d2d2d;
   --text-color: #eee;
   --border-color: #444;
@@ -59,7 +59,7 @@
 }
 
 /* Light theme - explicit */
-[data-theme="light"] {
+[data-theme='light'] {
   --background-color: #f8f9fa;
   --text-color: #333;
   --border-color: #ddd;
@@ -235,8 +235,8 @@ label {
   font-weight: 500;
 }
 
-input[type="text"],
-input[type="number"],
+input[type='text'],
+input[type='number'],
 select,
 textarea {
   width: 100%;
@@ -248,15 +248,15 @@ textarea {
   font-size: 14px;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
+input[type='text']:focus,
+input[type='number']:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--button-primary-bg);
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   margin-right: 8px;
 }
 
@@ -273,7 +273,7 @@ input[type="checkbox"] {
   gap: 16px;
 }
 
-input[type="range"] {
+input[type='range'] {
   flex: 1;
 }
 
@@ -556,7 +556,7 @@ button {
   border-radius: 50%;
 }
 
-.profile-avatar img[src=""] {
+.profile-avatar img[src=''] {
   display: none;
 }
 
@@ -645,7 +645,7 @@ button {
 }
 
 .feature-list li:before {
-  content: "✓";
+  content: '✓';
   position: absolute;
   left: 0;
   color: var(--badge-success-bg);
@@ -692,13 +692,80 @@ button {
 }
 
 /* 다크 테마에서의 스피너 색상 */
-[data-theme="dark"] .spinner {
+[data-theme='dark'] .spinner {
   border-color: rgba(255, 255, 255, 0.1);
   border-top-color: var(--button-primary-bg);
 }
 
-[data-theme="dark"] .loading-indicator {
+[data-theme='dark'] .loading-indicator {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* About tab styles */
+.about-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.app-logo {
+  margin-bottom: 24px;
+}
+
+.app-logo img {
+  border-radius: 12px;
+  box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.app-info {
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.app-version {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.app-description {
+  font-size: 14px;
+  color: var(--text-color);
+  margin-bottom: 16px;
+}
+
+.app-authors, .app-license {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.app-links {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.update-status {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 16px;
+}
+
+.update-status p {
+  margin-bottom: 16px;
+}
+
+.update-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 
 /* Responsive adjustments */

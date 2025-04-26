@@ -18,7 +18,13 @@ loadEnv();
 const { createConfigStore } = require('./main/config');
 const { registerGlobalShortcuts, unregisterGlobalShortcuts } = require('./main/shortcuts');
 const { createTray, destroyTray } = require('./main/tray');
-const { createToastWindow, createSettingsWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
+const {
+  createToastWindow,
+  createSettingsWindow,
+  showSettingsWindow,
+  closeAllWindows,
+  windows,
+} = require('./main/windows');
 const { setupIpcHandlers } = require('./main/ipc');
 const authManager = require('./main/auth-manager');
 const auth = require('./main/auth');
@@ -63,14 +69,14 @@ async function loadEnvironmentConfig() {
         authManager.notifyAuthStateChange({
           isAuthenticated: true,
           profile: userProfile,
-          settings: userSettings
+          settings: userSettings,
         });
         console.log('Authentication state update notification sent');
       }
     } else {
       console.log('No valid token, initializing authentication state');
       authManager.notifyAuthStateChange({
-        isAuthenticated: false
+        isAuthenticated: false,
       });
     }
   } catch (error) {
@@ -93,7 +99,7 @@ function initialize() {
 
   // Set up auto launch
   app.setLoginItemSettings({
-    openAtLogin: config.get('advanced.launchAtLogin') || false
+    openAtLogin: config.get('advanced.launchAtLogin') || false,
   });
 
   // Create windows
@@ -123,7 +129,7 @@ function initialize() {
   auth.registerProtocolHandler();
 
   // Set up URL protocol request handling function
-  global.handleProtocolRequest = (url) => {
+  global.handleProtocolRequest = url => {
     console.log('Processing protocol request:', url);
 
     // Directly extract authentication code from URL
@@ -147,21 +153,32 @@ function initialize() {
         if (code) {
           // 기존 OAuth 코드 처리 로직
           console.log('Starting authentication code exchange:', code.substring(0, 6) + '...');
-          authManager.exchangeCodeForTokenAndUpdateSubscription(code).then(result => {
-            console.log('Authentication code exchange result:', result.success ? 'Success' : 'Failed');
-          }).catch(err => {
-            console.error('Authentication code exchange error:', err);
-            authManager.notifyLoginError(err.message || 'An error occurred during authentication processing');
-          });
+          authManager
+            .exchangeCodeForTokenAndUpdateSubscription(code)
+            .then(result => {
+              console.log(
+                'Authentication code exchange result:',
+                result.success ? 'Success' : 'Failed',
+              );
+            })
+            .catch(err => {
+              console.error('Authentication code exchange error:', err);
+              authManager.notifyLoginError(
+                err.message || 'An error occurred during authentication processing',
+              );
+            });
         } else if (action === 'reload_auth' && token && userId) {
           // connect 페이지에서 온 딥링크 처리
           console.log('Processing auth reload request with token:', token);
-          auth.handleAuthRedirect(url).then(result => {
-            console.log('Auth reload result:', result.success ? 'Success' : 'Failed');
-          }).catch(err => {
-            console.error('Auth reload error:', err);
-            authManager.notifyLoginError(err.message || 'An error occurred during auth reload');
-          });
+          auth
+            .handleAuthRedirect(url)
+            .then(result => {
+              console.log('Auth reload result:', result.success ? 'Success' : 'Failed');
+            })
+            .catch(err => {
+              console.error('Auth reload error:', err);
+              authManager.notifyLoginError(err.message || 'An error occurred during auth reload');
+            });
         } else {
           console.error('Authentication code or reload parameters are not in the URL');
           authManager.notifyLoginError('Authentication parameters are missing');
@@ -190,7 +207,7 @@ function setupAutoUpdater() {
       console.log('Checking for update...');
     });
 
-    autoUpdater.on('update-available', (info) => {
+    autoUpdater.on('update-available', info => {
       console.log('Update available:', info.version);
     });
 
@@ -198,15 +215,15 @@ function setupAutoUpdater() {
       console.log('Update not available');
     });
 
-    autoUpdater.on('error', (err) => {
+    autoUpdater.on('error', err => {
       console.error('Error in auto-updater:', err);
     });
 
-    autoUpdater.on('download-progress', (progressObj) => {
+    autoUpdater.on('download-progress', progressObj => {
       console.log(`Download progress: ${progressObj.percent.toFixed(2)}%`);
     });
 
-    autoUpdater.on('update-downloaded', (info) => {
+    autoUpdater.on('update-downloaded', info => {
       console.log('Update downloaded. Will install on restart.');
     });
   }

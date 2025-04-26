@@ -8,7 +8,7 @@
 const PAGE_GROUPS = {
   ANONYMOUS: 1, // Unauthenticated free users (ANONYMOUS): Limited to 1 page
   AUTHENTICATED: 3, // Authenticated free users (AUTHENTICATED): Up to 3 pages
-  PREMIUM: 9 // Subscribers (PREMIUM): Up to 9 pages
+  PREMIUM: 9, // Subscribers (PREMIUM): Up to 9 pages
 };
 
 // Default subscription information for anonymous users
@@ -20,14 +20,14 @@ const DEFAULT_ANONYMOUS_SUBSCRIPTION = {
   active: false,
   is_subscribed: false,
   features: {
-    page_groups: PAGE_GROUPS.ANONYMOUS
+    page_groups: PAGE_GROUPS.ANONYMOUS,
   },
   features_array: ['basic_shortcuts'],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   expiresAt: null,
   subscribed_until: null,
-  isVip: false
+  isVip: false,
 };
 
 // Default profile information for anonymous users
@@ -40,11 +40,11 @@ const DEFAULT_ANONYMOUS = {
   is_authenticated: false,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  subscription: DEFAULT_ANONYMOUS_SUBSCRIPTION
+  subscription: DEFAULT_ANONYMOUS_SUBSCRIPTION,
 };
 
 module.exports = {
   PAGE_GROUPS,
   DEFAULT_ANONYMOUS,
-  DEFAULT_ANONYMOUS_SUBSCRIPTION
+  DEFAULT_ANONYMOUS_SUBSCRIPTION,
 };

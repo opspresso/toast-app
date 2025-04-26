@@ -57,6 +57,17 @@ const manualSyncDownloadButton = document.getElementById('manual-sync-download')
 const manualSyncResolveButton = document.getElementById('manual-sync-resolve');
 const syncLoading = document.getElementById('sync-loading');
 
+// DOM Elements - About Tab
+const appVersionElement = document.getElementById('app-version');
+const homepageButton = document.getElementById('homepage-link');
+const checkUpdatesButton = document.getElementById('check-updates');
+const updateMessage = document.getElementById('update-message');
+const updateStatus = document.getElementById('update-status');
+const updateActions = document.getElementById('update-actions');
+const downloadUpdateButton = document.getElementById('download-update');
+const installUpdateButton = document.getElementById('install-update');
+const updateLoading = document.getElementById('update-loading');
+
 // DOM Elements - Main Buttons
 const saveButton = document.getElementById('save-button');
 const cancelButton = document.getElementById('cancel-button');
@@ -68,13 +79,13 @@ let unsavedChanges = false;
 let authState = {
   isLoggedIn: false,
   profile: null,
-  subscription: null
+  subscription: null,
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   // Load configuration
-  window.addEventListener('config-loaded', (event) => {
+  window.addEventListener('config-loaded', event => {
     config = event.detail;
 
     // Initialize UI with config values
@@ -146,13 +157,19 @@ function initializeUI() {
 
   // Cloud Sync settings
   initializeCloudSyncUI();
+
+  // About settings
+  initializeAboutTab();
 }
 
 /**
  * Initialize Cloud Sync UI
  */
 function initializeCloudSyncUI() {
-  console.log('initializeCloudSyncUI 호출 - 구독:', authState.subscription ? authState.subscription.plan : 'none');
+  console.log(
+    'initializeCloudSyncUI 호출 - 구독:',
+    authState.subscription ? authState.subscription.plan : 'none',
+  );
 
   try {
     // premium 구독 사용자는 항상 Cloud Sync 기능 활성화
@@ -193,12 +210,15 @@ function initializeCloudSyncUI() {
     enableCloudSyncCheckbox.checked = cloudSyncEnabled;
 
     // Get current sync status
-    window.settings.getSyncStatus().then(status => {
-      console.log('getSyncStatus 호출 결과:', status);
-      updateSyncStatusUI(status);
-    }).catch(error => {
-      console.error('Error getting sync status:', error);
-    });
+    window.settings
+      .getSyncStatus()
+      .then(status => {
+        console.log('getSyncStatus 호출 결과:', status);
+        updateSyncStatusUI(status);
+      })
+      .catch(error => {
+        console.error('Error getting sync status:', error);
+      });
   } catch (error) {
     console.error('Error initializing Cloud Sync UI:', error);
   }
@@ -242,11 +262,14 @@ function updateAuthStateUI(isLoggedIn) {
     subscriptionSection.classList.remove('hidden');
 
     // Update Cloud Sync UI as well (will only show if user has permission)
-    window.settings.getSyncStatus().then(status => {
-      updateSyncStatusUI(status);
-    }).catch(error => {
-      console.error('Error getting sync status:', error);
-    });
+    window.settings
+      .getSyncStatus()
+      .then(status => {
+        updateSyncStatusUI(status);
+      })
+      .catch(error => {
+        console.error('Error getting sync status:', error);
+      });
   } else {
     // Show login section, hide profile and subscription sections
     loginSection.classList.remove('hidden');
@@ -288,9 +311,7 @@ function updateSyncStatusUI(status) {
   }
 
   // Update sync status text
-  syncStatusText.textContent = status.enabled
-    ? 'Cloud Sync Enabled'
-    : 'Cloud Sync Disabled';
+  syncStatusText.textContent = status.enabled ? 'Cloud Sync Enabled' : 'Cloud Sync Disabled';
 
   // Update last synced time
   const lastSyncTime = status.lastSyncTime ? new Date(status.lastSyncTime) : null;
@@ -320,8 +341,7 @@ function updateSyncStatusUI(status) {
   }
 
   // VIP 사용자 확인 (최우선)
-  if (authState.subscription?.isVip === true ||
-    authState.subscription?.vip === true) {
+  if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
     hasCloudSyncPermission = true;
     console.log('VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
   }
@@ -360,7 +380,9 @@ function updateSyncStatusUI(status) {
   }
 
   // 로깅: 최종 권한 확인
-  console.log(`Cloud Sync 권한: ${hasCloudSyncPermission ? '있음' : '없음'}, 로그인 상태: ${authState.isLoggedIn ? '로그인됨' : '로그아웃됨'}`);
+  console.log(
+    `Cloud Sync 권한: ${hasCloudSyncPermission ? '있음' : '없음'}, 로그인 상태: ${authState.isLoggedIn ? '로그인됨' : '로그아웃됨'}`,
+  );
 
   const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
 
@@ -504,10 +526,11 @@ async function fetchSubscriptionInfo() {
       console.log('수신된 구독 정보:', JSON.stringify(subscription));
 
       // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
-      if (subscription.plan && (
-        subscription.plan.toLowerCase().includes('premium') ||
-        subscription.plan.toLowerCase().includes('pro')
-      )) {
+      if (
+        subscription.plan &&
+        (subscription.plan.toLowerCase().includes('premium') ||
+          subscription.plan.toLowerCase().includes('pro'))
+      ) {
         if (!subscription.features) {
           subscription.features = {};
         }
@@ -581,9 +604,8 @@ function updateSubscriptionUI(subscription) {
     }
   }
 
-  subscriptionFeatures.textContent = featuresText.length > 0
-    ? `Features: ${featuresText.join(', ')}`
-    : 'Basic features';
+  subscriptionFeatures.textContent =
+    featuresText.length > 0 ? `Features: ${featuresText.join(', ')}` : 'Basic features';
 }
 
 /**
@@ -618,8 +640,8 @@ function saveSubscriptionToConfig(subscription) {
     pageGroups: subscription.features?.page_groups || 1,
     additionalFeatures: {
       advancedActions: subscription.features?.advanced_actions || false,
-      cloudSync: subscription.features?.cloud_sync || false
-    }
+      cloudSync: subscription.features?.cloud_sync || false,
+    },
   };
 
   window.settings.setConfig('subscription', subscriptionConfig);
@@ -675,6 +697,61 @@ async function loadUserDataAndUpdateUI() {
     // Notify user of error
     alert(`Data loading failed: ${error.message || 'Unknown error'}`);
   }
+}
+
+/**
+ * Initialize About tab
+ */
+async function initializeAboutTab() {
+  try {
+    // 앱 정보 가져오기
+    const appInfo = await window.settings.getAppInfo();
+
+    // 버전 표시
+    if (appVersionElement) {
+      try {
+        // 앱 버전 자동으로 가져오기
+        const version = await window.settings.getVersion();
+        appVersionElement.textContent = version;
+      } catch (error) {
+        console.error('버전 정보를 가져오는 중 오류 발생:', error);
+        appVersionElement.textContent = 'v0.0.0';
+      }
+    }
+
+    // Authors 정보 표시
+    const appAuthorsElement = document.getElementById('app-authors');
+    if (appAuthorsElement && appInfo.success && appInfo.author) {
+      appAuthorsElement.innerHTML = `<strong>Authors:</strong> ${appInfo.author}`;
+    }
+
+    // Homepage 버튼 링크 설정
+    if (homepageButton && appInfo.success) {
+      homepageButton.addEventListener('click', () => {
+        const homepageUrl = appInfo.homepage || 'https://app.toast.sh';
+        window.settings.openUrl(homepageUrl);
+      });
+    }
+
+    // License 정보 표시
+    const appLicenseElement = document.getElementById('app-license');
+    if (appLicenseElement && appInfo.success && appInfo.license) {
+      appLicenseElement.innerHTML = `<strong>License:</strong> ${appInfo.license}`;
+    }
+
+    // Description 정보 표시
+    const appDescriptionElement = document.querySelector('.app-description');
+    if (appDescriptionElement && appInfo.success && appInfo.description) {
+      appDescriptionElement.textContent = appInfo.description;
+    }
+  } catch (error) {
+    console.error('앱 정보를 가져오는 중 오류 발생:', error);
+  }
+
+  // 업데이트 상태 초기화
+  updateStatus.classList.add('hidden');
+  updateActions.classList.add('hidden');
+  updateLoading.classList.add('hidden');
 }
 
 /**
@@ -800,16 +877,17 @@ function setupEventListeners() {
         }
 
         // VIP 사용자 확인 및 강제 활성화
-        if (authState.subscription?.isVip === true ||
-          authState.subscription?.vip === true) {
+        if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
           console.log('VIP 사용자 감지 - Cloud Sync 강제 활성화');
           enableCloudSyncCheckbox.disabled = false;
         }
 
         // 구독 상태 활성화 확인
-        if (authState.subscription?.isSubscribed === true ||
+        if (
+          authState.subscription?.isSubscribed === true ||
           authState.subscription?.active === true ||
-          authState.subscription?.is_subscribed === true) {
+          authState.subscription?.is_subscribed === true
+        ) {
           console.log('구독 활성화 상태 확인됨 - Cloud Sync 강제 활성화');
           enableCloudSyncCheckbox.disabled = false;
         }
@@ -876,7 +954,7 @@ function setupEventListeners() {
   document.addEventListener('keydown', handleHotkeyRecording);
 
   // Close settings window with ESC key
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener('keydown', event => {
     // Only process if ESC key is pressed and not in hotkey recording mode
     if (event.key === 'Escape' && !isRecordingHotkey) {
       // Confirm save if there are unsaved changes
@@ -892,7 +970,7 @@ function setupEventListeners() {
   });
 
   // Custom protocol handler for OAuth redirect
-  window.addEventListener('protocol-data', (event) => {
+  window.addEventListener('protocol-data', event => {
     // Handle the OAuth redirect with auth code
     if (event.detail && event.detail.includes('code=')) {
       const code = extractAuthCode(event.detail);
@@ -903,14 +981,14 @@ function setupEventListeners() {
   });
 
   // Login success event listener
-  window.addEventListener('login-success', (event) => {
+  window.addEventListener('login-success', event => {
     console.log('Login success event received in settings window:', event.detail);
     // Load user data and update UI when login is successful
     loadUserDataAndUpdateUI();
   });
 
   // Login error event listener
-  window.addEventListener('login-error', (event) => {
+  window.addEventListener('login-error', event => {
     console.error('Login error event received in settings window:', event.detail);
     // Update UI when login fails
     updateAuthStateUI(false);
@@ -918,14 +996,14 @@ function setupEventListeners() {
   });
 
   // Logout success event listener
-  window.addEventListener('logout-success', (event) => {
+  window.addEventListener('logout-success', event => {
     console.log('Logout success event received in settings window');
     // Update UI when logout is successful
     updateAuthStateUI(false);
   });
 
   // Authentication state change event listener
-  window.addEventListener('auth-state-changed', (event) => {
+  window.addEventListener('auth-state-changed', event => {
     console.log('Auth state changed event received in settings window:', event.detail);
 
     // Handle based on authentication state change type
@@ -936,7 +1014,7 @@ function setupEventListeners() {
   });
 
   // 구독 정보 및 설정 업데이트 이벤트 리스너
-  window.addEventListener('config-updated', (event) => {
+  window.addEventListener('config-updated', event => {
     console.log('설정 업데이트 이벤트 감지:', event.detail);
 
     // 설정 데이터 업데이트
@@ -958,7 +1036,7 @@ function setupEventListeners() {
   });
 
   // 설정 동기화 이벤트 리스너
-  window.addEventListener('settings-synced', (event) => {
+  window.addEventListener('settings-synced', event => {
     console.log('설정 동기화 이벤트 감지:', event.detail);
 
     // 동기화 상태 새로고침
@@ -967,6 +1045,15 @@ function setupEventListeners() {
       updateSyncStatusUI(status);
     });
   });
+
+  // About 탭 이벤트 리스너
+  homepageButton.addEventListener('click', () => {
+    window.settings.openUrl('https://app.toast.sh');
+  });
+
+  checkUpdatesButton.addEventListener('click', handleCheckUpdates);
+  downloadUpdateButton.addEventListener('click', handleDownloadUpdate);
+  installUpdateButton.addEventListener('click', handleInstallUpdate);
 }
 
 /**
@@ -1028,7 +1115,8 @@ function switchTab(tabId) {
  */
 function startRecordingHotkey() {
   // Temporarily disable existing shortcuts (prevent other shortcuts from working during recording)
-  window.settings.temporarilyDisableShortcuts()
+  window.settings
+    .temporarilyDisableShortcuts()
     .then(() => {
       console.log('Shortcuts temporarily disabled for recording');
 
@@ -1083,12 +1171,12 @@ function handleHotkeyRecording(event) {
   } else {
     // Handle special keys
     const keyMap = {
-      'Escape': 'Esc',
-      'ArrowUp': 'Up',
-      'ArrowDown': 'Down',
-      'ArrowLeft': 'Left',
-      'ArrowRight': 'Right',
-      'Enter': 'Return'
+      Escape: 'Esc',
+      ArrowUp: 'Up',
+      ArrowDown: 'Down',
+      ArrowLeft: 'Left',
+      ArrowRight: 'Right',
+      Enter: 'Return',
     };
     key = keyMap[key] || key;
   }
@@ -1106,7 +1194,8 @@ function handleHotkeyRecording(event) {
   isRecordingHotkey = false;
 
   // Re-enable shortcuts
-  window.settings.restoreShortcuts()
+  window.settings
+    .restoreShortcuts()
     .then(() => console.log('Shortcuts restored after recording'))
     .catch(err => console.error('Failed to restore shortcuts:', err));
 
@@ -1131,7 +1220,11 @@ function clearHotkey() {
  * Confirm resetting settings
  */
 function confirmResetSettings() {
-  if (confirm('Are you sure you want to reset all settings to their default values? This cannot be undone.')) {
+  if (
+    confirm(
+      'Are you sure you want to reset all settings to their default values? This cannot be undone.',
+    )
+  ) {
     resetSettings();
   }
 }
@@ -1174,15 +1267,15 @@ async function saveSettings() {
       theme: themeSelect.value,
       position: positionSelect.value,
       size: sizeSelect.value,
-      opacity: parseFloat(opacityRange.value)
+      opacity: parseFloat(opacityRange.value),
     },
     advanced: {
       launchAtLogin: launchAtLoginCheckbox.checked,
       hideAfterAction: hideAfterActionCheckbox.checked,
       hideOnBlur: hideOnBlurCheckbox.checked,
       hideOnEscape: hideOnEscapeCheckbox.checked,
-      showInTaskbar: showInTaskbarCheckbox.checked
-    }
+      showInTaskbar: showInTaskbarCheckbox.checked,
+    },
   };
 
   // Save settings
@@ -1203,7 +1296,7 @@ async function saveSettings() {
     unsavedChanges = false;
 
     // Change to saved message
-    saveButton.textContent = "Saved!";
+    saveButton.textContent = 'Saved!';
 
     // Apply theme to Toast window immediately
     if (settings.appearance && settings.appearance.theme) {
@@ -1254,7 +1347,7 @@ async function handleCloudSyncToggle() {
   const originalChecked = enableCloudSyncCheckbox.checked;
 
   // 체크박스 상태 텍스트
-  const statusText = originalChecked ? "Enabling..." : "Disabling...";
+  const statusText = originalChecked ? 'Enabling...' : 'Disabling...';
 
   try {
     // Show loading state
@@ -1270,11 +1363,13 @@ async function handleCloudSyncToggle() {
     let hasCloudSyncPermission = false;
 
     // 디버깅 로그 추가
-    console.log('handleCloudSyncToggle: 구독 정보 확인:', JSON.stringify(authState.subscription || {}));
+    console.log(
+      'handleCloudSyncToggle: 구독 정보 확인:',
+      JSON.stringify(authState.subscription || {}),
+    );
 
     // VIP 사용자 확인 (최우선)
-    if (authState.subscription?.isVip === true ||
-      authState.subscription?.vip === true) {
+    if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
       hasCloudSyncPermission = true;
       console.log('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
     }
@@ -1315,7 +1410,10 @@ async function handleCloudSyncToggle() {
     }
 
     // additionalFeatures 확인
-    if (authState.subscription?.additionalFeatures && typeof authState.subscription.additionalFeatures === 'object') {
+    if (
+      authState.subscription?.additionalFeatures &&
+      typeof authState.subscription.additionalFeatures === 'object'
+    ) {
       if (authState.subscription.additionalFeatures.cloudSync === true) {
         hasCloudSyncPermission = true;
         console.log('handleCloudSyncToggle: cloudSync 기능 활성화됨 (additionalFeatures)');
@@ -1325,7 +1423,7 @@ async function handleCloudSyncToggle() {
     console.log('handleCloudSyncToggle: 최종 클라우드 싱크 권한:', hasCloudSyncPermission);
 
     if (!hasCloudSyncPermission) {
-      syncStatusText.textContent = "Premium subscription required";
+      syncStatusText.textContent = 'Premium subscription required';
       enableCloudSyncCheckbox.checked = false;
 
       // 일정 시간 후 원래 상태로 복원
@@ -1352,7 +1450,9 @@ async function handleCloudSyncToggle() {
     setLoading(syncLoading, false);
 
     // 성공 메시지 표시
-    syncStatusText.textContent = enabled ? "Sync enabled successfully!" : "Sync disabled successfully!";
+    syncStatusText.textContent = enabled
+      ? 'Sync enabled successfully!'
+      : 'Sync disabled successfully!';
 
     // 일정 시간 후 UI 업데이트 및 원래 상태로 복원
     setTimeout(() => {
@@ -1360,7 +1460,6 @@ async function handleCloudSyncToggle() {
       enableCloudSyncCheckbox.disabled = false;
       manualSyncEnabled();
     }, 1500);
-
   } catch (error) {
     console.error('Cloud sync toggle error:', error);
 
@@ -1416,7 +1515,7 @@ async function handleManualSyncUpload() {
     // Disable buttons and show loading
     setLoading(syncLoading, true);
     manualSyncDisabled();
-    manualSyncUploadButton.textContent = "Uploading...";
+    manualSyncUploadButton.textContent = 'Uploading...';
 
     // Upload settings to server
     const result = await window.settings.manualSync('upload');
@@ -1430,7 +1529,7 @@ async function handleManualSyncUpload() {
 
     if (result.success) {
       // Show success message in button
-      manualSyncUploadButton.textContent = "Upload Complete!";
+      manualSyncUploadButton.textContent = 'Upload Complete!';
 
       // Enable only the current button to show the success message
       manualSyncUploadButton.disabled = false;
@@ -1450,12 +1549,12 @@ async function handleManualSyncUpload() {
     setLoading(syncLoading, false);
 
     // Show error in button
-    manualSyncUploadButton.textContent = "Upload Failed";
+    manualSyncUploadButton.textContent = 'Upload Failed';
     manualSyncUploadButton.disabled = false;
 
     // Re-enable buttons after delay
     setTimeout(() => {
-      manualSyncUploadButton.textContent = "Upload to Server";
+      manualSyncUploadButton.textContent = 'Upload to Server';
       manualSyncEnabled();
     }, 1500);
 
@@ -1477,7 +1576,9 @@ async function handleManualSyncDownload() {
     manualSyncDisabled();
 
     // Confirm download (will overwrite local settings)
-    if (!confirm('Downloading settings from the server will overwrite your local settings. Continue?')) {
+    if (
+      !confirm('Downloading settings from the server will overwrite your local settings. Continue?')
+    ) {
       setLoading(syncLoading, false);
 
       // Re-enable buttons
@@ -1487,7 +1588,7 @@ async function handleManualSyncDownload() {
     }
 
     // Update button text
-    manualSyncDownloadButton.textContent = "Downloading...";
+    manualSyncDownloadButton.textContent = 'Downloading...';
 
     // Download settings from server
     const result = await window.settings.manualSync('download');
@@ -1501,7 +1602,7 @@ async function handleManualSyncDownload() {
 
     if (result.success) {
       // Show success in button
-      manualSyncDownloadButton.textContent = "Download Complete!";
+      manualSyncDownloadButton.textContent = 'Download Complete!';
       manualSyncDownloadButton.disabled = false;
 
       // Reload config
@@ -1526,7 +1627,7 @@ async function handleManualSyncDownload() {
     setLoading(syncLoading, false);
 
     // Show error in button
-    manualSyncDownloadButton.textContent = "Download Failed";
+    manualSyncDownloadButton.textContent = 'Download Failed';
     manualSyncDownloadButton.disabled = false;
 
     // Reset button after delay
@@ -1537,6 +1638,181 @@ async function handleManualSyncDownload() {
 
     // Log error to console
     console.error(`Settings download error: ${error.message || 'Unknown error'}`);
+  }
+}
+
+
+/**
+ * Handle check for updates
+ */
+async function handleCheckUpdates() {
+  try {
+    // Disable button and show loading
+    checkUpdatesButton.disabled = true;
+    setLoading(updateLoading, true);
+    updateStatus.classList.remove('hidden');
+    updateActions.classList.add('hidden');
+
+    // Save original button text
+    const originalButtonText = checkUpdatesButton.textContent;
+    checkUpdatesButton.textContent = 'Checking...';
+
+    // Check for latest version from remote JSON
+    const result = await window.settings.checkLatestVersion();
+
+    // Hide loading
+    setLoading(updateLoading, false);
+
+    if (result.success) {
+      // Compare current version with latest version
+      const currentVersion = result.current;
+      const latestVersion = result.latest;
+      const releaseDate = result.releaseDate
+        ? new Date(result.releaseDate).toLocaleDateString()
+        : 'Unknown';
+
+      // Use semver comparison result
+      const versionCompare = result.versionCompare;
+
+      if (versionCompare > 0) {
+        // Latest version is newer than current version (update available)
+        updateMessage.innerHTML = `
+          <strong>New version available!</strong><br>
+          Current version: ${currentVersion}<br>
+          Latest version: ${latestVersion} (update needed)<br>
+          Release date: ${releaseDate}<br>
+          ${result.description ? `<small>${result.description}</small>` : ''}
+        `;
+        updateActions.classList.remove('hidden');
+        downloadUpdateButton.classList.remove('hidden');
+        installUpdateButton.classList.add('hidden');
+      } else if (versionCompare === 0) {
+        // Versions are the same (no update needed)
+        updateMessage.innerHTML = `
+          <strong>You are using the latest version.</strong><br>
+          Current version: ${currentVersion}<br>
+          Latest version: ${latestVersion} (same version)
+        `;
+        updateActions.classList.add('hidden');
+
+        // Hide message after 3 seconds
+        setTimeout(() => {
+          updateStatus.classList.add('hidden');
+        }, 3000);
+      } else if (versionCompare < 0) {
+        // Current version is newer than server's latest version (beta or development version)
+        updateMessage.innerHTML = `
+          <strong>You are using a development/beta version.</strong><br>
+          Current version: ${currentVersion} (higher than server version)<br>
+          Server version: ${latestVersion}<br>
+          Release date: ${releaseDate}
+        `;
+        updateActions.classList.add('hidden');
+
+        // Hide message after 5 seconds
+        setTimeout(() => {
+          updateStatus.classList.add('hidden');
+        }, 5000);
+      } else if (latestVersion === 'unknown') {
+        // Could not get latest version information
+        updateMessage.innerHTML = `
+          <strong>Version information unavailable</strong><br>
+          Current version: ${currentVersion}<br>
+          Could not find valid version information on the server.
+        `;
+        updateActions.classList.add('hidden');
+
+        // Hide message after 3 seconds
+        setTimeout(() => {
+          updateStatus.classList.add('hidden');
+        }, 3000);
+      }
+    } else {
+      throw new Error(result.error || 'Could not retrieve version information');
+    }
+
+    // Restore button to original state
+    setTimeout(() => {
+      checkUpdatesButton.textContent = originalButtonText;
+      checkUpdatesButton.disabled = false;
+    }, 1000);
+  } catch (error) {
+    console.error('Error checking for updates:', error);
+
+    // Display error
+    updateMessage.textContent = `Error checking for updates: ${error.message || 'Unknown error'}`;
+    updateActions.classList.add('hidden');
+    setLoading(updateLoading, false);
+
+    // Restore button to original state
+    checkUpdatesButton.textContent = 'Check for Updates';
+    checkUpdatesButton.disabled = false;
+  }
+}
+
+/**
+ * Handle download update
+ */
+async function handleDownloadUpdate() {
+  try {
+    // Disable buttons and show loading
+    downloadUpdateButton.disabled = true;
+    installUpdateButton.disabled = true;
+    setLoading(updateLoading, true);
+
+    // Save original button text
+    const originalButtonText = downloadUpdateButton.textContent;
+    downloadUpdateButton.textContent = 'Downloading...';
+
+    // Download update
+    const result = await window.settings.downloadUpdate();
+
+    // Hide loading
+    setLoading(updateLoading, false);
+
+    if (result && result.success) {
+      // Download success
+      updateMessage.textContent = 'Update has been downloaded. Would you like to install it now?';
+      downloadUpdateButton.classList.add('hidden');
+      installUpdateButton.classList.remove('hidden');
+      installUpdateButton.disabled = false;
+    } else {
+      // Download failed
+      updateMessage.textContent = result.message || 'Failed to download update';
+
+      // Restore button to original state
+      downloadUpdateButton.textContent = originalButtonText;
+      downloadUpdateButton.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error downloading update:', error);
+
+    // Display error
+    updateMessage.textContent = `Error downloading update: ${error.message || 'Unknown error'}`;
+    setLoading(updateLoading, false);
+
+    // Restore button to original state
+    downloadUpdateButton.textContent = 'Download';
+    downloadUpdateButton.disabled = false;
+  }
+}
+
+/**
+ * Handle install update
+ */
+async function handleInstallUpdate() {
+  try {
+    // Confirm update installation
+    if (confirm('The app will close and the update will be installed. Continue?')) {
+      // Install update
+      await window.settings.installUpdate();
+    }
+  } catch (error) {
+    console.error('Error installing update:', error);
+
+    // Display error
+    updateMessage.textContent = `Error installing update: ${error.message || 'Unknown error'}`;
+    installUpdateButton.disabled = false;
   }
 }
 
@@ -1553,7 +1829,11 @@ async function handleManualSyncResolve() {
     manualSyncDisabled();
 
     // Confirm conflict resolution
-    if (!confirm('This will resolve conflicts between local and server settings. The most recent settings based on timestamp will be applied. Continue?')) {
+    if (
+      !confirm(
+        'This will resolve conflicts between local and server settings. The most recent settings based on timestamp will be applied. Continue?',
+      )
+    ) {
       setLoading(syncLoading, false);
 
       // Re-enable buttons
@@ -1563,7 +1843,7 @@ async function handleManualSyncResolve() {
     }
 
     // Update button text
-    manualSyncResolveButton.textContent = "Resolving Conflicts...";
+    manualSyncResolveButton.textContent = 'Resolving Conflicts...';
 
     // Resolve conflicts
     const result = await window.settings.manualSync('resolve');
@@ -1577,7 +1857,7 @@ async function handleManualSyncResolve() {
 
     if (result.success) {
       // Show success in button
-      manualSyncResolveButton.textContent = "Conflicts Resolved!";
+      manualSyncResolveButton.textContent = 'Conflicts Resolved!';
       manualSyncResolveButton.disabled = false;
 
       // Reload config
@@ -1602,7 +1882,7 @@ async function handleManualSyncResolve() {
     setLoading(syncLoading, false);
 
     // Show error in button
-    manualSyncResolveButton.textContent = "Resolution Failed";
+    manualSyncResolveButton.textContent = 'Resolution Failed';
     manualSyncResolveButton.disabled = false;
 
     // Reset button after delay

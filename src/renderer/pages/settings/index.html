@@ -1,247 +1,296 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toast App Settings</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Toast App Settings</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
+  <body>
+    <div class="settings-container">
+      <header class="settings-header">
+        <h1>Toast App Settings</h1>
+        <div class="header-actions">
+          <button id="save-button" class="primary-button">Save</button>
+          <button id="cancel-button" class="secondary-button">Close</button>
+        </div>
+      </header>
 
-<body>
-  <div class="settings-container">
-    <header class="settings-header">
-      <h1>Toast App Settings</h1>
-      <div class="header-actions">
-        <button id="save-button" class="primary-button">Save</button>
-        <button id="cancel-button" class="secondary-button">Close</button>
-      </div>
-    </header>
-
-    <div class="settings-content">
-      <div class="settings-sidebar">
-        <ul class="settings-nav">
-          <li data-tab="general" class="active">General</li>
-          <li data-tab="appearance">Appearance</li>
-          <li data-tab="account">Account & Subscription</li>
-          <li data-tab="cloud-sync">Cloud Sync</li>
-          <li data-tab="advanced">Advanced</li>
-        </ul>
-      </div>
-
-      <div class="settings-main">
-        <!-- General Settings Tab -->
-        <div id="general" class="settings-tab active">
-          <h2>General Settings</h2>
-
-          <div class="settings-group">
-            <label for="global-hotkey">Global Hotkey</label>
-            <div class="hotkey-input-container">
-              <input type="text" id="global-hotkey" placeholder="Click to record hotkey" readonly>
-              <button id="record-hotkey" class="small-button">Record</button>
-              <button id="clear-hotkey" class="small-button">Clear</button>
-            </div>
-            <p class="help-text">Press the key combination you want to use to open Toast App.</p>
-          </div>
-
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" id="launch-at-login">
-              Launch at login
-            </label>
-            <p class="help-text">Start Toast App automatically when you log in to your computer.</p>
-          </div>
+      <div class="settings-content">
+        <div class="settings-sidebar">
+          <ul class="settings-nav">
+            <li data-tab="general" class="active">General</li>
+            <li data-tab="appearance">Appearance</li>
+            <li data-tab="account">Account & Subscription</li>
+            <li data-tab="cloud-sync">Cloud Sync</li>
+            <li data-tab="advanced">Advanced</li>
+            <li data-tab="about">About</li>
+          </ul>
         </div>
 
-        <!-- Appearance Tab -->
-        <div id="appearance" class="settings-tab">
-          <h2>Appearance</h2>
+        <div class="settings-main">
+          <!-- General Settings Tab -->
+          <div id="general" class="settings-tab active">
+            <h2>General Settings</h2>
 
-          <div class="settings-group">
-            <label for="theme">Theme</label>
-            <select id="theme">
-              <option value="system">System Default</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-            <p class="help-text">Choose the application theme.</p>
-          </div>
-
-          <div class="settings-group">
-            <label for="position">Window Position</label>
-            <select id="position">
-              <option value="center">Center</option>
-              <option value="top">Top</option>
-              <option value="bottom">Bottom</option>
-              <option value="cursor">Cursor</option>
-            </select>
-            <p class="help-text">Where the Toast window should appear on the screen.</p>
-          </div>
-
-          <div class="settings-group">
-            <label for="size">Window Size</label>
-            <select id="size">
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-            <p class="help-text">Size of the Toast window.</p>
-          </div>
-
-          <div class="settings-group">
-            <label for="opacity">Window Opacity</label>
-            <div class="range-container">
-              <input type="range" id="opacity" min="0.1" max="1.0" step="0.05" value="0.95">
-              <span id="opacity-value">0.95</span>
+            <div class="settings-group">
+              <label for="global-hotkey">Global Hotkey</label>
+              <div class="hotkey-input-container">
+                <input
+                  type="text"
+                  id="global-hotkey"
+                  placeholder="Click to record hotkey"
+                  readonly
+                />
+                <button id="record-hotkey" class="small-button">Record</button>
+                <button id="clear-hotkey" class="small-button">Clear</button>
+              </div>
+              <p class="help-text">Press the key combination you want to use to open Toast App.</p>
             </div>
-            <p class="help-text">Transparency of the Toast window.</p>
-          </div>
-        </div>
 
-        <!-- Account & Subscription Tab -->
-        <div id="account" class="settings-tab">
-          <h2>Account & Subscription</h2>
-
-          <!-- Login state (before sign-in) -->
-          <div id="login-section" class="settings-group">
-            <div class="auth-container">
-              <p>Sign in to access premium features and sync your settings across devices.</p>
-              <button id="login-button" class="primary-button">Sign In</button>
-              <div id="auth-loading" class="loading-indicator hidden">
-                <div class="spinner"></div>
-                <p>Processing...</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Login state (after sign-in) -->
-          <div id="profile-section" class="settings-group hidden">
-            <div class="profile-container">
-              <div class="profile-header">
-                <div id="user-avatar" class="profile-avatar"></div>
-                <div class="profile-info">
-                  <div id="user-name" class="profile-name">-</div>
-                  <div id="user-email" class="profile-email">-</div>
-                </div>
-              </div>
-              <button id="logout-button" class="secondary-button">Sign Out</button>
-            </div>
-          </div>
-
-          <!-- Subscription information -->
-          <div id="subscription-section" class="settings-group hidden">
-            <h3>Subscription</h3>
-            <div class="subscription-container">
-              <div class="subscription-details">
-                <div class="subscription-status">
-                  <span id="subscription-badge" class="badge">Free</span>
-                  <span id="subscription-status">-</span>
-                </div>
-                <p id="subscription-expiry">-</p>
-                <p id="subscription-features">-</p>
-              </div>
-              <div class="subscription-actions">
-                <button id="manage-subscription" class="primary-button">Manage Subscription</button>
-                <button id="refresh-subscription" class="secondary-button">Refresh Status</button>
-              </div>
-              <div id="subscription-loading" class="loading-indicator hidden">
-                <div class="spinner"></div>
-                <p>Loading subscription information...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Advanced Tab -->
-        <div id="advanced" class="settings-tab">
-          <h2>Advanced Settings</h2>
-
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" id="hide-after-action">
-              Hide after action
-            </label>
-            <p class="help-text">Hide the Toast window after executing an action.</p>
-          </div>
-
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" id="hide-on-blur">
-              Hide on blur
-            </label>
-            <p class="help-text">Hide the Toast window when it loses focus.</p>
-          </div>
-
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" id="hide-on-escape">
-              Hide on Escape key
-            </label>
-            <p class="help-text">Hide the Toast window when the Escape key is pressed.</p>
-          </div>
-
-          <div class="settings-group">
-            <label>
-              <input type="checkbox" id="show-in-taskbar">
-              Show in taskbar
-            </label>
-            <p class="help-text">Show the Toast window in the taskbar/dock.</p>
-          </div>
-
-          <div class="settings-group actions-group">
-            <button id="reset-settings" class="danger-button">Reset to Defaults</button>
-            <p class="help-text">Reset all settings to their default values.</p>
-          </div>
-        </div>
-
-        <!-- Cloud Sync Tab -->
-        <div id="cloud-sync" class="settings-tab">
-          <h2>Cloud Sync</h2>
-
-          <!-- Sync Status -->
-          <div id="sync-status-section" class="settings-group">
-            <div class="subscription-container">
-              <div class="subscription-details">
-                <div class="subscription-status">
-                  <span id="sync-status-badge" class="badge">Disabled</span>
-                  <span id="sync-status-text">Cloud Sync Status</span>
-                </div>
-                <p id="last-synced-time">Last Synced: -</p>
-                <p id="sync-device-info">Current Device: -</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sync Controls -->
-          <div class="settings-group">
-            <h3>Sync Settings</h3>
             <div class="settings-group">
               <label>
-                <input type="checkbox" id="enable-cloud-sync">
-                Enable Cloud Sync
+                <input type="checkbox" id="launch-at-login" />
+                Launch at login
               </label>
-              <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
+              <p class="help-text">
+                Start Toast App automatically when you log in to your computer.
+              </p>
+            </div>
+          </div>
+
+          <!-- Appearance Tab -->
+          <div id="appearance" class="settings-tab">
+            <h2>Appearance</h2>
+
+            <div class="settings-group">
+              <label for="theme">Theme</label>
+              <select id="theme">
+                <option value="system">System Default</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <p class="help-text">Choose the application theme.</p>
             </div>
 
             <div class="settings-group">
-              <div class="subscription-actions">
-                <button id="manual-sync-upload" class="primary-button">Upload to Server</button>
-                <button id="manual-sync-download" class="primary-button">Download from Server</button>
-                <button id="manual-sync-resolve" class="secondary-button">Resolve Conflicts</button>
+              <label for="position">Window Position</label>
+              <select id="position">
+                <option value="center">Center</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="cursor">Cursor</option>
+              </select>
+              <p class="help-text">Where the Toast window should appear on the screen.</p>
+            </div>
+
+            <div class="settings-group">
+              <label for="size">Window Size</label>
+              <select id="size">
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+              <p class="help-text">Size of the Toast window.</p>
+            </div>
+
+            <div class="settings-group">
+              <label for="opacity">Window Opacity</label>
+              <div class="range-container">
+                <input type="range" id="opacity" min="0.1" max="1.0" step="0.05" value="0.95" />
+                <span id="opacity-value">0.95</span>
               </div>
-              <div id="sync-loading" class="loading-indicator hidden">
-                <div class="spinner"></div>
-                <p>Syncing...</p>
+              <p class="help-text">Transparency of the Toast window.</p>
+            </div>
+          </div>
+
+          <!-- Account & Subscription Tab -->
+          <div id="account" class="settings-tab">
+            <h2>Account & Subscription</h2>
+
+            <!-- Login state (before sign-in) -->
+            <div id="login-section" class="settings-group">
+              <div class="auth-container">
+                <p>Sign in to access premium features and sync your settings across devices.</p>
+                <button id="login-button" class="primary-button">Sign In</button>
+                <div id="auth-loading" class="loading-indicator hidden">
+                  <div class="spinner"></div>
+                  <p>Processing...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Login state (after sign-in) -->
+            <div id="profile-section" class="settings-group hidden">
+              <div class="profile-container">
+                <div class="profile-header">
+                  <div id="user-avatar" class="profile-avatar"></div>
+                  <div class="profile-info">
+                    <div id="user-name" class="profile-name">-</div>
+                    <div id="user-email" class="profile-email">-</div>
+                  </div>
+                </div>
+                <button id="logout-button" class="secondary-button">Sign Out</button>
+              </div>
+            </div>
+
+            <!-- Subscription information -->
+            <div id="subscription-section" class="settings-group hidden">
+              <h3>Subscription</h3>
+              <div class="subscription-container">
+                <div class="subscription-details">
+                  <div class="subscription-status">
+                    <span id="subscription-badge" class="badge">Free</span>
+                    <span id="subscription-status">-</span>
+                  </div>
+                  <p id="subscription-expiry">-</p>
+                  <p id="subscription-features">-</p>
+                </div>
+                <div class="subscription-actions">
+                  <button id="manage-subscription" class="primary-button">
+                    Manage Subscription
+                  </button>
+                  <button id="refresh-subscription" class="secondary-button">Refresh Status</button>
+                </div>
+                <div id="subscription-loading" class="loading-indicator hidden">
+                  <div class="spinner"></div>
+                  <p>Loading subscription information...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Tab -->
+          <div id="advanced" class="settings-tab">
+            <h2>Advanced Settings</h2>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="hide-after-action" />
+                Hide after action
+              </label>
+              <p class="help-text">Hide the Toast window after executing an action.</p>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="hide-on-blur" />
+                Hide on blur
+              </label>
+              <p class="help-text">Hide the Toast window when it loses focus.</p>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="hide-on-escape" />
+                Hide on Escape key
+              </label>
+              <p class="help-text">Hide the Toast window when the Escape key is pressed.</p>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="show-in-taskbar" />
+                Show in taskbar
+              </label>
+              <p class="help-text">Show the Toast window in the taskbar/dock.</p>
+            </div>
+
+            <div class="settings-group actions-group">
+              <button id="reset-settings" class="danger-button">Reset to Defaults</button>
+              <p class="help-text">Reset all settings to their default values.</p>
+            </div>
+          </div>
+
+          <!-- Cloud Sync Tab -->
+          <div id="cloud-sync" class="settings-tab">
+            <h2>Cloud Sync</h2>
+
+            <!-- Sync Status -->
+            <div id="sync-status-section" class="settings-group">
+              <div class="subscription-container">
+                <div class="subscription-details">
+                  <div class="subscription-status">
+                    <span id="sync-status-badge" class="badge">Disabled</span>
+                    <span id="sync-status-text">Cloud Sync Status</span>
+                  </div>
+                  <p id="last-synced-time">Last Synced: -</p>
+                  <p id="sync-device-info">Current Device: -</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sync Controls -->
+            <div class="settings-group">
+              <h3>Sync Settings</h3>
+              <div class="settings-group">
+                <label>
+                  <input type="checkbox" id="enable-cloud-sync" />
+                  Enable Cloud Sync
+                </label>
+                <p class="help-text">
+                  Synchronize settings and pages across multiple devices. Premium subscription
+                  required.
+                </p>
+              </div>
+
+              <div class="settings-group">
+                <div class="subscription-actions">
+                  <button id="manual-sync-upload" class="primary-button">Upload to Server</button>
+                  <button id="manual-sync-download" class="primary-button">
+                    Download from Server
+                  </button>
+                  <button id="manual-sync-resolve" class="secondary-button">
+                    Resolve Conflicts
+                  </button>
+                </div>
+                <div id="sync-loading" class="loading-indicator hidden">
+                  <div class="spinner"></div>
+                  <p>Syncing...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- About Tab -->
+          <div id="about" class="settings-tab">
+            <h2>About Toast App</h2>
+
+            <div class="settings-group about-section">
+              <div class="app-logo">
+                <img src="../../assets/icon.png" alt="Toast App Logo" width="100">
+              </div>
+
+              <div class="app-info">
+                <p class="app-version"><strong>Version:</strong> <span id="app-version">v0.0.0</span></p>
+                <p class="app-description">A customizable shortcut launcher for macOS and Windows</p>
+                <p class="app-authors"><strong>Authors:</strong> nalbam &lt;me@nalbam.com&gt;</p>
+                <p class="app-license"><strong>License:</strong> MIT</p>
+              </div>
+
+              <div class="app-links">
+                <button id="homepage-link" class="secondary-button">Homepage</button>
+                <button id="check-updates" class="primary-button">Check for Updates</button>
+              </div>
+
+              <div id="update-status" class="update-status hidden">
+                <p id="update-message"></p>
+                <div class="update-actions hidden" id="update-actions">
+                  <button id="download-update" class="primary-button">Download Update</button>
+                  <button id="install-update" class="primary-button">Install Update</button>
+                </div>
+                <div id="update-loading" class="loading-indicator hidden">
+                  <div class="spinner"></div>
+                  <p>Checking for updates...</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-
-  <script src="index.js"></script>
-</body>
-
+    <script src="index.js"></script>
+  </body>
 </html>
