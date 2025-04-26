@@ -771,7 +771,8 @@ button {
   margin-bottom: 16px;
 }
 
-.app-authors, .app-license {
+.app-authors,
+.app-license {
   font-size: 13px;
   margin-bottom: 8px;
 }

@@ -1650,7 +1650,6 @@ async function handleManualSyncDownload() {
   }
 }
 
-
 /**
  * Handle check for updates
  */
@@ -1769,7 +1768,6 @@ async function handleDownloadUpdate() {
       // 이벤트 리스너는 이미 preload에서 설정되어 있음
       // 다운로드 진행 상황 및 완료는 이벤트로 처리
       return;
-
     } catch (autoUpdateError) {
       // 자동 업데이트 실패 시 수동 다운로드로 폴백
       console.error('Automatic update failed, switching to manual download:', autoUpdateError);
@@ -1782,7 +1780,8 @@ async function handleDownloadUpdate() {
 
       if (manualResult && manualResult.success) {
         // 수동 다운로드 성공
-        updateMessage.textContent = 'Update download has started in your browser. After downloading, please install it manually.';
+        updateMessage.textContent =
+          'Update download has started in your browser. After downloading, please install it manually.';
         downloadUpdateButton.classList.add('hidden');
         installUpdateButton.classList.remove('hidden');
         installUpdateButton.disabled = false;
@@ -1839,7 +1838,9 @@ window.addEventListener('update-error', event => {
 async function handleInstallUpdate() {
   try {
     // 설치 확인
-    if (confirm('The app will close and the update will be installed. Would you like to proceed?')) {
+    if (
+      confirm('The app will close and the update will be installed. Would you like to proceed?')
+    ) {
       // 자동 업데이트 설치 (자동 업데이트 시스템 사용)
       try {
         // 버튼 비활성화 및 로딩 표시
@@ -1851,7 +1852,8 @@ async function handleInstallUpdate() {
 
         // 여기까지 도달하면 설치가 실패한 것 (정상 설치 시 앱이 종료됨)
         setLoading(updateLoading, false);
-        updateMessage.textContent = 'Could not start update installation. Please restart the app manually.';
+        updateMessage.textContent =
+          'Could not start update installation. Please restart the app manually.';
         installUpdateButton.disabled = false;
       } catch (autoInstallError) {
         // 자동 업데이트 설치 실패 시 수동 설치로 폴백
