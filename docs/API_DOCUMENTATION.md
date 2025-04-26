@@ -158,6 +158,274 @@ config.set('globalHotkey' 'Alt+Space');
 resetToDefaults(config);
 ```
 
+### 로거 모듈 (`src/main/logger.js`)
+
+로거 모듈은 electron-log를 사용하여 애플리케이션 로깅을 관리합니다.
+
+#### 함수
+
+```javascript
+/**
+ * 특정 모듈용 로거 생성
+ * @param {string} namespace - 로거의 네임스페이스(로그 소스 식별용)
+ * @returns {Object} 로거 인스턴스
+ */
+function createLogger(namespace)
+
+/**
+ * IPC를 통한 렌더러 프로세스 로깅 처리
+ * @param {string} level - 로그 레벨(info, warn, error, debug 등)
+ * @param {string} message - 로그 메시지
+ * @param {...any} args - 추가 로그 인수
+ * @returns {boolean} 성공 상태
+ */
+function handleIpcLogging(level, message, ...args)
+
+/**
+ * 로그 파일 경로 가져오기
+ * @returns {string} 로그 파일 경로
+ */
+function getLogFilePath()
+
+/**
+ * 로그 파일 내용 가져오기
+ * @param {number} [maxLines=1000] - 반환할 최대 줄 수
+ * @returns {Promise<string>} 로그 파일 내용
+ */
+async function getLogFileContent(maxLines)
+```
+
+#### 상수 및 속성
+
+```javascript
+// 로그 레벨
+const LOG_LEVELS = {
+  ERROR: 'error',   // 오류만
+  WARN: 'warn',     // 경고 및 오류
+  INFO: 'info',     // 정보, 경고 및 오류(기본값)
+  DEBUG: 'debug',   // 디버그 정보 포함
+  VERBOSE: 'verbose', // 상세 정보 포함
+  SILLY: 'silly'    // 가장 상세한 수준
+};
+
+// 로그 레벨 우선순위
+const LOG_LEVEL_PRIORITIES = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+  verbose: 4,
+  silly: 5
+};
+
+// electron-log 인스턴스
+const electronLog = require('electron-log');
+```
+
+#### 로그 파일 위치
+
+```javascript
+// 각 플랫폼의 로그 파일 위치
+// macOS: ~/Library/Logs/Toast/toast-app.log
+// Windows: %USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log
+// Linux: ~/.config/Toast/logs/toast-app.log
+```
+
+#### 사용 예시
+
+```javascript
+const { createLogger } = require('./main/logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('MyModule');
+
+// 로그 메시지 기록
+logger.info('정보 메시지');
+logger.warn('경고 메시지', { additionalData: 'details' });
+logger.error('오류 발생', error);
+logger.debug('디버깅 정보', { value: 42 });
+
+// IPC 핸들러에서 렌더러 로깅 처리
+ipcMain.handle('log-info', (event, message, ...args) => {
+  return handleIpcLogging('info', message, ...args);
+});
+
+// 로그 파일 경로 가져오기
+const logPath = getLogFilePath();
+console.log(`로그 파일 위치: ${logPath}`);
+
+// 로그 파일 내용 가져오기
+const logContent = await getLogFileContent(100); // 최근 100줄
+```
+
+### 업데이터 모듈 (`src/main/updater.js`)
+
+업데이터 모듈은 electron-updater를 사용하여 애플리케이션 자동 업데이트를 관리합니다.
+
+#### 함수
+
+```javascript
+/**
+ * 자동 업데이트 초기화
+ * @param {Object} windows - 애플리케이션 창 객체
+ */
+function initAutoUpdater(windows)
+
+/**
+ * 업데이트 확인
+ * @param {boolean} [silent=false] - true이면 사용자에게 알림 없이 확인
+ * @returns {Promise<Object>} 업데이트 확인 결과
+ */
+async function checkForUpdates(silent)
+
+/**
+ * 업데이트 다운로드
+ * @returns {Promise<Object>} 다운로드 결과
+ */
+async function downloadUpdate()
+
+/**
+ * 다운로드된 업데이트 설치
+ * @returns {Promise<Object>} 설치 결과
+ */
+async function installUpdate()
+```
+
+#### 이벤트 및 상태
+
+업데이터 모듈은 다음 이벤트를 발생시키고 창에 전달합니다:
+
+```javascript
+// 이벤트 유형
+const UPDATE_EVENTS = {
+  CHECKING: 'checking-for-update',     // 업데이트 확인 중
+  AVAILABLE: 'update-available',       // 업데이트 사용 가능
+  NOT_AVAILABLE: 'update-not-available', // 업데이트 없음
+  PROGRESS: 'download-progress',       // 다운로드 진행 상황
+  DOWNLOADED: 'update-downloaded',     // 다운로드 완료
+  ERROR: 'update-error',               // 업데이트 오류
+  START_DOWNLOAD: 'download-started',  // 다운로드 시작
+  START_INSTALL: 'install-started'     // 설치 시작
+};
+
+// 상태 데이터 형식
+const UPDATE_STATUS = {
+  checking: { status: 'checking' },
+  available: {
+    status: 'available',
+    info: {
+      version: '1.2.3',
+      releaseDate: '2023-01-01',
+      releaseNotes: '버그 수정 및 성능 향상'
+    }
+  },
+  notAvailable: {
+    status: 'not-available',
+    info: {
+      version: '1.2.3',
+      releaseDate: '2023-01-01'
+    }
+  },
+  downloading: {
+    status: 'downloading',
+    progress: {
+      percent: 45.3,
+      bytesPerSecond: 1000000,
+      transferred: 4500000,
+      total: 10000000
+    }
+  },
+  downloaded: {
+    status: 'downloaded',
+    info: {
+      version: '1.2.3',
+      releaseDate: '2023-01-01',
+      releaseNotes: '버그 수정 및 성능 향상'
+    }
+  },
+  error: {
+    status: 'error',
+    error: '오류 메시지'
+  }
+};
+```
+
+#### 결과 객체
+
+```javascript
+// checkForUpdates 결과
+{
+  success: true|false,
+  updateInfo: {
+    version: '1.2.3',
+    releaseDate: '2023-01-01',
+    releaseNotes: '버그 수정 및 성능 향상',
+    // ...기타 업데이트 정보
+  },
+  versionInfo: {
+    current: '1.2.0',
+    latest: '1.2.3'
+  },
+  hasUpdate: true|false,
+  error: '오류가 발생한 경우에만'
+}
+
+// downloadUpdate 결과
+{
+  success: true|false,
+  message: '업데이트 다운로드가 시작되었습니다.',
+  version: '1.2.3',
+  error: '오류가 발생한 경우에만'
+}
+
+// installUpdate 결과
+{
+  success: true|false,
+  error: '오류가 발생한 경우에만'
+}
+```
+
+#### 사용 예시
+
+```javascript
+const { initAutoUpdater, checkForUpdates, downloadUpdate, installUpdate } = require('./main/updater');
+
+// 자동 업데이트 초기화
+initAutoUpdater(windows);
+
+// 업데이트 확인 (silent 모드: false = 사용자에게 알림)
+const result = await checkForUpdates(false);
+if (result.success && result.hasUpdate) {
+  console.log(`새 버전 사용 가능: ${result.versionInfo.latest}`);
+}
+
+// 업데이트 다운로드
+const downloadResult = await downloadUpdate();
+if (downloadResult.success) {
+  console.log(`버전 ${downloadResult.version} 다운로드 시작`);
+}
+
+// 업데이트 설치
+await installUpdate();
+```
+
+#### IPC에서 사용
+
+```javascript
+// IPC 핸들러
+ipcMain.handle('check-for-updates', async (event, silent = false) => {
+  return await updater.checkForUpdates(silent);
+});
+
+ipcMain.handle('download-update', async () => {
+  return await updater.downloadUpdate();
+});
+
+ipcMain.handle('install-update', async () => {
+  return await updater.installUpdate();
+});
+```
+
 ### 실행기 모듈 (`src/main/executor.js`)
 
 실행기 모듈은 액션 실행을 처리합니다.
@@ -441,6 +709,13 @@ function setupIpcHandlers(windows)
 | `show-save-dialog` | handle | 파일 저장 대화 상자 표시 |
 | `show-message-box` | handle | 메시지 상자 표시 |
 | `test-action` | handle | 액션 테스트 |
+| `check-for-updates` | handle | 업데이트 확인 |
+| `download-update` | handle | 업데이트 다운로드 |
+| `install-update` | handle | 업데이트 설치 |
+| `log-info` | handle | 정보 로그 메시지 기록 |
+| `log-warn` | handle | 경고 로그 메시지 기록 |
+| `log-error` | handle | 오류 로그 메시지 기록 |
+| `log-debug` | handle | 디버그 로그 메시지 기록 |
 
 #### 사용 예시
 
@@ -778,6 +1053,17 @@ window.settings.restoreShortcuts() // 전역 단축키 복원
 // 시스템 정보
 window.settings.getPlatform() // 플랫폼 가져오기(darwin, win32, linux)
 window.settings.getVersion() // 애플리케이션 버전 가져오기
+
+// 업데이트 관련 메서드
+window.settings.checkForUpdates(silent) // 업데이트 확인
+window.settings.downloadUpdate() // 업데이트 다운로드
+window.settings.installUpdate() // 업데이트 설치
+
+// 로깅 관련 메서드
+window.settings.log.info(message, ...args) // 정보 로그 기록
+window.settings.log.warn(message, ...args) // 경고 로그 기록
+window.settings.log.error(message, ...args) // 오류 로그 기록
+window.settings.log.debug(message, ...args) // 디버그 로그 기록
 ```
 
 #### 이벤트
@@ -787,6 +1073,25 @@ window.settings.getVersion() // 애플리케이션 버전 가져오기
 window.addEventListener('config-loaded' (event) => {
   const config = event.detail;
   // 전체 구성 객체 포함
+});
+
+// 업데이트 이벤트
+window.addEventListener('checking-for-update', (event) => {
+  // 업데이트 확인 중
+});
+
+window.addEventListener('update-available', (event) => {
+  // 사용 가능한 업데이트가 있음
+  const updateInfo = event.detail.info;
+});
+
+window.addEventListener('download-progress', (event) => {
+  // 다운로드 진행 상황
+  const progress = event.detail.progress;
+});
+
+window.addEventListener('update-downloaded', (event) => {
+  // 업데이트 다운로드 완료
 });
 ```
 
@@ -825,6 +1130,12 @@ await window.settings.showMessageBox({
   message: '이것은 정보 메시지입니다'
   buttons: ['확인']
 });
+
+// 업데이트 확인
+const updateResult = await window.settings.checkForUpdates(false);
+if (updateResult.hasUpdate) {
+  console.log(`새 버전 사용 가능: ${updateResult.versionInfo.latest}`);
+}
 ```
 
 ## 결과 객체
@@ -929,6 +1240,32 @@ window.addEventListener('config-loaded' (event) => {
 ```javascript
 window.addEventListener('before-window-hide' () => {
   // 윈도우가 숨겨지기 전에 정리(예: 편집 모드 종료)
+});
+```
+
+#### 업데이트 이벤트
+
+```javascript
+// 업데이트 확인 중
+window.addEventListener('checking-for-update', (event) => {
+  // UI에 로딩 표시
+});
+
+// 업데이트 사용 가능
+window.addEventListener('update-available', (event) => {
+  const updateInfo = event.detail.info;
+  // 사용자에게 업데이트 알림
+});
+
+// 업데이트 다운로드 진행 상황
+window.addEventListener('download-progress', (event) => {
+  const percent = event.detail.progress.percent;
+  // 진행 표시줄 업데이트
+});
+
+// 업데이트 다운로드 완료
+window.addEventListener('update-downloaded', (event) => {
+  // 사용자에게 설치 옵션 표시
 });
 ```
 
