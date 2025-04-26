@@ -1055,6 +1055,27 @@ function setupEventListeners() {
     });
   });
 
+  // 탭 선택 이벤트 리스너 - 외부에서 특정 탭을 선택하도록 요청할 때 사용
+  window.addEventListener('select-settings-tab', event => {
+    console.log('선택된 탭 이벤트 감지:', event.detail);
+
+    // 탭 이름이 유효한지 확인
+    const tabName = event.detail;
+    if (tabName && typeof tabName === 'string') {
+      // 해당 이름의 탭이 존재하는지 확인
+      const tabExists = Array.from(tabLinks).some(
+        link => link.getAttribute('data-tab') === tabName
+      );
+
+      if (tabExists) {
+        console.log(`'${tabName}' 탭으로 전환합니다.`);
+        switchTab(tabName);
+      } else {
+        console.warn(`요청된 탭 '${tabName}'이 존재하지 않습니다.`);
+      }
+    }
+  });
+
   // About 탭 이벤트 리스너
   homepageButton.addEventListener('click', () => {
     window.settings.openUrl('https://app.toast.sh');

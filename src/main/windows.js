@@ -314,18 +314,48 @@ function positionSettingsWindowOnToastDisplay(settingsWindow) {
 /**
  * Show the Settings window
  * @param {Object} config - Configuration store
+ * @param {string} tabName - Optional tab name to select
+ * @returns {BrowserWindow} Settings window
  */
-function showSettingsWindow(config) {
+function showSettingsWindow(config, tabName) {
+  let settingsWindow;
+
   // Create the window if it doesn't exist
   if (!windows.settings || windows.settings.isDestroyed()) {
-    createSettingsWindow(config);
+    settingsWindow = createSettingsWindow(config);
+
+    // 창이 준비되면 탭 선택 메시지 전송
+    if (tabName) {
+      windows.settings.webContents.once('did-finish-load', () => {
+        setTimeout(() => {
+          if (windows.settings && !windows.settings.isDestroyed()) {
+            console.log(`설정 창이 로드됨, '${tabName}' 탭 선택 메시지 전송`);
+            windows.settings.webContents.send('select-settings-tab', tabName);
+          }
+        }, 300); // 완전히 로드되기 위한 시간 추가
+      });
+    }
   } else {
+    settingsWindow = windows.settings;
+
     // Position the settings window on the same display as the toast window
     positionSettingsWindowOnToastDisplay(windows.settings);
     // Show and focus it
     windows.settings.show();
     windows.settings.focus();
+
+    // 이미 열려있는 창에서 탭 선택
+    if (tabName) {
+      setTimeout(() => {
+        if (windows.settings && !windows.settings.isDestroyed()) {
+          console.log(`설정 창이 이미 열려있음, '${tabName}' 탭 선택 메시지 전송`);
+          windows.settings.webContents.send('select-settings-tab', tabName);
+        }
+      }, 100);
+    }
   }
+
+  return settingsWindow;
 }
 
 /**
