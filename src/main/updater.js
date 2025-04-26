@@ -232,7 +232,6 @@ async function checkForUpdates(silent = false) {
       };
     }
   } catch (error) {
-    console.error('업데이트 확인 오류:', error);
     logger.error('업데이트 확인 오류:', error.toString());
 
     // 오류 알림 (silent 모드가 아닌 경우에만)
@@ -286,7 +285,6 @@ async function downloadUpdate() {
       version: updateCheckResult.updateInfo.version
     };
   } catch (error) {
-    console.error('업데이트 다운로드 오류:', error);
     logger.error('업데이트 다운로드 오류:', error.toString());
 
     sendStatusToWindows('update-error', {
@@ -317,7 +315,6 @@ async function installUpdate() {
       success: true
     };
   } catch (error) {
-    console.error('업데이트 설치 오류:', error);
     logger.error('업데이트 설치 오류:', error.toString());
 
     sendStatusToWindows('update-error', {
