@@ -55,7 +55,7 @@ contextBridge.exposeInMainWorld('settings', {
   installUpdate: () => ipcRenderer.invoke('install-update'),
 
   // Auto updater
-  checkForUpdates: (silent) => ipcRenderer.invoke('check-for-updates', silent),
+  checkForUpdates: silent => ipcRenderer.invoke('check-for-updates', silent),
   downloadAutoUpdate: () => ipcRenderer.invoke('download-auto-update'),
   installAutoUpdate: () => ipcRenderer.invoke('install-auto-update'),
   downloadManualUpdate: () => ipcRenderer.invoke('download-manual-update'),

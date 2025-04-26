@@ -754,10 +754,13 @@ function setupIpcHandlers(windows) {
       const checkResult = await updater.checkForUpdates(true);
 
       if (!checkResult || !checkResult.success) {
-        logger.warn('업데이트 확인 실패, 다운로드를 진행할 수 없습니다:', checkResult?.error || '알 수 없는 오류');
+        logger.warn(
+          '업데이트 확인 실패, 다운로드를 진행할 수 없습니다:',
+          checkResult?.error || '알 수 없는 오류',
+        );
         return {
           success: false,
-          error: checkResult?.error || '업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+          error: checkResult?.error || '업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
         };
       }
 
@@ -765,7 +768,7 @@ function setupIpcHandlers(windows) {
         logger.info('이미 최신 버전을 사용 중입니다. 다운로드할 업데이트가 없습니다.');
         return {
           success: false,
-          error: '이미 최신 버전을 사용 중입니다.'
+          error: '이미 최신 버전을 사용 중입니다.',
         };
       }
 
@@ -775,7 +778,7 @@ function setupIpcHandlers(windows) {
       logger.error('자동 업데이트 다운로드 중 오류 발생:', error);
       return {
         success: false,
-        error: `자동 업데이트 다운로드 중 오류가 발생했습니다: ${error.message || error}`
+        error: `자동 업데이트 다운로드 중 오류가 발생했습니다: ${error.message || error}`,
       };
     }
   });
@@ -789,10 +792,13 @@ function setupIpcHandlers(windows) {
       const checkResult = await updater.checkForUpdates(false);
 
       if (!checkResult || !checkResult.success) {
-        logger.warn('업데이트 확인 실패, 다운로드를 진행할 수 없습니다:', checkResult?.error || '알 수 없는 오류');
+        logger.warn(
+          '업데이트 확인 실패, 다운로드를 진행할 수 없습니다:',
+          checkResult?.error || '알 수 없는 오류',
+        );
         return {
           success: false,
-          error: checkResult?.error || '업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+          error: checkResult?.error || '업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
         };
       }
 
@@ -800,7 +806,7 @@ function setupIpcHandlers(windows) {
         logger.info('이미 최신 버전을 사용 중입니다. 다운로드할 업데이트가 없습니다.');
         return {
           success: false,
-          error: '이미 최신 버전을 사용 중입니다.'
+          error: '이미 최신 버전을 사용 중입니다.',
         };
       }
 
@@ -810,7 +816,7 @@ function setupIpcHandlers(windows) {
       logger.error('수동 업데이트 다운로드 중 오류 발생:', error);
       return {
         success: false,
-        error: `수동 업데이트 다운로드 중 오류가 발생했습니다: ${error.message || error}`
+        error: `수동 업데이트 다운로드 중 오류가 발생했습니다: ${error.message || error}`,
       };
     }
   });

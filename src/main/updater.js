@@ -34,9 +34,9 @@ function initAutoUpdater(windows) {
   autoUpdater.logger = logger;
 
   // 개발 환경에서도 업데이트 확인 가능하도록 설정
-  autoUpdater.forceDevUpdateConfig = true;        // 개발 환경에서도 업데이트 확인 강제
-  autoUpdater.allowDowngrade = true;              // 다운그레이드 허용
-  autoUpdater.allowPrerelease = true;             // 프리릴리스 버전 허용
+  autoUpdater.forceDevUpdateConfig = true; // 개발 환경에서도 업데이트 확인 강제
+  autoUpdater.allowDowngrade = true; // 다운그레이드 허용
+  autoUpdater.allowPrerelease = true; // 프리릴리스 버전 허용
 
   // 자동 다운로드 비활성화 (사용자가 명시적으로 다운로드를 요청할 때만 다운로드)
   autoUpdater.autoDownload = false;
@@ -79,58 +79,58 @@ function setupAutoUpdaterEvents() {
   });
 
   // 업데이트 사용 가능
-  autoUpdater.on('update-available', (info) => {
+  autoUpdater.on('update-available', info => {
     sendStatusToWindows('update-available', {
       status: 'available',
       info: {
         version: info.version,
         releaseDate: info.releaseDate,
         releaseNotes: info.releaseNotes,
-      }
+      },
     });
   });
 
   // 업데이트 없음
-  autoUpdater.on('update-not-available', (info) => {
+  autoUpdater.on('update-not-available', info => {
     sendStatusToWindows('update-not-available', {
       status: 'not-available',
       info: {
         version: info.version,
-        releaseDate: info.releaseDate
-      }
+        releaseDate: info.releaseDate,
+      },
     });
   });
 
   // 업데이트 다운로드 진행 상황
-  autoUpdater.on('download-progress', (progressObj) => {
+  autoUpdater.on('download-progress', progressObj => {
     sendStatusToWindows('download-progress', {
       status: 'downloading',
       progress: {
         percent: progressObj.percent,
         bytesPerSecond: progressObj.bytesPerSecond,
         transferred: progressObj.transferred,
-        total: progressObj.total
-      }
+        total: progressObj.total,
+      },
     });
   });
 
   // 업데이트 다운로드 완료
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', info => {
     sendStatusToWindows('update-downloaded', {
       status: 'downloaded',
       info: {
         version: info.version,
         releaseDate: info.releaseDate,
-        releaseNotes: info.releaseNotes
-      }
+        releaseNotes: info.releaseNotes,
+      },
     });
   });
 
   // 업데이트 오류
-  autoUpdater.on('error', (err) => {
+  autoUpdater.on('error', err => {
     sendStatusToWindows('update-error', {
       status: 'error',
-      error: err.toString()
+      error: err.toString(),
     });
   });
 }
@@ -141,7 +141,9 @@ function setupAutoUpdaterEvents() {
  */
 function setupIpcHandlers() {
   // 이 함수는 호환성을 위해 유지하지만 더 이상 IPC 핸들러를 등록하지 않음
-  logger.info('Updater IPC handlers are now managed centrally in ipc.js instead of being registered directly.');
+  logger.info(
+    'Updater IPC handlers are now managed centrally in ipc.js instead of being registered directly.',
+  );
 }
 
 /**
@@ -163,16 +165,18 @@ async function checkForUpdates(silent = false) {
       const currentVersion = app.getVersion();
       const latestVersion = result.updateInfo.version;
 
-      logger.info(`Update check result: Current version ${currentVersion}, Latest version ${latestVersion}`);
+      logger.info(
+        `Update check result: Current version ${currentVersion}, Latest version ${latestVersion}`,
+      );
 
       return {
         success: true,
         updateInfo: result.updateInfo,
         versionInfo: {
           current: currentVersion,
-          latest: latestVersion
+          latest: latestVersion,
         },
-        hasUpdate: result.updateInfo.version !== currentVersion
+        hasUpdate: result.updateInfo.version !== currentVersion,
       };
     } else {
       // 업데이트 정보가 없는 경우
@@ -182,8 +186,8 @@ async function checkForUpdates(silent = false) {
         sendStatusToWindows('update-not-available', {
           status: 'not-available',
           info: {
-            version: app.getVersion()
-          }
+            version: app.getVersion(),
+          },
         });
       }
 
@@ -192,9 +196,9 @@ async function checkForUpdates(silent = false) {
         error: 'Update information not found.',
         versionInfo: {
           current: app.getVersion(),
-          latest: null
+          latest: null,
         },
-        hasUpdate: false
+        hasUpdate: false,
       };
     }
   } catch (error) {
@@ -204,7 +208,7 @@ async function checkForUpdates(silent = false) {
     if (!silent) {
       sendStatusToWindows('update-error', {
         status: 'error',
-        error: error.toString()
+        error: error.toString(),
       });
     }
 
@@ -213,8 +217,8 @@ async function checkForUpdates(silent = false) {
       error: error.toString(),
       versionInfo: {
         current: app.getVersion(),
-        latest: null
-      }
+        latest: null,
+      },
     };
   }
 }
@@ -262,19 +266,19 @@ async function downloadUpdate() {
     return {
       success: true,
       message: 'Update download has started.',
-      version: updateCheckResult.updateInfo.version
+      version: updateCheckResult.updateInfo.version,
     };
   } catch (error) {
     logger.error('Update download error:', error.toString());
 
     sendStatusToWindows('update-error', {
       status: 'error',
-      error: error.toString()
+      error: error.toString(),
     });
 
     return {
       success: false,
-      error: error.toString()
+      error: error.toString(),
     };
   }
 }
@@ -294,23 +298,22 @@ async function installUpdate() {
     autoUpdater.quitAndInstall(false, true);
 
     return {
-      success: true
+      success: true,
     };
   } catch (error) {
     logger.error('Update installation error:', error.toString());
 
     sendStatusToWindows('update-error', {
       status: 'error',
-      error: error.toString()
+      error: error.toString(),
     });
 
     return {
       success: false,
-      error: error.toString()
+      error: error.toString(),
     };
   }
 }
-
 
 /**
  * 모든 창에 상태 업데이트 전송
@@ -333,5 +336,5 @@ module.exports = {
   initAutoUpdater,
   checkForUpdates,
   downloadUpdate,
-  installUpdate
+  installUpdate,
 };

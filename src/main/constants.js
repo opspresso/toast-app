@@ -12,7 +12,7 @@ const APP_DEFAULT_INFO = {
   license: 'MIT',
   version: 'v0.0.0', // 버전을 가져오지 못할 때 기본값
   name: 'Toast',
-  repository: 'https://github.com/opspresso/toast-app'
+  repository: 'https://github.com/opspresso/toast-app',
 };
 
 // Constants for the number of page groups based on subscription level

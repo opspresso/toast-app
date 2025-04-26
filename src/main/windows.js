@@ -221,7 +221,7 @@ function createSettingsWindow(config) {
  * @param {BrowserWindow} settingsWindow - Settings window
  */
 function setupSettingsWindowEvents(settingsWindow) {
-    // Check if login is in progress when attempting to close window
+  // Check if login is in progress when attempting to close window
   settingsWindow.on('close', event => {
     // Check if login is in progress
     const loginInProgress = isLoginProcessActive();

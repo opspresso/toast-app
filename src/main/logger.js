@@ -54,7 +54,7 @@ function createLogger(moduleName) {
     // Direct access to original logger
     get raw() {
       return electronLog;
-    }
+    },
   };
 }
 

@@ -71,8 +71,7 @@
       "hardenedRuntime": true,
       "icon": "assets/icons/icon.icns",
       "target": [
-        "dmg",
-        "zip"
+        "dmg"
       ],
       "type": "distribution",
       "identity": null,
