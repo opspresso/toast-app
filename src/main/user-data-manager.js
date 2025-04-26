@@ -1,5 +1,5 @@
 /**
- * Toast App - User Data Manager Module
+ * Toast - User Data Manager Module
  *
  * Provides functionality to save and retrieve user profiles, subscription information, and settings as files.
  * Handles periodic data updates and file management.

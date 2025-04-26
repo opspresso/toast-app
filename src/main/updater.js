@@ -11,12 +11,6 @@ const { createLogger, electronLog } = require('./logger');
 // 모듈별 로거 생성
 const logger = createLogger('Updater');
 
-// 로그 레벨 설정
-// 로그 레벨: error > warn > info > verbose > debug > silly
-// 'info'로 설정하면 info, warn, error 레벨의 로그만 파일에 기록됨
-// 개발 시에는 'debug'로 설정하면 더 많은 정보 확인 가능
-electronLog.transports.file.level = 'info';
-
 // 자동 업데이트 상태 이벤트를 전달하기 위한 변수들
 let mainWindow = null;
 let settingsWindow = null;
