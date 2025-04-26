@@ -401,23 +401,6 @@ function installUpdate() {
 }
 ```
 
-### 개발 환경에서 업데이트 테스트
-
-개발 중에 자동 업데이트를 테스트하려면:
-
-1. `src/main/dev-app-update.yml` 파일 생성:
-   ```yaml
-   owner: opspresso
-   repo: toast-dist
-   provider: github
-   ```
-
-2. 개발 모드 실행 시 테스트 설정 활성화:
-   ```javascript
-   // 개발 환경에서도 업데이트 확인 가능하도록 설정
-   autoUpdater.forceDevUpdateConfig = true;
-   ```
-
 ## 디버깅
 
 ### 메인 프로세스 디버깅
