@@ -70,7 +70,8 @@
       "hardenedRuntime": true,
       "icon": "assets/icons/icon.icns",
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "type": "distribution"
     },
@@ -92,6 +93,8 @@
   "publish": {
     "provider": "github",
     "owner": "opspresso",
-    "repo": "toast-dist"
+    "repo": "toast-dist",
+    "releaseType": "release",
+    "publishAutoUpdate": true
   }
 }
