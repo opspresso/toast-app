@@ -10,6 +10,10 @@ const { loadEnv } = require('./main/config/env');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+const { createLogger } = require('./main/logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('Main');
 
 // Load environment variables
 loadEnv();
@@ -49,20 +53,20 @@ const config = createConfigStore();
  * Load environment configuration files and apply to app
  */
 async function loadEnvironmentConfig() {
-  console.log('Starting to load environment configuration files...');
+  logger.info('Starting to load environment configuration files...');
   try {
     // 1. Load authentication token
     const hasToken = await auth.hasValidToken();
-    console.log('Authentication token check result:', hasToken ? 'Token exists' : 'No token');
+    logger.info('Authentication token check result:', hasToken ? 'Token exists' : 'No token');
 
     // 2. Load user profile
     if (hasToken) {
       const userProfile = await authManager.fetchUserProfile();
-      console.log('User profile loading complete:', userProfile ? 'Success' : 'Failed');
+      logger.info('User profile loading complete:', userProfile ? 'Success' : 'Failed');
 
       // 3. Load user settings
       const userSettings = await authManager.getUserSettings();
-      console.log('User settings loading complete:', userSettings ? 'Success' : 'Failed');
+      logger.info('User settings loading complete:', userSettings ? 'Success' : 'Failed');
 
       // Authentication state notification
       if (userProfile) {
@@ -71,18 +75,18 @@ async function loadEnvironmentConfig() {
           profile: userProfile,
           settings: userSettings,
         });
-        console.log('Authentication state update notification sent');
+        logger.info('Authentication state update notification sent');
       }
     } else {
-      console.log('No valid token, initializing authentication state');
+      logger.info('No valid token, initializing authentication state');
       authManager.notifyAuthStateChange({
         isAuthenticated: false,
       });
     }
   } catch (error) {
-    console.error('Error loading environment configuration files:', error);
+    logger.error('Error loading environment configuration files:', error);
   }
-  console.log('Environment configuration files loading complete');
+  logger.info('Environment configuration files loading complete');
 }
 
 /**
@@ -120,7 +124,7 @@ function initialize() {
   // Initialize cloud sync and connect with auth manager
   const syncManager = cloudSync.initCloudSync(authManager, userDataManager);
   authManager.setSyncManager(syncManager);
-  console.log('Cloud sync module initialized and connected to auth manager');
+  logger.info('Cloud sync module initialized and connected to auth manager');
 
   // Load environment configuration files and apply to app
   loadEnvironmentConfig();
@@ -130,7 +134,7 @@ function initialize() {
 
   // Set up URL protocol request handling function
   global.handleProtocolRequest = url => {
-    console.log('Processing protocol request:', url);
+    logger.info('Processing protocol request:', url);
 
     // Directly extract authentication code from URL
     if (url.startsWith('toast-app://auth')) {
@@ -142,54 +146,54 @@ function initialize() {
         const userId = urlObj.searchParams.get('userId');
         const action = urlObj.searchParams.get('action');
 
-        console.log('Code extraction from protocol:', code ? 'Exists' : 'None');
+        logger.info('Code extraction from protocol:', code ? 'Exists' : 'None');
 
         if (error) {
-          console.error('Authentication error parameter:', error);
+          logger.error('Authentication error parameter:', error);
           authManager.notifyLoginError(error);
           return;
         }
 
         if (code) {
           // 기존 OAuth 코드 처리 로직
-          console.log('Starting authentication code exchange:', code.substring(0, 6) + '...');
+          logger.info('Starting authentication code exchange:', code.substring(0, 6) + '...');
           authManager
             .exchangeCodeForTokenAndUpdateSubscription(code)
             .then(result => {
-              console.log(
+              logger.info(
                 'Authentication code exchange result:',
                 result.success ? 'Success' : 'Failed',
               );
             })
             .catch(err => {
-              console.error('Authentication code exchange error:', err);
+              logger.error('Authentication code exchange error:', err);
               authManager.notifyLoginError(
                 err.message || 'An error occurred during authentication processing',
               );
             });
         } else if (action === 'reload_auth' && token && userId) {
           // connect 페이지에서 온 딥링크 처리
-          console.log('Processing auth reload request with token:', token);
+          logger.info('Processing auth reload request with token:', token);
           auth
             .handleAuthRedirect(url)
             .then(result => {
-              console.log('Auth reload result:', result.success ? 'Success' : 'Failed');
+              logger.info('Auth reload result:', result.success ? 'Success' : 'Failed');
             })
             .catch(err => {
-              console.error('Auth reload error:', err);
+              logger.error('Auth reload error:', err);
               authManager.notifyLoginError(err.message || 'An error occurred during auth reload');
             });
         } else {
-          console.error('Authentication code or reload parameters are not in the URL');
+          logger.error('Authentication code or reload parameters are not in the URL');
           authManager.notifyLoginError('Authentication parameters are missing');
           return;
         }
       } catch (error) {
-        console.error('URL parsing error:', error);
+        logger.error('URL parsing error:', error);
         authManager.notifyLoginError(error.message || 'An error occurred while processing the URL');
       }
     } else {
-      console.log('Non-authentication URL protocol request:', url);
+      logger.info('Non-authentication URL protocol request:', url);
     }
   };
 
@@ -204,27 +208,27 @@ function setupAutoUpdater() {
 
     // Log update events
     autoUpdater.on('checking-for-update', () => {
-      console.log('Checking for update...');
+      logger.info('Checking for update...');
     });
 
     autoUpdater.on('update-available', info => {
-      console.log('Update available:', info.version);
+      logger.info('Update available:', info.version);
     });
 
     autoUpdater.on('update-not-available', () => {
-      console.log('Update not available');
+      logger.info('Update not available');
     });
 
     autoUpdater.on('error', err => {
-      console.error('Error in auto-updater:', err);
+      logger.error('Error in auto-updater:', err);
     });
 
     autoUpdater.on('download-progress', progressObj => {
-      console.log(`Download progress: ${progressObj.percent.toFixed(2)}%`);
+      logger.info(`Download progress: ${progressObj.percent.toFixed(2)}%`);
     });
 
     autoUpdater.on('update-downloaded', info => {
-      console.log('Update downloaded. Will install on restart.');
+      logger.info('Update downloaded. Will install on restart.');
     });
   }
 }

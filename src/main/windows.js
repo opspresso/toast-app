@@ -6,9 +6,13 @@
 
 const { BrowserWindow, app } = require('electron');
 const path = require('path');
+const { createLogger } = require('./logger');
 const { positionToastWindow } = require('./shortcuts');
 const { isModalOpened } = require('./ipc');
 const { isLoginProcessActive } = require('./api/auth'); // Import function to check login status
+
+// 모듈별 로거 생성
+const logger = createLogger('Windows');
 
 // Store window references to prevent garbage collection
 const windows = {
@@ -264,7 +268,7 @@ function hideToastWindow() {
   const loginInProgress = isLoginProcessActive();
 
   if (loginInProgress) {
-    console.log('Window will not be hidden during login requests.');
+    logger.info('Window will not be hidden during login requests.');
     return;
   }
 
@@ -329,7 +333,7 @@ function showSettingsWindow(config, tabName) {
       windows.settings.webContents.once('did-finish-load', () => {
         setTimeout(() => {
           if (windows.settings && !windows.settings.isDestroyed()) {
-            console.log(`설정 창이 로드됨, '${tabName}' 탭 선택 메시지 전송`);
+            logger.info(`설정 창이 로드됨, '${tabName}' 탭 선택 메시지 전송`);
             windows.settings.webContents.send('select-settings-tab', tabName);
           }
         }, 300); // 완전히 로드되기 위한 시간 추가
@@ -348,7 +352,7 @@ function showSettingsWindow(config, tabName) {
     if (tabName) {
       setTimeout(() => {
         if (windows.settings && !windows.settings.isDestroyed()) {
-          console.log(`설정 창이 이미 열려있음, '${tabName}' 탭 선택 메시지 전송`);
+          logger.info(`설정 창이 이미 열려있음, '${tabName}' 탭 선택 메시지 전송`);
           windows.settings.webContents.send('select-settings-tab', tabName);
         }
       }, 100);

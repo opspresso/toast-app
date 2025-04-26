@@ -11,8 +11,12 @@
  */
 
 const os = require('os');
+const { createLogger } = require('./logger');
 const { sync: apiSync } = require('./api');
 const { createConfigStore } = require('./config');
+
+// 모듈별 로거 생성
+const logger = createLogger('CloudSync');
 
 // Synchronization related constants
 const SYNC_INTERVAL_MS = 15 * 60 * 1000; // Automatic sync every 15 minutes
@@ -65,7 +69,7 @@ function getCurrentTimestamp() {
  */
 async function canSync() {
   if (!state.enabled || !authManager) {
-    console.log('Synchronization disabled or no authentication manager, sync not possible');
+    logger.info('Synchronization disabled or no authentication manager, sync not possible');
     return false;
   }
 
@@ -75,7 +79,7 @@ async function canSync() {
       configStore,
     });
   } catch (error) {
-    console.error('Error checking synchronization availability:', error);
+    logger.error('Error checking synchronization availability:', error);
     return false;
   }
 }
@@ -88,12 +92,12 @@ function startPeriodicSync() {
 
   state.timers.sync = setInterval(async () => {
     if (await canSync()) {
-      console.log('Performing periodic settings synchronization');
+      logger.info('Performing periodic settings synchronization');
       await downloadSettings();
     }
   }, SYNC_INTERVAL_MS);
 
-  console.log(
+  logger.info(
     `Periodic synchronization started (${Math.floor(SYNC_INTERVAL_MS / 60000)}-minute interval)`,
   );
 }
@@ -105,7 +109,7 @@ function stopPeriodicSync() {
   if (state.timers.sync) {
     clearInterval(state.timers.sync);
     state.timers.sync = null;
-    console.log('Periodic synchronization stopped');
+    logger.info('Periodic synchronization stopped');
   }
 }
 
@@ -123,12 +127,12 @@ function scheduleSync(changeType) {
 
   // Schedule new synchronization
   state.timers.debounce = setTimeout(async () => {
-    console.log(`Starting settings upload for change type '${changeType}'`);
+    logger.info(`Starting settings upload for change type '${changeType}'`);
     state.retryCount = 0; // Reset retry count
     await uploadSettingsWithRetry();
   }, SYNC_DEBOUNCE_MS);
 
-  console.log(
+  logger.info(
     `${changeType} change detected, synchronization scheduled in ${SYNC_DEBOUNCE_MS / 1000} seconds`,
   );
 }
@@ -138,7 +142,7 @@ function scheduleSync(changeType) {
  */
 async function uploadSettingsWithRetry() {
   if (state.isSyncing) {
-    console.log('Already syncing, request ignored');
+    logger.info('Already syncing, request ignored');
     return;
   }
 
@@ -147,16 +151,16 @@ async function uploadSettingsWithRetry() {
     const result = await uploadSettings();
 
     if (result.success) {
-      console.log(`Cloud sync successful for '${state.lastChangeType}' change`);
+      logger.info(`Cloud sync successful for '${state.lastChangeType}' change`);
       state.retryCount = 0;
       state.pendingSync = false;
     } else {
       state.retryCount++;
 
-      console.log(`Sync failed reason: ${result.error}`);
+      logger.info(`Sync failed reason: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
-        console.log(
+        logger.info(
           `Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`,
         );
 
@@ -165,18 +169,18 @@ async function uploadSettingsWithRetry() {
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
       } else {
-        console.error(
+        logger.error(
           `Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload failed: ${result.error}`,
         );
         state.retryCount = 0;
       }
     }
   } catch (error) {
-    console.error('Error during settings upload:', error);
+    logger.error('Error during settings upload:', error);
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
-      console.log(
+      logger.info(
         `Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`,
       );
 
@@ -185,7 +189,7 @@ async function uploadSettingsWithRetry() {
         uploadSettingsWithRetry();
       }, RETRY_DELAY_MS);
     } else {
-      console.error(`Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload aborted`);
+      logger.error(`Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload aborted`);
       state.retryCount = 0;
     }
   } finally {
@@ -198,11 +202,11 @@ async function uploadSettingsWithRetry() {
  * @returns {Promise<Object>} Upload result
  */
 async function uploadSettings() {
-  console.log('Starting settings upload');
+  logger.info('Starting settings upload');
 
   // Check sync state
   if (!state.enabled) {
-    console.log('Cloud sync disabled, skipping upload');
+    logger.info('Cloud sync disabled, skipping upload');
     return { success: false, error: 'Cloud sync disabled' };
   }
 
@@ -212,7 +216,7 @@ async function uploadSettings() {
   }
 
   if (state.isSyncing) {
-    console.log('Already syncing, skipping upload');
+    logger.info('Already syncing, skipping upload');
     return { success: false, error: 'Already syncing' };
   }
 
@@ -225,7 +229,7 @@ async function uploadSettings() {
     const pages = configStore.get('pages') || [];
 
     if (pages.length === 0) {
-      console.warn('No page data to upload');
+      logger.warn('No page data to upload');
     }
 
     // Update timestamp
@@ -240,7 +244,7 @@ async function uploadSettings() {
       pages,
     };
 
-    console.log(`Uploading settings with ${pages.length} pages to server`);
+    logger.info(`Uploading settings with ${pages.length} pages to server`);
 
     // API call
     const result = await apiSync.uploadSettings({
@@ -260,12 +264,12 @@ async function uploadSettings() {
         lastSyncedDevice: state.deviceId,
       });
 
-      console.log('Settings upload successful and sync metadata updated');
+      logger.info('Settings upload successful and sync metadata updated');
     }
 
     return result;
   } catch (error) {
-    console.error('Settings upload error:', error);
+    logger.error('Settings upload error:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
@@ -280,11 +284,11 @@ async function uploadSettings() {
  * @returns {Promise<Object>} Download result
  */
 async function downloadSettings() {
-  console.log('Starting settings download');
+  logger.info('Starting settings download');
 
   // Check sync state
   if (!state.enabled) {
-    console.log('Cloud sync disabled, skipping download');
+    logger.info('Cloud sync disabled, skipping download');
     return { success: false, error: 'Cloud sync disabled' };
   }
 
@@ -294,7 +298,7 @@ async function downloadSettings() {
   }
 
   if (state.isSyncing) {
-    console.log('Already syncing, skipping download');
+    logger.info('Already syncing, skipping download');
     return { success: false, error: 'Already syncing' };
   }
 
@@ -314,7 +318,7 @@ async function downloadSettings() {
       let syncMetadata = {};
 
       if (result.syncMetadata) {
-        console.log('Using sync metadata from server response');
+        logger.info('Using sync metadata from server response');
         syncMetadata = {
           lastSyncedAt: result.syncMetadata.lastSyncedAt || getCurrentTimestamp(),
           lastSyncedDevice: state.deviceId,
@@ -326,7 +330,7 @@ async function downloadSettings() {
           syncMetadata.lastModifiedDevice = result.syncMetadata.lastModifiedDevice || 'server';
         }
       } else {
-        console.log('No sync metadata in server response, using current timestamp');
+        logger.info('No sync metadata in server response, using current timestamp');
         // 서버 응답에 메타데이터가 없는 경우 현재 시간으로 설정
         const timestamp = getCurrentTimestamp();
         syncMetadata = {
@@ -343,7 +347,7 @@ async function downloadSettings() {
       // 메타데이터 업데이트
       userDataManager.updateSyncMetadata(syncMetadata);
 
-      console.log('Settings download successful and sync metadata updated:', syncMetadata);
+      logger.info('Settings download successful and sync metadata updated:', syncMetadata);
 
       // 인증 관리자를 통해 UI 업데이트 알림 전송
       if (authManager && typeof authManager.notifySettingsSynced === 'function') {
@@ -356,15 +360,15 @@ async function downloadSettings() {
         };
 
         authManager.notifySettingsSynced(configData);
-        console.log('UI update notification sent to toast window');
+        logger.info('UI update notification sent to toast window');
       }
     } else {
-      console.error('Settings download failed:', result.error);
+      logger.error('Settings download failed:', result.error);
     }
 
     return result;
   } catch (error) {
-    console.error('Settings download error:', error);
+    logger.error('Settings download error:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
@@ -380,11 +384,11 @@ async function downloadSettings() {
  * @returns {Promise<Object>} Synchronization result
  */
 async function syncSettings(action = 'resolve') {
-  console.log(`Manual synchronization request: ${action}`);
+  logger.info(`Manual synchronization request: ${action}`);
 
   // // Additional debugging information
   // const syncCheckResult = await canSync();
-  // console.log('Manual sync canSync result:', syncCheckResult);
+  // logger.debug('Manual sync canSync result:', syncCheckResult);
 
   // if (!syncCheckResult) {
   //   return { success: false, error: 'Cloud sync not enabled' };
@@ -410,7 +414,7 @@ async function syncSettings(action = 'resolve') {
       });
 
       if (!serverResult.success) {
-        console.error('Server settings download failed:', serverResult.error);
+        logger.error('Server settings download failed:', serverResult.error);
         return serverResult;
       }
 
@@ -423,14 +427,14 @@ async function syncSettings(action = 'resolve') {
 
       // 5. Upload merged settings if needed
       if (localSettings && localSettings.lastModifiedAt > (serverSettings?.lastModifiedAt || 0)) {
-        console.log('Local settings are more recent. Uploading merged settings to server.');
+        logger.info('Local settings are more recent. Uploading merged settings to server.');
         await uploadSettings();
       }
 
       return { success: true, message: 'Settings synchronization complete' };
     }
   } catch (error) {
-    console.error('Manual synchronization error:', error);
+    logger.error('Manual synchronization error:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
@@ -452,13 +456,13 @@ function mergeSettings(localSettings, serverSettings) {
   const localTime = localSettings.lastModifiedAt || 0;
   const serverTime = serverSettings.lastModifiedAt || 0;
 
-  console.log(
+  logger.info(
     `Settings merge: Local(${new Date(localTime).toISOString()}) vs Server(${new Date(serverTime).toISOString()})`,
   );
 
   // If server settings are more recent
   if (serverTime > localTime) {
-    console.log('Server settings are more recent. Applying server settings with priority');
+    logger.info('Server settings are more recent. Applying server settings with priority');
     return {
       ...localSettings,
       ...serverSettings,
@@ -467,7 +471,7 @@ function mergeSettings(localSettings, serverSettings) {
   }
 
   // If local settings are more recent
-  console.log('Local settings are more recent. Applying local settings with priority');
+  logger.info('Local settings are more recent. Applying local settings with priority');
   return {
     ...serverSettings,
     ...localSettings,
@@ -481,7 +485,7 @@ function mergeSettings(localSettings, serverSettings) {
  */
 function setEnabled(enabled) {
   state.enabled = enabled;
-  console.log(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
+  logger.info(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
 
   if (enabled) {
     startPeriodicSync();
@@ -514,7 +518,7 @@ function setupConfigListeners() {
       }
     }
 
-    console.log(`Page settings change detected (${changeType})`);
+    logger.info(`Page settings change detected (${changeType})`);
 
     // Update metadata only
     const timestamp = getCurrentTimestamp();
@@ -523,7 +527,7 @@ function setupConfigListeners() {
       lastModifiedDevice: state.deviceId,
     });
 
-    console.log('Settings file metadata update complete');
+    logger.info('Settings file metadata update complete');
 
     // Schedule synchronization
     scheduleSync(changeType);
@@ -535,7 +539,7 @@ function setupConfigListeners() {
       return;
     }
 
-    console.log('Appearance settings change detected');
+    logger.info('Appearance settings change detected');
 
     // Update metadata only
     const timestamp = getCurrentTimestamp();
@@ -544,7 +548,7 @@ function setupConfigListeners() {
       lastModifiedDevice: state.deviceId,
     });
 
-    console.log('Settings file metadata update complete');
+    logger.info('Settings file metadata update complete');
 
     // Schedule synchronization
     scheduleSync('Appearance change');
@@ -556,7 +560,7 @@ function setupConfigListeners() {
       return;
     }
 
-    console.log('Advanced settings change detected');
+    logger.info('Advanced settings change detected');
 
     // Update metadata only
     const timestamp = getCurrentTimestamp();
@@ -565,7 +569,7 @@ function setupConfigListeners() {
       lastModifiedDevice: state.deviceId,
     });
 
-    console.log('Settings file metadata update complete');
+    logger.info('Settings file metadata update complete');
 
     // Schedule synchronization
     scheduleSync('Advanced settings change');
@@ -577,7 +581,7 @@ function setupConfigListeners() {
  * @returns {Object} Synchronization manager object
  */
 function initCloudSync(authManager, userDataManager) {
-  console.log('Starting cloud synchronization initialization');
+  logger.info('Starting cloud synchronization initialization');
 
   // Set authentication manager reference
   setAuthManager(authManager);
@@ -590,7 +594,7 @@ function initCloudSync(authManager, userDataManager) {
 
   // Initialize device information
   state.deviceId = getDeviceIdentifier();
-  console.log(`Device ID: ${state.deviceId}`);
+  logger.info(`Device ID: ${state.deviceId}`);
 
   // Register settings change detection events
   setupConfigListeners();
@@ -608,7 +612,7 @@ function initCloudSync(authManager, userDataManager) {
         state.timers.debounce = null;
       }
 
-      console.log('Cloud synchronization unsubscribed');
+      logger.info('Cloud synchronization unsubscribed');
     },
     enable: () => {
       setEnabled(true);
@@ -621,7 +625,7 @@ function initCloudSync(authManager, userDataManager) {
       timestamp: state.lastSyncTime,
     }),
     syncAfterLogin: async () => {
-      console.log('Performing cloud synchronization after login');
+      logger.info('Performing cloud synchronization after login');
 
       // Prioritize download after login
       const result = await downloadSettings();
@@ -640,7 +644,7 @@ function initCloudSync(authManager, userDataManager) {
 
           // UI에 알림 전송 - 이것은 토스트 창의 버튼/페이지를 업데이트하기 위함
           authManager.notifySettingsSynced(configData);
-          console.log('Login sync: UI update notification sent for current settings');
+          logger.info('Login sync: UI update notification sent for current settings');
         }
       }
 
@@ -675,7 +679,7 @@ function initCloudSync(authManager, userDataManager) {
  */
 function setAuthManager(manager) {
   authManager = manager;
-  console.log('Authentication manager reference setup complete');
+  logger.info('Authentication manager reference setup complete');
 }
 
 /**
@@ -684,7 +688,7 @@ function setAuthManager(manager) {
  */
 function setUserDataManager(manager) {
   userDataManager = manager;
-  console.log('User data manager reference setup complete');
+  logger.info('User data manager reference setup complete');
 }
 
 /**
