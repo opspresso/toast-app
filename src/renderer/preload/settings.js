@@ -55,6 +55,12 @@ contextBridge.exposeInMainWorld('settings', {
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
 
+  // Auto updater
+  checkForUpdates: (silent) => ipcRenderer.invoke('check-for-updates', silent),
+  downloadAutoUpdate: () => ipcRenderer.invoke('download-auto-update'),
+  installAutoUpdate: () => ipcRenderer.invoke('install-auto-update'),
+  downloadManualUpdate: () => ipcRenderer.invoke('download-manual-update'),
+
   // Cloud Sync
   getSyncStatus: () => ipcRenderer.invoke('get-sync-status'),
   setCloudSyncEnabled: enabled => ipcRenderer.invoke('set-cloud-sync-enabled', enabled),
@@ -132,6 +138,79 @@ ipcRenderer.on('settings-synced', (event, data) => {
 ipcRenderer.on('config-updated', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('config-updated', {
+      detail: data,
+    }),
+  );
+});
+
+// Auto Update Events Handlers
+// 업데이트 확인 시작
+ipcRenderer.on('checking-for-update', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('checking-for-update', {
+      detail: data,
+    }),
+  );
+});
+
+// 업데이트 가능
+ipcRenderer.on('update-available', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('update-available', {
+      detail: data,
+    }),
+  );
+});
+
+// 업데이트 없음
+ipcRenderer.on('update-not-available', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('update-not-available', {
+      detail: data,
+    }),
+  );
+});
+
+// 다운로드 진행 상황
+ipcRenderer.on('download-progress', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('download-progress', {
+      detail: data,
+    }),
+  );
+});
+
+// 다운로드 시작
+ipcRenderer.on('download-started', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('download-started', {
+      detail: data,
+    }),
+  );
+});
+
+// 업데이트 다운로드 완료
+ipcRenderer.on('update-downloaded', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('update-downloaded', {
+      detail: data,
+    }),
+  );
+});
+
+// 설치 시작
+ipcRenderer.on('install-started', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('install-started', {
+      detail: data,
+    }),
+  );
+});
+
+// 업데이트 오류
+ipcRenderer.on('update-error', (event, data) => {
+  window.dispatchEvent(
+    new CustomEvent('update-error', {
       detail: data,
     }),
   );

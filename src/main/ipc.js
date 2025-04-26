@@ -14,6 +14,7 @@ const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortc
 const auth = require('./auth');
 const authManager = require('./auth-manager');
 const userDataManager = require('./user-data-manager');
+const updater = require('./updater');
 
 // Track button edit modal state
 let isModalOpen = false;
@@ -47,6 +48,9 @@ function setupIpcHandlers(windows) {
 
   // Initialize user data manager (pass window references)
   userDataManager.initialize(windows);
+
+  // Initialize auto updater (pass window references)
+  updater.initAutoUpdater(windows);
 
   // Register URL protocol handler (OAuth redirection handling)
   auth.registerProtocolHandler();

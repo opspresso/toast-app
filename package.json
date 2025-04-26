@@ -36,15 +36,16 @@
     "@nut-tree-fork/nut-js": "^4.2.6",
     "axios": "^1.8.4",
     "dotenv": "^16.5.0",
+    "electron-log": "^5.3.4",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.6.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.0.1",
     "electron": "^35.1.5",
     "electron-builder": "^26.0.12",
     "electron-builder-notarize": "^1.5.2",
-    "@electron/notarize": "^3.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "jest": "^29.7.0",
@@ -91,6 +92,6 @@
   "publish": {
     "provider": "github",
     "owner": "opspresso",
-    "repo": "toast-app"
+    "repo": "toast-dist"
   }
 }

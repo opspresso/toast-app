@@ -100,23 +100,6 @@ jobs:
         with:
           path: artifacts # Download all artifacts to artifacts directory
 
-      - name: Create Release in Current Repo 📦
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }} # Use current tag name
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
-            artifacts/**/*.zip
-
       - name: Create Release in Releases Repo 🚀
         uses: softprops/action-gh-release@v1
         env:
@@ -133,6 +116,8 @@ jobs:
             artifacts/**/*.dmg
             artifacts/**/*.exe
             artifacts/**/*.zip
+            artifacts/**/*.yml
+            artifacts/**/*.yaml
 
       - name: Trigger for Homebrew 🚀
         uses: opspresso/action-builder@master
