@@ -1,5 +1,5 @@
 /**
- * Toast App - Authentication Manager Module
+ * Toast - Authentication Manager Module
  *
  * This module is for synchronizing authentication state between settings window and toast window.
  * It centralizes login/logout processing and sends events to both windows.

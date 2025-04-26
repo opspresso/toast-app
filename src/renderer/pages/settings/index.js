@@ -299,45 +299,7 @@ function updateSyncStatusUI(status) {
     return;
   }
 
-  // Update sync status badge
-  if (status.enabled) {
-    // 활성화된 경우에는 움직이는 스피너 표시
-    syncStatusBadge.textContent = '';
-    syncStatusBadge.className = 'badge premium badge-with-spinner';
-
-    // 움직이는 스피너 추가 (애니메이션 있음)
-    const spinner = document.createElement('div');
-    spinner.className = 'spinner-inline';
-    syncStatusBadge.appendChild(spinner);
-  } else {
-    // 비활성화된 경우에는 멈춘 이모티콘 표시
-    syncStatusBadge.textContent = '⏹️';
-    syncStatusBadge.className = 'badge secondary';
-  }
-
-  // Update sync status text
-  syncStatusText.textContent = status.enabled ? 'Cloud Sync Enabled' : 'Cloud Sync Disabled';
-
-  // Update last synced time
-  const lastSyncTime = status.lastSyncTime ? new Date(status.lastSyncTime) : new Date();
-  const formattedDate = lastSyncTime.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  lastSyncedTime.textContent = status.lastSyncTime
-    ? `Last Synced: ${formattedDate}`
-    : `Sync Status: Ready to sync (${formattedDate})`;
-
-  // Update device info
-  syncDeviceInfo.textContent = status.deviceId
-    ? `Current Device: ${status.deviceId}`
-    : 'Current Device: Unknown';
-
-  // Enable/disable buttons based on status
+  // 구독/VIP 여부 확인
   let hasCloudSyncPermission = false;
 
   // 디버깅: 구독 상태 정보 로깅
@@ -401,6 +363,51 @@ function updateSyncStatusUI(status) {
 
   window.settings.log.info('canUseCloudSync:', canUseCloudSync);
 
+  // 구독/VIP가 아니면 항상 Cloud Sync 비활성화
+  if (!canUseCloudSync) {
+    disableCloudSyncUI();
+    return;
+  }
+
+  // 권한이 있는 경우에만 활성화 상태 표시
+  // Update sync status badge
+  if (status.enabled) {
+    // 활성화된 경우에는 움직이는 스피너 표시
+    syncStatusBadge.textContent = '';
+    syncStatusBadge.className = 'badge premium badge-with-spinner';
+
+    // 움직이는 스피너 추가 (애니메이션 있음)
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-inline';
+    syncStatusBadge.appendChild(spinner);
+  } else {
+    // 비활성화된 경우에는 멈춘 이모티콘 표시
+    syncStatusBadge.textContent = '⏹️';
+    syncStatusBadge.className = 'badge secondary';
+  }
+
+  // Update sync status text
+  syncStatusText.textContent = status.enabled ? 'Cloud Sync Enabled' : 'Cloud Sync Disabled';
+
+  // Update last synced time
+  const lastSyncTime = status.lastSyncTime ? new Date(status.lastSyncTime) : new Date();
+  const formattedDate = lastSyncTime.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  lastSyncedTime.textContent = status.lastSyncTime
+    ? `Last Synced: ${formattedDate}`
+    : `Sync Status: Ready to sync (${formattedDate})`;
+
+  // Update device info
+  syncDeviceInfo.textContent = status.deviceId
+    ? `Current Device: ${status.deviceId}`
+    : 'Current Device: Unknown';
+
   enableCloudSyncCheckbox.disabled = !canUseCloudSync;
   enableCloudSyncCheckbox.checked = status.enabled;
 
@@ -434,9 +441,21 @@ function disableCloudSyncUI() {
   enableCloudSyncCheckbox.checked = false;
   enableCloudSyncCheckbox.disabled = true;
 
+  // 버튼 비활성화 및 회색으로 스타일 변경
   manualSyncUploadButton.disabled = true;
   manualSyncDownloadButton.disabled = true;
   manualSyncResolveButton.disabled = true;
+
+  // 버튼들에 회색 스타일 적용
+  manualSyncUploadButton.style.backgroundColor = '#cccccc';
+  manualSyncDownloadButton.style.backgroundColor = '#cccccc';
+  manualSyncResolveButton.style.backgroundColor = '#cccccc';
+  manualSyncUploadButton.style.color = '#666666';
+  manualSyncDownloadButton.style.color = '#666666';
+  manualSyncResolveButton.style.color = '#666666';
+  manualSyncUploadButton.style.cursor = 'not-allowed';
+  manualSyncDownloadButton.style.cursor = 'not-allowed';
+  manualSyncResolveButton.style.cursor = 'not-allowed';
 }
 
 /**
@@ -1394,15 +1413,6 @@ async function handleCloudSyncToggle() {
       window.settings.log.info('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
     }
 
-    // Premium 플랜 확인
-    if (authState.subscription?.plan) {
-      const plan = authState.subscription.plan.toLowerCase();
-      if (plan.includes('premium') || plan.includes('pro')) {
-        hasCloudSyncPermission = true;
-        window.settings.log.info('handleCloudSyncToggle: Premium/Pro 플랜 확인됨');
-      }
-    }
-
     // 구독 상태 확인
     if (
       authState.subscription?.isSubscribed === true ||
@@ -1426,17 +1436,6 @@ async function handleCloudSyncToggle() {
       if (authState.subscription.features_array.includes('cloud_sync')) {
         hasCloudSyncPermission = true;
         window.settings.log.info('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features_array)');
-      }
-    }
-
-    // additionalFeatures 확인
-    if (
-      authState.subscription?.additionalFeatures &&
-      typeof authState.subscription.additionalFeatures === 'object'
-    ) {
-      if (authState.subscription.additionalFeatures.cloudSync === true) {
-        hasCloudSyncPermission = true;
-        window.settings.log.info('handleCloudSyncToggle: cloudSync 기능 활성화됨 (additionalFeatures)');
       }
     }
 
@@ -1522,6 +1521,17 @@ function manualSyncEnabled() {
   manualSyncUploadButton.disabled = false;
   manualSyncDownloadButton.disabled = false;
   manualSyncResolveButton.disabled = false;
+
+  // 원래 스타일로 복원
+  manualSyncUploadButton.style.backgroundColor = '';
+  manualSyncDownloadButton.style.backgroundColor = '';
+  manualSyncResolveButton.style.backgroundColor = '';
+  manualSyncUploadButton.style.color = '';
+  manualSyncDownloadButton.style.color = '';
+  manualSyncResolveButton.style.color = '';
+  manualSyncUploadButton.style.cursor = '';
+  manualSyncDownloadButton.style.cursor = '';
+  manualSyncResolveButton.style.cursor = '';
 }
 
 /**
