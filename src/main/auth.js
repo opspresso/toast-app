@@ -1,5 +1,5 @@
 /**
- * Toast App - Authentication Module
+ * Toast - Authentication Module
  *
  * This module is for OAuth 2.0 authentication and subscription management.
  * Handles token storage, retrieval, validation, and high-level authentication flow.

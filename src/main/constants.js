@@ -1,5 +1,5 @@
 /**
- * Toast App - Common Constants Module
+ * Toast - Common Constants Module
  *
  * Defines constants used throughout the application.
  */
