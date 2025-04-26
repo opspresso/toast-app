@@ -8,6 +8,7 @@
 const { URL } = require('url');
 const { v4: uuidv4 } = require('uuid');
 const Store = require('electron-store');
+const { createLogger } = require('../logger');
 const {
   ENDPOINTS,
   createApiClient,
@@ -16,6 +17,9 @@ const {
   clearTokens,
 } = require('./client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
+
+// 모듈별 로거 생성
+const logger = createLogger('ApiAuth');
 
 // Authentication related constants
 const REDIRECT_URI = 'toast-app://auth';
@@ -42,10 +46,10 @@ function storeStateParam(state) {
   try {
     stateStore.set('oauth-state', state);
     stateStore.set('state-created-at', Date.now());
-    console.log('Auth state stored:', state);
+    logger.info('Auth state stored:', state);
     return true;
   } catch (error) {
-    console.error('Failed to store state parameter:', error);
+    logger.error('Failed to store state parameter:', error);
     throw error;
   }
 }
@@ -63,7 +67,7 @@ function retrieveStoredState() {
     const isExpired = Date.now() - createdAt > 5 * 60 * 1000;
 
     if (isExpired) {
-      console.log('Auth state expired, clearing');
+      logger.info('Auth state expired, clearing');
       stateStore.delete('oauth-state');
       stateStore.delete('state-created-at');
       return null;
@@ -71,7 +75,7 @@ function retrieveStoredState() {
 
     return state;
   } catch (error) {
-    console.error('Failed to retrieve stored state:', error);
+    logger.error('Failed to retrieve stored state:', error);
     return null;
   }
 }
@@ -104,9 +108,9 @@ function setLoginInProgress(status) {
   if (status) {
     // Record login start time
     loginStartTimestamp = Date.now();
-    console.log('Login process started');
+    logger.info('Login process started');
   } else {
-    console.log('Login process ended');
+    logger.info('Login process ended');
   }
 }
 
@@ -138,9 +142,9 @@ function initiateLogin(clientId) {
     authUrl.searchParams.append('state', state);
 
     // Log authentication URL
-    console.log('====== Authentication Request Info ======');
-    console.log('Full authentication request URL:', authUrl.toString());
-    console.log('========================================');
+    logger.info('====== Authentication Request Info ======');
+    logger.info('Full authentication request URL:', authUrl.toString());
+    logger.info('========================================');
 
     // Activate login progress state
     setLoginInProgress(true);
@@ -151,7 +155,7 @@ function initiateLogin(clientId) {
       state,
     };
   } catch (error) {
-    console.error('Failed to initiate login:', error);
+    logger.error('Failed to initiate login:', error);
 
     // Reset login state if error occurs
     setLoginInProgress(false);
@@ -173,7 +177,7 @@ function initiateLogin(clientId) {
  */
 async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   try {
-    console.log('Starting exchange of authorization code for token:', code.substring(0, 8) + '...');
+    logger.info('Starting exchange of authorization code for token:', code.substring(0, 8) + '...');
 
     const apiClient = createApiClient();
 
@@ -185,8 +189,8 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
     data.append('client_secret', clientSecret);
     data.append('redirect_uri', REDIRECT_URI);
 
-    console.log('Token request URL:', ENDPOINTS.OAUTH_TOKEN);
-    console.log('Request data:', {
+    logger.info('Token request URL:', ENDPOINTS.OAUTH_TOKEN);
+    logger.info('Request data:', {
       grant_type: 'authorization_code',
       code: code.substring(0, 8) + '...',
       client_id: clientId,
@@ -200,11 +204,11 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       },
     });
 
-    console.log('Token request successful! Response status:', response.status);
+    logger.info('Token request successful! Response status:', response.status);
     const { access_token, refresh_token, expires_in } = response.data;
 
     if (!access_token) {
-      console.error('No access token returned from server!');
+      logger.error('No access token returned from server!');
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
@@ -222,8 +226,8 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       expires_in,
     };
   } catch (error) {
-    console.error('Error exchanging token:', error);
-    console.error('Detailed error information:', error.response?.data || 'No detailed information');
+    logger.error('Error exchanging token:', error);
+    logger.error('Detailed error information:', error.response?.data || 'No detailed information');
 
     // Reset login state if error occurs
     setLoginInProgress(false);
@@ -246,10 +250,10 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
  */
 async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
   try {
-    console.log('Starting token refresh process');
+    logger.info('Starting token refresh process');
 
     if (!refreshToken) {
-      console.error('No refresh token available');
+      logger.error('No refresh token available');
       return {
         success: false,
         error: 'No refresh token available',
@@ -267,7 +271,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
     data.append('client_secret', clientSecret);
 
     // Log request data (excluding sensitive information)
-    console.log('Token refresh request:', {
+    logger.info('Token refresh request:', {
       url: ENDPOINTS.OAUTH_TOKEN,
       grant_type: 'refresh_token',
       client_id: clientId,
@@ -281,11 +285,11 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         },
       });
 
-      console.log('Token renewal response status:', response.status);
+      logger.info('Token renewal response status:', response.status);
       const { access_token, refresh_token } = response.data;
 
       if (!access_token) {
-        console.error('Access token missing in response');
+        logger.error('Access token missing in response');
         return {
           success: false,
           error: 'No access token in response',
@@ -293,7 +297,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         };
       }
 
-      console.log('New access token received:', access_token.substring(0, 10) + '...');
+      logger.info('New access token received:', access_token.substring(0, 10) + '...');
 
       return {
         success: true,
@@ -301,10 +305,10 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         refresh_token,
       };
     } catch (tokenRequestError) {
-      console.error('Token renewal request failed:', tokenRequestError.message);
+      logger.error('Token renewal request failed:', tokenRequestError.message);
 
       if (tokenRequestError.response?.status === 401) {
-        console.log('Refresh token has expired. Re-login required');
+        logger.info('Refresh token has expired. Re-login required');
 
         return {
           success: false,
@@ -319,7 +323,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         tokenRequestError.message ||
         'Unknown error during token refresh';
 
-      console.log('Error message:', errorMessage);
+      logger.info('Error message:', errorMessage);
       return {
         success: false,
         error: errorMessage,
@@ -327,7 +331,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
       };
     }
   } catch (error) {
-    console.error('Exception occurred during token refresh process:', error);
+    logger.error('Exception occurred during token refresh process:', error);
 
     // Critical error but keep app running
     const errorMessage = error.message || 'Unknown error in refresh token process';
@@ -348,7 +352,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
  */
 async function handleAuthRedirect({ url, onCodeExchange }) {
   try {
-    console.log('Processing auth redirect:', url);
+    logger.info('Processing auth redirect:', url);
 
     const urlObj = new URL(url);
 
@@ -361,14 +365,14 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
 
     // Special processing if action parameter exists
     if (action === 'reload_auth') {
-      console.log('Auth reload action detected');
+      logger.info('Auth reload action detected');
       setLoginInProgress(false); // Reset login state
       return { success: true, action: 'reload_auth', token };
     }
 
     // If error parameter exists
     if (error) {
-      console.error('Auth error from server:', error);
+      logger.error('Auth error from server:', error);
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
@@ -378,7 +382,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
 
     // If no code exists
     if (!code) {
-      console.error('No auth code in redirect URL');
+      logger.error('No auth code in redirect URL');
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
@@ -389,7 +393,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
     // Validate state value (CSRF prevention)
     const storedState = retrieveStoredState();
     if (!storedState || state !== storedState) {
-      console.error('State mismatch. Possible CSRF attack');
+      logger.error('State mismatch. Possible CSRF attack');
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
@@ -411,7 +415,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       code,
     };
   } catch (error) {
-    console.error('Failed to handle auth redirect:', error);
+    logger.error('Failed to handle auth redirect:', error);
     setLoginInProgress(false); // Reset login state
     return {
       success: false,
@@ -429,11 +433,11 @@ async function fetchUserProfile(onUnauthorized) {
   return authenticatedRequest(
     async () => {
       const headers = getAuthHeaders();
-      console.log('Profile API call:', ENDPOINTS.USER_PROFILE);
+      logger.info('Profile API call:', ENDPOINTS.USER_PROFILE);
 
       const apiClient = createApiClient();
       const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
-      console.log('Profile API response status:', response.status);
+      logger.info('Profile API response status:', response.status);
 
       // Extract data field if API response format is apiSuccess({ ... })
       if (response.data && response.data.success === true && response.data.data) {
@@ -465,11 +469,11 @@ async function fetchSubscription(onUnauthorized) {
   return authenticatedRequest(async () => {
     try {
       const headers = getAuthHeaders();
-      console.log('Profile API call (including subscription information):', ENDPOINTS.USER_PROFILE);
+      logger.info('Profile API call (including subscription information):', ENDPOINTS.USER_PROFILE);
 
       const apiClient = createApiClient();
       const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
-      console.log('Profile API response status:', response.status);
+      logger.info('Profile API response status:', response.status);
 
       // Extract data field if API response format is apiSuccess({ ... })
       let profileData;
@@ -482,7 +486,7 @@ async function fetchSubscription(onUnauthorized) {
       // Extract subscription information from profile data
       let subscriptionData = profileData.subscription || {};
 
-      console.log('Subscription data received:', JSON.stringify(subscriptionData, null, 2));
+      logger.info('Subscription data received:', JSON.stringify(subscriptionData, null, 2));
 
       // Validate subscription data and ensure field compatibility
       const normalizedSubscription = {
@@ -502,7 +506,7 @@ async function fetchSubscription(onUnauthorized) {
 
       // Ensure premium page groups and features for VIP users
       if (normalizedSubscription.isVip) {
-        console.log('VIP user detected - applying premium benefits');
+        logger.info('VIP user detected - applying premium benefits');
         normalizedSubscription.active = true;
         normalizedSubscription.is_subscribed = true;
         normalizedSubscription.plan = 'premium';
@@ -520,7 +524,7 @@ async function fetchSubscription(onUnauthorized) {
 
       return normalizedSubscription;
     } catch (error) {
-      console.error('Error retrieving subscription information:', error);
+      logger.error('Error retrieving subscription information:', error);
       return defaultSubscription;
     }
   }, options);
@@ -534,7 +538,7 @@ async function logout() {
   try {
     // Only clear memory tokens (main auth module handles file storage)
     clearTokens();
-    console.log('API memory token cleared');
+    logger.info('API memory token cleared');
 
     // Cancel if login was in progress
     isLoginInProgress = false;
@@ -544,7 +548,7 @@ async function logout() {
       message: 'API logout successful',
     };
   } catch (error) {
-    console.error('Error during API logout:', error);
+    logger.error('Error during API logout:', error);
     return {
       success: false,
       error: error.message || 'An error occurred during API logout',

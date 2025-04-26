@@ -5,6 +5,10 @@
  */
 
 const { globalShortcut } = require('electron');
+const { createLogger } = require('./logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('Shortcuts');
 
 /**
  * Register global shortcuts
@@ -21,7 +25,7 @@ function registerGlobalShortcuts(config, windows) {
     const globalHotkey = config.get('globalHotkey');
 
     if (!globalHotkey) {
-      console.warn('No global hotkey configured');
+      logger.warn('No global hotkey configured');
       return false;
     }
 
@@ -31,14 +35,14 @@ function registerGlobalShortcuts(config, windows) {
     });
 
     if (!registered) {
-      console.error(`Failed to register global hotkey: ${globalHotkey}`);
+      logger.error(`Failed to register global hotkey: ${globalHotkey}`);
       return false;
     }
 
-    console.log(`Registered global hotkey: ${globalHotkey}`);
+    logger.info(`Registered global hotkey: ${globalHotkey}`);
     return true;
   } catch (error) {
-    console.error('Error registering global shortcuts:', error);
+    logger.error('Error registering global shortcuts:', error);
     return false;
   }
 }
@@ -50,7 +54,7 @@ function registerGlobalShortcuts(config, windows) {
  */
 function toggleToastWindow(toastWindow, config) {
   if (!toastWindow) {
-    console.error('Toast window not available');
+    logger.error('Toast window not available');
     return;
   }
 
@@ -178,7 +182,7 @@ function positionToastWindow(toastWindow, config) {
  */
 function unregisterGlobalShortcuts() {
   globalShortcut.unregisterAll();
-  console.log('Unregistered all global shortcuts');
+  logger.info('Unregistered all global shortcuts');
 }
 
 /**

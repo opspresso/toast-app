@@ -73,14 +73,18 @@ function updateTrayMenu(tray, windows) {
       label: 'Settings',
       click: () => {
         const { ipcMain } = require('electron');
-        ipcMain.emit('show-settings');
+        // 두 번째 인자는 이벤트 객체
+        ipcMain.emit('show-settings', null);
       },
     },
     { type: 'separator' },
     {
       label: 'About Toast',
       click: () => {
-        showAboutDialog();
+        const { ipcMain } = require('electron');
+        // 설정 창을 열고 about 탭을 선택하도록 이벤트 발생
+        // 두 번째 인자는 이벤트 객체, 세 번째 인자부터 추가 데이터
+        ipcMain.emit('show-settings-tab', null, 'about');
       },
     },
     { type: 'separator' },

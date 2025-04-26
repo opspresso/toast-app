@@ -5,6 +5,10 @@
  */
 
 const Store = require('electron-store');
+const { createLogger } = require('./logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('Config');
 
 // Default configuration schema
 const schema = {
@@ -148,16 +152,16 @@ function createConfigStore() {
         // 변경된 데이터 저장 (스키마 검증 전)
         migrationStore.set('subscription', sanitizedSubscription);
 
-        console.log('Legacy subscription data migrated successfully');
+        logger.info('Legacy subscription data migrated successfully');
       }
     } catch (migrationError) {
-      console.error('Error during subscription data migration:', migrationError);
+      logger.error('Error during subscription data migration:', migrationError);
       // 마이그레이션 오류 발생시 구독 정보 재설정
       try {
         migrationStore.set('subscription', schema.subscription.default);
-        console.log('Reset subscription data to defaults due to migration error');
+        logger.info('Reset subscription data to defaults due to migration error');
       } catch (resetError) {
-        console.error('Failed to reset subscription data:', resetError);
+        logger.error('Failed to reset subscription data:', resetError);
       }
     }
 
@@ -165,7 +169,7 @@ function createConfigStore() {
     return new Store({ schema });
   } catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
-    console.error(
+    logger.error(
       'Error creating config store with schema, falling back to schema-less store:',
       error,
     );
@@ -250,7 +254,7 @@ function importConfig(config, filePath) {
 
     return true;
   } catch (error) {
-    console.error('Error importing configuration:', error);
+    logger.error('Error importing configuration:', error);
     return false;
   }
 }
@@ -274,7 +278,7 @@ function exportConfig(config, filePath) {
     fs.writeFileSync(filePath, JSON.stringify(configData, null, 2), 'utf8');
     return true;
   } catch (error) {
-    console.error('Error exporting configuration:', error);
+    logger.error('Error exporting configuration:', error);
     return false;
   }
 }

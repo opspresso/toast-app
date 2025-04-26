@@ -5,7 +5,11 @@
  */
 
 const os = require('os');
+const { createLogger } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = require('./client');
+
+// 모듈별 로거 생성
+const logger = createLogger('ApiSync');
 
 // Synchronization state management
 const state = {
@@ -28,20 +32,20 @@ const state = {
 async function isCloudSyncEnabled({ hasValidToken, configStore }) {
   try {
     // 로그에 함수 호출 기록
-    console.log('isCloudSyncEnabled: 클라우드 동기화 가능 여부 확인 중');
+    logger.info('isCloudSyncEnabled: 클라우드 동기화 가능 여부 확인 중');
 
     // 인증 상태 확인
     const isAuthenticated = await hasValidToken();
     if (!isAuthenticated) {
-      console.log('isCloudSyncEnabled: 인증 토큰 없음, 동기화 불가');
+      logger.info('isCloudSyncEnabled: 인증 토큰 없음, 동기화 불가');
       return false;
     }
 
-    console.log('isCloudSyncEnabled: 유효한 인증 토큰 확인됨');
+    logger.info('isCloudSyncEnabled: 유효한 인증 토큰 확인됨');
 
     // 구독 정보 확인
     const subscription = configStore.get('subscription') || {};
-    console.log('isCloudSyncEnabled: 구독 정보 확인:', JSON.stringify(subscription));
+    logger.info('isCloudSyncEnabled: 구독 정보 확인:', JSON.stringify(subscription));
 
     // 구독 활성화 상태 확인 (다양한 형식 지원)
     let hasSyncFeature = false;
@@ -53,7 +57,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       subscription.is_subscribed === true
     ) {
       hasSyncFeature = true;
-      console.log('isCloudSyncEnabled: 활성화된 구독 발견');
+      logger.info('isCloudSyncEnabled: 활성화된 구독 발견');
     }
 
     // 2. features 객체에서 cloud_sync 기능 확인
@@ -63,7 +67,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       subscription.features.cloud_sync === true
     ) {
       hasSyncFeature = true;
-      console.log('isCloudSyncEnabled: features 객체에서 cloud_sync=true 발견');
+      logger.info('isCloudSyncEnabled: features 객체에서 cloud_sync=true 발견');
     }
 
     // 3. features_array에서 cloud_sync 기능 확인
@@ -72,7 +76,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       subscription.features_array.includes('cloud_sync')
     ) {
       hasSyncFeature = true;
-      console.log('isCloudSyncEnabled: features_array에서 cloud_sync 발견');
+      logger.info('isCloudSyncEnabled: features_array에서 cloud_sync 발견');
     }
 
     // 4. additionalFeatures 객체 확인
@@ -82,7 +86,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       subscription.additionalFeatures.cloudSync === true
     ) {
       hasSyncFeature = true;
-      console.log('isCloudSyncEnabled: additionalFeatures에서 cloudSync=true 발견');
+      logger.info('isCloudSyncEnabled: additionalFeatures에서 cloudSync=true 발견');
     }
 
     // 5. 계정이 구독자이면 기본적으로 동기화 기능 활성화
@@ -92,14 +96,14 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
         subscription.plan.toLowerCase().includes('pro'))
     ) {
       hasSyncFeature = true;
-      console.log('isCloudSyncEnabled: premium/pro 플랜 발견, 동기화 기능 활성화');
+      logger.info('isCloudSyncEnabled: premium/pro 플랜 발견, 동기화 기능 활성화');
     }
 
     // 결과 반환
-    console.log(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`);
+    logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`);
     return hasSyncFeature;
   } catch (error) {
-    console.error('Error checking synchronization availability:', error);
+    logger.error('Error checking synchronization availability:', error);
     return false;
   }
 }
@@ -148,7 +152,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
       { onUnauthorized },
     );
   } catch (error) {
-    console.error('Settings upload error:', error);
+    logger.error('Settings upload error:', error);
 
     state.lastSyncStatus = {
       success: false,
@@ -193,7 +197,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         const settings = response.data;
 
         // 상세 디버깅 로그
-        console.log(
+        logger.info(
           'Cloud sync - Downloaded settings structure:',
           Object.keys(settings || {}).length > 0
             ? `Contains keys: ${Object.keys(settings).join(', ')}`
@@ -217,7 +221,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         // 1. 서버 응답 데이터 구조 파싱
         // 1.1 표준 구조 확인 (최신 API 형식)
         if (settings.pages && Array.isArray(settings.pages)) {
-          console.log('Found standard pages structure');
+          logger.info('Found standard pages structure');
           pagesData = settings.pages;
           appearanceData = settings.appearance || null;
           advancedData = settings.advanced || null;
@@ -231,7 +235,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         }
         // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
         else if (settings.data) {
-          console.log('Found nested data structure');
+          logger.info('Found nested data structure');
           const data = settings.data;
 
           if (Array.isArray(data.pages)) {
@@ -251,12 +255,12 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         }
         // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
         else if (Array.isArray(settings)) {
-          console.log('Found array-only structure');
+          logger.info('Found array-only structure');
           pagesData = settings;
         }
         // 1.4 기타 구조 - 모든 배열 필드 검색
         else {
-          console.log('Searching for page array in unknown structure');
+          logger.info('Searching for page array in unknown structure');
           const arrayFields = Object.entries(settings)
             .filter(([key, value]) => Array.isArray(value))
             .map(([key, value]) => ({ key, value }));
@@ -270,7 +274,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
                   (field.value.length > 0 && field.value[0].name && field.value[0].buttons),
               ) || arrayFields[0];
 
-            console.log(`Using array field '${pagesField.key}' as pages data`);
+            logger.info(`Using array field '${pagesField.key}' as pages data`);
             pagesData = pagesField.value;
           }
 
@@ -286,7 +290,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         // 페이지 데이터 검증
         if (!pagesData) {
-          console.error('Page data not found in response:', JSON.stringify(settings));
+          logger.error('Page data not found in response:', JSON.stringify(settings));
           throw new Error(
             'Invalid settings data: No page information found in any expected format',
           );
@@ -303,26 +307,26 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           );
 
         if (!isValidPageData) {
-          console.error('Invalid page data structure:', JSON.stringify(pagesData.slice(0, 2)));
+          logger.error('Invalid page data structure:', JSON.stringify(pagesData.slice(0, 2)));
           throw new Error('Invalid settings data: Page structure is not in expected format');
         }
 
-        console.log(`Found ${pagesData.length} pages in sync data`);
+        logger.info(`Found ${pagesData.length} pages in sync data`);
 
         // configStore에 데이터 저장
         configStore.set('pages', pagesData);
-        console.log('Pages data saved to config store');
+        logger.info('Pages data saved to config store');
 
         // appearance 설정 저장 (있는 경우)
         if (appearanceData) {
           configStore.set('appearance', appearanceData);
-          console.log('Appearance settings saved to config store');
+          logger.info('Appearance settings saved to config store');
         }
 
         // advanced 설정 저장 (있는 경우)
         if (advancedData) {
           configStore.set('advanced', advancedData);
-          console.log('Advanced settings saved to config store');
+          logger.info('Advanced settings saved to config store');
         }
 
         // 동기화 상태 업데이트
@@ -333,7 +337,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           error: null,
         };
 
-        console.log('Settings download completed successfully');
+        logger.info('Settings download completed successfully');
 
         // 서버 응답과 메타데이터를 함께 반환
         return {
@@ -345,7 +349,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
       { onUnauthorized },
     );
   } catch (error) {
-    console.error('Settings download error:', error);
+    logger.error('Settings download error:', error);
 
     state.lastSyncStatus = {
       success: false,

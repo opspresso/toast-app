@@ -8,7 +8,11 @@
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { createLogger } = require('./logger');
 const { DEFAULT_ANONYMOUS } = require('./constants');
+
+// 모듈별 로거 생성
+const logger = createLogger('UserDataManager');
 
 // Define file path constants
 const USER_DATA_PATH = app.getPath('userData');
@@ -33,7 +37,7 @@ function fileExists(filePath) {
   try {
     return fs.existsSync(filePath);
   } catch (error) {
-    console.error(`Error checking file existence (${filePath}):`, error);
+    logger.error(`Error checking file existence (${filePath}):`, error);
     return false;
   }
 }
@@ -46,14 +50,14 @@ function fileExists(filePath) {
 function readFromFile(filePath) {
   try {
     if (!fileExists(filePath)) {
-      console.log(`File does not exist: ${filePath}`);
+      logger.info(`File does not exist: ${filePath}`);
       return null;
     }
 
     const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    console.error(`Error reading file (${filePath}):`, error);
+    logger.error(`Error reading file (${filePath}):`, error);
     return null;
   }
 }
@@ -75,10 +79,10 @@ function writeToFile(filePath, data) {
 
     // Save to file in JSON format
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-    console.log(`File saved successfully: ${filePath}`);
+    logger.info(`File saved successfully: ${filePath}`);
     return true;
   } catch (error) {
-    console.error(`Error saving file (${filePath}):`, error);
+    logger.error(`Error saving file (${filePath}):`, error);
     return false;
   }
 }
@@ -92,12 +96,12 @@ function deleteFile(filePath) {
   try {
     if (fileExists(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`File deleted successfully: ${filePath}`);
+      logger.info(`File deleted successfully: ${filePath}`);
       return true;
     }
     return false;
   } catch (error) {
-    console.error(`Error deleting file (${filePath}):`, error);
+    logger.error(`Error deleting file (${filePath}):`, error);
     return false;
   }
 }
@@ -110,30 +114,30 @@ function deleteFile(filePath) {
  */
 async function getUserProfile(forceRefresh = false, profileDataInput = null) {
   try {
-    console.log(`Getting user profile information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`);
+    logger.info(`Getting user profile information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`);
 
     // Check authentication state
     if (!authManagerRef) {
-      console.error('Authentication manager not initialized');
+      logger.error('Authentication manager not initialized');
       return null;
     }
 
     const hasToken = await authManagerRef.hasValidToken();
     if (!hasToken) {
-      console.log('No valid token, returning anonymous profile');
+      logger.info('No valid token, returning anonymous profile');
       return DEFAULT_ANONYMOUS;
     }
 
     // 1. If profile information is provided (prevent duplicate API calls)
     if (profileDataInput && !profileDataInput.error) {
-      console.log('Using provided profile information (preventing duplicate API calls)');
+      logger.info('Using provided profile information (preventing duplicate API calls)');
 
       // Add authentication state
       profileDataInput.is_authenticated = true;
       profileDataInput.isAuthenticated = true;
 
       // Add logs
-      console.log('Processing profile information:', {
+      logger.info('Processing profile information:', {
         name: profileDataInput.name || 'No name',
         email: profileDataInput.email || 'No email',
         hasSubscription:
@@ -143,7 +147,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
 
       // Save to file
       writeToFile(PROFILE_FILE_PATH, profileDataInput);
-      console.log('Profile information saved to file');
+      logger.info('Profile information saved to file');
 
       return profileDataInput;
     }
@@ -160,9 +164,9 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
           profileData.is_authenticated = true;
           profileData.isAuthenticated = true;
           writeToFile(PROFILE_FILE_PATH, profileData);
-          console.log('Added authentication state to profile loaded from file');
+          logger.info('Added authentication state to profile loaded from file');
         }
-        console.log('Successfully loaded profile information from file');
+        logger.info('Successfully loaded profile information from file');
 
         // Log subscription information
         if (profileData.subscription) {
@@ -170,7 +174,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
           const isSubscribed =
             profileData.subscription.active || profileData.subscription.is_subscribed || false;
           const pageGroups = profileData.subscription.features.page_groups || 1;
-          console.log(
+          logger.info(
             `Loaded subscription info: plan=${plan}, subscription status=${isSubscribed ? 'active' : 'inactive'}, pages=${pageGroups}`,
           );
         }
@@ -180,17 +184,17 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
     }
 
     // 3. Get profile from API
-    console.log('Getting profile information from API...');
+    logger.info('Getting profile information from API...');
     const profileData = await authManagerRef.fetchUserProfile();
 
     // Try from file if API response has error
     if (profileData?.error) {
-      console.error('API profile query error:', profileData.error);
+      logger.error('API profile query error:', profileData.error);
 
       // Try to return existing data saved in file
       const savedProfileData = readFromFile(PROFILE_FILE_PATH);
       if (savedProfileData) {
-        console.log('Returning previously saved profile information');
+        logger.info('Returning previously saved profile information');
         return savedProfileData;
       }
 
@@ -204,7 +208,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       profileData.isAuthenticated = true;
 
       // Add logs
-      console.log('Profile information from API:', {
+      logger.info('Profile information from API:', {
         name: profileData.name || 'No name',
         email: profileData.email || 'No email',
         hasSubscription:
@@ -214,17 +218,17 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
 
       // Save to file
       writeToFile(PROFILE_FILE_PATH, profileData);
-      console.log('Profile information saved to file');
+      logger.info('Profile information saved to file');
     }
 
     return profileData;
   } catch (error) {
-    console.error('Error getting profile information:', error);
+    logger.error('Error getting profile information:', error);
 
     // Try from file in case of error
     const savedProfileData = readFromFile(PROFILE_FILE_PATH);
     if (savedProfileData) {
-      console.log('Returning previously saved profile information');
+      logger.info('Returning previously saved profile information');
       return savedProfileData;
     }
 
@@ -239,19 +243,19 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
  */
 async function getUserSettings(forceRefresh = false) {
   try {
-    console.log(
+    logger.info(
       `Getting user settings information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`,
     );
 
     // Check authentication state
     if (!authManagerRef) {
-      console.error('Authentication manager not initialized');
+      logger.error('Authentication manager not initialized');
       return null;
     }
 
     const hasToken = await authManagerRef.hasValidToken();
     if (!hasToken) {
-      console.log('No valid token, returning default settings');
+      logger.info('No valid token, returning default settings');
       return { isAuthenticated: false };
     }
 
@@ -267,11 +271,11 @@ async function getUserSettings(forceRefresh = false) {
           settingsData.is_authenticated = true;
           settingsData.isAuthenticated = true;
           writeToFile(SETTINGS_FILE_PATH, settingsData);
-          console.log('Added authentication state to settings loaded from file');
+          logger.info('Added authentication state to settings loaded from file');
         }
 
         // Add logs
-        console.log('Successfully loaded settings from file:', {
+        logger.info('Successfully loaded settings from file:', {
           dataFields: Object.keys(settingsData),
           timestamp: new Date().toISOString(),
         });
@@ -282,16 +286,16 @@ async function getUserSettings(forceRefresh = false) {
 
     // 2. Check API reference
     if (!apiClientRef) {
-      console.error('API client not initialized');
+      logger.error('API client not initialized');
       return null;
     }
 
     // 3. Get settings from API
-    console.log('Getting settings information from API...');
+    logger.info('Getting settings information from API...');
     const token = await authManagerRef.getAccessToken();
 
     if (!token) {
-      console.error('No valid access token');
+      logger.error('No valid access token');
       return { isAuthenticated: false };
     }
 
@@ -312,7 +316,7 @@ async function getUserSettings(forceRefresh = false) {
         writeToFile(SETTINGS_FILE_PATH, settingsData);
 
         // Add logs
-        console.log('Successfully retrieved and saved settings from API:', {
+        logger.info('Successfully retrieved and saved settings from API:', {
           dataFields: Object.keys(settingsData),
           timestamp: new Date().toISOString(),
         });
@@ -321,19 +325,19 @@ async function getUserSettings(forceRefresh = false) {
       return settingsData;
     }
 
-    console.log('Failed to get settings from API, returning default settings');
+    logger.info('Failed to get settings from API, returning default settings');
     return { isAuthenticated: false };
   } catch (error) {
-    console.error('Error getting settings information:', error);
+    logger.error('Error getting settings information:', error);
 
     // Try from file in case of error
     const savedSettingsData = readFromFile(SETTINGS_FILE_PATH);
     if (savedSettingsData) {
-      console.log('Returning previously saved settings information');
+      logger.info('Returning previously saved settings information');
       return savedSettingsData;
     }
 
-    console.log('No saved settings information either, returning default settings');
+    logger.info('No saved settings information either, returning default settings');
     return { isAuthenticated: false };
   }
 }
@@ -346,7 +350,7 @@ async function getUserSettings(forceRefresh = false) {
 function updateSettings(settings) {
   try {
     if (!settings) {
-      console.error('No settings to update');
+      logger.error('No settings to update');
       return false;
     }
 
@@ -362,12 +366,12 @@ function updateSettings(settings) {
         const verifyData = fs.readFileSync(tempFilePath, 'utf8');
         JSON.parse(verifyData); // Ensure it's valid JSON
       } catch (verifyError) {
-        console.error('Error verifying written settings data:', verifyError);
+        logger.error('Error verifying written settings data:', verifyError);
         // Clean up corrupted temp file
         try {
           fs.unlinkSync(tempFilePath);
         } catch (cleanupError) {
-          console.error('Error cleaning up temporary file:', cleanupError);
+          logger.error('Error cleaning up temporary file:', cleanupError);
         }
         return false;
       }
@@ -379,20 +383,20 @@ function updateSettings(settings) {
           try {
             fs.unlinkSync(SETTINGS_FILE_PATH);
           } catch (unlinkError) {
-            console.error('Error removing existing settings file:', unlinkError);
+            logger.error('Error removing existing settings file:', unlinkError);
           }
         }
       }
 
       fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
-      console.log('Settings file updated successfully using atomic operation');
+      logger.info('Settings file updated successfully using atomic operation');
       return true;
     } catch (fileError) {
-      console.error('File operation error during settings update:', fileError);
+      logger.error('File operation error during settings update:', fileError);
       return false;
     }
   } catch (error) {
-    console.error('Settings update error:', error);
+    logger.error('Settings update error:', error);
     return false;
   }
 }
@@ -405,7 +409,7 @@ function updateSettings(settings) {
 function updateSyncMetadata(metadata) {
   try {
     if (!metadata) {
-      console.error('No metadata to update');
+      logger.error('No metadata to update');
       return false;
     }
 
@@ -414,7 +418,7 @@ function updateSyncMetadata(metadata) {
 
     // If current settings file doesn't exist or is corrupted, create a new minimal one
     if (!currentSettings) {
-      console.warn('Current settings file missing or corrupted, creating new baseline');
+      logger.warn('Current settings file missing or corrupted, creating new baseline');
 
       // Create minimal settings structure
       const newSettings = {
@@ -442,14 +446,14 @@ function updateSyncMetadata(metadata) {
     const result = updateSettings(updatedSettings);
 
     if (result) {
-      console.log('Sync metadata updated successfully');
+      logger.info('Sync metadata updated successfully');
       return true;
     } else {
-      console.error('Failed to update sync metadata');
+      logger.error('Failed to update sync metadata');
       return false;
     }
   } catch (error) {
-    console.error('Error updating sync metadata:', error);
+    logger.error('Error updating sync metadata:', error);
     return false;
   }
 }
@@ -461,14 +465,14 @@ function startProfileRefresh() {
   // Stop existing timer if running
   stopProfileRefresh();
 
-  console.log(
+  logger.info(
     `Starting periodic profile refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`,
   );
 
   // Run once immediately before starting timer
   getUserProfile(true).then(profile => {
     if (profile) {
-      console.log('Initial profile refresh complete');
+      logger.info('Initial profile refresh complete');
     }
   });
 
@@ -477,10 +481,10 @@ function startProfileRefresh() {
     try {
       const profile = await getUserProfile(true);
       if (profile) {
-        console.log('Periodic profile refresh complete');
+        logger.info('Periodic profile refresh complete');
       }
     } catch (error) {
-      console.error('Periodic profile refresh error:', error);
+      logger.error('Periodic profile refresh error:', error);
     }
   }, REFRESH_INTERVAL_MS);
 }
@@ -492,7 +496,7 @@ function stopProfileRefresh() {
   if (profileRefreshTimer) {
     clearInterval(profileRefreshTimer);
     profileRefreshTimer = null;
-    console.log('Periodic profile refresh stopped');
+    logger.info('Periodic profile refresh stopped');
   }
 }
 
@@ -503,14 +507,14 @@ function startSettingsRefresh() {
   // Stop existing timer if running
   stopSettingsRefresh();
 
-  console.log(
+  logger.info(
     `Starting periodic settings refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`,
   );
 
   // Run once immediately before starting timer
   getUserSettings(true).then(settings => {
     if (settings) {
-      console.log('Initial settings refresh complete');
+      logger.info('Initial settings refresh complete');
     }
   });
 
@@ -519,10 +523,10 @@ function startSettingsRefresh() {
     try {
       const settings = await getUserSettings(true);
       if (settings) {
-        console.log('Periodic settings refresh complete');
+        logger.info('Periodic settings refresh complete');
       }
     } catch (error) {
-      console.error('Periodic settings refresh error:', error);
+      logger.error('Periodic settings refresh error:', error);
     }
   }, REFRESH_INTERVAL_MS);
 }
@@ -534,7 +538,7 @@ function stopSettingsRefresh() {
   if (settingsRefreshTimer) {
     clearInterval(settingsRefreshTimer);
     settingsRefreshTimer = null;
-    console.log('Periodic settings refresh stopped');
+    logger.info('Periodic settings refresh stopped');
   }
 }
 
@@ -547,7 +551,7 @@ function initialize(apiClient, authManager) {
   apiClientRef = apiClient;
   authManagerRef = authManager;
 
-  console.log('User data manager initialization complete');
+  logger.info('User data manager initialization complete');
 }
 
 /**
@@ -555,18 +559,18 @@ function initialize(apiClient, authManager) {
  */
 async function syncAfterLogin() {
   try {
-    console.log('Starting user data synchronization after login');
+    logger.info('Starting user data synchronization after login');
 
     // Update profile and settings information
     const profile = await getUserProfile(true);
     const settings = await getUserSettings(true);
 
     if (profile) {
-      console.log('Profile update after login successful');
+      logger.info('Profile update after login successful');
     }
 
     if (settings) {
-      console.log('Settings update after login successful');
+      logger.info('Settings update after login successful');
     }
 
     // Start periodic refresh
@@ -575,7 +579,7 @@ async function syncAfterLogin() {
 
     return { profile, settings };
   } catch (error) {
-    console.error('Error synchronizing data after login:', error);
+    logger.error('Error synchronizing data after login:', error);
     return { error: error.message };
   }
 }
@@ -586,13 +590,13 @@ async function syncAfterLogin() {
  */
 function cleanupOnLogout() {
   try {
-    console.log('Logout: Starting user data cleanup');
+    logger.info('Logout: Starting user data cleanup');
 
     // 1. Check current state before deleting files
     const profileExists = fileExists(PROFILE_FILE_PATH);
     const settingsExists = fileExists(SETTINGS_FILE_PATH);
 
-    console.log('Current state:', {
+    logger.info('Current state:', {
       profileFileExists: profileExists,
       settingsFileExists: settingsExists,
       profileRefreshActive: !!profileRefreshTimer,
@@ -602,12 +606,12 @@ function cleanupOnLogout() {
     // 2. Stop periodic refresh
     stopProfileRefresh();
     stopSettingsRefresh();
-    console.log('Periodic refresh timers stopped');
+    logger.info('Periodic refresh timers stopped');
 
     // 3. Delete profile file only (preserve settings)
     const profileDeleted = deleteFile(PROFILE_FILE_PATH);
 
-    console.log('File deletion results:', {
+    logger.info('File deletion results:', {
       profileDeleted: profileDeleted ? 'Success' : 'Failed or file not found',
       settingsPreserved: 'Settings file preserved as requested',
     });
@@ -619,11 +623,11 @@ function cleanupOnLogout() {
       profileDataCleared: !fileExists(PROFILE_FILE_PATH),
     };
 
-    console.log('User data cleanup completion status:', finalCheck);
+    logger.info('User data cleanup completion status:', finalCheck);
 
     return finalCheck.profileDataCleared;
   } catch (error) {
-    console.error('Error cleaning up data on logout:', error);
+    logger.error('Error cleaning up data on logout:', error);
     return false;
   }
 }

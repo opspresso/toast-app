@@ -8,9 +8,12 @@
 
 const { app, shell } = require('electron');
 const path = require('path');
-const os = require('os');
 const fs = require('fs');
+const { createLogger } = require('./logger');
 const { createConfigStore } = require('./config');
+
+// 모듈별 로거 생성
+const logger = createLogger('Auth');
 
 // Import API modules
 const client = require('./api/client');
@@ -53,7 +56,7 @@ async function initializeTokensFromStorage() {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    console.error('Error initializing tokens:', error);
+    logger.error('Error initializing tokens:', error);
     return { accessToken: null, refreshToken: null };
   }
 }
@@ -71,7 +74,7 @@ function readTokenFile() {
     const data = fs.readFileSync(TOKEN_FILE_PATH, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading token file:', error);
+    logger.error('Error reading token file:', error);
     return null;
   }
 }
@@ -99,7 +102,7 @@ function writeTokenFile(tokenData) {
       const verifyData = fs.readFileSync(tempFilePath, 'utf8');
       JSON.parse(verifyData); // Ensure it's valid JSON
     } catch (verifyError) {
-      console.error('Error verifying written token data:', verifyError);
+      logger.error('Error verifying written token data:', verifyError);
       fs.unlinkSync(tempFilePath); // Clean up corrupted temp file
       return false;
     }
@@ -112,7 +115,7 @@ function writeTokenFile(tokenData) {
         try {
           fs.unlinkSync(TOKEN_FILE_PATH);
         } catch (unlinkError) {
-          console.error('Error removing existing token file:', unlinkError);
+          logger.error('Error removing existing token file:', unlinkError);
         }
       }
     }
@@ -121,7 +124,7 @@ function writeTokenFile(tokenData) {
 
     return true;
   } catch (error) {
-    console.error('Error saving token file:', error);
+    logger.error('Error saving token file:', error);
     return false;
   }
 }
@@ -135,7 +138,7 @@ async function getStoredToken() {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[TOKEN_KEY] : null;
   } catch (error) {
-    console.error('Failed to get token from local file:', error);
+    logger.error('Failed to get token from local file:', error);
     return null;
   }
 }
@@ -149,7 +152,7 @@ async function getStoredRefreshToken() {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[REFRESH_TOKEN_KEY] : null;
   } catch (error) {
-    console.error('Failed to get refresh token from local file:', error);
+    logger.error('Failed to get refresh token from local file:', error);
     return null;
   }
 }
@@ -172,7 +175,7 @@ async function storeTokenExpiry(expiresAt) {
       throw new Error('Failed to save token expiration time');
     }
   } catch (error) {
-    console.error('Failed to store token expiration time:', error);
+    logger.error('Failed to store token expiration time:', error);
     throw error;
   }
 }
@@ -186,7 +189,7 @@ async function getStoredTokenExpiry() {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[TOKEN_EXPIRES_KEY] : null;
   } catch (error) {
-    console.error('Failed to get token expiration time:', error);
+    logger.error('Failed to get token expiration time:', error);
     return null;
   }
 }
@@ -213,17 +216,17 @@ async function isTokenExpired() {
     const isNearExpiry = now >= expiresAt - safetyMargin;
 
     if (isNearExpiry) {
-      console.log('Token is about to expire or already expired');
+      logger.info('Token is about to expire or already expired');
       return true;
     }
 
     // Log remaining time for valid tokens
     const remainingMinutes = Math.floor((expiresAt - now) / (60 * 1000));
-    console.log(`Current token validity: approximately ${remainingMinutes} minutes remaining`);
+    logger.info(`Current token validity: approximately ${remainingMinutes} minutes remaining`);
 
     return false;
   } catch (error) {
-    console.error('Error checking token expiration:', error);
+    logger.error('Error checking token expiration:', error);
     // Consider expired if error occurs, for safety
     return true;
   }
@@ -251,7 +254,7 @@ async function storeToken(token, expiresIn = 3600) {
     if (expiresIn <= 0) {
       // Treat negative or zero values as unlimited expiration time (use a very distant future date)
       expiresAt = 8640000000000000; // Maximum date supported by JavaScript (about 270 million years)
-      console.log('Token expiration time set to unlimited.');
+      logger.info('Token expiration time set to unlimited.');
     } else {
       expiresAt = Date.now() + expiresIn * 1000;
     }
@@ -262,11 +265,11 @@ async function storeToken(token, expiresIn = 3600) {
       throw new Error('Failed to save token file');
     }
 
-    console.log(
+    logger.info(
       `Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`,
     );
   } catch (error) {
-    console.error('Failed to save token:', error);
+    logger.error('Failed to save token:', error);
     throw error;
   }
 }
@@ -292,7 +295,7 @@ async function storeRefreshToken(refreshToken) {
       throw new Error('Failed to save refresh token file');
     }
   } catch (error) {
-    console.error('Failed to save refresh token:', error);
+    logger.error('Failed to save refresh token:', error);
     throw error;
   }
 }
@@ -306,10 +309,10 @@ async function clearLocalTokenStorage() {
     // Delete token file if it exists
     if (fs.existsSync(TOKEN_FILE_PATH)) {
       fs.unlinkSync(TOKEN_FILE_PATH);
-      console.log('Local token file cleared');
+      logger.info('Local token file cleared');
     }
   } catch (error) {
-    console.error('Failed to delete local token file:', error);
+    logger.error('Failed to delete local token file:', error);
     throw error;
   }
 }
@@ -332,7 +335,7 @@ async function initiateLogin() {
 
     return true;
   } catch (error) {
-    console.error('Failed to initiate login:', error);
+    logger.error('Failed to initiate login:', error);
     throw error;
   }
 }
@@ -344,7 +347,7 @@ async function initiateLogin() {
  */
 async function handleAuthRedirect(url) {
   try {
-    console.log('Processing auth redirect:', url);
+    logger.info('Processing auth redirect:', url);
 
     // 직접 URL에서 파라미터 추출
     const urlObj = new URL(url);
@@ -355,14 +358,14 @@ async function handleAuthRedirect(url) {
 
     // Connect 페이지에서의 딥링크 처리 (token, userId, action 파라미터 사용)
     if (action === 'reload_auth' && token && userId) {
-      console.log('Auth reload action detected with token from connect page');
+      logger.info('Auth reload action detected with token from connect page');
 
       // Check current authentication status
       const hasToken = await hasValidToken();
 
       if (hasToken) {
         // If already authenticated, just refresh subscription information
-        console.log('Already authenticated, refreshing subscription info');
+        logger.info('Already authenticated, refreshing subscription info');
         const subscription = await fetchSubscription();
         await updatePageGroupSettings(subscription);
 
@@ -373,7 +376,7 @@ async function handleAuthRedirect(url) {
         };
       } else {
         // If not authenticated, start login process
-        console.log('Not authenticated, initiating login process');
+        logger.info('Not authenticated, initiating login process');
         return await initiateLogin();
       }
     }
@@ -390,11 +393,11 @@ async function handleAuthRedirect(url) {
 
       // Process 'reload_auth' action
       if (redirectResult.success && redirectResult.action === 'reload_auth') {
-        console.log('Auth reload action detected from OAuth flow');
+        logger.info('Auth reload action detected from OAuth flow');
 
         // Check if token exists
         if (!redirectResult.token) {
-          console.error('No token provided for auth reload');
+          logger.error('No token provided for auth reload');
           return {
             success: false,
             error: 'Missing token for auth reload',
@@ -406,7 +409,7 @@ async function handleAuthRedirect(url) {
 
         if (hasToken) {
           // If already authenticated, just refresh subscription information
-          console.log('Already authenticated, refreshing subscription info');
+          logger.info('Already authenticated, refreshing subscription info');
           const subscription = await fetchSubscription();
           await updatePageGroupSettings(subscription);
 
@@ -417,7 +420,7 @@ async function handleAuthRedirect(url) {
           };
         } else {
           // If not authenticated, start login process
-          console.log('Not authenticated, initiating login process');
+          logger.info('Not authenticated, initiating login process');
           return await initiateLogin();
         }
       }
@@ -430,7 +433,7 @@ async function handleAuthRedirect(url) {
       error: 'Invalid URL parameters',
     };
   } catch (error) {
-    console.error('Failed to handle auth redirect:', error);
+    logger.error('Failed to handle auth redirect:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
@@ -445,7 +448,7 @@ async function handleAuthRedirect(url) {
  */
 async function exchangeCodeForToken(code) {
   try {
-    console.log(
+    logger.info(
       'Starting exchange of authentication code for token:',
       code.substring(0, 8) + '...',
     );
@@ -467,27 +470,27 @@ async function exchangeCodeForToken(code) {
     // Store token and expiration time in secure storage
     // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
     await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-    console.log(
+    logger.info(
       `Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`,
     );
 
     // Store refresh token (if available)
     if (refresh_token) {
       await storeRefreshToken(refresh_token);
-      console.log('Refresh token saved successfully');
+      logger.info('Refresh token saved successfully');
     }
 
     // Verify token was saved correctly
     const storedToken = await getStoredToken();
     if (!storedToken) {
-      console.error('Failed to verify token storage. Token not found in storage');
+      logger.error('Failed to verify token storage. Token not found in storage');
     } else {
-      console.log('Token storage verification successful');
+      logger.info('Token storage verification successful');
     }
 
     return tokenResult;
   } catch (error) {
-    console.error('Error occurred during token exchange:', error);
+    logger.error('Error occurred during token exchange:', error);
 
     return {
       success: false,
@@ -509,14 +512,14 @@ let refreshPromise = null;
  */
 async function refreshAccessToken() {
   try {
-    console.log('Starting token refresh process');
+    logger.info('Starting token refresh process');
 
     // Throttling: Skip if not enough time has passed since last refresh request
     const now = Date.now();
     const timeSinceLastRefresh = now - lastTokenRefresh;
 
     if (timeSinceLastRefresh < TOKEN_REFRESH_COOLDOWN_MS && lastTokenRefresh > 0) {
-      console.log(
+      logger.info(
         `Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`,
       );
       return { success: true, throttled: true };
@@ -524,7 +527,7 @@ async function refreshAccessToken() {
 
     // If already refreshing, return the ongoing refresh promise instead of starting a new one
     if (isRefreshing && refreshPromise) {
-      console.log(
+      logger.info(
         'Token refresh already in progress. Returning existing promise to prevent duplicate requests.',
       );
       return refreshPromise;
@@ -540,7 +543,7 @@ async function refreshAccessToken() {
         // Check if token is actually expired
         const isExpired = await isTokenExpired();
         if (!isExpired) {
-          console.log('Token is still valid. Refresh not needed.');
+          logger.info('Token is still valid. Refresh not needed.');
           return { success: true, refreshNeeded: false };
         }
 
@@ -548,7 +551,7 @@ async function refreshAccessToken() {
         const refreshToken = client.getRefreshToken() || (await getStoredRefreshToken());
 
         if (!refreshToken) {
-          console.error('No refresh token available');
+          logger.error('No refresh token available');
           return {
             success: false,
             error: 'No refresh token available',
@@ -556,7 +559,7 @@ async function refreshAccessToken() {
           };
         }
 
-        console.log('Refresh token exists, attempting exchange');
+        logger.info('Refresh token exists, attempting exchange');
 
         // Exchange refresh token through common module
         const refreshResult = await apiAuth.refreshAccessToken({
@@ -571,12 +574,12 @@ async function refreshAccessToken() {
             // API 토큰 초기화
             const apiLogoutResult = await apiAuth.logout();
             if (!apiLogoutResult.success) {
-              console.warn('API logout warning during token reset:', apiLogoutResult.error);
+              logger.warn('API logout warning during token reset:', apiLogoutResult.error);
             }
 
             // 로컬 토큰 파일 삭제
             await clearLocalTokenStorage();
-            console.log('Expired tokens reset complete');
+            logger.info('Expired tokens reset complete');
           }
 
           return refreshResult;
@@ -587,19 +590,19 @@ async function refreshAccessToken() {
 
         // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
         await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-        console.log(
+        logger.info(
           `New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`,
         );
 
         // Store new refresh token (if available)
         if (refresh_token) {
           await storeRefreshToken(refresh_token);
-          console.log('New refresh token saved successfully');
+          logger.info('New refresh token saved successfully');
         }
 
         return { success: true };
       } catch (error) {
-        console.error('Exception in token refresh:', error);
+        logger.error('Exception in token refresh:', error);
         return {
           success: false,
           error: error.message || 'Unknown error in token refresh',
@@ -615,7 +618,7 @@ async function refreshAccessToken() {
     // Return the shared promise
     return refreshPromise;
   } catch (error) {
-    console.error('Exception occurred during token refresh process:', error);
+    logger.error('Exception occurred during token refresh process:', error);
     isRefreshing = false; // Reset state even on error
 
     // Critical error but keep app running
@@ -637,13 +640,13 @@ async function logout() {
     // Call API logout to clear memory tokens
     const apiLogoutResult = await apiAuth.logout();
     if (!apiLogoutResult.success) {
-      console.warn('API logout warning:', apiLogoutResult.error);
+      logger.warn('API logout warning:', apiLogoutResult.error);
     }
 
     // Delete local token storage
     if (fs.existsSync(TOKEN_FILE_PATH)) {
       fs.unlinkSync(TOKEN_FILE_PATH);
-      console.log('Local token file deleted successfully');
+      logger.info('Local token file deleted successfully');
     }
 
     // Reset page group settings
@@ -655,11 +658,11 @@ async function logout() {
       pageGroups: PAGE_GROUPS.ANONYMOUS,
     });
 
-    console.log('Logged out and reset page group settings to defaults');
+    logger.info('Logged out and reset page group settings to defaults');
 
     return true;
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error:', error);
     return false;
   }
 }
@@ -672,7 +675,7 @@ async function fetchUserProfile() {
   try {
     return await apiAuth.fetchUserProfile(refreshAccessToken);
   } catch (error) {
-    console.error('Error retrieving profile information:', error);
+    logger.error('Error retrieving profile information:', error);
     return {
       error: {
         code: 'PROFILE_ERROR',
@@ -698,7 +701,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
     // Get subscription information
     try {
       const subscription = await fetchSubscription();
-      console.log('Successfully retrieved subscription information');
+      logger.info('Successfully retrieved subscription information');
 
       // Save subscription information to config
       await updatePageGroupSettings(subscription);
@@ -708,7 +711,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         subscription,
       };
     } catch (subError) {
-      console.error('Failed to retrieve subscription information:', subError);
+      logger.error('Failed to retrieve subscription information:', subError);
 
       // Token exchange was successful, so treat as success with warning
       return {
@@ -718,7 +721,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
       };
     }
   } catch (error) {
-    console.error('Error during authentication code exchange and subscription update:', error);
+    logger.error('Error during authentication code exchange and subscription update:', error);
     return {
       success: false,
       error: error.message || 'An error occurred during authentication processing.',
@@ -751,13 +754,13 @@ async function hasValidToken() {
     // If token exists, also check expiration
     const isExpired = await isTokenExpired();
     if (isExpired) {
-      console.log('Token has expired. Refresh needed.');
+      logger.info('Token has expired. Refresh needed.');
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Token validation error:', error);
+    logger.error('Token validation error:', error);
     return false;
   }
 }
@@ -818,11 +821,11 @@ async function updatePageGroupSettings(subscription) {
         expiresAtStr = '';
       }
     } catch (error) {
-      console.error('Error converting expiresAt value:', error);
+      logger.error('Error converting expiresAt value:', error);
       expiresAtStr = ''; // Use empty string if error occurs
     }
 
-    console.log('Verifying subscription information before saving:', {
+    logger.info('Verifying subscription information before saving:', {
       plan: subscription.plan || 'free',
       expiresAt: expiresAtStr,
       expiresAtType: typeof expiresAtStr,
@@ -843,21 +846,21 @@ async function updatePageGroupSettings(subscription) {
       },
     });
 
-    console.log('Subscription settings update complete:', {
+    logger.info('Subscription settings update complete:', {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
       pageGroups: subscription.features?.page_groups || pageGroups,
     });
   } catch (error) {
-    console.error('Error updating page group settings:', error);
+    logger.error('Error updating page group settings:', error);
     throw error;
   }
 }
 
 // Initialization: Load stored tokens into memory
 initializeTokensFromStorage().then(() => {
-  console.log('Token state initialization complete');
+  logger.info('Token state initialization complete');
 });
 
 /**
@@ -880,7 +883,7 @@ async function fetchSubscription() {
       return DEFAULT_ANONYMOUS_SUBSCRIPTION;
     }
   } catch (error) {
-    console.error('Failed to retrieve subscription information:', error);
+    logger.error('Failed to retrieve subscription information:', error);
     // Handle as anonymous user if error occurs
     return DEFAULT_ANONYMOUS_SUBSCRIPTION;
   }
