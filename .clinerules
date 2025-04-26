@@ -17,7 +17,8 @@
 
 ## Language Standard
 
-- **Important** Write code and UI messages in English.
+- **Important: Write code and UI messages in English.**
+- Write logs and comments in English or Korean.
 - Variable and function names: Use descriptive English terms following the project's naming conventions.
 
 ## Documentation Standards

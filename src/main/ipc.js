@@ -15,6 +15,10 @@ const auth = require('./auth');
 const authManager = require('./auth-manager');
 const userDataManager = require('./user-data-manager');
 const updater = require('./updater');
+const { createLogger, handleIpcLogging } = require('./logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('IPC');
 
 // Track button edit modal state
 let isModalOpen = false;
@@ -57,7 +61,7 @@ function setupIpcHandlers(windows) {
 
   // Handle protocol requests during app execution
   global.handleProtocolRequest = async url => {
-    console.log('Protocol request received:', url);
+    logger.info('Protocol request received:', url);
 
     // Process authentication URL using handleAuthRedirect function in auth.js
     if (url.startsWith('toast-app://auth')) {
@@ -103,7 +107,7 @@ function setupIpcHandlers(windows) {
   // Handle button edit modal state change
   ipcMain.on('modal-state-changed', (event, open) => {
     isModalOpen = open;
-    console.log('Modal state changed:', isModalOpen ? 'open' : 'closed');
+    logger.info('Modal state changed:', isModalOpen ? 'open' : 'closed');
   });
 
   // Handler to return current modal state
@@ -724,46 +728,46 @@ function setupIpcHandlers(windows) {
 
   // 업데이트 확인 - electron-updater 사용
   ipcMain.handle('check-latest-version', async () => {
-    console.log('IPC: check-latest-version called');
+    logger.info('IPC: check-latest-version called');
     // 대신 updater.js의 checkForUpdates를 직접 사용 (silent=false로 설정)
     return await updater.checkForUpdates(false);
   });
 
   // check-for-updates 핸들러 추가 (electron-updater와 함께 사용)
   ipcMain.handle('check-for-updates', async (event, silent = false) => {
-    console.log('IPC: check-for-updates called, silent:', silent);
+    logger.info('IPC: check-for-updates called, silent:', silent);
     return await updater.checkForUpdates(silent);
   });
 
   // Download application update - electron-updater 사용
   ipcMain.handle('download-update', async () => {
-    console.log('IPC: download-update called');
+    logger.info('IPC: download-update called');
     // 대신 updater.js의 downloadUpdate를 직접 사용
     return await updater.downloadUpdate();
   });
 
   // 자동 업데이트 다운로드 핸들러 추가
   ipcMain.handle('download-auto-update', async () => {
-    console.log('IPC: download-auto-update called');
+    logger.info('IPC: download-auto-update called');
     return await updater.downloadUpdate();
   });
 
   // 수동 업데이트 다운로드 핸들러 추가 (이전 버전과의 호환성을 위해)
   ipcMain.handle('download-manual-update', async () => {
-    console.log('IPC: download-manual-update called');
+    logger.info('IPC: download-manual-update called');
     return await updater.downloadUpdate();
   });
 
   // Install application update - electron-updater 사용
   ipcMain.handle('install-update', async () => {
-    console.log('IPC: install-update called');
+    logger.info('IPC: install-update called');
     // 대신 updater.js의 installUpdate를 직접 사용
     return await updater.installUpdate();
   });
 
   // 자동 업데이트 설치 핸들러 추가
   ipcMain.handle('install-auto-update', async () => {
-    console.log('IPC: install-auto-update called');
+    logger.info('IPC: install-auto-update called');
     return await updater.installUpdate();
   });
 
@@ -799,6 +803,23 @@ function setupIpcHandlers(windows) {
         error: error.message || 'Unknown error'
       };
     }
+  });
+
+  // 로깅 핸들러 추가
+  ipcMain.handle('log-info', (event, message, ...args) => {
+    return handleIpcLogging('info', message, ...args);
+  });
+
+  ipcMain.handle('log-warn', (event, message, ...args) => {
+    return handleIpcLogging('warn', message, ...args);
+  });
+
+  ipcMain.handle('log-error', (event, message, ...args) => {
+    return handleIpcLogging('error', message, ...args);
+  });
+
+  ipcMain.handle('log-debug', (event, message, ...args) => {
+    return handleIpcLogging('debug', message, ...args);
   });
 
   // Test an action (for settings UI)

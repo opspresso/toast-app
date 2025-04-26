@@ -118,8 +118,9 @@ jobs:
             artifacts/**/*.dmg
             artifacts/**/*.exe
             artifacts/**/*.zip
-            artifacts/**/*.yml
-            artifacts/**/*.yaml
+            artifacts/**/*-mac.yml
+            artifacts/**/*-linux.yml
+            artifacts/**/latest.yml
 
       - name: Trigger for Homebrew 🚀
         uses: opspresso/action-builder@master

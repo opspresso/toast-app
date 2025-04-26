@@ -61,6 +61,14 @@ contextBridge.exposeInMainWorld('settings', {
   installAutoUpdate: () => ipcRenderer.invoke('install-auto-update'),
   downloadManualUpdate: () => ipcRenderer.invoke('download-manual-update'),
 
+  // Logging
+  log: {
+    info: (message, ...args) => ipcRenderer.invoke('log-info', message, ...args),
+    warn: (message, ...args) => ipcRenderer.invoke('log-warn', message, ...args),
+    error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
+    debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
+  },
+
   // Cloud Sync
   getSyncStatus: () => ipcRenderer.invoke('get-sync-status'),
   setCloudSyncEnabled: enabled => ipcRenderer.invoke('set-cloud-sync-enabled', enabled),
