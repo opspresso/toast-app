@@ -422,6 +422,18 @@ function setupIpcHandlers(windows) {
     showSettingsWindow(createConfigStore());
   });
 
+  // Show settings window with specific tab selected
+  ipcMain.on('show-settings-tab', (event, tabName) => {
+    const { showSettingsWindow } = require('./windows');
+    const { createConfigStore } = require('./config');
+
+    // tabName 매개변수를 직접 전달하여 설정 창 열기
+    showSettingsWindow(createConfigStore(), tabName);
+
+    // 로그에 탭 선택 요청을 기록
+    console.log(`settings-tab 이벤트 발생, 대상 탭: ${tabName}`);
+  });
+
   // Close settings window
   ipcMain.on('close-settings', () => {
     if (windows.settings && !windows.settings.isDestroyed()) {
