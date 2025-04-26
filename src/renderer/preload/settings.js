@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld('settings', {
   // System information
   getPlatform: () => process.platform,
   getVersion: () => ipcRenderer.invoke('get-app-version'),
+  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
 
   // Cloud Sync
   getSyncStatus: () => ipcRenderer.invoke('get-sync-status'),

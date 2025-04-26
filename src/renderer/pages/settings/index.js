@@ -700,6 +700,61 @@ async function loadUserDataAndUpdateUI() {
 }
 
 /**
+ * Initialize About tab
+ */
+async function initializeAboutTab() {
+  try {
+    // 앱 정보 가져오기
+    const appInfo = await window.settings.getAppInfo();
+
+    // 버전 표시
+    if (appVersionElement) {
+      try {
+        // 앱 버전 자동으로 가져오기
+        const version = await window.settings.getVersion();
+        appVersionElement.textContent = version;
+      } catch (error) {
+        console.error('버전 정보를 가져오는 중 오류 발생:', error);
+        appVersionElement.textContent = 'v0.0.0';
+      }
+    }
+
+    // Authors 정보 표시
+    const appAuthorsElement = document.getElementById('app-authors');
+    if (appAuthorsElement && appInfo.success && appInfo.author) {
+      appAuthorsElement.innerHTML = `<strong>Authors:</strong> ${appInfo.author}`;
+    }
+
+    // Homepage 버튼 링크 설정
+    if (homepageButton && appInfo.success) {
+      homepageButton.addEventListener('click', () => {
+        const homepageUrl = appInfo.homepage || 'https://app.toast.sh';
+        window.settings.openUrl(homepageUrl);
+      });
+    }
+
+    // License 정보 표시
+    const appLicenseElement = document.getElementById('app-license');
+    if (appLicenseElement && appInfo.success && appInfo.license) {
+      appLicenseElement.innerHTML = `<strong>License:</strong> ${appInfo.license}`;
+    }
+
+    // Description 정보 표시
+    const appDescriptionElement = document.querySelector('.app-description');
+    if (appDescriptionElement && appInfo.success && appInfo.description) {
+      appDescriptionElement.textContent = appInfo.description;
+    }
+  } catch (error) {
+    console.error('앱 정보를 가져오는 중 오류 발생:', error);
+  }
+
+  // 업데이트 상태 초기화
+  updateStatus.classList.add('hidden');
+  updateActions.classList.add('hidden');
+  updateLoading.classList.add('hidden');
+}
+
+/**
  * Handle login button click
  */
 async function handleLogin() {
@@ -1586,27 +1641,6 @@ async function handleManualSyncDownload() {
   }
 }
 
-/**
- * Initialize About tab
- */
-async function initializeAboutTab() {
-  // 버전 표시
-  if (appVersionElement) {
-    try {
-      // 앱 버전 자동으로 가져오기
-      const version = await window.settings.getVersion();
-      appVersionElement.textContent = version;
-    } catch (error) {
-      console.error('버전 정보를 가져오는 중 오류 발생:', error);
-      appVersionElement.textContent = 'v0.0.0'; // 오류 시 기본값
-    }
-  }
-
-  // 업데이트 상태 초기화
-  updateStatus.classList.add('hidden');
-  updateActions.classList.add('hidden');
-  updateLoading.classList.add('hidden');
-}
 
 /**
  * Handle check for updates
