@@ -126,8 +126,6 @@ function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', 'dark');
   }
 
-  // If 'system', we don't set anything and let the media query handle it
-
   // Log theme change
   window.settings.log.info('Theme changed to:', theme);
 }
@@ -217,10 +215,10 @@ function initializeCloudSyncUI() {
         updateSyncStatusUI(status);
       })
       .catch(error => {
-        console.error('Error getting sync status:', error);
+        window.settings.log.error('Error getting sync status:', error);
       });
   } catch (error) {
-    console.error('Error initializing Cloud Sync UI:', error);
+    window.settings.log.error('Error initializing Cloud Sync UI:', error);
   }
 }
 
@@ -242,7 +240,7 @@ async function initializeAuthState() {
       updateAuthStateUI(false);
     }
   } catch (error) {
-    console.error('Failed to initialize auth state:', error);
+    window.settings.log.error('Failed to initialize auth state:', error);
     // Show login UI when error occurs
     updateAuthStateUI(false);
   }
@@ -268,7 +266,7 @@ function updateAuthStateUI(isLoggedIn) {
         updateSyncStatusUI(status);
       })
       .catch(error => {
-        console.error('Error getting sync status:', error);
+        window.settings.log.error('Error getting sync status:', error);
       });
   } else {
     // Show login section, hide profile and subscription sections
@@ -343,7 +341,7 @@ function updateSyncStatusUI(status) {
   let hasCloudSyncPermission = false;
 
   // 디버깅: 구독 상태 정보 로깅
-  console.log('구독 정보 확인:', authState.subscription);
+  window.settings.log.info('구독 정보 확인:', authState.subscription);
 
   // 1. 직접적인 구독 상태 확인
   if (
@@ -352,13 +350,13 @@ function updateSyncStatusUI(status) {
     authState.subscription?.is_subscribed === true
   ) {
     hasCloudSyncPermission = true;
-    console.log('구독 활성화 상태 확인됨');
+    window.settings.log.info('구독 활성화 상태 확인됨');
   }
 
   // VIP 사용자 확인 (최우선)
   if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
     hasCloudSyncPermission = true;
-    console.log('VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
+    window.settings.log.info('VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
   }
 
   // 2. 구독 플랜 확인 (premium/pro 플랜은 cloud_sync 기능을 기본 제공)
@@ -366,7 +364,7 @@ function updateSyncStatusUI(status) {
     const plan = authState.subscription.plan.toLowerCase();
     if (plan.includes('premium') || plan.includes('pro')) {
       hasCloudSyncPermission = true;
-      console.log('Premium/Pro 플랜 확인됨');
+      window.settings.log.info('Premium/Pro 플랜 확인됨');
     }
   }
 
@@ -374,7 +372,7 @@ function updateSyncStatusUI(status) {
   if (authState.subscription?.features) {
     if (authState.subscription.features.cloud_sync === true) {
       hasCloudSyncPermission = true;
-      console.log('cloud_sync 기능 활성화됨 (features 객체)');
+      window.settings.log.info('cloud_sync 기능 활성화됨 (features 객체)');
     }
   }
 
@@ -382,7 +380,7 @@ function updateSyncStatusUI(status) {
   if (Array.isArray(authState.subscription?.features_array)) {
     if (authState.subscription.features_array.includes('cloud_sync')) {
       hasCloudSyncPermission = true;
-      console.log('cloud_sync 기능 활성화됨 (features_array)');
+      window.settings.log.info('cloud_sync 기능 활성화됨 (features_array)');
     }
   }
 
@@ -390,18 +388,18 @@ function updateSyncStatusUI(status) {
   if (authState.subscription?.additionalFeatures) {
     if (authState.subscription.additionalFeatures.cloudSync === true) {
       hasCloudSyncPermission = true;
-      console.log('cloudSync 기능 활성화됨 (additionalFeatures)');
+      window.settings.log.info('cloudSync 기능 활성화됨 (additionalFeatures)');
     }
   }
 
   // 로깅: 최종 권한 확인
-  console.log(
+  window.settings.log.info(
     `Cloud Sync 권한: ${hasCloudSyncPermission ? '있음' : '없음'}, 로그인 상태: ${authState.isLoggedIn ? '로그인됨' : '로그아웃됨'}`,
   );
 
   const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
 
-  console.log('canUseCloudSync:', canUseCloudSync);
+  window.settings.log.info('canUseCloudSync:', canUseCloudSync);
 
   enableCloudSyncCheckbox.disabled = !canUseCloudSync;
   enableCloudSyncCheckbox.checked = status.enabled;
@@ -449,7 +447,7 @@ async function fetchUserProfile() {
     // Check if token exists first
     const token = await window.settings.getAuthToken();
     if (!token) {
-      console.log('No auth token available, skipping profile fetch');
+      window.settings.log.info('No auth token available, skipping profile fetch');
       return;
     }
 
@@ -461,7 +459,7 @@ async function fetchUserProfile() {
       updateProfileDisplay(profile);
     }
   } catch (error) {
-    console.error('Failed to fetch user profile:', error);
+    window.settings.log.error('Failed to fetch user profile:', error);
     // Handle token expired case
     if (error.message && error.message.includes('token expired')) {
       handleTokenExpired();
@@ -528,28 +526,28 @@ async function fetchSubscriptionInfo() {
     // Check if token exists first
     const token = await window.settings.getAuthToken();
     if (!token) {
-      console.log('No auth token available, skipping subscription fetch');
+      window.settings.log.info('No auth token available, skipping subscription fetch');
       setLoading(subscriptionLoading, false);
       return;
     }
 
     // 구독 정보 확인을 위한 로그
-    console.log('구독 정보 요청 시작');
+    window.settings.log.info('구독 정보 요청 시작');
 
     // 프로필 정보를 먼저 가져와 구독 정보 확인
     const profile = await window.settings.fetchUserProfile();
-    console.log('프로필 정보 수신:', profile ? '성공' : '실패');
+    window.settings.log.info('프로필 정보 수신:', profile ? '성공' : '실패');
 
     if (profile && profile.subscription) {
-      console.log('프로필에서 구독 정보 발견:', JSON.stringify(profile.subscription));
+      window.settings.log.info('프로필에서 구독 정보 발견:', JSON.stringify(profile.subscription));
     }
 
     // fetchSubscription gets subscription info through the profile API
     const subscription = await window.settings.fetchSubscription();
-    console.log('구독 정보 수신:', subscription ? '성공' : '실패');
+    window.settings.log.info('구독 정보 수신:', subscription ? '성공' : '실패');
 
     if (subscription) {
-      console.log('수신된 구독 정보:', JSON.stringify(subscription));
+      window.settings.log.info('수신된 구독 정보:', JSON.stringify(subscription));
 
       // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
       if (
@@ -562,7 +560,7 @@ async function fetchSubscriptionInfo() {
         }
         // 프리미엄/프로 사용자라면 cloud_sync 기능 활성화
         subscription.features.cloud_sync = true;
-        console.log('프리미엄 구독 감지, cloud_sync 활성화');
+        window.settings.log.info('프리미엄 구독 감지, cloud_sync 활성화');
       }
 
       authState.subscription = subscription;
@@ -580,7 +578,7 @@ async function fetchSubscriptionInfo() {
     // Hide loading state
     setLoading(subscriptionLoading, false);
   } catch (error) {
-    console.error('Failed to fetch subscription info:', error);
+    window.settings.log.error('Failed to fetch subscription info:', error);
     // Hide loading state
     setLoading(subscriptionLoading, false);
 
@@ -713,7 +711,7 @@ async function loadUserDataAndUpdateUI() {
     setLoading(authLoading, false);
     loginButton.disabled = false;
   } catch (error) {
-    console.error('Error loading user data:', error);
+    window.settings.log.error('Error loading user data:', error);
 
     // Return to login state if error occurs
     updateAuthStateUI(false);
@@ -742,11 +740,11 @@ async function initializeAboutTab() {
         // 버전 정보 로깅
         window.settings.log.info(`앱 버전 정보: ${version}`);
       } catch (error) {
-        console.error('버전 정보를 가져오는 중 오류 발생:', error);
+        window.settings.log.error('버전 정보를 가져오는 중 오류 발생:', error);
       }
     }
   } catch (error) {
-    console.error('앱 정보를 가져오는 중 오류 발생:', error);
+    window.settings.log.error('앱 정보를 가져오는 중 오류 발생:', error);
   }
 
   // 업데이트 상태 초기화
@@ -777,7 +775,7 @@ async function handleLogin() {
       loginButton.disabled = false;
     }
   } catch (error) {
-    console.error('Login error:', error);
+    window.settings.log.error('Login error:', error);
     alert(`Login failed: ${error.message || 'Unknown error'}`);
     // Hide loading state and enable button
     setLoading(authLoading, false);
@@ -796,7 +794,7 @@ async function handleLogout() {
     // Update UI
     updateAuthStateUI(false);
   } catch (error) {
-    console.error('Logout error:', error);
+    window.settings.log.error('Logout error:', error);
     alert(`Logout failed: ${error.message || 'Unknown error'}`);
   }
 }
@@ -854,13 +852,13 @@ function setupEventListeners() {
 
       // Cloud Sync 탭 선택 시 구독 정보 확인 및 UI 갱신
       if (tabId === 'cloud-sync') {
-        console.log('Cloud Sync 탭 선택됨 - 구독 상태 확인 및 UI 갱신');
+        window.settings.log.info('Cloud Sync 탭 선택됨 - 구독 상태 확인 및 UI 갱신');
 
         // Premium 사용자 강제 활성화
         if (authState.subscription?.plan) {
           const plan = String(authState.subscription.plan).toLowerCase();
           if (plan.includes('premium') || plan.includes('pro')) {
-            console.log('Premium/Pro 구독 감지 - Cloud Sync 강제 활성화');
+            window.settings.log.info('Premium/Pro 구독 감지 - Cloud Sync 강제 활성화');
             enableCloudSyncCheckbox.disabled = false;
 
             // 구독 정보에 cloud_sync 기능 추가
@@ -871,7 +869,7 @@ function setupEventListeners() {
 
             // 서버에서 동기화 상태 다시 확인
             window.settings.getSyncStatus().then(status => {
-              console.log('Cloud Sync 탭 선택 시 동기화 상태 확인 결과:', status);
+              window.settings.log.info('Cloud Sync 탭 선택 시 동기화 상태 확인 결과:', status);
               updateSyncStatusUI(status);
             });
           }
@@ -879,7 +877,7 @@ function setupEventListeners() {
 
         // VIP 사용자 확인 및 강제 활성화
         if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
-          console.log('VIP 사용자 감지 - Cloud Sync 강제 활성화');
+          window.settings.log.info('VIP 사용자 감지 - Cloud Sync 강제 활성화');
           enableCloudSyncCheckbox.disabled = false;
         }
 
@@ -889,7 +887,7 @@ function setupEventListeners() {
           authState.subscription?.active === true ||
           authState.subscription?.is_subscribed === true
         ) {
-          console.log('구독 활성화 상태 확인됨 - Cloud Sync 강제 활성화');
+          window.settings.log.info('구독 활성화 상태 확인됨 - Cloud Sync 강제 활성화');
           enableCloudSyncCheckbox.disabled = false;
         }
       }
@@ -983,14 +981,14 @@ function setupEventListeners() {
 
   // Login success event listener
   window.addEventListener('login-success', event => {
-    console.log('Login success event received in settings window:', event.detail);
+    window.settings.log.info('Login success event received in settings window:', event.detail);
     // Load user data and update UI when login is successful
     loadUserDataAndUpdateUI();
   });
 
   // Login error event listener
   window.addEventListener('login-error', event => {
-    console.error('Login error event received in settings window:', event.detail);
+    window.settings.log.error('Login error event received in settings window:', event.detail);
     // Update UI when login fails
     updateAuthStateUI(false);
     alert(`Login failed: ${event.detail.message || event.detail.error || 'Unknown error'}`);
@@ -998,14 +996,14 @@ function setupEventListeners() {
 
   // Logout success event listener
   window.addEventListener('logout-success', event => {
-    console.log('Logout success event received in settings window');
+    window.settings.log.info('Logout success event received in settings window');
     // Update UI when logout is successful
     updateAuthStateUI(false);
   });
 
   // Authentication state change event listener
   window.addEventListener('auth-state-changed', event => {
-    console.log('Auth state changed event received in settings window:', event.detail);
+    window.settings.log.info('Auth state changed event received in settings window:', event.detail);
 
     // Handle based on authentication state change type
     if (event.detail.type === 'auth-reload') {
@@ -1016,7 +1014,7 @@ function setupEventListeners() {
 
   // 구독 정보 및 설정 업데이트 이벤트 리스너
   window.addEventListener('config-updated', event => {
-    console.log('설정 업데이트 이벤트 감지:', event.detail);
+    window.settings.log.info('설정 업데이트 이벤트 감지:', event.detail);
 
     // 설정 데이터 업데이트
     if (event.detail) {
@@ -1038,18 +1036,18 @@ function setupEventListeners() {
 
   // 설정 동기화 이벤트 리스너
   window.addEventListener('settings-synced', event => {
-    console.log('설정 동기화 이벤트 감지:', event.detail);
+    window.settings.log.info('설정 동기화 이벤트 감지:', event.detail);
 
     // 동기화 상태 새로고침
     window.settings.getSyncStatus().then(status => {
-      console.log('새로운 동기화 상태:', status);
+        window.settings.log.info('새로운 동기화 상태:', status);
       updateSyncStatusUI(status);
     });
   });
 
   // 탭 선택 이벤트 리스너 - 외부에서 특정 탭을 선택하도록 요청할 때 사용
   window.addEventListener('select-settings-tab', event => {
-    console.log('선택된 탭 이벤트 감지:', event.detail);
+    window.settings.log.info('선택된 탭 이벤트 감지:', event.detail);
 
     // 탭 이름이 유효한지 확인
     const tabName = event.detail;
@@ -1060,10 +1058,10 @@ function setupEventListeners() {
       );
 
       if (tabExists) {
-        console.log(`'${tabName}' 탭으로 전환합니다.`);
+        window.settings.log.info(`'${tabName}' 탭으로 전환합니다.`);
         switchTab(tabName);
       } else {
-        console.warn(`요청된 탭 '${tabName}'이 존재하지 않습니다.`);
+        window.settings.log.warn(`요청된 탭 '${tabName}'이 존재하지 않습니다.`);
       }
     }
   });
@@ -1108,7 +1106,7 @@ async function handleAuthCode(code) {
       throw new Error(tokenResult.error || 'Failed to exchange code for token');
     }
   } catch (error) {
-    console.error('Authentication error:', error);
+    window.settings.log.error('Authentication error:', error);
     alert(`Authentication failed: ${error.message || 'Unknown error'}`);
     updateAuthStateUI(false);
     // Hide loading state
@@ -1140,7 +1138,7 @@ function startRecordingHotkey() {
   window.settings
     .temporarilyDisableShortcuts()
     .then(() => {
-      console.log('Shortcuts temporarily disabled for recording');
+      window.settings.log.info('Shortcuts temporarily disabled for recording');
 
       isRecordingHotkey = true;
       globalHotkeyInput.value = 'Press a key combination...';
@@ -1148,7 +1146,7 @@ function startRecordingHotkey() {
       recordHotkeyButton.disabled = true;
     })
     .catch(err => {
-      console.error('Failed to disable shortcuts for recording:', err);
+      window.settings.log.error('Failed to disable shortcuts for recording:', err);
     });
 }
 
@@ -1207,7 +1205,7 @@ function handleHotkeyRecording(event) {
   const hotkey = [...modifiers, key].join('+');
 
   // Debug information (log to console)
-  console.log('Recorded hotkey:', hotkey, 'from key:', event.key, 'code:', event.code);
+  window.settings.log.info('Recorded hotkey:', hotkey, 'from key:', event.key, 'code:', event.code);
 
   // Set the hotkey
   globalHotkeyInput.value = hotkey;
@@ -1218,8 +1216,8 @@ function handleHotkeyRecording(event) {
   // Re-enable shortcuts
   window.settings
     .restoreShortcuts()
-    .then(() => console.log('Shortcuts restored after recording'))
-    .catch(err => console.error('Failed to restore shortcuts:', err));
+    .then(() => window.settings.log.info('Shortcuts restored after recording'))
+    .catch(err => window.settings.log.error('Failed to restore shortcuts:', err));
 
   // Mark as unsaved
   markUnsavedChanges();
@@ -1385,7 +1383,7 @@ async function handleCloudSyncToggle() {
     let hasCloudSyncPermission = false;
 
     // 디버깅 로그 추가
-    console.log(
+    window.settings.log.info(
       'handleCloudSyncToggle: 구독 정보 확인:',
       JSON.stringify(authState.subscription || {}),
     );
@@ -1393,7 +1391,7 @@ async function handleCloudSyncToggle() {
     // VIP 사용자 확인 (최우선)
     if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
       hasCloudSyncPermission = true;
-      console.log('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
+      window.settings.log.info('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
     }
 
     // Premium 플랜 확인
@@ -1401,7 +1399,7 @@ async function handleCloudSyncToggle() {
       const plan = authState.subscription.plan.toLowerCase();
       if (plan.includes('premium') || plan.includes('pro')) {
         hasCloudSyncPermission = true;
-        console.log('handleCloudSyncToggle: Premium/Pro 플랜 확인됨');
+        window.settings.log.info('handleCloudSyncToggle: Premium/Pro 플랜 확인됨');
       }
     }
 
@@ -1412,14 +1410,14 @@ async function handleCloudSyncToggle() {
       authState.subscription?.is_subscribed === true
     ) {
       hasCloudSyncPermission = true;
-      console.log('handleCloudSyncToggle: 구독 활성화 상태 확인됨');
+      window.settings.log.info('handleCloudSyncToggle: 구독 활성화 상태 확인됨');
     }
 
     // Cloud Sync 기능 특화 확인
     if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
       if (authState.subscription.features.cloud_sync === true) {
         hasCloudSyncPermission = true;
-        console.log('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features 객체)');
+        window.settings.log.info('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features 객체)');
       }
     }
 
@@ -1427,7 +1425,7 @@ async function handleCloudSyncToggle() {
     if (Array.isArray(authState.subscription?.features_array)) {
       if (authState.subscription.features_array.includes('cloud_sync')) {
         hasCloudSyncPermission = true;
-        console.log('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features_array)');
+        window.settings.log.info('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features_array)');
       }
     }
 
@@ -1438,11 +1436,11 @@ async function handleCloudSyncToggle() {
     ) {
       if (authState.subscription.additionalFeatures.cloudSync === true) {
         hasCloudSyncPermission = true;
-        console.log('handleCloudSyncToggle: cloudSync 기능 활성화됨 (additionalFeatures)');
+        window.settings.log.info('handleCloudSyncToggle: cloudSync 기능 활성화됨 (additionalFeatures)');
       }
     }
 
-    console.log('handleCloudSyncToggle: 최종 클라우드 싱크 권한:', hasCloudSyncPermission);
+    window.settings.log.info('handleCloudSyncToggle: 최종 클라우드 싱크 권한:', hasCloudSyncPermission);
 
     if (!hasCloudSyncPermission) {
       syncStatusText.textContent = 'Premium subscription required';
@@ -1483,7 +1481,7 @@ async function handleCloudSyncToggle() {
       manualSyncEnabled();
     }, 1500);
   } catch (error) {
-    console.error('Cloud sync toggle error:', error);
+    window.settings.log.error('Cloud sync toggle error:', error);
 
     // Hide loading state
     setLoading(syncLoading, false);
@@ -1504,7 +1502,7 @@ async function handleCloudSyncToggle() {
     }, 2000);
 
     // Log error
-    console.error(`Cloud sync configuration error: ${error.message || 'Unknown error'}`);
+    window.settings.log.error(`Cloud sync configuration error: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -1565,7 +1563,7 @@ async function handleManualSyncUpload() {
       throw new Error(result.error || '업로드 실패');
     }
   } catch (error) {
-    console.error('Manual sync upload error:', error);
+    window.settings.log.error('Manual sync upload error:', error);
 
     // Hide loading state
     setLoading(syncLoading, false);
@@ -1581,7 +1579,7 @@ async function handleManualSyncUpload() {
     }, 1500);
 
     // Log error to console
-    console.error(`Settings upload error: ${error.message || 'Unknown error'}`);
+    window.settings.log.error(`Settings upload error: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -1643,7 +1641,7 @@ async function handleManualSyncDownload() {
       throw new Error(result.error || '다운로드 실패');
     }
   } catch (error) {
-    console.error('Manual sync download error:', error);
+    window.settings.log.error('Manual sync download error:', error);
 
     // Hide loading state
     setLoading(syncLoading, false);
@@ -1659,7 +1657,7 @@ async function handleManualSyncDownload() {
     }, 1500);
 
     // Log error to console
-    console.error(`Settings download error: ${error.message || 'Unknown error'}`);
+    window.settings.log.error(`Settings download error: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -1682,13 +1680,13 @@ async function handleCheckUpdates() {
     checkUpdatesButton.textContent = 'Checking...';
 
     // electron-updater를 통해 최신 버전 확인
-    console.log('Starting update check through electron-updater');
+    window.settings.log.info('Starting update check through electron-updater');
     const result = await window.settings.checkForUpdates(false); // false: silent모드 아님 (사용자에게 알림)
 
     // Hide loading
     setLoading(updateLoading, false);
 
-    console.log('Update check result:', result);
+    window.settings.log.info('Update check result:', result);
 
     if (result.success) {
       // 현재 버전과 최신 버전 비교
@@ -1773,7 +1771,7 @@ async function handleDownloadUpdate() {
     try {
       // 자동 업데이트 다운로드 시작
       const autoUpdateResult = await window.settings.downloadAutoUpdate();
-      console.log('Starting automatic update download:', autoUpdateResult);
+      window.settings.log.info('Starting automatic update download:', autoUpdateResult);
 
       // 다운로드 진행 상황은 이벤트로 전달됨
       updateMessage.textContent = 'Downloading update. Please wait...';
@@ -1952,7 +1950,7 @@ async function handleManualSyncResolve() {
       throw new Error(result.error || '충돌 해결 실패');
     }
   } catch (error) {
-    console.error('Manual sync resolve error:', error);
+    window.settings.log.error('Manual sync resolve error:', error);
 
     // Hide loading state
     setLoading(syncLoading, false);
@@ -1968,6 +1966,6 @@ async function handleManualSyncResolve() {
     }, 1500);
 
     // Log error to console
-    console.error(`Settings conflict resolution error: ${error.message || 'Unknown error'}`);
+    window.settings.log.error(`Settings conflict resolution error: ${error.message || 'Unknown error'}`);
   }
 }

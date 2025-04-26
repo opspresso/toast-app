@@ -10,6 +10,14 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('settings', {
+  // Logging
+  log: {
+    info: (message, ...args) => ipcRenderer.invoke('log-info', message, ...args),
+    warn: (message, ...args) => ipcRenderer.invoke('log-warn', message, ...args),
+    error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
+    debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
+  },
+
   // Authentication and subscription
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
   exchangeCodeForToken: code => ipcRenderer.invoke('exchange-code-for-token', code),
@@ -59,14 +67,6 @@ contextBridge.exposeInMainWorld('settings', {
   downloadAutoUpdate: () => ipcRenderer.invoke('download-auto-update'),
   installAutoUpdate: () => ipcRenderer.invoke('install-auto-update'),
   downloadManualUpdate: () => ipcRenderer.invoke('download-manual-update'),
-
-  // Logging
-  log: {
-    info: (message, ...args) => ipcRenderer.invoke('log-info', message, ...args),
-    warn: (message, ...args) => ipcRenderer.invoke('log-warn', message, ...args),
-    error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
-    debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
-  },
 
   // Cloud Sync
   getSyncStatus: () => ipcRenderer.invoke('get-sync-status'),

@@ -17,12 +17,14 @@ contextBridge.exposeInMainWorld('toast', {
     error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
     debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
   },
+
   // Login and user information related methods
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
   fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
   fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
   getUserSettings: () => ipcRenderer.invoke('get-user-settings'),
   logout: () => ipcRenderer.invoke('logout'),
+
   invoke: (channel, ...args) => {
     // Only call invoke for allowed channels
     const allowedChannels = ['logout', 'resetToDefaults', 'resetAppSettings'];
