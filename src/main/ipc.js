@@ -722,203 +722,49 @@ function setupIpcHandlers(windows) {
     }
   });
 
-  // Check for latest version from remote JSON
+  // 업데이트 확인 - electron-updater 사용
   ipcMain.handle('check-latest-version', async () => {
-    try {
-      const https = require('https');
-
-      // URL for the versions.json file
-      const url = 'https://opspresso.github.io/toast-dist/versions.json';
-
-      // Function to get data from URL
-      const fetchJson = (url) => {
-        return new Promise((resolve, reject) => {
-          https.get(url, (res) => {
-            let data = '';
-
-            // A chunk of data has been received
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
-
-            // The whole response has been received
-            res.on('end', () => {
-              try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
-              } catch (e) {
-                reject(new Error(`Failed to parse JSON: ${e.message}`));
-              }
-            });
-          }).on('error', (e) => {
-            reject(new Error(`Request failed: ${e.message}`));
-          });
-        });
-      };
-
-      // Semantic version comparison function
-      const compareSemver = (v1, v2) => {
-        // Remove 'v' prefix if present
-        v1 = v1.replace(/^v/, '');
-        v2 = v2.replace(/^v/, '');
-
-        // Split versions into components
-        const v1Parts = v1.split('.');
-        const v2Parts = v2.split('.');
-
-        // Compare major.minor.patch
-        for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
-          const v1Part = parseInt(v1Parts[i] || 0, 10);
-          const v2Part = parseInt(v2Parts[i] || 0, 10);
-
-          if (v1Part > v2Part) {
-            return 1;  // v1 is newer
-          } else if (v1Part < v2Part) {
-            return -1; // v2 is newer
-          }
-        }
-        return 0; // Same version
-      };
-
-      // Fetch version data
-      const versionData = await fetchJson(url);
-
-      // Get current app version
-      const { app } = require('electron');
-      const currentVersion = app.getVersion();
-      const latestVersion = versionData.toast?.version || 'unknown';
-
-      // Compare versions using semver
-      const versionCompare = latestVersion !== 'unknown'
-        ? compareSemver(latestVersion, currentVersion)
-        : 0;
-
-      // Return version information
-      return {
-        success: true,
-        latest: latestVersion,
-        current: currentVersion,
-        releaseDate: versionData.toast?.releaseDate || '',
-        description: versionData.toast?.description || '',
-        hasUpdate: versionCompare > 0,  // latestVersion is newer than currentVersion
-        versionCompare: versionCompare  // Return comparison result: 1 (newer), 0 (same), -1 (older)
-      };
-    } catch (error) {
-      console.error('Error checking latest version:', error);
-      return {
-        success: false,
-        error: error.message || 'Unknown error'
-      };
-    }
+    console.log('IPC: check-latest-version called');
+    // 대신 updater.js의 checkForUpdates를 직접 사용 (silent=false로 설정)
+    return await updater.checkForUpdates(false);
   });
 
-  // Download application update
+  // check-for-updates 핸들러 추가 (electron-updater와 함께 사용)
+  ipcMain.handle('check-for-updates', async (event, silent = false) => {
+    console.log('IPC: check-for-updates called, silent:', silent);
+    return await updater.checkForUpdates(silent);
+  });
+
+  // Download application update - electron-updater 사용
   ipcMain.handle('download-update', async () => {
-    try {
-      const https = require('https');
-      const fs = require('fs');
-      const path = require('path');
-      const { app } = require('electron');
-      const { shell } = require('electron');
-
-      // URL for checking version information
-      const versionsJsonUrl = 'https://opspresso.github.io/toast-dist/versions.json';
-
-      // Function to get data from URL
-      const fetchJson = (url) => {
-        return new Promise((resolve, reject) => {
-          https.get(url, (res) => {
-            let data = '';
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
-            res.on('end', () => {
-              try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
-              } catch (e) {
-                reject(new Error(`Failed to parse JSON: ${e.message}`));
-              }
-            });
-          }).on('error', (e) => {
-            reject(new Error(`Request failed: ${e.message}`));
-          });
-        });
-      };
-
-      // Fetch version data to get download URL
-      const versionData = await fetchJson(versionsJsonUrl);
-
-      if (!versionData.toast?.downloadUrl) {
-        return {
-          success: false,
-          message: 'Download URL not found in version data'
-        };
-      }
-
-      // Get the download URL for the user's platform
-      let downloadUrl;
-
-      // Determine platform-specific download URL
-      switch (process.platform) {
-        case 'darwin': // macOS
-          downloadUrl = versionData.toast.downloadUrl.mac;
-          break;
-        case 'win32': // Windows
-          downloadUrl = versionData.toast.downloadUrl.win;
-          break;
-        case 'linux': // Linux
-          downloadUrl = versionData.toast.downloadUrl.linux;
-          break;
-        default:
-          return {
-            success: false,
-            message: `Unsupported platform: ${process.platform}`
-          };
-      }
-
-      if (!downloadUrl) {
-        return {
-          success: false,
-          message: `Download not available for platform: ${process.platform}`
-        };
-      }
-
-      // Open download URL in browser (most appropriate for end users)
-      await shell.openExternal(downloadUrl);
-
-      return {
-        success: true,
-        message: 'Download started in your browser'
-      };
-    } catch (error) {
-      console.error('Error downloading update:', error);
-      return {
-        success: false,
-        error: error.message || 'Unknown error'
-      };
-    }
+    console.log('IPC: download-update called');
+    // 대신 updater.js의 downloadUpdate를 직접 사용
+    return await updater.downloadUpdate();
   });
 
-  // Install application update
+  // 자동 업데이트 다운로드 핸들러 추가
+  ipcMain.handle('download-auto-update', async () => {
+    console.log('IPC: download-auto-update called');
+    return await updater.downloadUpdate();
+  });
+
+  // 수동 업데이트 다운로드 핸들러 추가 (이전 버전과의 호환성을 위해)
+  ipcMain.handle('download-manual-update', async () => {
+    console.log('IPC: download-manual-update called');
+    return await updater.downloadUpdate();
+  });
+
+  // Install application update - electron-updater 사용
   ipcMain.handle('install-update', async () => {
-    try {
-      const { app } = require('electron');
+    console.log('IPC: install-update called');
+    // 대신 updater.js의 installUpdate를 직접 사용
+    return await updater.installUpdate();
+  });
 
-      // For now, we simply quit the app and let the user manually install the update
-      // In a future version, we could implement auto-update with electron-updater
-      app.quit();
-
-      return {
-        success: true
-      };
-    } catch (error) {
-      console.error('Error installing update:', error);
-      return {
-        success: false,
-        error: error.message || 'Unknown error'
-      };
-    }
+  // 자동 업데이트 설치 핸들러 추가
+  ipcMain.handle('install-auto-update', async () => {
+    console.log('IPC: install-auto-update called');
+    return await updater.installUpdate();
   });
 
   // Get app info (author, homepage, etc.)
