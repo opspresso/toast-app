@@ -8,7 +8,7 @@ const { BrowserWindow, app } = require('electron');
 const path = require('path');
 const { positionToastWindow } = require('./shortcuts');
 const { isModalOpened } = require('./ipc');
-const { isLoginProcessActive } = require('./api/auth'); // 로그인 상태 체크 함수 가져오기
+const { isLoginProcessActive } = require('./api/auth'); // Import function to check login status
 
 // Store window references to prevent garbage collection
 const windows = {
@@ -128,16 +128,16 @@ function setupToastWindowEvents(toastWindow, config) {
   toastWindow.on('blur', () => {
     const hideOnBlur = config.get('advanced.hideOnBlur');
 
-    // 로그인 진행 중인지 확인
+    // Check if login is in progress
     const loginInProgress = isLoginProcessActive();
 
     if (loginInProgress) {
       return;
     }
 
-    // 모달이 열려있지 않고 hideOnBlur 설정이 활성화된 경우에만 창 숨김
+    // Only hide window if modal is not open and hideOnBlur setting is enabled
     if (hideOnBlur !== false && !isModalOpened()) {
-      // 창이 숨겨지기 전에 편집 모드 종료를 위한 이벤트 발생
+      // Emit event to exit edit mode before hiding window
       toastWindow.webContents.send('before-hide');
       toastWindow.hide();
     }
@@ -221,9 +221,9 @@ function createSettingsWindow(config) {
  * @param {BrowserWindow} settingsWindow - Settings window
  */
 function setupSettingsWindowEvents(settingsWindow) {
-  // 창 닫기 시도 시 로그인 진행 중인지 확인
+    // Check if login is in progress when attempting to close window
   settingsWindow.on('close', event => {
-    // 로그인 진행 중인지 확인
+    // Check if login is in progress
     const loginInProgress = isLoginProcessActive();
 
     if (loginInProgress) {
@@ -260,11 +260,11 @@ function showToastWindow(config) {
  * Hide the Toast window
  */
 function hideToastWindow() {
-  // 로그인 진행 중인지 확인
+  // Check if login is in progress
   const loginInProgress = isLoginProcessActive();
 
   if (loginInProgress) {
-    console.log('로그인 요청 중에는 창을 숨기지 않습니다.');
+    console.log('Window will not be hidden during login requests.');
     return;
   }
 

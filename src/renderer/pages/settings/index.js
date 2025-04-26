@@ -1637,20 +1637,20 @@ async function handleCheckUpdates() {
     updateActions.classList.add('hidden');
 
     // 로깅 추가
-    window.settings.log.info('업데이트 확인 시작');
+    window.settings.log.info('Starting update check');
 
     // Save original button text
     const originalButtonText = checkUpdatesButton.textContent;
     checkUpdatesButton.textContent = 'Checking...';
 
     // electron-updater를 통해 최신 버전 확인
-    console.log('electron-updater를 통해 업데이트 확인 시작');
+    console.log('Starting update check through electron-updater');
     const result = await window.settings.checkForUpdates(false); // false: silent모드 아님 (사용자에게 알림)
 
     // Hide loading
     setLoading(updateLoading, false);
 
-    console.log('업데이트 확인 결과:', result);
+    console.log('Update check result:', result);
 
     if (result.success) {
       // 현재 버전과 최신 버전 비교
@@ -1670,10 +1670,10 @@ async function handleCheckUpdates() {
       if (hasUpdate) {
         // 새 버전이 있는 경우
         updateMessage.innerHTML = `
-          <strong>새 버전이 있습니다!</strong><br>
-          현재 버전: ${currentVersion}<br>
-          최신 버전: ${latestVersion} (업데이트 필요)<br>
-          출시일: ${releaseDate}<br>
+          <strong>New version available!</strong><br>
+          Current version: ${currentVersion}<br>
+          Latest version: ${latestVersion} (Update required)<br>
+          Release date: ${releaseDate}<br>
           ${releaseNotes ? `<small>${releaseNotes}</small>` : ''}
         `;
         updateActions.classList.remove('hidden');
@@ -1682,9 +1682,9 @@ async function handleCheckUpdates() {
       } else {
         // 최신 버전인 경우
         updateMessage.innerHTML = `
-          <strong>최신 버전을 사용 중입니다.</strong><br>
-          현재 버전: ${currentVersion}<br>
-          최신 버전: ${latestVersion}
+          <strong>You are using the latest version.</strong><br>
+          Current version: ${currentVersion}<br>
+          Latest version: ${latestVersion}
         `;
         updateActions.classList.add('hidden');
 
@@ -1695,7 +1695,7 @@ async function handleCheckUpdates() {
       }
     } else {
       // 업데이트 확인 실패
-      throw new Error(result.error || '버전 정보를 가져올 수 없습니다.');
+      throw new Error(result.error || 'Could not retrieve version information.');
     }
 
     // 버튼 원래 상태로 복원
@@ -1704,10 +1704,10 @@ async function handleCheckUpdates() {
       checkUpdatesButton.disabled = false;
     }, 1000);
   } catch (error) {
-    console.error('업데이트 확인 오류:', error);
+    console.error('Update check error:', error);
 
     // 오류 표시
-    updateMessage.textContent = `업데이트 확인 오류: ${error.message || '알 수 없는 오류'}`;
+    updateMessage.textContent = `Update check error: ${error.message || 'Unknown error'}`;
     updateActions.classList.add('hidden');
     setLoading(updateLoading, false);
 
@@ -1729,16 +1729,16 @@ async function handleDownloadUpdate() {
 
     // 원래 버튼 텍스트 저장
     const originalButtonText = downloadUpdateButton.textContent;
-    downloadUpdateButton.textContent = '다운로드 중...';
+    downloadUpdateButton.textContent = 'Downloading...';
 
     // 먼저 자동 업데이트 시도
     try {
       // 자동 업데이트 다운로드 시작
       const autoUpdateResult = await window.settings.downloadAutoUpdate();
-      console.log('자동 업데이트 다운로드 시작:', autoUpdateResult);
+      console.log('Starting automatic update download:', autoUpdateResult);
 
       // 다운로드 진행 상황은 이벤트로 전달됨
-      updateMessage.textContent = '업데이트를 다운로드하고 있습니다. 잠시만 기다려주세요...';
+      updateMessage.textContent = 'Downloading update. Please wait...';
 
       // 이벤트 리스너는 이미 preload에서 설정되어 있음
       // 다운로드 진행 상황 및 완료는 이벤트로 처리
@@ -1746,7 +1746,7 @@ async function handleDownloadUpdate() {
 
     } catch (autoUpdateError) {
       // 자동 업데이트 실패 시 수동 다운로드로 폴백
-      console.error('자동 업데이트 실패, 수동 다운로드로 전환:', autoUpdateError);
+      console.error('Automatic update failed, switching to manual download:', autoUpdateError);
 
       // 수동 다운로드 시작 (브라우저에서 다운로드 URL 열기)
       const manualResult = await window.settings.downloadManualUpdate();
@@ -1756,13 +1756,13 @@ async function handleDownloadUpdate() {
 
       if (manualResult && manualResult.success) {
         // 수동 다운로드 성공
-        updateMessage.textContent = '브라우저에서 업데이트 다운로드가 시작되었습니다. 다운로드 후 수동으로 설치해 주세요.';
+        updateMessage.textContent = 'Update download has started in your browser. After downloading, please install it manually.';
         downloadUpdateButton.classList.add('hidden');
         installUpdateButton.classList.remove('hidden');
         installUpdateButton.disabled = false;
       } else {
         // 수동 다운로드 실패
-        updateMessage.textContent = manualResult.message || '업데이트 다운로드에 실패했습니다.';
+        updateMessage.textContent = manualResult.message || 'Failed to download update.';
 
         // 버튼 상태 복원
         downloadUpdateButton.textContent = originalButtonText;
@@ -1770,14 +1770,14 @@ async function handleDownloadUpdate() {
       }
     }
   } catch (error) {
-    console.error('업데이트 다운로드 오류:', error);
+    console.error('Update download error:', error);
 
     // 오류 표시
-    updateMessage.textContent = `업데이트 다운로드 오류: ${error.message || '알 수 없는 오류'}`;
+    updateMessage.textContent = `Update download error: ${error.message || 'Unknown error'}`;
     setLoading(updateLoading, false);
 
     // 버튼 상태 복원
-    downloadUpdateButton.textContent = '다운로드';
+    downloadUpdateButton.textContent = 'Download';
     downloadUpdateButton.disabled = false;
   }
 }
@@ -1786,14 +1786,14 @@ async function handleDownloadUpdate() {
 window.addEventListener('download-progress', event => {
   const progress = event.detail.progress;
   if (progress && progress.percent) {
-    updateMessage.textContent = `다운로드 중: ${Math.round(progress.percent)}%`;
+    updateMessage.textContent = `Downloading: ${Math.round(progress.percent)}%`;
   }
 });
 
 window.addEventListener('update-downloaded', event => {
   // 다운로드 완료됨 - UI 업데이트
   setLoading(updateLoading, false);
-  updateMessage.textContent = '업데이트가 다운로드되었습니다. 지금 설치하시겠습니까?';
+  updateMessage.textContent = 'Update has been downloaded. Would you like to install it now?';
   downloadUpdateButton.classList.add('hidden');
   installUpdateButton.classList.remove('hidden');
   installUpdateButton.disabled = false;
@@ -1802,7 +1802,7 @@ window.addEventListener('update-downloaded', event => {
 window.addEventListener('update-error', event => {
   // 오류 발생
   setLoading(updateLoading, false);
-  updateMessage.textContent = `업데이트 오류: ${event.detail.error || '알 수 없는 오류'}`;
+  updateMessage.textContent = `Update error: ${event.detail.error || 'Unknown error'}`;
   downloadUpdateButton.textContent = '다운로드';
   downloadUpdateButton.disabled = false;
 });
@@ -1813,7 +1813,7 @@ window.addEventListener('update-error', event => {
 async function handleInstallUpdate() {
   try {
     // 설치 확인
-    if (confirm('앱이 종료되고 업데이트가 설치됩니다. 계속하시겠습니까?')) {
+    if (confirm('The app will close and the update will be installed. Would you like to proceed?')) {
       // 자동 업데이트 설치 (자동 업데이트 시스템 사용)
       try {
         // 버튼 비활성화 및 로딩 표시
@@ -1825,29 +1825,29 @@ async function handleInstallUpdate() {
 
         // 여기까지 도달하면 설치가 실패한 것 (정상 설치 시 앱이 종료됨)
         setLoading(updateLoading, false);
-        updateMessage.textContent = '업데이트 설치를 시작할 수 없습니다. 앱을 수동으로 재시작해 보세요.';
+        updateMessage.textContent = 'Could not start update installation. Please restart the app manually.';
         installUpdateButton.disabled = false;
       } catch (autoInstallError) {
         // 자동 업데이트 설치 실패 시 수동 설치로 폴백
-        console.error('자동 업데이트 설치 실패:', autoInstallError);
+        console.error('Automatic update installation failed:', autoInstallError);
 
         // 수동 설치 (앱 종료)
         await window.settings.installUpdate();
       }
     }
   } catch (error) {
-    console.error('업데이트 설치 오류:', error);
+    console.error('Update installation error:', error);
 
     // 오류 표시
     setLoading(updateLoading, false);
-    updateMessage.textContent = `업데이트 설치 오류: ${error.message || '알 수 없는 오류'}`;
+    updateMessage.textContent = `Update installation error: ${error.message || 'Unknown error'}`;
     installUpdateButton.disabled = false;
   }
 }
 
 // 설치 시작 이벤트 리스너
 window.addEventListener('install-started', event => {
-  updateMessage.textContent = '업데이트를 설치하는 중입니다. 앱이 곧 종료됩니다...';
+  updateMessage.textContent = 'Installing update. The app will close shortly...';
   installUpdateButton.disabled = true;
 });
 

@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest] # Define OS matrix for builds
+        os: [macos-latest] # , windows-latest, ubuntu-latest
 
     steps:
       - name: Checkout code 🛎️

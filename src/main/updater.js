@@ -1,7 +1,7 @@
 /**
- * Toast - 자동 업데이트 관리
+ * Toast - Auto Update Manager
  *
- * 이 모듈은 electron-updater를 사용하여 앱의 자동 업데이트를 처리합니다.
+ * This module handles automatic updates using electron-updater.
  */
 
 const { app } = require('electron');
@@ -47,12 +47,12 @@ function initAutoUpdater(windows) {
   autoUpdater.allowPrerelease = false; // 프로덕션에서는 안정 버전만 사용
 
   logger.info(`AppID: ${app.isPackaged ? app.getAppPath() : 'Not packaged'}`);
-  logger.info(`업데이트 캐시 디렉토리: ${app.getPath('userData')}/toast-app-updater`);
+  logger.info(`Update cache directory: ${app.getPath('userData')}/toast-app-updater`);
 
   // 로깅 설정 확장
-  logger.info('자동 업데이트 모듈 초기화됨');
-  logger.info(`현재 앱 버전: ${app.getVersion()}`);
-  logger.info(`업데이트 소스: GitHub 릴리스 (opspresso/toast-dist)`);
+  logger.info('Auto update module initialized');
+  logger.info(`Current app version: ${app.getVersion()}`);
+  logger.info(`Update source: GitHub Release (opspresso/toast-dist)`);
 
   // 자동 업데이트 이벤트 핸들링
   setupAutoUpdaterEvents();
@@ -141,7 +141,7 @@ function setupAutoUpdaterEvents() {
  */
 function setupIpcHandlers() {
   // 이 함수는 호환성을 위해 유지하지만 더 이상 IPC 핸들러를 등록하지 않음
-  logger.info('Updater IPC 핸들러는 더 이상 직접 등록하지 않고 ipc.js에서 통합 관리됩니다.');
+  logger.info('Updater IPC handlers are now managed centrally in ipc.js instead of being registered directly.');
 }
 
 /**
@@ -156,14 +156,14 @@ async function checkForUpdates(silent = false) {
     }
 
     // electron-updater로 업데이트 확인
-    logger.info('electron-updater를 통해 업데이트 확인');
+    logger.info('Checking for updates via electron-updater');
     const result = await autoUpdater.checkForUpdates();
 
     if (result && result.updateInfo) {
       const currentVersion = app.getVersion();
       const latestVersion = result.updateInfo.version;
 
-      logger.info(`업데이트 확인 결과: 현재 버전 ${currentVersion}, 최신 버전 ${latestVersion}`);
+      logger.info(`Update check result: Current version ${currentVersion}, Latest version ${latestVersion}`);
 
       return {
         success: true,
@@ -176,7 +176,7 @@ async function checkForUpdates(silent = false) {
       };
     } else {
       // 업데이트 정보가 없는 경우
-      logger.info('업데이트 정보를 찾을 수 없습니다.');
+      logger.info('Update information not found.');
 
       if (!silent) {
         sendStatusToWindows('update-not-available', {
@@ -189,7 +189,7 @@ async function checkForUpdates(silent = false) {
 
       return {
         success: false,
-        error: '업데이트 정보를 찾을 수 없습니다.',
+        error: 'Update information not found.',
         versionInfo: {
           current: app.getVersion(),
           latest: null
@@ -198,7 +198,7 @@ async function checkForUpdates(silent = false) {
       };
     }
   } catch (error) {
-    logger.error('업데이트 확인 오류:', error.toString());
+    logger.error('Update check error:', error.toString());
 
     // 오류 알림 (silent 모드가 아닌 경우에만)
     if (!silent) {
@@ -228,30 +228,44 @@ async function downloadUpdate() {
     // 다운로드 시작
     sendStatusToWindows('download-started', { status: 'downloading' });
 
-    // electron-updater로 다운로드
-    logger.info('electron-updater를 통해 업데이트 다운로드');
+    // 현재 업데이트 가능 상태인지 확인
+    let updateCheckResult;
 
-    // 업데이트 확인 - 다운로드 전에 반드시 호출해야 함
-    const updateCheckResult = await autoUpdater.checkForUpdates();
+    try {
+      // electron-updater로 다운로드
+      logger.info('Checking status for update download via electron-updater');
+      updateCheckResult = await autoUpdater.checkForUpdatesAndNotify();
 
-    if (!updateCheckResult || !updateCheckResult.updateInfo) {
-      throw new Error('업데이트 정보를 확인할 수 없습니다.');
+      // 업데이트 확인 결과가 없으면 단순 체크만 수행
+      if (!updateCheckResult) {
+        updateCheckResult = await autoUpdater.checkForUpdates();
+      }
+
+      if (!updateCheckResult || !updateCheckResult.updateInfo) {
+        throw new Error('Cannot verify update information.');
+      }
+    } catch (checkError) {
+      logger.error('Error during update check:', checkError.toString());
+      throw new Error(`Update check failed: ${checkError.message}`);
     }
 
     // 최신 버전 정보 로깅
-    logger.info(`업데이트 정보 확인됨: 버전 ${updateCheckResult.updateInfo.version}`);
+    logger.info(`Update information confirmed: Version ${updateCheckResult.updateInfo.version}`);
+
+    // 업데이트 상태 체크 후 잠시 대기 (타이밍 문제 방지)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // 업데이트 다운로드 시작
-    logger.info('자동 업데이트 다운로드 시작');
+    logger.info('Starting automatic update download');
     await autoUpdater.downloadUpdate();
 
     return {
       success: true,
-      message: '업데이트 다운로드가 시작되었습니다.',
+      message: 'Update download has started.',
       version: updateCheckResult.updateInfo.version
     };
   } catch (error) {
-    logger.error('업데이트 다운로드 오류:', error.toString());
+    logger.error('Update download error:', error.toString());
 
     sendStatusToWindows('update-error', {
       status: 'error',
@@ -276,14 +290,14 @@ async function installUpdate() {
 
     // quitAndInstall 호출 (isSilent, isForceRunAfter 옵션 사용 가능)
     // macOS에서는 앱이 종료되고 자동으로 새 버전이 설치됨
-    logger.info('업데이트를 설치하기 위해 앱을 종료합니다...');
+    logger.info('Closing app to install update...');
     autoUpdater.quitAndInstall(false, true);
 
     return {
       success: true
     };
   } catch (error) {
-    logger.error('업데이트 설치 오류:', error.toString());
+    logger.error('Update installation error:', error.toString());
 
     sendStatusToWindows('update-error', {
       status: 'error',
