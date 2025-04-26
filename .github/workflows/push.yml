@@ -60,7 +60,7 @@ jobs:
 
       - name: Trigger Build Workflow 🔄
         run: |
-          if [[ "$TAG_CREATED" == 'true' ]]
+          if [[ "$TAG_CREATED" == 'true' ]]; then
             echo "🔄 Triggering build workflow for version $VERSION"
             curl -X POST \
               -H "Accept: application/vnd.github.v3+json" \
