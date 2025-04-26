@@ -721,8 +721,7 @@ function setupIpcHandlers(windows) {
       const { app } = require('electron');
       return app.getVersion();
     } catch (error) {
-      console.error('Error getting app version:', error);
-      return 'v0.5.5'; // 오류 발생 시 기본값
+      return '0.0.0';
     }
   });
 
@@ -769,40 +768,6 @@ function setupIpcHandlers(windows) {
   ipcMain.handle('install-auto-update', async () => {
     logger.info('IPC: install-auto-update called');
     return await updater.installUpdate();
-  });
-
-  // Get app info (author, homepage, etc.)
-  ipcMain.handle('get-app-info', () => {
-    try {
-      const path = require('path');
-      const fs = require('fs');
-      const appPath = path.join(__dirname, '..', '..');
-      const packagePath = path.join(appPath, 'package.json');
-
-      if (fs.existsSync(packagePath)) {
-        const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
-        return {
-          author: packageJson.author || '',
-          homepage: packageJson.homepage || '',
-          description: packageJson.description || '',
-          license: packageJson.license || '',
-          repository: packageJson.repository?.url || '',
-          success: true
-        };
-      } else {
-        console.error('package.json not found');
-        return {
-          success: false,
-          error: 'package.json not found'
-        };
-      }
-    } catch (error) {
-      console.error('Error getting app info:', error);
-      return {
-        success: false,
-        error: error.message || 'Unknown error'
-      };
-    }
   });
 
   // 로깅 핸들러 추가

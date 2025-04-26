@@ -8,6 +8,8 @@
 - [프로젝트 구조](#프로젝트-구조)
 - [빌드 프로세스](#빌드-프로세스)
 - [개발 워크플로우](#개발-워크플로우)
+- [로깅 시스템](#로깅-시스템)
+- [자동 업데이트](#자동-업데이트)
 - [디버깅](#디버깅)
 - [코드 작성 가이드라인](#코드-작성-가이드라인)
 - [일반적인 개발 작업](#일반적인-개발-작업)
@@ -82,8 +84,10 @@ toast-app/
 │   │   ├── config.js      # 구성 관리
 │   │   ├── executor.js    # 액션 실행
 │   │   ├── ipc.js         # IPC 처리
+│   │   ├── logger.js      # 로깅 시스템
 │   │   ├── shortcuts.js   # 글로벌 단축키
 │   │   ├── tray.js        # 시스템 트레이
+│   │   ├── updater.js     # 자동 업데이트
 │   │   └── windows.js     # 윈도우 관리
 │   ├── renderer/          # 렌더러 프로세스 코드
 │   │   ├── assets/        # 렌더러 자산
@@ -117,6 +121,8 @@ toast-app/
 - **ipc.js**: IPC 채널 및 핸들러
 - **auth.js**: 인증 및 토큰 관리
 - **cloud-sync.js**: 클라우드 동기화 로직
+- **logger.js**: 애플리케이션 로깅 시스템
+- **updater.js**: 자동 업데이트 관리
 
 #### 액션 (`src/main/actions/`)
 
@@ -236,6 +242,164 @@ Toast 앱은 기능 브랜치 워크플로우를 따릅니다:
    git push origin feature/your-feature-name
    ```
    그런 다음 GitHub에서 풀 리퀘스트 생성
+
+## 로깅 시스템
+
+Toast 앱은 `electron-log` 패키지를 사용하여 일관되고 효율적인 로깅 시스템을 구현합니다.
+
+### 로깅 설정
+
+로깅 시스템은 `src/main/logger.js` 모듈에서 중앙 집중식으로 관리되며 다음 기능을 제공합니다:
+
+- 파일 및 콘솔에 동시에 로그 출력
+- 모듈별 네임스페이스로 로그 소스 쉽게 식별
+- 로그 파일 자동 회전 (5MB 제한, 최대 5개 파일)
+- 개발/운영 환경에 따른 로그 레벨 자동 조정
+
+로그 파일은 다음 위치에 저장됩니다:
+- **macOS**: `~/Library/Logs/Toast/toast-app.log`
+- **Windows**: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
+- **Linux**: `~/.config/Toast/logs/toast-app.log`
+
+### 로거 사용 방법
+
+#### 메인 프로세스에서 사용
+
+```javascript
+const { createLogger } = require('./logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('ModuleName');
+
+// 다양한 로그 레벨 사용
+logger.info('정보 메시지');
+logger.warn('경고 메시지');
+logger.error('오류 메시지', errorObject);
+logger.debug('디버그 정보', { data: 'someValue' });
+```
+
+#### IPC를 통한 렌더러 프로세스 로깅
+
+```javascript
+// 렌더러 프로세스 (preload 스크립트에서 노출됨)
+window.logger.info('UI에서 로그 메시지');
+window.logger.error('UI 오류', errorDetails);
+
+// 프리로드 스크립트
+contextBridge.exposeInMainWorld('logger', {
+  info: (message, ...args) => ipcRenderer.invoke('log-info', message, ...args),
+  warn: (message, ...args) => ipcRenderer.invoke('log-warn', message, ...args),
+  error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
+  debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
+});
+```
+
+### 로그 레벨 구성
+
+`package.json`이나 환경 변수를 통해 로그 레벨을 구성할 수 있습니다:
+
+```javascript
+// 환경 변수로 설정 (src/main/config/.env)
+LOG_LEVEL=debug
+```
+
+사용 가능한 로그 레벨:
+- **error**: 오류 메시지만
+- **warn**: 경고 및 오류
+- **info**: 정보, 경고 및 오류 (기본값)
+- **debug**: 디버그 정보 포함 (개발 환경 기본값)
+- **verbose**: 세부 정보 포함
+- **silly**: 가장 상세한 로깅 레벨
+
+## 자동 업데이트
+
+Toast 앱은 `electron-updater` 패키지를 사용하여 GitHub 릴리스 기반 자동 업데이트를 구현합니다.
+
+### 업데이트 시스템 구성
+
+자동 업데이트 설정은 `package.json`의 `build` 및 `publish` 섹션에서 정의됩니다:
+
+```json
+"build": {
+  "appId": "com.opspresso.toast-app",
+  "productName": "Toast",
+  "mac": {
+    "target": [
+      "dmg",
+      "zip"  // macOS 자동 업데이트에 필요
+    ],
+    // 다른 macOS 설정...
+  },
+  "win": {
+    "target": [
+      "nsis",
+      "portable"
+    ],
+    // 다른 Windows 설정...
+  }
+},
+"publish": {
+  "provider": "github",
+  "owner": "opspresso",
+  "repo": "toast-dist",
+  "releaseType": "release",
+  "publishAutoUpdate": true
+}
+```
+
+> **중요**: macOS에서 자동 업데이트가 작동하려면 DMG와 함께 ZIP 형식이 필요합니다.
+
+### 업데이트 구현 (`src/main/updater.js`)
+
+업데이트 모듈은 다음을 처리합니다:
+- 업데이트 확인
+- 업데이트 다운로드
+- 업데이트 설치
+- 업데이트 이벤트 처리 및 알림
+
+```javascript
+// 업데이트 모듈 사용 예시 (메인 프로세스)
+const updater = require('./updater');
+
+// 앱 시작 시 업데이트 초기화
+updater.initAutoUpdater(windows);
+
+// 업데이트 확인 (silent 모드: 사용자에게 알리지 않음)
+await updater.checkForUpdates(true);
+
+// 업데이트 다운로드
+await updater.downloadUpdate();
+
+// 업데이트 설치
+await updater.installUpdate();
+```
+
+#### 렌더러 측 처리
+
+렌더러 프로세스에서는 다음과 같이 업데이트 이벤트를 처리합니다:
+
+```javascript
+// 프리로드 스크립트에서 노출된 이벤트 리스너
+window.addEventListener('checking-for-update', event => {
+  // 업데이트 확인 중 UI 표시
+});
+
+window.addEventListener('update-available', event => {
+  // 사용 가능한 업데이트 알림 표시
+  const version = event.detail.info.version;
+  showUpdateNotification(version);
+});
+
+window.addEventListener('update-downloaded', event => {
+  // 다운로드 완료 알림 및 설치 옵션 제공
+  showInstallPrompt();
+});
+
+// 업데이트 설치 함수
+function installUpdate() {
+  window.updater.installUpdate();
+}
+```
 
 ## 디버깅
 

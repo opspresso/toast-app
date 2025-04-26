@@ -54,6 +54,7 @@
   "build": {
     "appId": "com.opspresso.toast-app",
     "productName": "Toast",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "directories": {
       "output": "dist"
     },
@@ -73,7 +74,11 @@
         "dmg",
         "zip"
       ],
-      "type": "distribution"
+      "type": "distribution",
+      "identity": null,
+      "publish": [
+        "github"
+      ]
     },
     "win": {
       "target": [
@@ -90,11 +95,14 @@
       "category": "Utility"
     }
   },
-  "publish": {
-    "provider": "github",
-    "owner": "opspresso",
-    "repo": "toast-dist",
-    "releaseType": "release",
-    "publishAutoUpdate": true
-  }
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "opspresso",
+      "repo": "toast-dist",
+      "releaseType": "release",
+      "publishAutoUpdate": true,
+      "updaterCacheDirName": "toast-app-updater"
+    }
+  ]
 }
