@@ -140,9 +140,19 @@ jobs:
           args: --dispatch
         env:
           GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-          GITOPS_REPO: "opspresso/homebrew-tap" # Homebrew tap repository
-          PROJECT: "toast" # Project name
-          VERSION: ${{ github.ref_name }} # Current tag version
+          GITOPS_REPO: "opspresso/homebrew-tap"
+          PROJECT: "toast"
+          VERSION: ${{ github.ref_name }}
+
+      - name: Trigger for Toast-dist 🚀
+        uses: opspresso/action-builder@master
+        with:
+          args: --dispatch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+          GITOPS_REPO: "opspresso/toast-dist"
+          PROJECT: "toast"
+          VERSION: ${{ github.ref_name }}
 
       - name: Delete existing draft releases 🧹
         run: |
