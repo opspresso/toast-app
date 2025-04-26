@@ -745,14 +745,6 @@ async function initializeAboutTab() {
         console.error('버전 정보를 가져오는 중 오류 발생:', error);
       }
     }
-
-    // Homepage 버튼 링크 설정
-    if (homepageButton) {
-      homepageButton.addEventListener('click', () => {
-        const homepageUrl = 'https://app.toast.sh';
-        window.settings.openUrl(homepageUrl);
-      });
-    }
   } catch (error) {
     console.error('앱 정보를 가져오는 중 오류 발생:', error);
   }
