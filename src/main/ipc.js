@@ -721,9 +721,7 @@ function setupIpcHandlers(windows) {
       const { app } = require('electron');
       return app.getVersion();
     } catch (error) {
-      const { APP_DEFAULT_INFO } = require('./constants');
-      logger.error('Error getting app version:', error);
-      return APP_DEFAULT_INFO.version; // 오류 발생 시 상수에서 기본값 가져오기
+      return '0.0.0';
     }
   });
 
@@ -770,43 +768,6 @@ function setupIpcHandlers(windows) {
   ipcMain.handle('install-auto-update', async () => {
     logger.info('IPC: install-auto-update called');
     return await updater.installUpdate();
-  });
-
-  // Get app info (author, homepage, etc.)
-  ipcMain.handle('get-app-info', () => {
-    try {
-      const path = require('path');
-      const fs = require('fs');
-      const appPath = path.join(__dirname, '..', '..');
-      const packagePath = path.join(appPath, 'package.json');
-
-      if (fs.existsSync(packagePath)) {
-        const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
-        return {
-          author: packageJson.author || '',
-          homepage: packageJson.homepage || '',
-          description: packageJson.description || '',
-          license: packageJson.license || '',
-          repository: packageJson.repository?.url || '',
-          version: packageJson.version || '', // 버전 정보 추가
-          success: true
-        };
-      } else {
-        const { APP_DEFAULT_INFO } = require('./constants');
-        logger.error('package.json not found');
-        return {
-          ...APP_DEFAULT_INFO,
-          success: true
-        };
-      }
-    } catch (error) {
-      const { APP_DEFAULT_INFO } = require('./constants');
-      logger.error('Error getting app info:', error);
-      return {
-        ...APP_DEFAULT_INFO,
-        success: true
-      };
-    }
   });
 
   // 로깅 핸들러 추가

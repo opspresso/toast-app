@@ -704,9 +704,6 @@ async function loadUserDataAndUpdateUI() {
  */
 async function initializeAboutTab() {
   try {
-    // 앱 정보 가져오기
-    const appInfo = await window.settings.getAppInfo();
-
     // 버전 표시
     if (appVersionElement) {
       try {
@@ -723,30 +720,12 @@ async function initializeAboutTab() {
       }
     }
 
-    // Authors 정보 표시
-    const appAuthorsElement = document.getElementById('app-authors');
-    if (appAuthorsElement && appInfo.success && appInfo.author) {
-      appAuthorsElement.innerHTML = `<strong>Authors:</strong> ${appInfo.author}`;
-    }
-
     // Homepage 버튼 링크 설정
-    if (homepageButton && appInfo.success) {
+    if (homepageButton) {
       homepageButton.addEventListener('click', () => {
-        const homepageUrl = appInfo.homepage || 'https://app.toast.sh';
+        const homepageUrl = 'https://app.toast.sh';
         window.settings.openUrl(homepageUrl);
       });
-    }
-
-    // License 정보 표시
-    const appLicenseElement = document.getElementById('app-license');
-    if (appLicenseElement && appInfo.success && appInfo.license) {
-      appLicenseElement.innerHTML = `<strong>License:</strong> ${appInfo.license}`;
-    }
-
-    // Description 정보 표시
-    const appDescriptionElement = document.querySelector('.app-description');
-    if (appDescriptionElement && appInfo.success && appInfo.description) {
-      appDescriptionElement.textContent = appInfo.description;
     }
   } catch (error) {
     console.error('앱 정보를 가져오는 중 오류 발생:', error);
