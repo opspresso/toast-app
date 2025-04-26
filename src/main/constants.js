@@ -4,6 +4,17 @@
  * Defines constants used throughout the application.
  */
 
+// 앱 기본 정보 (package.json 정보를 읽을 수 없을 때 사용)
+const APP_DEFAULT_INFO = {
+  author: 'nalbam <me@nalbam.com>, bruce <bruce@daangn.com>',
+  homepage: 'https://app.toast.sh',
+  description: 'A customizable shortcut launcher for macOS and Windows',
+  license: 'MIT',
+  version: 'v0.0.0', // 버전을 가져오지 못할 때 기본값
+  name: 'Toast',
+  repository: 'https://github.com/opspresso/toast-app'
+};
+
 // Constants for the number of page groups based on subscription level
 const PAGE_GROUPS = {
   ANONYMOUS: 1, // Unauthenticated free users (ANONYMOUS): Limited to 1 page
@@ -44,6 +55,7 @@ const DEFAULT_ANONYMOUS = {
 };
 
 module.exports = {
+  APP_DEFAULT_INFO,
   PAGE_GROUPS,
   DEFAULT_ANONYMOUS,
   DEFAULT_ANONYMOUS_SUBSCRIPTION,

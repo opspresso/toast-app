@@ -4,17 +4,18 @@
  * 이 모듈은 electron-updater를 사용하여 앱의 자동 업데이트를 처리합니다.
  */
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const path = require('path');
 const { createLogger, electronLog } = require('./logger');
 
 // 모듈별 로거 생성
 const logger = createLogger('Updater');
 
-// 업데이터 로깅 설정
-autoUpdater.logger = electronLog;
-autoUpdater.logger.transports.file.level = 'info';
+// 로그 레벨 설정
+// 로그 레벨: error > warn > info > verbose > debug > silly
+// 'info'로 설정하면 info, warn, error 레벨의 로그만 파일에 기록됨
+// 개발 시에는 'debug'로 설정하면 더 많은 정보 확인 가능
+electronLog.transports.file.level = 'info';
 
 // 자동 업데이트 상태 이벤트를 전달하기 위한 변수들
 let mainWindow = null;
@@ -29,43 +30,24 @@ function initAutoUpdater(windows) {
   mainWindow = windows.toast;
   settingsWindow = windows.settings;
 
-  // GitHub 릴리스에서 업데이트 확인하도록 설정
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'opspresso',
-    repo: 'toast-dist'
-  });
+  // autoUpdater에 로깅 함수 연결
+  autoUpdater.logger = logger;
 
   // 개발 환경에서도 업데이트 확인 가능하도록 설정
   autoUpdater.forceDevUpdateConfig = true;        // 개발 환경에서도 업데이트 확인 강제
   autoUpdater.allowDowngrade = true;              // 다운그레이드 허용
   autoUpdater.allowPrerelease = true;             // 프리릴리스 버전 허용
 
-  // 오류 처리 이벤트 리스너 추가 - YML 파일 못 찾는 오류 특별 처리
-  autoUpdater.addListener('error', (error) => {
-    // GitHub YML 파일 못 찾는 오류(404)인 경우 로그만 남기고 자동으로 폴백 메커니즘 사용
-    if (error.toString().includes('latest-mac.yml') ||
-        error.toString().includes('latest-win.yml') ||
-        error.toString().includes('latest-linux.yml') ||
-        error.toString().includes('404')) {
-      logger.info('YML 파일을 찾을 수 없음 - 릴리스에 매니페스트 파일이 없습니다. 수동 업데이트 방식을 사용합니다.');
-    } else {
-      // 다른 오류는 정상적으로 전파
-      logger.error('업데이트 오류:', error);
-    }
-  });
-
-  // versions.json 파일을 직접 사용하는 설정 (개발 환경용)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('개발 환경에서 업데이트 확인 설정 구성');
-    // 개발 환경일 때 autoUpdater 옵션 추가 설정
-    autoUpdater.updateConfigPath = path.join(__dirname, '../main/dev-app-update.yml');
-    logger.info('개발 환경에서 업데이트 테스트 활성화');
-  }
-
   // 자동 다운로드 비활성화 (사용자가 명시적으로 다운로드를 요청할 때만 다운로드)
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+
+  // 업데이트 파일 관련 추가 설정
+  autoUpdater.channel = 'latest';
+  autoUpdater.allowPrerelease = false; // 프로덕션에서는 안정 버전만 사용
+
+  logger.info(`AppID: ${app.isPackaged ? app.getAppPath() : 'Not packaged'}`);
+  logger.info(`업데이트 캐시 디렉토리: ${app.getPath('userData')}/toast-app-updater`);
 
   // 로깅 설정 확장
   logger.info('자동 업데이트 모듈 초기화됨');
@@ -154,28 +136,12 @@ function setupAutoUpdaterEvents() {
 }
 
 /**
- * IPC 핸들러 설정
+ * IPC 핸들러 설정 - 더 이상 사용하지 않음
+ * IPC 핸들러는 이제 src/main/ipc.js에서 통합 관리
  */
 function setupIpcHandlers() {
-  // 업데이트 확인 요청
-  ipcMain.handle('check-for-updates', (event, silent = false) => {
-    return checkForUpdates(silent);
-  });
-
-  // 업데이트 다운로드 요청 (자동 또는 수동)
-  ipcMain.handle('download-auto-update', () => {
-    return downloadUpdate();
-  });
-
-  // 이전 버전과의 호환성을 위해 download-manual-update도 같은 함수로 처리
-  ipcMain.handle('download-manual-update', () => {
-    return downloadUpdate();
-  });
-
-  // 다운로드된 업데이트 설치 요청
-  ipcMain.handle('install-auto-update', () => {
-    return installUpdate();
-  });
+  // 이 함수는 호환성을 위해 유지하지만 더 이상 IPC 핸들러를 등록하지 않음
+  logger.info('Updater IPC 핸들러는 더 이상 직접 등록하지 않고 ipc.js에서 통합 관리됩니다.');
 }
 
 /**
@@ -309,6 +275,8 @@ async function installUpdate() {
     sendStatusToWindows('install-started', { status: 'installing' });
 
     // quitAndInstall 호출 (isSilent, isForceRunAfter 옵션 사용 가능)
+    // macOS에서는 앱이 종료되고 자동으로 새 버전이 설치됨
+    logger.info('업데이트를 설치하기 위해 앱을 종료합니다...');
     autoUpdater.quitAndInstall(false, true);
 
     return {

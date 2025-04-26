@@ -50,7 +50,6 @@ contextBridge.exposeInMainWorld('settings', {
   // System information
   getPlatform: () => process.platform,
   getVersion: () => ipcRenderer.invoke('get-app-version'),
-  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
   checkLatestVersion: () => ipcRenderer.invoke('check-latest-version'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
