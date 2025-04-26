@@ -30,13 +30,13 @@ async function executeShortcut(action) {
 
     return {
       success: true,
-      message: `Executed keyboard shortcut: ${action.keys}`
+      message: `Executed keyboard shortcut: ${action.keys}`,
     };
   } catch (error) {
     return {
       success: false,
       message: `Error executing keyboard shortcut: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -170,5 +170,5 @@ async function pressKeys(keys) {
 }
 
 module.exports = {
-  executeShortcut
+  executeShortcut,
 };

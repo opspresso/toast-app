@@ -66,7 +66,9 @@ const editButtonScriptParamsInput = document.getElementById('edit-button-scriptP
 
 // Application action elements
 const editButtonApplicationInput = document.getElementById('edit-button-application');
-const editButtonApplicationParametersInput = document.getElementById('edit-button-application-parameters');
+const editButtonApplicationParametersInput = document.getElementById(
+  'edit-button-application-parameters',
+);
 const browseApplicationButton = document.getElementById('browse-application-button');
 
 // Chain action elements
@@ -90,35 +92,35 @@ const defaultButtons = [
     shortcut: 'Q',
     icon: 'https://app.toast.sh/favicon.ico',
     action: 'open',
-    url: 'https://app.toast.sh'
+    url: 'https://app.toast.sh',
   },
   {
     name: '',
     shortcut: 'W',
     icon: '',
     action: 'exec',
-    command: ''
+    command: '',
   },
   {
     name: '',
     shortcut: 'E',
     icon: '',
     action: 'exec',
-    command: ''
+    command: '',
   },
   {
     name: '',
     shortcut: 'R',
     icon: '',
     action: 'exec',
-    command: ''
+    command: '',
   },
   {
     name: 'iTerm',
     shortcut: 'T',
     icon: '⌨️',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "iTerm"' : 'start cmd'
+    command: window.toast?.platform === 'darwin' ? 'open -a "iTerm"' : 'start cmd',
   },
   // asdfg row
   {
@@ -126,35 +128,36 @@ const defaultButtons = [
     shortcut: 'A',
     icon: '🛒',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:'
+    command:
+      window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:',
   },
   {
     name: 'Slack',
     shortcut: 'S',
     icon: 'https://slack.com/favicon.ico',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Slack' : 'start slack:'
+    command: window.toast?.platform === 'darwin' ? 'open -a Slack' : 'start slack:',
   },
   {
     name: 'Dictionary',
     shortcut: 'D',
     icon: '📚',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:'
+    command: window.toast?.platform === 'darwin' ? 'open -a Dictionary' : 'start ms-dictionary:',
   },
   {
     name: 'Finder',
     shortcut: 'F',
     icon: '🔍',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open .' : 'explorer .'
+    command: window.toast?.platform === 'darwin' ? 'open .' : 'explorer .',
   },
   {
     name: 'GitHub',
     shortcut: 'G',
     icon: 'https://github.com/favicon.ico',
     action: 'open',
-    url: 'https://github.com'
+    url: 'https://github.com',
   },
   // zxcvb row
   {
@@ -162,49 +165,51 @@ const defaultButtons = [
     shortcut: 'Z',
     icon: 'https://zoom.us/favicon.ico',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:'
+    command: window.toast?.platform === 'darwin' ? 'open -a zoom.us' : 'start zoommtg:',
   },
   {
     name: 'Mail',
     shortcut: 'X',
     icon: '✉️',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Mail' : 'start outlookmail:'
+    command: window.toast?.platform === 'darwin' ? 'open -a Mail' : 'start outlookmail:',
   },
   {
     name: 'Calendar',
     shortcut: 'C',
     icon: '📅',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a Calendar' : 'start outlookcal:'
+    command: window.toast?.platform === 'darwin' ? 'open -a Calendar' : 'start outlookcal:',
   },
   {
     name: 'VSCode',
     shortcut: 'V',
     icon: 'https://code.visualstudio.com/favicon.ico',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code'
+    command: window.toast?.platform === 'darwin' ? 'open -a "Visual Studio Code"' : 'start code',
   },
   {
     name: 'Chrome',
     shortcut: 'B',
     icon: 'https://www.google.com/chrome/static/images/chrome-logo-m100.svg',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "Google Chrome"' : 'start chrome'
-  }
+    command: window.toast?.platform === 'darwin' ? 'open -a "Google Chrome"' : 'start chrome',
+  },
 ];
 
 // Define empty button set (15 buttons)
-const emptyButtons = Array(15).fill(null).map((_, index) => {
-  const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
-  return {
-    name: ``,
-    shortcut: rowLetters[index],
-    icon: '',
-    action: 'exec',
-    command: ''
-  };
-});
+const emptyButtons = Array(15)
+  .fill(null)
+  .map((_, index) => {
+    const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
+    return {
+      name: ``,
+      shortcut: rowLetters[index],
+      icon: '',
+      action: 'exec',
+      command: '',
+    };
+  });
 
 // State
 let pages = []; // Array of pages (each page has an array of buttons)
@@ -222,7 +227,7 @@ let isRecordingKeyShortcut = false; // Key shortcut recording state
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   // Load configuration
-  window.addEventListener('config-loaded', (event) => {
+  window.addEventListener('config-loaded', event => {
     const config = event.detail;
 
     // Page settings
@@ -251,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(() => {
         console.log('User information loading complete:', {
           profileExists: !!userProfile,
-          subscriptionExists: !!userSubscription
+          subscriptionExists: !!userSubscription,
         });
         // Update user information UI
         updateProfileDisplay();
@@ -382,7 +387,7 @@ function setupEventListeners() {
       // Open subscription page in browser using defined constant
       window.toast.executeAction({
         action: 'open',
-        url: SUBSCRIPTION_URL
+        url: SUBSCRIPTION_URL,
       });
 
       // Hide profile modal
@@ -396,7 +401,7 @@ function setupEventListeners() {
       // Open dashboard page in browser using defined constant
       window.toast.executeAction({
         action: 'open',
-        url: DASHBOARD_URL
+        url: DASHBOARD_URL,
       });
 
       // Hide profile modal
@@ -421,11 +426,13 @@ function setupEventListeners() {
   }
 
   // Keyboard page switching (1-9 key events)
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener('keydown', event => {
     // 모달이 열려 있으면 키보드 페이징 작동하지 않음
-    if (buttonEditModal.classList.contains('show') ||
-        profileModal.classList.contains('show') ||
-        iconSearchModal.classList.contains('show')) {
+    if (
+      buttonEditModal.classList.contains('show') ||
+      profileModal.classList.contains('show') ||
+      iconSearchModal.classList.contains('show')
+    ) {
       return;
     }
 
@@ -442,7 +449,7 @@ function setupEventListeners() {
   document.addEventListener('keydown', handleKeyDown);
 
   // Listen for configuration updates
-  window.toast.onConfigUpdated((config) => {
+  window.toast.onConfigUpdated(config => {
     // Handle cases where config.pages is undefined, null, or empty array
     if ('pages' in config) {
       pages = config.pages || [];
@@ -476,7 +483,7 @@ function setupEventListeners() {
 
   // Set up authentication related event listeners
   if (window.toast.onLoginSuccess) {
-    window.toast.onLoginSuccess((data) => {
+    window.toast.onLoginSuccess(data => {
       console.log('Login success:', data);
       isSubscribed = data.isSubscribed;
 
@@ -492,14 +499,14 @@ function setupEventListeners() {
   }
 
   if (window.toast.onLoginError) {
-    window.toast.onLoginError((data) => {
+    window.toast.onLoginError(data => {
       console.error('Login error:', data);
       showStatus(`Login failed: ${data.message || data.error || 'Unknown error'}`, 'error');
     });
   }
 
   if (window.toast.onLogoutSuccess) {
-    window.toast.onLogoutSuccess((data) => {
+    window.toast.onLogoutSuccess(data => {
       console.log('Logout success event received in toast window');
 
       // Update UI on successful logout
@@ -515,7 +522,7 @@ function setupEventListeners() {
   }
 
   if (window.toast.onAuthStateChanged) {
-    window.toast.onAuthStateChanged((data) => {
+    window.toast.onAuthStateChanged(data => {
       console.log('Auth state changed event received in toast window:', data);
 
       // Handle based on authentication state change type
@@ -533,7 +540,7 @@ function setupEventListeners() {
   }
 
   if (window.toast.onAuthReloadSuccess) {
-    window.toast.onAuthReloadSuccess((data) => {
+    window.toast.onAuthReloadSuccess(data => {
       console.log('Auth reload success:', data);
 
       // Update subscription information
@@ -616,7 +623,7 @@ async function fetchUserProfileAndSubscription() {
         console.log('Subscription information extraction successful:', {
           plan: userSubscription.plan || 'free',
           isActive: userSubscription.active || userSubscription.is_subscribed || false,
-          pageGroups: userSubscription.features?.page_groups || 1
+          pageGroups: userSubscription.features?.page_groups || 1,
         });
 
         // Update subscription status
@@ -628,7 +635,7 @@ async function fetchUserProfileAndSubscription() {
           active: false,
           is_subscribed: false,
           plan: 'free',
-          features: { page_groups: 1 }
+          features: { page_groups: 1 },
         };
         isSubscribed = false;
       }
@@ -644,7 +651,7 @@ async function fetchUserProfileAndSubscription() {
 
     return {
       profile: userProfile,
-      subscription: userSubscription
+      subscription: userSubscription,
     };
   } catch (error) {
     console.error('Error fetching user information:', error);
@@ -672,7 +679,11 @@ function hideLoginLoadingScreen() {
 async function showUserProfile() {
   // When user is not logged in
   // Explicitly check is_authenticated flag
-  if (!userProfile || !userSubscription || (userProfile && userProfile.is_authenticated === false)) {
+  if (
+    !userProfile ||
+    !userSubscription ||
+    (userProfile && userProfile.is_authenticated === false)
+  ) {
     try {
       showStatus('Fetching user information...', 'info');
       showLoginLoadingScreen();
@@ -742,11 +753,16 @@ async function showUserProfile() {
  */
 function updateUserButton() {
   console.log('Starting user button UI update');
-  console.log('Current user profile status:', userProfile ? {
-    name: userProfile.name || userProfile.display_name,
-    hasImage: !!(userProfile.profile_image || userProfile.avatar || userProfile.image),
-    isAuthenticated: userProfile.is_authenticated !== false
-  } : 'No userProfile');
+  console.log(
+    'Current user profile status:',
+    userProfile
+      ? {
+          name: userProfile.name || userProfile.display_name,
+          hasImage: !!(userProfile.profile_image || userProfile.avatar || userProfile.image),
+          isAuthenticated: userProfile.is_authenticated !== false,
+        }
+      : 'No userProfile',
+  );
 
   userButton.innerHTML = ''; // Remove existing content
 
@@ -843,7 +859,9 @@ function updateProfileDisplay() {
       img.onerror = function () {
         console.log('Profile modal image load failed, using initials');
         // Replace with initials if image load fails
-        profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || 'User');
+        profileAvatar.innerHTML = getInitials(
+          userProfile.name || userProfile.display_name || 'User',
+        );
       };
 
       // Apply effect when image load completes
@@ -867,7 +885,7 @@ function updateProfileDisplay() {
     profileEmail.textContent = userProfile.email || '';
     console.log('Profile name/email set:', {
       name: profileName.textContent,
-      email: profileEmail.textContent
+      email: profileEmail.textContent,
     });
 
     // Show logout button when logged in
@@ -905,7 +923,9 @@ function updateProfileDisplay() {
     // When subscription information exists
     const isActive = userSubscription.active || userSubscription.is_subscribed || false;
     subscriptionStatus.textContent = isActive ? 'Active' : 'Inactive';
-    subscriptionStatus.className = 'subscription-value ' + (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
+    subscriptionStatus.className =
+      'subscription-value ' +
+      (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
 
     // Subscription plan
     const planName = (userSubscription.plan || 'free').toUpperCase();
@@ -916,7 +936,9 @@ function updateProfileDisplay() {
 
     // Expiry date
     const expiryDate = userSubscription.expiresAt || userSubscription.subscribed_until;
-    subscriptionExpiry.textContent = expiryDate ? new Date(expiryDate).toLocaleDateString() : 'None';
+    subscriptionExpiry.textContent = expiryDate
+      ? new Date(expiryDate).toLocaleDateString()
+      : 'None';
 
     // Page group information
     const pageGroups = userSubscription.features?.page_groups || '1';
@@ -925,7 +947,7 @@ function updateProfileDisplay() {
       status: subscriptionStatus.textContent,
       plan: subscriptionPlan.textContent,
       expiry: subscriptionExpiry.textContent,
-      pages: subscriptionPages.textContent
+      pages: subscriptionPages.textContent,
     });
 
     // Show subscribe button - when not subscribed (including anonymous users)
@@ -988,7 +1010,7 @@ async function resetToDefaults(options = { keepAppearance: true }) {
         const newPage = {
           name: 'Page 1',
           shortcut: '1',
-          buttons: [...defaultButtons]
+          buttons: [...defaultButtons],
         };
 
         pages = [newPage];
@@ -1044,12 +1066,12 @@ async function handleLogout() {
       updateUserButton();
 
       // Get current settings (for backup)
-      const currentAppearance = await window.toast.getConfig('appearance') || {};
+      const currentAppearance = (await window.toast.getConfig('appearance')) || {};
 
       // Attempt to reset all settings
       try {
-      // Call logout (function provided in auth.js)
-      await window.toast.invoke('logout');
+        // Call logout (function provided in auth.js)
+        await window.toast.invoke('logout');
         console.log('Settings reset successful');
       } catch (resetError) {
         console.error('Error resetting settings:', resetError);
@@ -1065,9 +1087,9 @@ async function handleLogout() {
             isVip: false,
             additionalFeatures: {
               advancedActions: false,
-              cloudSync: false
-            }
-          }
+              cloudSync: false,
+            },
+          },
         });
       }
 
@@ -1092,7 +1114,10 @@ async function handleLogout() {
         // Save configuration
         await window.toast.saveConfig({ pages });
 
-        showStatus('Unauthenticated users can only use 1 page. Only the first page has been kept.', 'info');
+        showStatus(
+          'Unauthenticated users can only use 1 page. Only the first page has been kept.',
+          'info',
+        );
       }
 
       showStatus('Logged out successfully.', 'success');
@@ -1162,7 +1187,7 @@ function addNewPage() {
   console.log('New page add request, subscription info:', {
     userProfile: userProfile ? 'exists' : 'none',
     isSubscribed: isSubscribed,
-    pageGroups: userSubscription?.features?.page_groups || 1
+    pageGroups: userSubscription?.features?.page_groups || 1,
   });
 
   // Calculate allowed maximum number of pages
@@ -1191,7 +1216,10 @@ function addNewPage() {
         showStatus(`You can only use a maximum of ${maxPages} page(s).`, 'error');
       } else {
         // Authenticated but not subscribed user
-        showStatus(`Free users can only use a maximum of ${maxPages} page(s). Please subscribe.`, 'error');
+        showStatus(
+          `Free users can only use a maximum of ${maxPages} page(s). Please subscribe.`,
+          'error',
+        );
       }
     }
     return;
@@ -1201,7 +1229,7 @@ function addNewPage() {
   let newPage = {
     name: `Page ${pageNumber}`,
     shortcut: pageNumber.toString(),
-    buttons: []
+    buttons: [],
   };
 
   // Use default app buttons for first page, empty buttons for others
@@ -1270,15 +1298,14 @@ function handleKeyDown(event) {
         // Hide window when ESC is pressed in normal mode (if hideOnEscape is enabled)
         event.preventDefault();
         // Get hideOnEscape setting and hide window if enabled
-        window.toast.getConfig('advanced.hideOnEscape')
-          .then(hideOnEscape => {
-            if (hideOnEscape !== false) {
-              hideToastWindow();
-            }
-          });
+        window.toast.getConfig('advanced.hideOnEscape').then(hideOnEscape => {
+          if (hideOnEscape !== false) {
+            hideToastWindow();
+          }
+        });
       }
       break;
-    case ',':  // Toggle settings mode when comma key is pressed
+    case ',': // Toggle settings mode when comma key is pressed
       // Open settings window with cmd+, (or ctrl+, on Windows) shortcut
       if (event.metaKey || event.ctrlKey) {
         event.preventDefault();
@@ -1314,8 +1341,8 @@ function handleKeyDown(event) {
     default:
       // Check if key matches a button shortcut
       const upperKey = event.key.toUpperCase();
-      const buttonIndex = filteredButtons.findIndex(button =>
-        button.shortcut && button.shortcut.toUpperCase() === upperKey
+      const buttonIndex = filteredButtons.findIndex(
+        button => button.shortcut && button.shortcut.toUpperCase() === upperKey,
       );
 
       if (buttonIndex >= 0) {
@@ -1358,21 +1385,25 @@ function navigateButtons(direction) {
 
     // Ensure index is within bounds
     if (newIndex < 0) {
-      newIndex = direction === 'up' ?
-        filteredButtons.length - (filteredButtons.length % buttonsPerRow || buttonsPerRow) + (selectedButtonIndex % buttonsPerRow) :
-        direction === 'left' ?
-          selectedButtonIndex + buttonsPerRow - 1 :
-          0;
+      newIndex =
+        direction === 'up'
+          ? filteredButtons.length -
+            (filteredButtons.length % buttonsPerRow || buttonsPerRow) +
+            (selectedButtonIndex % buttonsPerRow)
+          : direction === 'left'
+            ? selectedButtonIndex + buttonsPerRow - 1
+            : 0;
 
       if (newIndex >= filteredButtons.length) {
         newIndex = filteredButtons.length - 1;
       }
     } else if (newIndex >= filteredButtons.length) {
-      newIndex = direction === 'down' ?
-        selectedButtonIndex % buttonsPerRow :
-        direction === 'right' ?
-          selectedButtonIndex - buttonsPerRow + 1 :
-          filteredButtons.length - 1;
+      newIndex =
+        direction === 'down'
+          ? selectedButtonIndex % buttonsPerRow
+          : direction === 'right'
+            ? selectedButtonIndex - buttonsPerRow + 1
+            : filteredButtons.length - 1;
 
       if (newIndex < 0) {
         newIndex = 0;
@@ -1616,22 +1647,22 @@ function executeButton(button) {
   // Create action object
   const action = {
     action: button.action,
-    ...button
+    ...button,
   };
 
   // Execute the action
-  window.toast.executeAction(action)
+  window.toast
+    .executeAction(action)
     .then(result => {
       if (result.success) {
         showStatus(result.message || 'Action completed successfully', 'success');
 
         // Check hideAfterAction setting and hide window if enabled
-        window.toast.getConfig('advanced.hideAfterAction')
-          .then(hideAfterAction => {
-            if (hideAfterAction !== false) {
-              window.toast.hideWindow();
-            }
-          });
+        window.toast.getConfig('advanced.hideAfterAction').then(hideAfterAction => {
+          if (hideAfterAction !== false) {
+            window.toast.hideWindow();
+          }
+        });
       } else {
         showStatus(result.message || 'Action failed', 'error');
       }
@@ -1668,16 +1699,18 @@ function setupModalEventListeners() {
     browseApplicationButton.addEventListener('click', async () => {
       try {
         // Set Application folder as default path
-        const defaultPath = window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
+        const defaultPath =
+          window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
 
         // Configure file selection dialog options
         const options = {
           title: 'Select Application',
           defaultPath: defaultPath,
           properties: ['openFile'],
-          filters: window.toast?.platform === 'darwin'
-            ? [{ name: 'Applications', extensions: ['app'] }]
-            : [{ name: 'Executable Files', extensions: ['exe'] }]
+          filters:
+            window.toast?.platform === 'darwin'
+              ? [{ name: 'Applications', extensions: ['app'] }]
+              : [{ name: 'Executable Files', extensions: ['exe'] }],
         };
 
         // Call ipcRenderer to save current toast window position
@@ -1715,7 +1748,7 @@ function setupModalEventListeners() {
         const options = {
           title: 'Select File or Folder',
           defaultPath: window.toast?.platform === 'darwin' ? '/Users' : 'C:\\',
-          properties: ['openFile', 'openDirectory'] // Select file or folder
+          properties: ['openFile', 'openDirectory'], // Select file or folder
         };
 
         // Call ipcRenderer to save current toast window position
@@ -1746,21 +1779,21 @@ function setupModalEventListeners() {
   }
 
   // Close on click outside modal
-  buttonEditModal.addEventListener('click', (event) => {
+  buttonEditModal.addEventListener('click', event => {
     if (event.target === buttonEditModal) {
       closeButtonEditModal();
     }
   });
 
   // Close icon search modal when clicking outside
-  iconSearchModal.addEventListener('click', (event) => {
+  iconSearchModal.addEventListener('click', event => {
     if (event.target === iconSearchModal) {
       closeIconSearchModal();
     }
   });
 
   // Close modal with ESC key
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       // Close modals according to priority
       if (iconSearchModal.classList.contains('show')) {
@@ -1938,7 +1971,9 @@ function editButtonSettings(button) {
 
   editButtonScriptInput.value = button.script || '';
   editButtonScriptTypeSelect.value = button.scriptType || 'javascript';
-  editButtonScriptParamsInput.value = button.scriptParams ? JSON.stringify(button.scriptParams, null, 2) : '';
+  editButtonScriptParamsInput.value = button.scriptParams
+    ? JSON.stringify(button.scriptParams, null, 2)
+    : '';
 
   // Remove shortcut action type
 
@@ -2026,8 +2061,8 @@ function saveButtonSettings() {
 
   // Get current page and button index
   const pageIndex = currentPageIndex;
-  const buttonIndex = pages[pageIndex].buttons.findIndex(b =>
-    b.shortcut === currentEditingButton.shortcut
+  const buttonIndex = pages[pageIndex].buttons.findIndex(
+    b => b.shortcut === currentEditingButton.shortcut,
   );
 
   if (buttonIndex < 0) {
@@ -2041,7 +2076,7 @@ function saveButtonSettings() {
     name: editButtonNameInput.value.trim(),
     icon: editButtonIconInput.value.trim(),
     shortcut: currentEditingButton.shortcut.trim(), // Shortcut cannot be changed
-    action: action
+    action: action,
   };
 
   // Set additional properties based on action type
@@ -2107,7 +2142,8 @@ function saveButtonSettings() {
   pages[pageIndex].buttons[buttonIndex] = updatedButton;
 
   // Save configuration
-  window.toast.saveConfig({ pages })
+  window.toast
+    .saveConfig({ pages })
     .then(() => {
       // Close modal
       closeButtonEditModal();

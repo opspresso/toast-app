@@ -52,7 +52,7 @@ function setupIpcHandlers(windows) {
   auth.registerProtocolHandler();
 
   // Handle protocol requests during app execution
-  global.handleProtocolRequest = async (url) => {
+  global.handleProtocolRequest = async url => {
     console.log('Protocol request received:', url);
 
     // Process authentication URL using handleAuthRedirect function in auth.js
@@ -75,7 +75,7 @@ function setupIpcHandlers(windows) {
             authManager.notifyAuthStateChange({
               type: 'auth-reload',
               subscription: result.subscription,
-              message: 'Authentication information has been refreshed.'
+              message: 'Authentication information has been refreshed.',
             });
           } else {
             // Regular login success notification
@@ -122,7 +122,7 @@ function setupIpcHandlers(windows) {
   });
 
   // Return current window position
-  ipcMain.handle('get-window-position', (event) => {
+  ipcMain.handle('get-window-position', event => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
         return windows.toast.getPosition();
@@ -135,7 +135,7 @@ function setupIpcHandlers(windows) {
   });
 
   // Temporarily disable alwaysOnTop (to display file selection dialog on top)
-  ipcMain.handle('hide-window-temporarily', async (event) => {
+  ipcMain.handle('hide-window-temporarily', async event => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
         // Turn off alwaysOnTop property so dialog can appear on top
@@ -181,7 +181,7 @@ function setupIpcHandlers(windows) {
       return {
         success: false,
         message: `Error executing action: ${error.message}`,
-        error: error.toString()
+        error: error.toString(),
       };
     }
   });
@@ -194,7 +194,7 @@ function setupIpcHandlers(windows) {
       return {
         valid: false,
         message: `Error validating action: ${error.message}`,
-        error: error.toString()
+        error: error.toString(),
       };
     }
   });
@@ -244,7 +244,7 @@ function setupIpcHandlers(windows) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: subscription
+            subscription: subscription,
           });
         }
 
@@ -315,7 +315,7 @@ function setupIpcHandlers(windows) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: subscription
+            subscription: subscription,
           });
 
           // Update toast window appearance if appearance settings change
@@ -359,7 +359,7 @@ function setupIpcHandlers(windows) {
         windows.toast.webContents.send('config-updated', {
           pages: config.get('pages'),
           appearance: config.get('appearance'),
-          subscription: subscription
+          subscription: subscription,
         });
       }
 
@@ -517,7 +517,7 @@ function setupIpcHandlers(windows) {
           enabled: false,
           deviceId: getDeviceIdentifier(),
           lastSyncTime: 0,
-          lastChangeType: null
+          lastChangeType: null,
         };
       }
     } catch (error) {
@@ -525,7 +525,7 @@ function setupIpcHandlers(windows) {
       return {
         enabled: false,
         deviceId: getDeviceIdentifier(),
-        lastSyncTime: Date.now()
+        lastSyncTime: Date.now(),
       };
     }
   });
@@ -551,21 +551,21 @@ function setupIpcHandlers(windows) {
         // 현재 상태 반환
         return {
           success: true,
-          status: cloudSyncManager.getCurrentStatus()
+          status: cloudSyncManager.getCurrentStatus(),
         };
       } else {
         // 매니저가 초기화되지 않은 경우
         console.warn('Cloud sync manager not initialized, cannot enable/disable');
         return {
           success: false,
-          error: 'Cloud sync manager not initialized'
+          error: 'Cloud sync manager not initialized',
         };
       }
     } catch (error) {
       console.error('Error setting cloud sync enabled:', error);
       return {
         success: false,
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
       };
     }
   });
@@ -591,7 +591,7 @@ function setupIpcHandlers(windows) {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
             advanced: config.get('advanced'),
-            subscription: config.get('subscription')
+            subscription: config.get('subscription'),
           };
 
           // 동기화 완료 알림 (설정 데이터 포함)
@@ -609,14 +609,14 @@ function setupIpcHandlers(windows) {
         console.warn('Cloud sync manager not initialized, cannot perform manual sync');
         return {
           success: false,
-          error: 'Cloud sync manager not initialized'
+          error: 'Cloud sync manager not initialized',
         };
       }
     } catch (error) {
       console.error(`Error performing manual sync (${action}):`, error);
       return {
         success: false,
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
       };
     }
   });
@@ -664,7 +664,7 @@ function setupIpcHandlers(windows) {
         ...options,
         modal: true,
         // Set toast window as parent to always display above toast window
-        parent: windows.toast
+        parent: windows.toast,
       };
       return await dialog.showOpenDialog(modalOptions);
     } catch (error) {
@@ -681,7 +681,7 @@ function setupIpcHandlers(windows) {
         ...options,
         modal: true,
         // Set toast window as parent to always display above toast window
-        parent: windows.toast
+        parent: windows.toast,
       };
       return await dialog.showSaveDialog(modalOptions);
     } catch (error) {
@@ -698,12 +698,147 @@ function setupIpcHandlers(windows) {
         ...options,
         modal: true,
         // Set toast window as parent to always display above toast window
-        parent: windows.toast
+        parent: windows.toast,
       };
       return await dialog.showMessageBox(modalOptions);
     } catch (error) {
       console.error('Error showing message box:', error);
       return { response: 0, error: error.toString() };
+    }
+  });
+
+  // Get app version
+  ipcMain.handle('get-app-version', () => {
+    try {
+      const { app } = require('electron');
+      return app.getVersion();
+    } catch (error) {
+      console.error('Error getting app version:', error);
+      return 'v0.5.5'; // 오류 발생 시 기본값
+    }
+  });
+
+  // Check for latest version from remote JSON
+  ipcMain.handle('check-latest-version', async () => {
+    try {
+      const https = require('https');
+
+      // URL for the versions.json file
+      const url = 'https://opspresso.github.io/toast-dist/versions.json';
+
+      // Function to get data from URL
+      const fetchJson = (url) => {
+        return new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            let data = '';
+
+            // A chunk of data has been received
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+
+            // The whole response has been received
+            res.on('end', () => {
+              try {
+                const jsonData = JSON.parse(data);
+                resolve(jsonData);
+              } catch (e) {
+                reject(new Error(`Failed to parse JSON: ${e.message}`));
+              }
+            });
+          }).on('error', (e) => {
+            reject(new Error(`Request failed: ${e.message}`));
+          });
+        });
+      };
+
+      // Semantic version comparison function
+      const compareSemver = (v1, v2) => {
+        // Remove 'v' prefix if present
+        v1 = v1.replace(/^v/, '');
+        v2 = v2.replace(/^v/, '');
+
+        // Split versions into components
+        const v1Parts = v1.split('.');
+        const v2Parts = v2.split('.');
+
+        // Compare major.minor.patch
+        for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+          const v1Part = parseInt(v1Parts[i] || 0, 10);
+          const v2Part = parseInt(v2Parts[i] || 0, 10);
+
+          if (v1Part > v2Part) {
+            return 1;  // v1 is newer
+          } else if (v1Part < v2Part) {
+            return -1; // v2 is newer
+          }
+        }
+        return 0; // Same version
+      };
+
+      // Fetch version data
+      const versionData = await fetchJson(url);
+
+      // Get current app version
+      const { app } = require('electron');
+      const currentVersion = app.getVersion();
+      const latestVersion = versionData.toast?.version || 'unknown';
+
+      // Compare versions using semver
+      const versionCompare = latestVersion !== 'unknown'
+        ? compareSemver(latestVersion, currentVersion)
+        : 0;
+
+      // Return version information
+      return {
+        success: true,
+        latest: latestVersion,
+        current: currentVersion,
+        releaseDate: versionData.toast?.releaseDate || '',
+        description: versionData.toast?.description || '',
+        hasUpdate: versionCompare > 0,  // latestVersion is newer than currentVersion
+        versionCompare: versionCompare  // Return comparison result: 1 (newer), 0 (same), -1 (older)
+      };
+    } catch (error) {
+      console.error('Error checking latest version:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
+    }
+  });
+
+  // Get app info (author, homepage, etc.)
+  ipcMain.handle('get-app-info', () => {
+    try {
+      const path = require('path');
+      const fs = require('fs');
+      const appPath = path.join(__dirname, '..', '..');
+      const packagePath = path.join(appPath, 'package.json');
+
+      if (fs.existsSync(packagePath)) {
+        const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+        return {
+          author: packageJson.author || '',
+          homepage: packageJson.homepage || '',
+          description: packageJson.description || '',
+          license: packageJson.license || '',
+          repository: packageJson.repository?.url || '',
+          success: true
+        };
+      } else {
+        console.error('package.json not found');
+        return {
+          success: false,
+          error: 'package.json not found'
+        };
+      }
+    } catch (error) {
+      console.error('Error getting app info:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
     }
   });
 
@@ -715,7 +850,7 @@ function setupIpcHandlers(windows) {
       if (!validation.valid) {
         return {
           success: false,
-          message: `Invalid action: ${validation.message}`
+          message: `Invalid action: ${validation.message}`,
         };
       }
 
@@ -725,7 +860,7 @@ function setupIpcHandlers(windows) {
       return {
         success: false,
         message: `Error testing action: ${error.message}`,
-        error: error.toString()
+        error: error.toString(),
       };
     }
   });
@@ -733,5 +868,5 @@ function setupIpcHandlers(windows) {
 
 module.exports = {
   setupIpcHandlers,
-  isModalOpened
+  isModalOpened,
 };

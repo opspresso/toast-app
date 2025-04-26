@@ -1,276 +1,295 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toast App</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="../../assets/js/icons-catalog.js"></script>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Toast App</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="../../assets/js/icons-catalog.js"></script>
-</head>
-
-<body>
-  <div class="toast-container">
-    <div class="toast-header">
-      <div class="toast-title-container">
-        <img src="../../assets/icon.png" class="toast-logo" alt="Toast Logo">
-        <div class="toast-title">Toast</div>
-      </div>
-      <div class="toast-clock" id="toast-clock">00:00:00</div>
-      <div class="toast-header-buttons">
-        <div class="toast-close" id="close-button">×</div>
-      </div>
-    </div>
-
-    <div class="toast-paging-container" id="paging-container">
-      <!-- Paging buttons and add button will be in same line -->
-      <div class="toast-paging-wrapper">
-        <!-- Page buttons will be dynamically created -->
-        <div class="toast-paging-buttons" id="paging-buttons-container"></div>
-        <button id="add-page-button" class="add-page-button" title="Add Page">+</button>
-        <button id="remove-page-button" class="remove-page-button" title="Remove Current Page">−</button>
-      </div>
-    </div>
-
-    <div class="toast-buttons" id="buttons-container">
-      <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
-    </div>
-
-    <!-- Login loading screen -->
-    <div id="login-loading-overlay" class="login-loading-overlay">
-      <div class="login-loading-content">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Logging in...</div>
-      </div>
-    </div>
-
-    <!-- User profile and subscription info modal -->
-    <div id="profile-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>User Information</h2>
-          <span class="close-modal" id="close-profile-modal">&times;</span>
+  <body>
+    <div class="toast-container">
+      <div class="toast-header">
+        <div class="toast-title-container">
+          <img src="../../assets/icon.png" class="toast-logo" alt="Toast Logo" />
+          <div class="toast-title">Toast</div>
         </div>
-        <div class="modal-body">
-          <div id="profile-container" class="profile-container">
-            <div class="profile-header">
-              <div id="profile-avatar" class="profile-avatar"></div>
-              <div class="profile-info">
-                <div id="profile-name" class="profile-name"></div>
-                <div id="profile-email" class="profile-email"></div>
+        <div class="toast-clock" id="toast-clock">00:00:00</div>
+        <div class="toast-header-buttons">
+          <div class="toast-close" id="close-button">×</div>
+        </div>
+      </div>
+
+      <div class="toast-paging-container" id="paging-container">
+        <!-- Paging buttons and add button will be in same line -->
+        <div class="toast-paging-wrapper">
+          <!-- Page buttons will be dynamically created -->
+          <div class="toast-paging-buttons" id="paging-buttons-container"></div>
+          <button id="add-page-button" class="add-page-button" title="Add Page">+</button>
+          <button id="remove-page-button" class="remove-page-button" title="Remove Current Page">
+            −
+          </button>
+        </div>
+      </div>
+
+      <div class="toast-buttons" id="buttons-container">
+        <!-- Action buttons (5x3 grid) will be dynamically inserted here -->
+      </div>
+
+      <!-- Login loading screen -->
+      <div id="login-loading-overlay" class="login-loading-overlay">
+        <div class="login-loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Logging in...</div>
+        </div>
+      </div>
+
+      <!-- User profile and subscription info modal -->
+      <div id="profile-modal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>User Information</h2>
+            <span class="close-modal" id="close-profile-modal">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div id="profile-container" class="profile-container">
+              <div class="profile-header">
+                <div id="profile-avatar" class="profile-avatar"></div>
+                <div class="profile-info">
+                  <div id="profile-name" class="profile-name"></div>
+                  <div id="profile-email" class="profile-email"></div>
+                </div>
+              </div>
+              <div class="profile-divider"></div>
+              <div class="subscription-container">
+                <h3>Subscription Information</h3>
+                <div class="subscription-details">
+                  <div class="subscription-item">
+                    <span class="subscription-label">Subscription Status:</span>
+                    <span>
+                      <span id="subscription-status" class="subscription-value"></span>
+                      (<span id="subscription-plan" class="subscription-value"></span>)
+                    </span>
+                  </div>
+                  <div class="subscription-item">
+                    <span class="subscription-label">Expiry Date:</span>
+                    <span id="subscription-expiry" class="subscription-value"></span>
+                  </div>
+                  <!-- Page group information is hidden -->
+                  <div id="subscription-pages" style="display: none"></div>
+                </div>
               </div>
             </div>
-            <div class="profile-divider"></div>
-            <div class="subscription-container">
-              <h3>Subscription Information</h3>
-              <div class="subscription-details">
-                <div class="subscription-item">
-                  <span class="subscription-label">Subscription Status:</span>
-                  <span>
-                    <span id="subscription-status" class="subscription-value"></span>
-                    (<span id="subscription-plan" class="subscription-value"></span>)
-                  </span>
-                </div>
-                <div class="subscription-item">
-                  <span class="subscription-label">Expiry Date:</span>
-                  <span id="subscription-expiry" class="subscription-value"></span>
-                </div>
-                <!-- Page group information is hidden -->
-                <div id="subscription-pages" style="display: none;"></div>
+          </div>
+          <div class="modal-footer">
+            <div class="modal-footer-left">
+              <button id="subscribe-button" class="primary-button" style="display: none">
+                Subscribe
+              </button>
+              <button id="dashboard-button" class="primary-button" style="display: none">
+                Dashboard
+              </button>
+            </div>
+            <div class="modal-footer-right">
+              <button id="logout-button" class="secondary-button">Sign Out</button>
+              <button id="close-profile-button" class="primary-button">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast-footer">
+        <div class="toast-status" id="status-container">
+          <!-- Status messages will be displayed here -->
+        </div>
+        <div class="toast-settings">
+          <div class="toast-user-button" id="user-button" title="User Information">👤</div>
+          <div class="toast-mode-toggle" id="settings-mode-toggle" title="Button Edit Mode">📝</div>
+          <div class="toast-settings-button" id="settings-button" title="Settings">⚙️</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Button Edit Modal -->
+    <div id="button-edit-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Edit Button Settings</h2>
+          <span class="close-modal" id="close-button-edit">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-button-name">Button Name</label>
+            <input type="text" id="edit-button-name" placeholder="Button Name" />
+          </div>
+          <div class="form-group">
+            <label for="edit-button-icon">Icon</label>
+            <div class="icon-input-container">
+              <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL" />
+              <button id="browse-icon-button" class="secondary-button">Find Icon</button>
+            </div>
+            <small class="field-hint"
+              >Use emoji (e.g. 🚀), image URL (https://...) or FlatColorIcons.name</small
+            >
+          </div>
+          <!-- Shortcut field is hidden (cannot be changed) -->
+          <input type="hidden" id="edit-button-shortcut" />
+          <div class="form-group">
+            <label for="edit-button-action">Action Type</label>
+            <select id="edit-button-action">
+              <option value="application">Run Application</option>
+              <option value="exec">Execute Command</option>
+              <option value="open">Open URL</option>
+              <option value="script">Run Script</option>
+              <option value="chain">Chain Actions</option>
+            </select>
+          </div>
+          <div class="form-group" id="command-input-group">
+            <label for="edit-button-command">Command</label>
+            <input type="text" id="edit-button-command" placeholder="Command to execute" />
+
+            <div class="subfield">
+              <label for="edit-button-workingDir">Working Directory (optional)</label>
+              <input type="text" id="edit-button-workingDir" placeholder="Working directory path" />
+            </div>
+
+            <div class="subfield">
+              <label for="edit-button-runInTerminal">
+                <input type="checkbox" id="edit-button-runInTerminal" />
+                Run in Terminal
+              </label>
+            </div>
+          </div>
+          <div class="form-group" id="url-input-group" style="display: none">
+            <label for="edit-button-url">URL</label>
+            <input type="text" id="edit-button-url" placeholder="URL to open" />
+
+            <div class="subfield">
+              <label for="edit-button-path">Path (alternative to URL)</label>
+              <div class="path-input-container">
+                <input type="text" id="edit-button-path" placeholder="File or folder path" />
+                <button id="browse-path-button" class="secondary-button">Browse</button>
+              </div>
+            </div>
+
+            <div class="subfield">
+              <label for="edit-button-open-application">Open with Application (optional)</label>
+              <input type="text" id="edit-button-open-application" placeholder="Application name" />
+            </div>
+          </div>
+          <div class="form-group" id="script-input-group" style="display: none">
+            <label for="edit-button-script">Script</label>
+            <textarea id="edit-button-script" placeholder="Script to execute"></textarea>
+
+            <div class="subfield">
+              <label for="edit-button-scriptType">Script Type</label>
+              <select id="edit-button-scriptType">
+                <option value="javascript">JavaScript</option>
+                <option value="applescript">AppleScript (macOS only)</option>
+                <option value="powershell">PowerShell (Windows only)</option>
+                <option value="bash">Bash (macOS/Linux only)</option>
+              </select>
+            </div>
+
+            <div class="subfield">
+              <label for="edit-button-scriptParams"
+                >Script Parameters (for JavaScript, JSON format)</label
+              >
+              <textarea
+                id="edit-button-scriptParams"
+                placeholder='{"param1": "value1", "param2": "value2"}'
+              ></textarea>
+            </div>
+          </div>
+          <div class="form-group" id="application-input-group" style="display: none">
+            <label for="edit-button-application">Application Path</label>
+            <div class="application-input-container">
+              <input type="text" id="edit-button-application" placeholder="Application path" />
+              <button id="browse-application-button" class="secondary-button">Browse</button>
+            </div>
+
+            <div class="subfield">
+              <label for="edit-button-application-parameters"
+                >Application Parameters (optional)</label
+              >
+              <input
+                type="text"
+                id="edit-button-application-parameters"
+                placeholder="/path/to/file or --option=value"
+              />
+              <small class="field-hint">Parameters to pass to the application when launched</small>
+            </div>
+          </div>
+
+          <div class="form-group" id="chain-input-group" style="display: none">
+            <label for="chain-actions-container">Chain Actions</label>
+            <div id="chain-actions-container" class="chain-actions-container">
+              <div class="no-actions-message">
+                No actions added. Click "Add Action" to add an action to the chain.
+              </div>
+            </div>
+            <div class="chain-actions-buttons">
+              <button id="add-chain-action" class="secondary-button">Add Action</button>
+              <div class="subfield">
+                <label for="edit-button-stopOnError">
+                  <input type="checkbox" id="edit-button-stopOnError" checked />
+                  Stop on Error
+                </label>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <div class="modal-footer-left">
-            <button id="subscribe-button" class="primary-button" style="display: none;">Subscribe</button>
-            <button id="dashboard-button" class="primary-button" style="display: none;">Dashboard</button>
-          </div>
-          <div class="modal-footer-right">
-            <button id="logout-button" class="secondary-button">Sign Out</button>
-            <button id="close-profile-button" class="primary-button">Close</button>
-          </div>
+          <button id="save-button-edit" class="primary-button">Save</button>
+          <button id="cancel-button-edit" class="secondary-button">Cancel</button>
         </div>
       </div>
     </div>
 
-    <div class="toast-footer">
-      <div class="toast-status" id="status-container">
-        <!-- Status messages will be displayed here -->
+    <!-- Button template -->
+    <template id="button-template">
+      <div class="toast-button" data-action="">
+        <div class="button-icon"></div>
+        <div class="button-name"></div>
+        <div class="button-shortcut"></div>
       </div>
-      <div class="toast-settings">
-        <div class="toast-user-button" id="user-button" title="User Information">👤</div>
-        <div class="toast-mode-toggle" id="settings-mode-toggle" title="Button Edit Mode">📝</div>
-        <div class="toast-settings-button" id="settings-button" title="Settings">⚙️</div>
-      </div>
-    </div>
-  </div>
+    </template>
 
-  <!-- Button Edit Modal -->
-  <div id="button-edit-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Edit Button Settings</h2>
-        <span class="close-modal" id="close-button-edit">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="edit-button-name">Button Name</label>
-          <input type="text" id="edit-button-name" placeholder="Button Name">
+    <!-- Icon search modal -->
+    <div id="icon-search-modal" class="modal">
+      <div class="modal-content icon-browser-modal">
+        <div class="modal-header">
+          <h2>Icon Search</h2>
+          <span class="close-modal" id="close-icon-search">&times;</span>
         </div>
-        <div class="form-group">
-          <label for="edit-button-icon">Icon</label>
-          <div class="icon-input-container">
-            <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL">
-            <button id="browse-icon-button" class="secondary-button">Find Icon</button>
-          </div>
-          <small class="field-hint">Use emoji (e.g. 🚀), image URL (https://...) or FlatColorIcons.name</small>
-        </div>
-        <!-- Shortcut field is hidden (cannot be changed) -->
-        <input type="hidden" id="edit-button-shortcut">
-        <div class="form-group">
-          <label for="edit-button-action">Action Type</label>
-          <select id="edit-button-action">
-            <option value="application">Run Application</option>
-            <option value="exec">Execute Command</option>
-            <option value="open">Open URL</option>
-            <option value="script">Run Script</option>
-            <option value="chain">Chain Actions</option>
-          </select>
-        </div>
-        <div class="form-group" id="command-input-group">
-          <label for="edit-button-command">Command</label>
-          <input type="text" id="edit-button-command" placeholder="Command to execute">
-
-          <div class="subfield">
-            <label for="edit-button-workingDir">Working Directory (optional)</label>
-            <input type="text" id="edit-button-workingDir" placeholder="Working directory path">
-          </div>
-
-          <div class="subfield">
-            <label for="edit-button-runInTerminal">
-              <input type="checkbox" id="edit-button-runInTerminal">
-              Run in Terminal
-            </label>
-          </div>
-        </div>
-        <div class="form-group" id="url-input-group" style="display: none;">
-          <label for="edit-button-url">URL</label>
-          <input type="text" id="edit-button-url" placeholder="URL to open">
-
-          <div class="subfield">
-            <label for="edit-button-path">Path (alternative to URL)</label>
-            <div class="path-input-container">
-              <input type="text" id="edit-button-path" placeholder="File or folder path">
-              <button id="browse-path-button" class="secondary-button">Browse</button>
+        <div class="modal-body">
+          <div class="search-container">
+            <input type="text" id="icon-search-input" placeholder="Search by icon name" />
+            <div class="category-filter">
+              <label for="category-select">Category:</label>
+              <select id="category-select">
+                <option value="all">All Categories</option>
+                <option value="basicIcons">Basic Icons</option>
+                <option value="business">Business</option>
+                <option value="photoVideo">Photo and Video</option>
+                <option value="industry">Industry</option>
+                <option value="mobile">Mobile</option>
+                <option value="arrows">Arrows</option>
+                <option value="data">Data</option>
+              </select>
             </div>
           </div>
-
-          <div class="subfield">
-            <label for="edit-button-open-application">Open with Application (optional)</label>
-            <input type="text" id="edit-button-open-application" placeholder="Application name">
+          <div id="icons-container" class="icons-container">
+            <!-- Icons will be dynamically loaded here -->
           </div>
         </div>
-        <div class="form-group" id="script-input-group" style="display: none;">
-          <label for="edit-button-script">Script</label>
-          <textarea id="edit-button-script" placeholder="Script to execute"></textarea>
-
-          <div class="subfield">
-            <label for="edit-button-scriptType">Script Type</label>
-            <select id="edit-button-scriptType">
-              <option value="javascript">JavaScript</option>
-              <option value="applescript">AppleScript (macOS only)</option>
-              <option value="powershell">PowerShell (Windows only)</option>
-              <option value="bash">Bash (macOS/Linux only)</option>
-            </select>
-          </div>
-
-          <div class="subfield">
-            <label for="edit-button-scriptParams">Script Parameters (for JavaScript, JSON format)</label>
-            <textarea id="edit-button-scriptParams" placeholder='{"param1": "value1", "param2": "value2"}'></textarea>
-          </div>
+        <div class="modal-footer">
+          <button id="close-icon-browser" class="secondary-button">Cancel</button>
         </div>
-        <div class="form-group" id="application-input-group" style="display: none;">
-          <label for="edit-button-application">Application Path</label>
-          <div class="application-input-container">
-            <input type="text" id="edit-button-application" placeholder="Application path">
-            <button id="browse-application-button" class="secondary-button">Browse</button>
-          </div>
-
-          <div class="subfield">
-            <label for="edit-button-application-parameters">Application Parameters (optional)</label>
-            <input type="text" id="edit-button-application-parameters" placeholder="/path/to/file or --option=value">
-            <small class="field-hint">Parameters to pass to the application when launched</small>
-          </div>
-        </div>
-
-        <div class="form-group" id="chain-input-group" style="display: none;">
-          <label for="chain-actions-container">Chain Actions</label>
-          <div id="chain-actions-container" class="chain-actions-container">
-            <div class="no-actions-message">No actions added. Click "Add Action" to add an action to the chain.</div>
-          </div>
-          <div class="chain-actions-buttons">
-            <button id="add-chain-action" class="secondary-button">Add Action</button>
-            <div class="subfield">
-              <label for="edit-button-stopOnError">
-                <input type="checkbox" id="edit-button-stopOnError" checked>
-                Stop on Error
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="save-button-edit" class="primary-button">Save</button>
-        <button id="cancel-button-edit" class="secondary-button">Cancel</button>
       </div>
     </div>
-  </div>
 
-  <!-- Button template -->
-  <template id="button-template">
-    <div class="toast-button" data-action="">
-      <div class="button-icon"></div>
-      <div class="button-name"></div>
-      <div class="button-shortcut"></div>
-    </div>
-  </template>
-
-  <!-- Icon search modal -->
-  <div id="icon-search-modal" class="modal">
-    <div class="modal-content icon-browser-modal">
-      <div class="modal-header">
-        <h2>Icon Search</h2>
-        <span class="close-modal" id="close-icon-search">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="search-container">
-          <input type="text" id="icon-search-input" placeholder="Search by icon name">
-          <div class="category-filter">
-            <label for="category-select">Category:</label>
-            <select id="category-select">
-              <option value="all">All Categories</option>
-              <option value="basicIcons">Basic Icons</option>
-              <option value="business">Business</option>
-              <option value="photoVideo">Photo and Video</option>
-              <option value="industry">Industry</option>
-              <option value="mobile">Mobile</option>
-              <option value="arrows">Arrows</option>
-              <option value="data">Data</option>
-            </select>
-          </div>
-        </div>
-        <div id="icons-container" class="icons-container">
-          <!-- Icons will be dynamically loaded here -->
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="close-icon-browser" class="secondary-button">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="index.js"></script>
-</body>
-
+    <script src="index.js"></script>
+  </body>
 </html>

@@ -49,5 +49,5 @@ function getEnv(key, defaultValue = '') {
 
 module.exports = {
   loadEnv,
-  getEnv
+  getEnv,
 };

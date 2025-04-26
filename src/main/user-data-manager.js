@@ -136,8 +136,9 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       console.log('Processing profile information:', {
         name: profileDataInput.name || 'No name',
         email: profileDataInput.email || 'No email',
-        hasSubscription: profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
-        plan: profileDataInput.subscription?.plan || 'free'
+        hasSubscription:
+          profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
+        plan: profileDataInput.subscription?.plan || 'free',
       });
 
       // Save to file
@@ -152,7 +153,10 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       const profileData = readFromFile(PROFILE_FILE_PATH);
       if (profileData) {
         // Add authentication state if missing in local file
-        if (profileData.is_authenticated === undefined || profileData.isAuthenticated === undefined) {
+        if (
+          profileData.is_authenticated === undefined ||
+          profileData.isAuthenticated === undefined
+        ) {
           profileData.is_authenticated = true;
           profileData.isAuthenticated = true;
           writeToFile(PROFILE_FILE_PATH, profileData);
@@ -163,10 +167,12 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
         // Log subscription information
         if (profileData.subscription) {
           const plan = profileData.subscription.plan || 'free';
-          const isSubscribed = profileData.subscription.active ||
-            profileData.subscription.is_subscribed || false;
+          const isSubscribed =
+            profileData.subscription.active || profileData.subscription.is_subscribed || false;
           const pageGroups = profileData.subscription.features.page_groups || 1;
-          console.log(`Loaded subscription info: plan=${plan}, subscription status=${isSubscribed ? 'active' : 'inactive'}, pages=${pageGroups}`);
+          console.log(
+            `Loaded subscription info: plan=${plan}, subscription status=${isSubscribed ? 'active' : 'inactive'}, pages=${pageGroups}`,
+          );
         }
 
         return profileData;
@@ -201,8 +207,9 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       console.log('Profile information from API:', {
         name: profileData.name || 'No name',
         email: profileData.email || 'No email',
-        hasSubscription: profileData.subscription?.active || profileData.subscription?.is_subscribed,
-        plan: profileData.subscription?.plan || 'free'
+        hasSubscription:
+          profileData.subscription?.active || profileData.subscription?.is_subscribed,
+        plan: profileData.subscription?.plan || 'free',
       });
 
       // Save to file
@@ -232,7 +239,9 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
  */
 async function getUserSettings(forceRefresh = false) {
   try {
-    console.log(`Getting user settings information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`);
+    console.log(
+      `Getting user settings information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`,
+    );
 
     // Check authentication state
     if (!authManagerRef) {
@@ -251,7 +260,10 @@ async function getUserSettings(forceRefresh = false) {
       const settingsData = readFromFile(SETTINGS_FILE_PATH);
       if (settingsData) {
         // Add authentication state if missing in local file
-        if (settingsData.is_authenticated === undefined || settingsData.isAuthenticated === undefined) {
+        if (
+          settingsData.is_authenticated === undefined ||
+          settingsData.isAuthenticated === undefined
+        ) {
           settingsData.is_authenticated = true;
           settingsData.isAuthenticated = true;
           writeToFile(SETTINGS_FILE_PATH, settingsData);
@@ -261,7 +273,7 @@ async function getUserSettings(forceRefresh = false) {
         // Add logs
         console.log('Successfully loaded settings from file:', {
           dataFields: Object.keys(settingsData),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
 
         return settingsData;
@@ -284,7 +296,7 @@ async function getUserSettings(forceRefresh = false) {
     }
 
     // API request
-    const headers = { 'Authorization': `Bearer ${token}` };
+    const headers = { Authorization: `Bearer ${token}` };
     const apiClient = apiClientRef.createApiClient();
     const response = await apiClient.get(apiClientRef.ENDPOINTS.SETTINGS, { headers });
 
@@ -302,7 +314,7 @@ async function getUserSettings(forceRefresh = false) {
         // Add logs
         console.log('Successfully retrieved and saved settings from API:', {
           dataFields: Object.keys(settingsData),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
@@ -409,7 +421,7 @@ function updateSyncMetadata(metadata) {
         lastSyncedAt: metadata.lastSyncedAt || Date.now(),
         lastModifiedAt: metadata.lastModifiedAt || Date.now(),
         lastSyncedDevice: metadata.lastSyncedDevice || 'unknown',
-        lastModifiedDevice: metadata.lastModifiedDevice || 'unknown'
+        lastModifiedDevice: metadata.lastModifiedDevice || 'unknown',
       };
 
       // Save new baseline settings
@@ -423,7 +435,7 @@ function updateSyncMetadata(metadata) {
       lastSyncedAt: metadata.lastSyncedAt || currentSettings.lastSyncedAt,
       lastModifiedAt: metadata.lastModifiedAt || currentSettings.lastModifiedAt,
       lastSyncedDevice: metadata.lastSyncedDevice || currentSettings.lastSyncedDevice,
-      lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice
+      lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice,
     };
 
     // Save using atomic file operation
@@ -449,7 +461,9 @@ function startProfileRefresh() {
   // Stop existing timer if running
   stopProfileRefresh();
 
-  console.log(`Starting periodic profile refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`);
+  console.log(
+    `Starting periodic profile refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`,
+  );
 
   // Run once immediately before starting timer
   getUserProfile(true).then(profile => {
@@ -489,7 +503,9 @@ function startSettingsRefresh() {
   // Stop existing timer if running
   stopSettingsRefresh();
 
-  console.log(`Starting periodic settings refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`);
+  console.log(
+    `Starting periodic settings refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`,
+  );
 
   // Run once immediately before starting timer
   getUserSettings(true).then(settings => {
@@ -580,7 +596,7 @@ function cleanupOnLogout() {
       profileFileExists: profileExists,
       settingsFileExists: settingsExists,
       profileRefreshActive: !!profileRefreshTimer,
-      settingsRefreshActive: !!settingsRefreshTimer
+      settingsRefreshActive: !!settingsRefreshTimer,
     });
 
     // 2. Stop periodic refresh
@@ -593,14 +609,14 @@ function cleanupOnLogout() {
 
     console.log('File deletion results:', {
       profileDeleted: profileDeleted ? 'Success' : 'Failed or file not found',
-      settingsPreserved: 'Settings file preserved as requested'
+      settingsPreserved: 'Settings file preserved as requested',
     });
 
     // 4. Final result report
     const finalCheck = {
       profileFileExists: fileExists(PROFILE_FILE_PATH),
       settingsFileExists: fileExists(SETTINGS_FILE_PATH),
-      profileDataCleared: !fileExists(PROFILE_FILE_PATH)
+      profileDataCleared: !fileExists(PROFILE_FILE_PATH),
     };
 
     console.log('User data cleanup completion status:', finalCheck);
@@ -623,5 +639,5 @@ module.exports = {
   startProfileRefresh,
   stopProfileRefresh,
   startSettingsRefresh,
-  stopSettingsRefresh
+  stopSettingsRefresh,
 };

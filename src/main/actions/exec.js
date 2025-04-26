@@ -42,7 +42,7 @@ async function executeCommand(action) {
             success: false,
             message: error.message,
             error: error,
-            stderr: stderr
+            stderr: stderr,
           });
           return;
         }
@@ -51,7 +51,7 @@ async function executeCommand(action) {
           success: true,
           message: 'Command executed successfully',
           stdout: stdout,
-          stderr: stderr
+          stderr: stderr,
         });
       });
     });
@@ -59,7 +59,7 @@ async function executeCommand(action) {
     return {
       success: false,
       message: `Error executing command: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -93,7 +93,13 @@ async function openInTerminal(command, workingDir) {
       } else {
         // Linux and others
         // Try to detect the terminal
-        const terminals = ['x-terminal-emulator', 'gnome-terminal', 'xterm', 'konsole', 'terminator'];
+        const terminals = [
+          'x-terminal-emulator',
+          'gnome-terminal',
+          'xterm',
+          'konsole',
+          'terminator',
+        ];
         let terminal = terminals[0]; // Default to first one
 
         terminalCommand = `${terminal} -e "bash -c '${command}; exec bash'"`;
@@ -104,17 +110,17 @@ async function openInTerminal(command, workingDir) {
       }
 
       // Execute the terminal command
-      exec(terminalCommand, (error) => {
+      exec(terminalCommand, error => {
         if (error) {
           resolve({
             success: false,
             message: `Error opening terminal: ${error.message}`,
-            error: error
+            error: error,
           });
         } else {
           resolve({
             success: true,
-            message: 'Command opened in terminal'
+            message: 'Command opened in terminal',
           });
         }
       });
@@ -122,12 +128,12 @@ async function openInTerminal(command, workingDir) {
       resolve({
         success: false,
         message: `Error opening terminal: ${error.message}`,
-        error: error
+        error: error,
       });
     }
   });
 }
 
 module.exports = {
-  executeCommand
+  executeCommand,
 };

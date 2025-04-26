@@ -13,7 +13,7 @@ const {
   createApiClient,
   getAuthHeaders,
   authenticatedRequest,
-  clearTokens
+  clearTokens,
 } = require('./client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
@@ -31,7 +31,7 @@ const LOGIN_TIMEOUT_MS = 60000; // Maximum login timeout of 1 minute
 const stateStore = new Store({
   name: 'auth-state',
   encryptionKey: 'toast-app-auth-state',
-  clearInvalidConfig: true
+  clearInvalidConfig: true,
 });
 
 /**
@@ -125,7 +125,7 @@ function initiateLogin(clientId) {
     if (!stored) {
       return {
         success: false,
-        error: 'Failed to store state value. Please try again.'
+        error: 'Failed to store state value. Please try again.',
       };
     }
 
@@ -148,7 +148,7 @@ function initiateLogin(clientId) {
     return {
       success: true,
       url: authUrl.toString(),
-      state
+      state,
     };
   } catch (error) {
     console.error('Failed to initiate login:', error);
@@ -158,7 +158,7 @@ function initiateLogin(clientId) {
 
     return {
       success: false,
-      error: error.message || 'Unknown error'
+      error: error.message || 'Unknown error',
     };
   }
 }
@@ -173,7 +173,6 @@ function initiateLogin(clientId) {
  */
 async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   try {
-
     console.log('Starting exchange of authorization code for token:', code.substring(0, 8) + '...');
 
     const apiClient = createApiClient();
@@ -191,14 +190,14 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       grant_type: 'authorization_code',
       code: code.substring(0, 8) + '...',
       client_id: clientId,
-      redirect_uri: REDIRECT_URI
+      redirect_uri: REDIRECT_URI,
     });
 
     // Token request
     const response = await apiClient.post(ENDPOINTS.OAUTH_TOKEN, data, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     });
 
     console.log('Token request successful! Response status:', response.status);
@@ -209,7 +208,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
-        error: 'No access token returned from server'
+        error: 'No access token returned from server',
       };
     }
 
@@ -220,7 +219,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       success: true,
       access_token,
       refresh_token,
-      expires_in
+      expires_in,
     };
   } catch (error) {
     console.error('Error exchanging token:', error);
@@ -232,7 +231,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
     return {
       success: false,
       error: error.response?.data?.error || error.message,
-      error_details: error.response?.data
+      error_details: error.response?.data,
     };
   }
 }
@@ -254,7 +253,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
       return {
         success: false,
         error: 'No refresh token available',
-        code: 'NO_REFRESH_TOKEN'
+        code: 'NO_REFRESH_TOKEN',
       };
     }
 
@@ -271,15 +270,15 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
     console.log('Token refresh request:', {
       url: ENDPOINTS.OAUTH_TOKEN,
       grant_type: 'refresh_token',
-      client_id: clientId
+      client_id: clientId,
     });
 
     try {
       // Token renewal request
       const response = await apiClient.post(ENDPOINTS.OAUTH_TOKEN, data, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       });
 
       console.log('Token renewal response status:', response.status);
@@ -290,7 +289,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         return {
           success: false,
           error: 'No access token in response',
-          code: 'NO_ACCESS_TOKEN'
+          code: 'NO_ACCESS_TOKEN',
         };
       }
 
@@ -299,7 +298,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
       return {
         success: true,
         access_token,
-        refresh_token
+        refresh_token,
       };
     } catch (tokenRequestError) {
       console.error('Token renewal request failed:', tokenRequestError.message);
@@ -311,11 +310,12 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
           success: false,
           error: 'Your login session has expired. Please log in again.',
           code: 'SESSION_EXPIRED',
-          requireRelogin: true
+          requireRelogin: true,
         };
       }
 
-      const errorMessage = tokenRequestError.response?.data?.error ||
+      const errorMessage =
+        tokenRequestError.response?.data?.error ||
         tokenRequestError.message ||
         'Unknown error during token refresh';
 
@@ -323,7 +323,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
       return {
         success: false,
         error: errorMessage,
-        code: 'REFRESH_FAILED'
+        code: 'REFRESH_FAILED',
       };
     }
   } catch (error) {
@@ -334,7 +334,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
     return {
       success: false,
       error: errorMessage,
-      code: 'REFRESH_EXCEPTION'
+      code: 'REFRESH_EXCEPTION',
     };
   }
 }
@@ -372,7 +372,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
-        error: error || 'Unknown error'
+        error: error || 'Unknown error',
       };
     }
 
@@ -382,7 +382,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
-        error: 'Missing authorization code'
+        error: 'Missing authorization code',
       };
     }
 
@@ -394,7 +394,7 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       return {
         success: false,
         error: 'state_mismatch',
-        message: 'State parameter mismatch. Security validation failed.'
+        message: 'State parameter mismatch. Security validation failed.',
       };
     }
 
@@ -408,14 +408,14 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
 
     return {
       success: true,
-      code
+      code,
     };
   } catch (error) {
     console.error('Failed to handle auth redirect:', error);
     setLoginInProgress(false); // Reset login state
     return {
       success: false,
-      error: error.message || 'Unknown error'
+      error: error.message || 'Unknown error',
     };
   }
 }
@@ -426,22 +426,24 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
  * @returns {Promise<Object>} User profile information
  */
 async function fetchUserProfile(onUnauthorized) {
+  return authenticatedRequest(
+    async () => {
+      const headers = getAuthHeaders();
+      console.log('Profile API call:', ENDPOINTS.USER_PROFILE);
 
-  return authenticatedRequest(async () => {
-    const headers = getAuthHeaders();
-    console.log('Profile API call:', ENDPOINTS.USER_PROFILE);
+      const apiClient = createApiClient();
+      const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
+      console.log('Profile API response status:', response.status);
 
-    const apiClient = createApiClient();
-    const response = await apiClient.get(ENDPOINTS.USER_PROFILE, { headers });
-    console.log('Profile API response status:', response.status);
+      // Extract data field if API response format is apiSuccess({ ... })
+      if (response.data && response.data.success === true && response.data.data) {
+        return response.data.data;
+      }
 
-    // Extract data field if API response format is apiSuccess({ ... })
-    if (response.data && response.data.success === true && response.data.data) {
-      return response.data.data;
-    }
-
-    return response.data;
-  }, { onUnauthorized });
+      return response.data;
+    },
+    { onUnauthorized },
+  );
 }
 
 /**
@@ -450,7 +452,6 @@ async function fetchUserProfile(onUnauthorized) {
  * @returns {Promise<Object>} Subscription information
  */
 async function fetchSubscription(onUnauthorized) {
-
   // Default response for subscription API (used for authentication failures or errors)
   const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
 
@@ -458,7 +459,7 @@ async function fetchSubscription(onUnauthorized) {
     allowUnauthenticated: true,
     defaultValue: defaultSubscription,
     isSubscriptionRequest: true,
-    onUnauthorized
+    onUnauthorized,
   };
 
   return authenticatedRequest(async () => {
@@ -496,7 +497,7 @@ async function fetchSubscription(onUnauthorized) {
         expiresAt: subscriptionData.expiresAt || subscriptionData.subscribed_until || null,
         subscribed_until: subscriptionData.subscribed_until || subscriptionData.expiresAt || null,
         // Preserve VIP status (default is false)
-        isVip: subscriptionData.isVip === true
+        isVip: subscriptionData.isVip === true,
       };
 
       // Ensure premium page groups and features for VIP users
@@ -540,13 +541,13 @@ async function logout() {
 
     return {
       success: true,
-      message: 'API logout successful'
+      message: 'API logout successful',
     };
   } catch (error) {
     console.error('Error during API logout:', error);
     return {
       success: false,
-      error: error.message || 'An error occurred during API logout'
+      error: error.message || 'An error occurred during API logout',
     };
   }
 }
@@ -559,5 +560,5 @@ module.exports = {
   fetchUserProfile,
   fetchSubscription,
   logout,
-  isLoginProcessActive // Export function to check if login is in progress
+  isLoginProcessActive, // Export function to check if login is in progress
 };
