@@ -712,10 +712,14 @@ async function initializeAboutTab() {
       try {
         // 앱 버전 자동으로 가져오기
         const version = await window.settings.getVersion();
-        appVersionElement.textContent = version;
+
+        // 버전 정보 표시 (날짜 포함)
+        appVersionElement.innerHTML = `<strong>${version}</strong>`;
+
+        // 버전 정보 로깅
+        window.settings.log.info(`앱 버전 정보: ${version}`);
       } catch (error) {
         console.error('버전 정보를 가져오는 중 오류 발생:', error);
-        appVersionElement.textContent = 'v0.0.0';
       }
     }
 

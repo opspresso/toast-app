@@ -721,8 +721,9 @@ function setupIpcHandlers(windows) {
       const { app } = require('electron');
       return app.getVersion();
     } catch (error) {
-      console.error('Error getting app version:', error);
-      return 'v0.5.5'; // 오류 발생 시 기본값
+      const { APP_DEFAULT_INFO } = require('./constants');
+      logger.error('Error getting app version:', error);
+      return APP_DEFAULT_INFO.version; // 오류 발생 시 상수에서 기본값 가져오기
     }
   });
 
@@ -787,20 +788,23 @@ function setupIpcHandlers(windows) {
           description: packageJson.description || '',
           license: packageJson.license || '',
           repository: packageJson.repository?.url || '',
+          version: packageJson.version || '', // 버전 정보 추가
           success: true
         };
       } else {
-        console.error('package.json not found');
+        const { APP_DEFAULT_INFO } = require('./constants');
+        logger.error('package.json not found');
         return {
-          success: false,
-          error: 'package.json not found'
+          ...APP_DEFAULT_INFO,
+          success: true
         };
       }
     } catch (error) {
-      console.error('Error getting app info:', error);
+      const { APP_DEFAULT_INFO } = require('./constants');
+      logger.error('Error getting app info:', error);
       return {
-        success: false,
-        error: error.message || 'Unknown error'
+        ...APP_DEFAULT_INFO,
+        success: true
       };
     }
   });

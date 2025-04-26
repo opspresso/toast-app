@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "v0.5.12",
+  "version": "v0.5.11",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -54,6 +54,7 @@
   "build": {
     "appId": "com.opspresso.toast-app",
     "productName": "Toast",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "directories": {
       "output": "dist"
     },
@@ -73,7 +74,9 @@
         "dmg",
         "zip"
       ],
-      "type": "distribution"
+      "type": "distribution",
+      "identity": null,
+      "publish": ["github"]
     },
     "win": {
       "target": [
@@ -90,11 +93,14 @@
       "category": "Utility"
     }
   },
-  "publish": {
-    "provider": "github",
-    "owner": "opspresso",
-    "repo": "toast-dist",
-    "releaseType": "release",
-    "publishAutoUpdate": true
-  }
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "opspresso",
+      "repo": "toast-dist",
+      "releaseType": "release",
+      "publishAutoUpdate": true,
+      "updaterCacheDirName": "toast-app-updater"
+    }
+  ]
 }

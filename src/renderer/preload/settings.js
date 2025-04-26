@@ -7,6 +7,17 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// 앱 기본 정보 - 상수 로컬 복사본 (main 모듈 의존성 제거)
+const APP_DEFAULT_INFO = {
+  author: 'nalbam <me@nalbam.com>, bruce <bruce@daangn.com>',
+  homepage: 'https://app.toast.sh',
+  description: 'A customizable shortcut launcher for macOS and Windows',
+  license: 'MIT',
+  version: 'v0.0.0', // 버전을 가져오지 못할 때 기본값
+  name: 'Toast',
+  repository: 'https://github.com/opspresso/toast-app'
+};
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('settings', {
@@ -50,7 +61,40 @@ contextBridge.exposeInMainWorld('settings', {
   // System information
   getPlatform: () => process.platform,
   getVersion: () => ipcRenderer.invoke('get-app-version'),
-  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  getAppInfo: () => {
+    try {
+      // 직접 package.json 파일 읽기
+      const path = require('path');
+      const fs = require('fs');
+      const appPath = path.join(__dirname, '..', '..', '..');
+      const packagePath = path.join(appPath, 'package.json');
+
+      if (fs.existsSync(packagePath)) {
+        const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+        return {
+          author: packageJson.author || '',
+          homepage: packageJson.homepage || '',
+          description: packageJson.description || '',
+          license: packageJson.license || '',
+          repository: packageJson.repository?.url || '',
+          version: packageJson.version || '',
+          success: true
+        };
+      } else {
+        console.error('package.json not found');
+        return {
+          ...APP_DEFAULT_INFO,
+          success: true
+        };
+      }
+    } catch (error) {
+      console.error('Error getting app info:', error);
+      return {
+        ...APP_DEFAULT_INFO,
+        success: true
+      };
+    }
+  },
   checkLatestVersion: () => ipcRenderer.invoke('check-latest-version'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),

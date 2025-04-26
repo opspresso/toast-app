@@ -33,7 +33,8 @@ function initAutoUpdater(windows) {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'opspresso',
-    repo: 'toast-dist'
+    repo: 'toast-dist',
+    appId: 'com.opspresso.toast-app' // 명시적으로 appId 설정
   });
 
   // 개발 환경에서도 업데이트 확인 가능하도록 설정
@@ -59,13 +60,21 @@ function initAutoUpdater(windows) {
   if (process.env.NODE_ENV === 'development') {
     console.log('개발 환경에서 업데이트 확인 설정 구성');
     // 개발 환경일 때 autoUpdater 옵션 추가 설정
-    autoUpdater.updateConfigPath = path.join(__dirname, '../main/dev-app-update.yml');
+    const devConfigPath = path.join(app.getAppPath(), 'dev-app-update.yml');
+    logger.info('개발 환경 업데이트 설정 경로:', devConfigPath);
+    autoUpdater.updateConfigPath = devConfigPath;
     logger.info('개발 환경에서 업데이트 테스트 활성화');
   }
 
   // 자동 다운로드 비활성화 (사용자가 명시적으로 다운로드를 요청할 때만 다운로드)
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
+
+  // 업데이트 파일 관련 추가 설정
+  autoUpdater.channel = 'latest';
+  autoUpdater.allowPrerelease = false; // 프로덕션에서는 안정 버전만 사용
+  autoUpdater.logger.info(`AppID: ${app.isPackaged ? app.getAppPath() : 'Not packaged'}`);
+  autoUpdater.logger.info(`업데이트 캐시 디렉토리: ${app.getPath('userData')}/toast-app-updater`);
 
   // 로깅 설정 확장
   logger.info('자동 업데이트 모듈 초기화됨');
@@ -154,28 +163,12 @@ function setupAutoUpdaterEvents() {
 }
 
 /**
- * IPC 핸들러 설정
+ * IPC 핸들러 설정 - 더 이상 사용하지 않음
+ * IPC 핸들러는 이제 src/main/ipc.js에서 통합 관리
  */
 function setupIpcHandlers() {
-  // 업데이트 확인 요청
-  ipcMain.handle('check-for-updates', (event, silent = false) => {
-    return checkForUpdates(silent);
-  });
-
-  // 업데이트 다운로드 요청 (자동 또는 수동)
-  ipcMain.handle('download-auto-update', () => {
-    return downloadUpdate();
-  });
-
-  // 이전 버전과의 호환성을 위해 download-manual-update도 같은 함수로 처리
-  ipcMain.handle('download-manual-update', () => {
-    return downloadUpdate();
-  });
-
-  // 다운로드된 업데이트 설치 요청
-  ipcMain.handle('install-auto-update', () => {
-    return installUpdate();
-  });
+  // 이 함수는 호환성을 위해 유지하지만 더 이상 IPC 핸들러를 등록하지 않음
+  logger.info('Updater IPC 핸들러는 더 이상 직접 등록하지 않고 ipc.js에서 통합 관리됩니다.');
 }
 
 /**
@@ -309,6 +302,8 @@ async function installUpdate() {
     sendStatusToWindows('install-started', { status: 'installing' });
 
     // quitAndInstall 호출 (isSilent, isForceRunAfter 옵션 사용 가능)
+    // macOS에서는 앱이 종료되고 자동으로 새 버전이 설치됨
+    logger.info('업데이트를 설치하기 위해 앱을 종료합니다...');
     autoUpdater.quitAndInstall(false, true);
 
     return {
