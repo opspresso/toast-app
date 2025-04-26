@@ -68,3 +68,4 @@ jobs:
               https://api.github.com/repos/${{ github.repository }}/actions/workflows/build.yml/dispatches \
               -d "{\"ref\":\"refs/tags/$VERSION\"}"
             echo "✅ Build workflow triggered successfully for version $VERSION"
+          fi
