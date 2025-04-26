@@ -10,6 +10,10 @@ const path = require('path');
 const os = require('os');
 const { app } = require('electron');
 const vm = require('vm');
+const { createLogger } = require('../logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('ScriptAction');
 
 /**
  * Execute a custom script
@@ -144,7 +148,7 @@ async function executeAppleScript(script) {
         try {
           fs.unlinkSync(tempFile);
         } catch (e) {
-          console.error('Error removing temporary AppleScript file:', e);
+          logger.error('Error removing temporary AppleScript file:', e);
         }
 
         if (error) {
@@ -202,7 +206,7 @@ async function executePowerShell(script) {
         try {
           fs.unlinkSync(tempFile);
         } catch (e) {
-          console.error('Error removing temporary PowerShell file:', e);
+          logger.error('Error removing temporary PowerShell file:', e);
         }
 
         if (error) {
@@ -263,7 +267,7 @@ async function executeBash(script) {
         try {
           fs.unlinkSync(tempFile);
         } catch (e) {
-          console.error('Error removing temporary Bash file:', e);
+          logger.error('Error removing temporary Bash file:', e);
         }
 
         if (error) {

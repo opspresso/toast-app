@@ -129,14 +129,14 @@ function applyTheme(theme) {
   // If 'system', we don't set anything and let the media query handle it
 
   // Log theme change
-  console.log('Theme changed to:', theme);
+  window.settings.log.info('Theme changed to:', theme);
 }
 
 /**
  * Initialize UI with config values
  */
 function initializeUI() {
-  console.log('initializeUI 호출');
+  window.settings.log.info('initializeUI 호출');
 
   // General settings
   globalHotkeyInput.value = config.globalHotkey || '';
@@ -166,7 +166,7 @@ function initializeUI() {
  * Initialize Cloud Sync UI
  */
 function initializeCloudSyncUI() {
-  console.log(
+  window.settings.log.info(
     'initializeCloudSyncUI 호출 - 구독:',
     authState.subscription ? authState.subscription.plan : 'none',
   );
@@ -177,7 +177,7 @@ function initializeCloudSyncUI() {
       const plan = authState.subscription.plan.toLowerCase();
       if (plan.includes('premium') || plan.includes('pro')) {
         // 구독 상태일 경우 항상 체크박스 활성화
-        console.log('Premium/Pro 구독 감지 - Cloud Sync 활성화');
+        window.settings.log.info('Premium/Pro 구독 감지 - Cloud Sync 활성화');
         enableCloudSyncCheckbox.disabled = false;
 
         // authState.subscription.features가 없으면 생성
@@ -201,7 +201,7 @@ function initializeCloudSyncUI() {
 
     // VIP 사용자 확인
     if (authState.subscription && (authState.subscription.isVip || authState.subscription.vip)) {
-      console.log('VIP 사용자 감지 - Cloud Sync 활성화');
+      window.settings.log.info('VIP 사용자 감지 - Cloud Sync 활성화');
       enableCloudSyncCheckbox.disabled = false;
     }
 
@@ -213,7 +213,7 @@ function initializeCloudSyncUI() {
     window.settings
       .getSyncStatus()
       .then(status => {
-        console.log('getSyncStatus 호출 결과:', status);
+        window.settings.log.info('getSyncStatus 호출 결과:', status);
         updateSyncStatusUI(status);
       })
       .catch(error => {

@@ -225,7 +225,7 @@ ipcRenderer.on('update-error', (event, data) => {
 
 // 탭 선택 이벤트 처리
 ipcRenderer.on('select-settings-tab', (event, tabName) => {
-  console.log('select-settings-tab 이벤트 수신:', tabName);
+  window.settings.log.info('select-settings-tab 이벤트 수신:', tabName);
   window.dispatchEvent(
     new CustomEvent('select-settings-tab', {
       detail: tabName,

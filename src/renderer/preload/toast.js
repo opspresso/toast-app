@@ -10,6 +10,13 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('toast', {
+  // Logging functions for renderer process
+  log: {
+    info: (message, ...args) => ipcRenderer.invoke('log-info', message, ...args),
+    warn: (message, ...args) => ipcRenderer.invoke('log-warn', message, ...args),
+    error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
+    debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
+  },
   // Login and user information related methods
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
   fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
@@ -46,7 +53,7 @@ contextBridge.exposeInMainWorld('toast', {
 
       return { success: true, message: 'Settings have been reset to defaults.' };
     } catch (error) {
-      console.error('Settings reset error:', error);
+      window.toast.log.error('Settings reset error:', error);
       return {
         success: false,
         error: error.message || 'An error occurred while resetting settings.',

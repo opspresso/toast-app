@@ -7,6 +7,10 @@
 const path = require('path');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const { createLogger } = require('../logger');
+
+// 모듈별 로거 생성
+const logger = createLogger('EnvConfig');
 
 /**
  * Loads environment variables.
@@ -20,19 +24,19 @@ function loadEnv() {
     const defaultEnvPath = path.join(configDir, '.env');
     if (fs.existsSync(defaultEnvPath)) {
       dotenv.config({ path: defaultEnvPath });
-      console.log('Default environment variable settings loaded.');
+      logger.info('Default environment variable settings loaded.');
     }
 
     // Additionally load .env.local file if it exists (takes precedence)
     const localEnvPath = path.join(configDir, '.env.local');
     if (fs.existsSync(localEnvPath)) {
       dotenv.config({ path: localEnvPath });
-      console.log('Local environment variable settings loaded.');
+      logger.info('Local environment variable settings loaded.');
     }
 
     return true;
   } catch (error) {
-    console.error('Error loading environment variables:', error);
+    logger.error('Error loading environment variables:', error);
     return false;
   }
 }
