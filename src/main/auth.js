@@ -37,7 +37,6 @@ const TOKEN_EXPIRES_KEY = 'token-expires-at';
 // Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
 
-
 // Set tokens in memory
 async function initializeTokensFromStorage() {
   try {
@@ -211,7 +210,7 @@ async function isTokenExpired() {
 
     // Consider expired if within safety margin (30 seconds before actual expiry)
     const safetyMargin = 30 * 1000; // 30 seconds
-    const isNearExpiry = now >= (expiresAt - safetyMargin);
+    const isNearExpiry = now >= expiresAt - safetyMargin;
 
     if (isNearExpiry) {
       console.log('Token is about to expire or already expired');
@@ -254,7 +253,7 @@ async function storeToken(token, expiresIn = 3600) {
       expiresAt = 8640000000000000; // Maximum date supported by JavaScript (about 270 million years)
       console.log('Token expiration time set to unlimited.');
     } else {
-      expiresAt = Date.now() + (expiresIn * 1000);
+      expiresAt = Date.now() + expiresIn * 1000;
     }
     tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
 
@@ -263,7 +262,9 @@ async function storeToken(token, expiresIn = 3600) {
       throw new Error('Failed to save token file');
     }
 
-    console.log(`Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`);
+    console.log(
+      `Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`,
+    );
   } catch (error) {
     console.error('Failed to save token:', error);
     throw error;
@@ -368,7 +369,7 @@ async function handleAuthRedirect(url) {
         return {
           success: true,
           message: 'Authentication refreshed',
-          subscription
+          subscription,
         };
       } else {
         // If not authenticated, start login process
@@ -381,10 +382,10 @@ async function handleAuthRedirect(url) {
     if (code) {
       const redirectResult = await apiAuth.handleAuthRedirect({
         url,
-        onCodeExchange: async (code) => {
+        onCodeExchange: async code => {
           // Exchange code for token and update subscription information
           return await exchangeCodeForTokenAndUpdateSubscription(code);
-        }
+        },
       });
 
       // Process 'reload_auth' action
@@ -396,7 +397,7 @@ async function handleAuthRedirect(url) {
           console.error('No token provided for auth reload');
           return {
             success: false,
-            error: 'Missing token for auth reload'
+            error: 'Missing token for auth reload',
           };
         }
 
@@ -412,7 +413,7 @@ async function handleAuthRedirect(url) {
           return {
             success: true,
             message: 'Authentication refreshed',
-            subscription
+            subscription,
           };
         } else {
           // If not authenticated, start login process
@@ -426,13 +427,13 @@ async function handleAuthRedirect(url) {
 
     return {
       success: false,
-      error: 'Invalid URL parameters'
+      error: 'Invalid URL parameters',
     };
   } catch (error) {
     console.error('Failed to handle auth redirect:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error'
+      error: error.message || 'Unknown error',
     };
   }
 }
@@ -444,13 +445,16 @@ async function handleAuthRedirect(url) {
  */
 async function exchangeCodeForToken(code) {
   try {
-    console.log('Starting exchange of authentication code for token:', code.substring(0, 8) + '...');
+    console.log(
+      'Starting exchange of authentication code for token:',
+      code.substring(0, 8) + '...',
+    );
 
     // Exchange code for token through common module
     const tokenResult = await apiAuth.exchangeCodeForToken({
       code,
       clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET
+      clientSecret: CLIENT_SECRET,
     });
 
     if (!tokenResult.success) {
@@ -463,7 +467,9 @@ async function exchangeCodeForToken(code) {
     // Store token and expiration time in secure storage
     // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
     await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-    console.log(`Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`);
+    console.log(
+      `Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`,
+    );
 
     // Store refresh token (if available)
     if (refresh_token) {
@@ -486,7 +492,7 @@ async function exchangeCodeForToken(code) {
     return {
       success: false,
       error: error.message || 'Unknown error',
-      error_details: error.response?.data
+      error_details: error.response?.data,
     };
   }
 }
@@ -510,13 +516,17 @@ async function refreshAccessToken() {
     const timeSinceLastRefresh = now - lastTokenRefresh;
 
     if (timeSinceLastRefresh < TOKEN_REFRESH_COOLDOWN_MS && lastTokenRefresh > 0) {
-      console.log(`Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`);
+      console.log(
+        `Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`,
+      );
       return { success: true, throttled: true };
     }
 
     // If already refreshing, return the ongoing refresh promise instead of starting a new one
     if (isRefreshing && refreshPromise) {
-      console.log('Token refresh already in progress. Returning existing promise to prevent duplicate requests.');
+      console.log(
+        'Token refresh already in progress. Returning existing promise to prevent duplicate requests.',
+      );
       return refreshPromise;
     }
 
@@ -535,14 +545,14 @@ async function refreshAccessToken() {
         }
 
         // Get refresh token
-        const refreshToken = client.getRefreshToken() || await getStoredRefreshToken();
+        const refreshToken = client.getRefreshToken() || (await getStoredRefreshToken());
 
         if (!refreshToken) {
           console.error('No refresh token available');
           return {
             success: false,
             error: 'No refresh token available',
-            code: 'NO_REFRESH_TOKEN'
+            code: 'NO_REFRESH_TOKEN',
           };
         }
 
@@ -552,7 +562,7 @@ async function refreshAccessToken() {
         const refreshResult = await apiAuth.refreshAccessToken({
           refreshToken,
           clientId: CLIENT_ID,
-          clientSecret: CLIENT_SECRET
+          clientSecret: CLIENT_SECRET,
         });
 
         if (!refreshResult.success) {
@@ -577,7 +587,9 @@ async function refreshAccessToken() {
 
         // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
         await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
-        console.log(`New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`);
+        console.log(
+          `New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`,
+        );
 
         // Store new refresh token (if available)
         if (refresh_token) {
@@ -591,7 +603,7 @@ async function refreshAccessToken() {
         return {
           success: false,
           error: error.message || 'Unknown error in token refresh',
-          code: 'REFRESH_EXCEPTION'
+          code: 'REFRESH_EXCEPTION',
         };
       } finally {
         // Reset refresh state
@@ -611,7 +623,7 @@ async function refreshAccessToken() {
     return {
       success: false,
       error: errorMessage,
-      code: 'REFRESH_EXCEPTION'
+      code: 'REFRESH_EXCEPTION',
     };
   }
 }
@@ -664,8 +676,8 @@ async function fetchUserProfile() {
     return {
       error: {
         code: 'PROFILE_ERROR',
-        message: error.message || 'Unable to retrieve profile information.'
-      }
+        message: error.message || 'Unable to retrieve profile information.',
+      },
     };
   }
 }
@@ -693,7 +705,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
       return {
         success: true,
-        subscription
+        subscription,
       };
     } catch (subError) {
       console.error('Failed to retrieve subscription information:', subError);
@@ -702,7 +714,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
       return {
         success: true,
         warning: 'Login was successful, but failed to retrieve subscription information.',
-        error_details: subError.message
+        error_details: subError.message,
       };
     }
   } catch (error) {
@@ -710,7 +722,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
     return {
       success: false,
       error: error.message || 'An error occurred during authentication processing.',
-      details: error.stack
+      details: error.stack,
     };
   }
 }
@@ -731,7 +743,7 @@ function registerProtocolHandler() {
  */
 async function hasValidToken() {
   try {
-    const token = client.getAccessToken() || await getStoredToken();
+    const token = client.getAccessToken() || (await getStoredToken());
     if (!token) {
       return false;
     }
@@ -755,7 +767,7 @@ async function hasValidToken() {
  * @returns {Promise<string|null>} Access token or null
  */
 async function getAccessToken() {
-  return client.getAccessToken() || await getStoredToken();
+  return client.getAccessToken() || (await getStoredToken());
 }
 
 /**
@@ -789,14 +801,16 @@ async function updatePageGroupSettings(subscription) {
     try {
       if (subscription.subscribed_until) {
         // Explicitly convert to string and verify valid string
-        expiresAtStr = typeof subscription.subscribed_until === 'string'
-          ? subscription.subscribed_until
-          : String(subscription.subscribed_until);
+        expiresAtStr =
+          typeof subscription.subscribed_until === 'string'
+            ? subscription.subscribed_until
+            : String(subscription.subscribed_until);
       } else if (subscription.expiresAt) {
         // Explicitly convert to string and verify valid string
-        expiresAtStr = typeof subscription.expiresAt === 'string'
-          ? subscription.expiresAt
-          : String(subscription.expiresAt);
+        expiresAtStr =
+          typeof subscription.expiresAt === 'string'
+            ? subscription.expiresAt
+            : String(subscription.expiresAt);
       }
 
       // Set to empty string if value is undefined or null
@@ -812,7 +826,7 @@ async function updatePageGroupSettings(subscription) {
       plan: subscription.plan || 'free',
       expiresAt: expiresAtStr,
       expiresAtType: typeof expiresAtStr,
-      pageGroups: subscription.features?.page_groups || pageGroups
+      pageGroups: subscription.features?.page_groups || pageGroups,
     });
 
     // Safely save subscription information
@@ -825,15 +839,15 @@ async function updatePageGroupSettings(subscription) {
       isVip: isVip,
       additionalFeatures: {
         advancedActions: subscription.features?.advanced_actions || false,
-        cloudSync: subscription.features?.cloud_sync || false
-      }
+        cloudSync: subscription.features?.cloud_sync || false,
+      },
     });
 
     console.log('Subscription settings update complete:', {
       isAuthenticated: true,
       isSubscribed: isActive,
       plan: subscription.plan || 'free',
-      pageGroups: subscription.features?.page_groups || pageGroups
+      pageGroups: subscription.features?.page_groups || pageGroups,
     });
   } catch (error) {
     console.error('Error updating page group settings:', error);
@@ -884,5 +898,5 @@ module.exports = {
   hasValidToken,
   getAccessToken,
   updatePageGroupSettings,
-  refreshAccessToken
+  refreshAccessToken,
 };

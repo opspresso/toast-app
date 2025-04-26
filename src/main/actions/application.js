@@ -26,7 +26,7 @@ async function executeApplication(action) {
     if (!fs.existsSync(action.applicationPath)) {
       return {
         success: false,
-        message: `Application not found at ${action.applicationPath}`
+        message: `Application not found at ${action.applicationPath}`,
       };
     }
 
@@ -58,19 +58,19 @@ async function executeApplication(action) {
 
     // Execute the command
     return new Promise((resolve, reject) => {
-      exec(command, (error) => {
+      exec(command, error => {
         if (error) {
           reject({
             success: false,
             message: `Error executing application: ${error.message}`,
-            error: error
+            error: error,
           });
           return;
         }
 
         resolve({
           success: true,
-          message: 'Application launched successfully'
+          message: 'Application launched successfully',
         });
       });
     });
@@ -78,11 +78,11 @@ async function executeApplication(action) {
     return {
       success: false,
       message: `Error launching application: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
 
 module.exports = {
-  executeApplication
+  executeApplication,
 };

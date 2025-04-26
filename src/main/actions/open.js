@@ -34,7 +34,7 @@ async function openItem(action) {
     return {
       success: false,
       message: `Error opening item: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -57,13 +57,13 @@ async function openUrl(url) {
 
     return {
       success: true,
-      message: `Opened URL: ${url}`
+      message: `Opened URL: ${url}`,
     };
   } catch (error) {
     return {
       success: false,
       message: `Error opening URL: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -83,7 +83,7 @@ async function openPath(itemPath, application) {
     if (!fs.existsSync(resolvedPath)) {
       return {
         success: false,
-        message: `Path does not exist: ${resolvedPath}`
+        message: `Path does not exist: ${resolvedPath}`,
       };
     }
 
@@ -97,13 +97,13 @@ async function openPath(itemPath, application) {
 
     return {
       success: true,
-      message: `Opened: ${resolvedPath}`
+      message: `Opened: ${resolvedPath}`,
     };
   } catch (error) {
     return {
       success: false,
       message: `Error opening path: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
@@ -132,29 +132,29 @@ async function openWithApplication(filePath, application) {
 
     // Execute the command
     const { exec } = require('child_process');
-    exec(command, (error) => {
+    exec(command, error => {
       if (error) {
         return {
           success: false,
           message: `Error opening with application: ${error.message}`,
-          error: error
+          error: error,
         };
       }
     });
 
     return {
       success: true,
-      message: `Opened ${filePath} with ${application}`
+      message: `Opened ${filePath} with ${application}`,
     };
   } catch (error) {
     return {
       success: false,
       message: `Error opening with application: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
 
 module.exports = {
-  openItem
+  openItem,
 };

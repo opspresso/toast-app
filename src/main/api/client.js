@@ -24,7 +24,7 @@ const ENDPOINTS = {
   // Subscription information is integrated with the profile API
 
   // Settings related
-  SETTINGS: `${API_BASE_URL}/users/settings`
+  SETTINGS: `${API_BASE_URL}/users/settings`,
 };
 
 // Token management (in memory)
@@ -81,8 +81,8 @@ function getAuthHeaders() {
   }
 
   return {
-    'Authorization': `Bearer ${currentToken}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${currentToken}`,
+    'Content-Type': 'application/json',
   };
 }
 
@@ -96,8 +96,8 @@ function createApiClient(options = {}) {
     baseURL: API_BASE_URL,
     timeout: 10000,
     headers: {
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   };
 
   const clientOptions = { ...defaultOptions, ...options };
@@ -109,7 +109,7 @@ const tokenRefreshTracking = {
   requestsAfterRefresh: 0,
   maxRequestsAfterRefresh: 3, // Maximum allowed consecutive requests after refresh
   lastRefreshTime: 0,
-  refreshCooldownMs: 10000 // 10 seconds minimum between refresh attempts
+  refreshCooldownMs: 10000, // 10 seconds minimum between refresh attempts
 };
 
 /**
@@ -123,7 +123,7 @@ async function authenticatedRequest(apiCall, options = {}) {
     allowUnauthenticated = false,
     defaultValue = null,
     isSubscriptionRequest = false,
-    onUnauthorized = null
+    onUnauthorized = null,
   } = options;
 
   // Default subscription response
@@ -137,18 +137,16 @@ async function authenticatedRequest(apiCall, options = {}) {
     return {
       error: {
         code: 'NO_TOKEN',
-        message: 'Authentication required. Please log in.'
-      }
+        message: 'Authentication required. Please log in.',
+      },
     };
   }
 
   try {
     return await apiCall();
   } catch (error) {
-
     // Handle 401 unauthorized error
     if (error.response && error.response.status === 401) {
-
       // Special handling for subscription API requests
       if (isSubscriptionRequest) {
         return defaultSubscription;
@@ -159,7 +157,6 @@ async function authenticatedRequest(apiCall, options = {}) {
       const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
 
       if (timeSinceLastRefresh < tokenRefreshTracking.refreshCooldownMs) {
-
         if (allowUnauthenticated && defaultValue) {
           return defaultValue;
         }
@@ -167,13 +164,14 @@ async function authenticatedRequest(apiCall, options = {}) {
         return {
           error: {
             code: 'AUTH_REFRESH_RATE_LIMIT',
-            message: 'Authentication refresh rate limit exceeded. Please try again later.'
-          }
+            message: 'Authentication refresh rate limit exceeded. Please try again later.',
+          },
         };
       }
 
-      if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
-
+      if (
+        tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh
+      ) {
         // Reset token to force re-login
         clearTokens();
 
@@ -181,8 +179,8 @@ async function authenticatedRequest(apiCall, options = {}) {
           error: {
             code: 'AUTH_REFRESH_LOOP',
             message: 'Authentication failure loop detected. Please log in again.',
-            requireRelogin: true
-          }
+            requireRelogin: true,
+          },
         };
       }
 
@@ -204,7 +202,6 @@ async function authenticatedRequest(apiCall, options = {}) {
 
             return result;
           } catch (retryError) {
-
             if (allowUnauthenticated && defaultValue) {
               return defaultValue;
             }
@@ -213,12 +210,11 @@ async function authenticatedRequest(apiCall, options = {}) {
               error: {
                 code: 'AUTH_REFRESH_FAILED',
                 message: 'Authentication failed even after token refresh. Please log in again.',
-                requireRelogin: true
-              }
+                requireRelogin: true,
+              },
             };
           }
         } else {
-
           // Reset tokens on refresh failure
           clearTokens();
 
@@ -226,8 +222,8 @@ async function authenticatedRequest(apiCall, options = {}) {
             error: {
               code: 'AUTH_REFRESH_FAILED',
               message: 'Failed to refresh authentication. Please log in again.',
-              requireRelogin: true
-            }
+              requireRelogin: true,
+            },
           };
         }
       }
@@ -250,8 +246,8 @@ async function authenticatedRequest(apiCall, options = {}) {
       error: {
         code: error.response?.status ? `HTTP_${error.response.status}` : 'API_ERROR',
         message: error.message,
-        statusCode: error.response?.status
-      }
+        statusCode: error.response?.status,
+      },
     };
   }
 }
@@ -267,5 +263,5 @@ module.exports = {
   getRefreshToken,
   clearTokens,
   getAuthHeaders,
-  authenticatedRequest
+  authenticatedRequest,
 };

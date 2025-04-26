@@ -30,7 +30,7 @@
 }
 
 /* Dark theme - override default with data-theme */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --background-color: #2d2d2d;
   --text-color: #eee;
   --border-color: #444;
@@ -59,7 +59,7 @@
 }
 
 /* Light theme - explicit */
-[data-theme="light"] {
+[data-theme='light'] {
   --background-color: #f8f9fa;
   --text-color: #333;
   --border-color: #ddd;
@@ -235,8 +235,8 @@ label {
   font-weight: 500;
 }
 
-input[type="text"],
-input[type="number"],
+input[type='text'],
+input[type='number'],
 select,
 textarea {
   width: 100%;
@@ -248,15 +248,15 @@ textarea {
   font-size: 14px;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
+input[type='text']:focus,
+input[type='number']:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--button-primary-bg);
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   margin-right: 8px;
 }
 
@@ -273,7 +273,7 @@ input[type="checkbox"] {
   gap: 16px;
 }
 
-input[type="range"] {
+input[type='range'] {
   flex: 1;
 }
 
@@ -556,7 +556,7 @@ button {
   border-radius: 50%;
 }
 
-.profile-avatar img[src=""] {
+.profile-avatar img[src=''] {
   display: none;
 }
 
@@ -645,7 +645,7 @@ button {
 }
 
 .feature-list li:before {
-  content: "✓";
+  content: '✓';
   position: absolute;
   left: 0;
   color: var(--badge-success-bg);
@@ -692,12 +692,12 @@ button {
 }
 
 /* 다크 테마에서의 스피너 색상 */
-[data-theme="dark"] .spinner {
+[data-theme='dark'] .spinner {
   border-color: rgba(255, 255, 255, 0.1);
   border-top-color: var(--button-primary-bg);
 }
 
-[data-theme="dark"] .loading-indicator {
+[data-theme='dark'] .loading-indicator {
   background-color: rgba(255, 255, 255, 0.05);
 }
 

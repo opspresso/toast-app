@@ -52,7 +52,7 @@ function setupIpcHandlers(windows) {
   auth.registerProtocolHandler();
 
   // Handle protocol requests during app execution
-  global.handleProtocolRequest = async (url) => {
+  global.handleProtocolRequest = async url => {
     console.log('Protocol request received:', url);
 
     // Process authentication URL using handleAuthRedirect function in auth.js
@@ -75,7 +75,7 @@ function setupIpcHandlers(windows) {
             authManager.notifyAuthStateChange({
               type: 'auth-reload',
               subscription: result.subscription,
-              message: 'Authentication information has been refreshed.'
+              message: 'Authentication information has been refreshed.',
             });
           } else {
             // Regular login success notification
@@ -122,7 +122,7 @@ function setupIpcHandlers(windows) {
   });
 
   // Return current window position
-  ipcMain.handle('get-window-position', (event) => {
+  ipcMain.handle('get-window-position', event => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
         return windows.toast.getPosition();
@@ -135,7 +135,7 @@ function setupIpcHandlers(windows) {
   });
 
   // Temporarily disable alwaysOnTop (to display file selection dialog on top)
-  ipcMain.handle('hide-window-temporarily', async (event) => {
+  ipcMain.handle('hide-window-temporarily', async event => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
         // Turn off alwaysOnTop property so dialog can appear on top
@@ -181,7 +181,7 @@ function setupIpcHandlers(windows) {
       return {
         success: false,
         message: `Error executing action: ${error.message}`,
-        error: error.toString()
+        error: error.toString(),
       };
     }
   });
@@ -194,7 +194,7 @@ function setupIpcHandlers(windows) {
       return {
         valid: false,
         message: `Error validating action: ${error.message}`,
-        error: error.toString()
+        error: error.toString(),
       };
     }
   });
@@ -244,7 +244,7 @@ function setupIpcHandlers(windows) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: subscription
+            subscription: subscription,
           });
         }
 
@@ -315,7 +315,7 @@ function setupIpcHandlers(windows) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: subscription
+            subscription: subscription,
           });
 
           // Update toast window appearance if appearance settings change
@@ -359,7 +359,7 @@ function setupIpcHandlers(windows) {
         windows.toast.webContents.send('config-updated', {
           pages: config.get('pages'),
           appearance: config.get('appearance'),
-          subscription: subscription
+          subscription: subscription,
         });
       }
 
@@ -517,7 +517,7 @@ function setupIpcHandlers(windows) {
           enabled: false,
           deviceId: getDeviceIdentifier(),
           lastSyncTime: 0,
-          lastChangeType: null
+          lastChangeType: null,
         };
       }
     } catch (error) {
@@ -525,7 +525,7 @@ function setupIpcHandlers(windows) {
       return {
         enabled: false,
         deviceId: getDeviceIdentifier(),
-        lastSyncTime: Date.now()
+        lastSyncTime: Date.now(),
       };
     }
   });
@@ -551,21 +551,21 @@ function setupIpcHandlers(windows) {
         // 현재 상태 반환
         return {
           success: true,
-          status: cloudSyncManager.getCurrentStatus()
+          status: cloudSyncManager.getCurrentStatus(),
         };
       } else {
         // 매니저가 초기화되지 않은 경우
         console.warn('Cloud sync manager not initialized, cannot enable/disable');
         return {
           success: false,
-          error: 'Cloud sync manager not initialized'
+          error: 'Cloud sync manager not initialized',
         };
       }
     } catch (error) {
       console.error('Error setting cloud sync enabled:', error);
       return {
         success: false,
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
       };
     }
   });
@@ -591,7 +591,7 @@ function setupIpcHandlers(windows) {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
             advanced: config.get('advanced'),
-            subscription: config.get('subscription')
+            subscription: config.get('subscription'),
           };
 
           // 동기화 완료 알림 (설정 데이터 포함)
@@ -609,14 +609,14 @@ function setupIpcHandlers(windows) {
         console.warn('Cloud sync manager not initialized, cannot perform manual sync');
         return {
           success: false,
-          error: 'Cloud sync manager not initialized'
+          error: 'Cloud sync manager not initialized',
         };
       }
     } catch (error) {
       console.error(`Error performing manual sync (${action}):`, error);
       return {
         success: false,
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
       };
     }
   });
@@ -664,7 +664,7 @@ function setupIpcHandlers(windows) {
         ...options,
         modal: true,
         // Set toast window as parent to always display above toast window
-        parent: windows.toast
+        parent: windows.toast,
       };
       return await dialog.showOpenDialog(modalOptions);
     } catch (error) {
@@ -681,7 +681,7 @@ function setupIpcHandlers(windows) {
         ...options,
         modal: true,
         // Set toast window as parent to always display above toast window
-        parent: windows.toast
+        parent: windows.toast,
       };
       return await dialog.showSaveDialog(modalOptions);
     } catch (error) {
@@ -698,7 +698,7 @@ function setupIpcHandlers(windows) {
         ...options,
         modal: true,
         // Set toast window as parent to always display above toast window
-        parent: windows.toast
+        parent: windows.toast,
       };
       return await dialog.showMessageBox(modalOptions);
     } catch (error) {
@@ -715,7 +715,7 @@ function setupIpcHandlers(windows) {
       if (!validation.valid) {
         return {
           success: false,
-          message: `Invalid action: ${validation.message}`
+          message: `Invalid action: ${validation.message}`,
         };
       }
 
@@ -725,7 +725,7 @@ function setupIpcHandlers(windows) {
       return {
         success: false,
         message: `Error testing action: ${error.message}`,
-        error: error.toString()
+        error: error.toString(),
       };
     }
   });
@@ -733,5 +733,5 @@ function setupIpcHandlers(windows) {
 
 module.exports = {
   setupIpcHandlers,
-  isModalOpened
+  isModalOpened,
 };

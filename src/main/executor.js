@@ -45,18 +45,17 @@ async function executeAction(action) {
       default:
         return {
           success: false,
-          message: `Unsupported action type: ${action.action}`
+          message: `Unsupported action type: ${action.action}`,
         };
     }
   } catch (error) {
     return {
       success: false,
       message: `Error executing action: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
-
 
 /**
  * Test an action without executing it
@@ -117,7 +116,7 @@ async function validateAction(action) {
           if (!validation.valid) {
             return {
               valid: false,
-              message: `Invalid action at index ${i}: ${validation.message}`
+              message: `Invalid action at index ${i}: ${validation.message}`,
             };
           }
         }
@@ -131,12 +130,12 @@ async function validateAction(action) {
     return {
       valid: false,
       message: `Error validating action: ${error.message}`,
-      error: error
+      error: error,
     };
   }
 }
 
 module.exports = {
   executeAction,
-  validateAction
+  validateAction,
 };
