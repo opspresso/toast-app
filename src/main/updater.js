@@ -7,9 +7,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const { createLogger, electronLog } = require('./logger');
 
-// 로깅 설정
-autoUpdater.logger = require('electron-log');
+// 모듈별 로거 생성
+const logger = createLogger('Updater');
+
+// 업데이터 로깅 설정
+autoUpdater.logger = electronLog;
 autoUpdater.logger.transports.file.level = 'info';
 
 // 자동 업데이트 상태 이벤트를 전달하기 위한 변수들
@@ -44,10 +48,10 @@ function initAutoUpdater(windows) {
         error.toString().includes('latest-win.yml') ||
         error.toString().includes('latest-linux.yml') ||
         error.toString().includes('404')) {
-      autoUpdater.logger.info('YML 파일을 찾을 수 없음 - 릴리스에 매니페스트 파일이 없습니다. 수동 업데이트 방식을 사용합니다.');
+      logger.info('YML 파일을 찾을 수 없음 - 릴리스에 매니페스트 파일이 없습니다. 수동 업데이트 방식을 사용합니다.');
     } else {
       // 다른 오류는 정상적으로 전파
-      autoUpdater.logger.error('업데이트 오류:', error);
+      logger.error('업데이트 오류:', error);
     }
   });
 
@@ -56,7 +60,7 @@ function initAutoUpdater(windows) {
     console.log('개발 환경에서 업데이트 확인 설정 구성');
     // 개발 환경일 때 autoUpdater 옵션 추가 설정
     autoUpdater.updateConfigPath = path.join(__dirname, '../main/dev-app-update.yml');
-    autoUpdater.logger.info('개발 환경에서 업데이트 테스트 활성화');
+    logger.info('개발 환경에서 업데이트 테스트 활성화');
   }
 
   // 자동 다운로드 비활성화 (사용자가 명시적으로 다운로드를 요청할 때만 다운로드)
@@ -64,9 +68,9 @@ function initAutoUpdater(windows) {
   autoUpdater.autoInstallOnAppQuit = true;
 
   // 로깅 설정 확장
-  autoUpdater.logger.info('자동 업데이트 모듈 초기화됨');
-  autoUpdater.logger.info(`현재 앱 버전: ${app.getVersion()}`);
-  autoUpdater.logger.info(`업데이트 소스: GitHub 릴리스 (opspresso/toast-dist)`);
+  logger.info('자동 업데이트 모듈 초기화됨');
+  logger.info(`현재 앱 버전: ${app.getVersion()}`);
+  logger.info(`업데이트 소스: GitHub 릴리스 (opspresso/toast-dist)`);
 
   // 자동 업데이트 이벤트 핸들링
   setupAutoUpdaterEvents();
@@ -186,14 +190,14 @@ async function checkForUpdates(silent = false) {
     }
 
     // electron-updater로 업데이트 확인
-    autoUpdater.logger.info('electron-updater를 통해 업데이트 확인');
+    logger.info('electron-updater를 통해 업데이트 확인');
     const result = await autoUpdater.checkForUpdates();
 
     if (result && result.updateInfo) {
       const currentVersion = app.getVersion();
       const latestVersion = result.updateInfo.version;
 
-      autoUpdater.logger.info(`업데이트 확인 결과: 현재 버전 ${currentVersion}, 최신 버전 ${latestVersion}`);
+      logger.info(`업데이트 확인 결과: 현재 버전 ${currentVersion}, 최신 버전 ${latestVersion}`);
 
       return {
         success: true,
@@ -206,7 +210,7 @@ async function checkForUpdates(silent = false) {
       };
     } else {
       // 업데이트 정보가 없는 경우
-      autoUpdater.logger.info('업데이트 정보를 찾을 수 없습니다.');
+      logger.info('업데이트 정보를 찾을 수 없습니다.');
 
       if (!silent) {
         sendStatusToWindows('update-not-available', {
@@ -228,8 +232,7 @@ async function checkForUpdates(silent = false) {
       };
     }
   } catch (error) {
-    console.error('업데이트 확인 오류:', error);
-    autoUpdater.logger.error('업데이트 확인 오류:', error.toString());
+    logger.error('업데이트 확인 오류:', error.toString());
 
     // 오류 알림 (silent 모드가 아닌 경우에만)
     if (!silent) {
@@ -260,7 +263,7 @@ async function downloadUpdate() {
     sendStatusToWindows('download-started', { status: 'downloading' });
 
     // electron-updater로 다운로드
-    autoUpdater.logger.info('electron-updater를 통해 업데이트 다운로드');
+    logger.info('electron-updater를 통해 업데이트 다운로드');
 
     // 업데이트 확인 - 다운로드 전에 반드시 호출해야 함
     const updateCheckResult = await autoUpdater.checkForUpdates();
@@ -270,10 +273,10 @@ async function downloadUpdate() {
     }
 
     // 최신 버전 정보 로깅
-    autoUpdater.logger.info(`업데이트 정보 확인됨: 버전 ${updateCheckResult.updateInfo.version}`);
+    logger.info(`업데이트 정보 확인됨: 버전 ${updateCheckResult.updateInfo.version}`);
 
     // 업데이트 다운로드 시작
-    autoUpdater.logger.info('자동 업데이트 다운로드 시작');
+    logger.info('자동 업데이트 다운로드 시작');
     await autoUpdater.downloadUpdate();
 
     return {
@@ -282,8 +285,7 @@ async function downloadUpdate() {
       version: updateCheckResult.updateInfo.version
     };
   } catch (error) {
-    console.error('업데이트 다운로드 오류:', error);
-    autoUpdater.logger.error('업데이트 다운로드 오류:', error.toString());
+    logger.error('업데이트 다운로드 오류:', error.toString());
 
     sendStatusToWindows('update-error', {
       status: 'error',
@@ -313,7 +315,7 @@ async function installUpdate() {
       success: true
     };
   } catch (error) {
-    console.error('업데이트 설치 오류:', error);
+    logger.error('업데이트 설치 오류:', error.toString());
 
     sendStatusToWindows('update-error', {
       status: 'error',

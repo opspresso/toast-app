@@ -1653,6 +1653,9 @@ async function handleCheckUpdates() {
     updateStatus.classList.remove('hidden');
     updateActions.classList.add('hidden');
 
+    // 로깅 추가
+    window.settings.log.info('업데이트 확인 시작');
+
     // Save original button text
     const originalButtonText = checkUpdatesButton.textContent;
     checkUpdatesButton.textContent = 'Checking...';
