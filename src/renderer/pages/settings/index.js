@@ -321,10 +321,18 @@ function updateSyncStatusUI(status) {
   syncStatusText.textContent = status.enabled ? 'Cloud Sync Enabled' : 'Cloud Sync Disabled';
 
   // Update last synced time
-  const lastSyncTime = status.lastSyncTime ? new Date(status.lastSyncTime) : null;
-  lastSyncedTime.textContent = lastSyncTime
-    ? `Last Synced: ${lastSyncTime.toLocaleString()}`
-    : 'Last Synced: Not yet synchronized';
+  const lastSyncTime = status.lastSyncTime ? new Date(status.lastSyncTime) : new Date();
+  const formattedDate = lastSyncTime.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  lastSyncedTime.textContent = status.lastSyncTime
+    ? `Last Synced: ${formattedDate}`
+    : `Sync Status: Ready to sync (${formattedDate})`;
 
   // Update device info
   syncDeviceInfo.textContent = status.deviceId
@@ -411,7 +419,18 @@ function disableCloudSyncUI() {
   syncStatusBadge.textContent = '⏹️';
   syncStatusBadge.className = 'badge secondary';
   syncStatusText.textContent = 'Cloud Sync Disabled';
-  lastSyncedTime.textContent = 'Last Synced: -';
+
+  // 현재 날짜 형식화 (영어)
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  lastSyncedTime.textContent = `Sync Status: Not synced (${formattedDate})`;
   syncDeviceInfo.textContent = 'Current Device: -';
 
   enableCloudSyncCheckbox.checked = false;
