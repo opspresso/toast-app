@@ -303,10 +303,17 @@ function updateSyncStatusUI(status) {
 
   // Update sync status badge
   if (status.enabled) {
-    syncStatusBadge.textContent = 'Enabled';
-    syncStatusBadge.className = 'badge premium';
+    // 활성화된 경우에는 움직이는 스피너 표시
+    syncStatusBadge.textContent = '';
+    syncStatusBadge.className = 'badge premium badge-with-spinner';
+
+    // 움직이는 스피너 추가 (애니메이션 있음)
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-inline';
+    syncStatusBadge.appendChild(spinner);
   } else {
-    syncStatusBadge.textContent = 'Disabled';
+    // 비활성화된 경우에는 멈춘 이모티콘 표시
+    syncStatusBadge.textContent = '⏹️';
     syncStatusBadge.className = 'badge secondary';
   }
 
@@ -401,7 +408,7 @@ function updateSyncStatusUI(status) {
  * Disable Cloud Sync UI
  */
 function disableCloudSyncUI() {
-  syncStatusBadge.textContent = 'Disabled';
+  syncStatusBadge.textContent = '⏹️';
   syncStatusBadge.className = 'badge secondary';
   syncStatusText.textContent = 'Cloud Sync Disabled';
   lastSyncedTime.textContent = 'Last Synced: -';

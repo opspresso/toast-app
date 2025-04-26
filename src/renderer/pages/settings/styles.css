@@ -613,6 +613,12 @@ button {
   background-color: var(--badge-secondary-bg);
 }
 
+.badge.secondary {
+  background-color: #5a6268;
+  color: white;
+  border: 1px solid #ddd;
+}
+
 .badge.trial {
   background-color: var(--badge-warning-bg);
   color: #333;
@@ -683,6 +689,36 @@ button {
   border-radius: 50%;
   border-top-color: var(--button-primary-bg);
   animation: spin 0.8s ease-in-out infinite;
+}
+
+/* 인라인 미니 스피너 (배지 안에 사용) */
+.spinner-inline {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+/* 고정된 스피너 (애니메이션 없음) */
+.spinner-static {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  vertical-align: middle;
+}
+
+/* 배지 스피너 스타일 */
+.badge-with-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @keyframes spin {
