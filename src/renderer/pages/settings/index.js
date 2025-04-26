@@ -1657,94 +1657,75 @@ async function handleCheckUpdates() {
     const originalButtonText = checkUpdatesButton.textContent;
     checkUpdatesButton.textContent = 'Checking...';
 
-    // Check for latest version from remote JSON
-    const result = await window.settings.checkLatestVersion();
+    // electron-updater를 통해 최신 버전 확인
+    console.log('electron-updater를 통해 업데이트 확인 시작');
+    const result = await window.settings.checkForUpdates(false); // false: silent모드 아님 (사용자에게 알림)
 
     // Hide loading
     setLoading(updateLoading, false);
 
+    console.log('업데이트 확인 결과:', result);
+
     if (result.success) {
-      // Compare current version with latest version
-      const currentVersion = result.current;
-      const latestVersion = result.latest;
-      const releaseDate = result.releaseDate
-        ? new Date(result.releaseDate).toLocaleDateString()
+      // 현재 버전과 최신 버전 비교
+      const currentVersion = result.versionInfo.current;
+      const latestVersion = result.versionInfo.latest;
+
+      // 업데이트 정보 추출
+      const updateInfo = result.updateInfo || {};
+      const releaseDate = updateInfo.releaseDate
+        ? new Date(updateInfo.releaseDate).toLocaleDateString()
         : 'Unknown';
+      const releaseNotes = updateInfo.releaseNotes || '';
 
-      // Use semver comparison result
-      const versionCompare = result.versionCompare;
+      // 업데이트 필요 여부 확인
+      const hasUpdate = result.hasUpdate;
 
-      if (versionCompare > 0) {
-        // Latest version is newer than current version (update available)
+      if (hasUpdate) {
+        // 새 버전이 있는 경우
         updateMessage.innerHTML = `
-          <strong>New version available!</strong><br>
-          Current version: ${currentVersion}<br>
-          Latest version: ${latestVersion} (update needed)<br>
-          Release date: ${releaseDate}<br>
-          ${result.description ? `<small>${result.description}</small>` : ''}
+          <strong>새 버전이 있습니다!</strong><br>
+          현재 버전: ${currentVersion}<br>
+          최신 버전: ${latestVersion} (업데이트 필요)<br>
+          출시일: ${releaseDate}<br>
+          ${releaseNotes ? `<small>${releaseNotes}</small>` : ''}
         `;
         updateActions.classList.remove('hidden');
         downloadUpdateButton.classList.remove('hidden');
         installUpdateButton.classList.add('hidden');
-      } else if (versionCompare === 0) {
-        // Versions are the same (no update needed)
+      } else {
+        // 최신 버전인 경우
         updateMessage.innerHTML = `
-          <strong>You are using the latest version.</strong><br>
-          Current version: ${currentVersion}<br>
-          Latest version: ${latestVersion} (same version)
+          <strong>최신 버전을 사용 중입니다.</strong><br>
+          현재 버전: ${currentVersion}<br>
+          최신 버전: ${latestVersion}
         `;
         updateActions.classList.add('hidden');
 
-        // Hide message after 3 seconds
-        setTimeout(() => {
-          updateStatus.classList.add('hidden');
-        }, 3000);
-      } else if (versionCompare < 0) {
-        // Current version is newer than server's latest version (beta or development version)
-        updateMessage.innerHTML = `
-          <strong>You are using a development/beta version.</strong><br>
-          Current version: ${currentVersion} (higher than server version)<br>
-          Server version: ${latestVersion}<br>
-          Release date: ${releaseDate}
-        `;
-        updateActions.classList.add('hidden');
-
-        // Hide message after 5 seconds
-        setTimeout(() => {
-          updateStatus.classList.add('hidden');
-        }, 5000);
-      } else if (latestVersion === 'unknown') {
-        // Could not get latest version information
-        updateMessage.innerHTML = `
-          <strong>Version information unavailable</strong><br>
-          Current version: ${currentVersion}<br>
-          Could not find valid version information on the server.
-        `;
-        updateActions.classList.add('hidden');
-
-        // Hide message after 3 seconds
+        // 3초 후 메시지 숨김
         setTimeout(() => {
           updateStatus.classList.add('hidden');
         }, 3000);
       }
     } else {
-      throw new Error(result.error || 'Could not retrieve version information');
+      // 업데이트 확인 실패
+      throw new Error(result.error || '버전 정보를 가져올 수 없습니다.');
     }
 
-    // Restore button to original state
+    // 버튼 원래 상태로 복원
     setTimeout(() => {
       checkUpdatesButton.textContent = originalButtonText;
       checkUpdatesButton.disabled = false;
     }, 1000);
   } catch (error) {
-    console.error('Error checking for updates:', error);
+    console.error('업데이트 확인 오류:', error);
 
-    // Display error
-    updateMessage.textContent = `Error checking for updates: ${error.message || 'Unknown error'}`;
+    // 오류 표시
+    updateMessage.textContent = `업데이트 확인 오류: ${error.message || '알 수 없는 오류'}`;
     updateActions.classList.add('hidden');
     setLoading(updateLoading, false);
 
-    // Restore button to original state
+    // 버튼 원래 상태로 복원
     checkUpdatesButton.textContent = 'Check for Updates';
     checkUpdatesButton.disabled = false;
   }
@@ -1755,66 +1736,134 @@ async function handleCheckUpdates() {
  */
 async function handleDownloadUpdate() {
   try {
-    // Disable buttons and show loading
+    // 버튼 비활성화 및 로딩 표시
     downloadUpdateButton.disabled = true;
     installUpdateButton.disabled = true;
     setLoading(updateLoading, true);
 
-    // Save original button text
+    // 원래 버튼 텍스트 저장
     const originalButtonText = downloadUpdateButton.textContent;
-    downloadUpdateButton.textContent = 'Downloading...';
+    downloadUpdateButton.textContent = '다운로드 중...';
 
-    // Download update
-    const result = await window.settings.downloadUpdate();
+    // 먼저 자동 업데이트 시도
+    try {
+      // 자동 업데이트 다운로드 시작
+      const autoUpdateResult = await window.settings.downloadAutoUpdate();
+      console.log('자동 업데이트 다운로드 시작:', autoUpdateResult);
 
-    // Hide loading
-    setLoading(updateLoading, false);
+      // 다운로드 진행 상황은 이벤트로 전달됨
+      updateMessage.textContent = '업데이트를 다운로드하고 있습니다. 잠시만 기다려주세요...';
 
-    if (result && result.success) {
-      // Download success
-      updateMessage.textContent = 'Update has been downloaded. Would you like to install it now?';
-      downloadUpdateButton.classList.add('hidden');
-      installUpdateButton.classList.remove('hidden');
-      installUpdateButton.disabled = false;
-    } else {
-      // Download failed
-      updateMessage.textContent = result.message || 'Failed to download update';
+      // 이벤트 리스너는 이미 preload에서 설정되어 있음
+      // 다운로드 진행 상황 및 완료는 이벤트로 처리
+      return;
 
-      // Restore button to original state
-      downloadUpdateButton.textContent = originalButtonText;
-      downloadUpdateButton.disabled = false;
+    } catch (autoUpdateError) {
+      // 자동 업데이트 실패 시 수동 다운로드로 폴백
+      console.error('자동 업데이트 실패, 수동 다운로드로 전환:', autoUpdateError);
+
+      // 수동 다운로드 시작 (브라우저에서 다운로드 URL 열기)
+      const manualResult = await window.settings.downloadManualUpdate();
+
+      // 로딩 숨기기
+      setLoading(updateLoading, false);
+
+      if (manualResult && manualResult.success) {
+        // 수동 다운로드 성공
+        updateMessage.textContent = '브라우저에서 업데이트 다운로드가 시작되었습니다. 다운로드 후 수동으로 설치해 주세요.';
+        downloadUpdateButton.classList.add('hidden');
+        installUpdateButton.classList.remove('hidden');
+        installUpdateButton.disabled = false;
+      } else {
+        // 수동 다운로드 실패
+        updateMessage.textContent = manualResult.message || '업데이트 다운로드에 실패했습니다.';
+
+        // 버튼 상태 복원
+        downloadUpdateButton.textContent = originalButtonText;
+        downloadUpdateButton.disabled = false;
+      }
     }
   } catch (error) {
-    console.error('Error downloading update:', error);
+    console.error('업데이트 다운로드 오류:', error);
 
-    // Display error
-    updateMessage.textContent = `Error downloading update: ${error.message || 'Unknown error'}`;
+    // 오류 표시
+    updateMessage.textContent = `업데이트 다운로드 오류: ${error.message || '알 수 없는 오류'}`;
     setLoading(updateLoading, false);
 
-    // Restore button to original state
-    downloadUpdateButton.textContent = 'Download';
+    // 버튼 상태 복원
+    downloadUpdateButton.textContent = '다운로드';
     downloadUpdateButton.disabled = false;
   }
 }
+
+// 자동 업데이트 이벤트 처리를 위한 리스너 설정
+window.addEventListener('download-progress', event => {
+  const progress = event.detail.progress;
+  if (progress && progress.percent) {
+    updateMessage.textContent = `다운로드 중: ${Math.round(progress.percent)}%`;
+  }
+});
+
+window.addEventListener('update-downloaded', event => {
+  // 다운로드 완료됨 - UI 업데이트
+  setLoading(updateLoading, false);
+  updateMessage.textContent = '업데이트가 다운로드되었습니다. 지금 설치하시겠습니까?';
+  downloadUpdateButton.classList.add('hidden');
+  installUpdateButton.classList.remove('hidden');
+  installUpdateButton.disabled = false;
+});
+
+window.addEventListener('update-error', event => {
+  // 오류 발생
+  setLoading(updateLoading, false);
+  updateMessage.textContent = `업데이트 오류: ${event.detail.error || '알 수 없는 오류'}`;
+  downloadUpdateButton.textContent = '다운로드';
+  downloadUpdateButton.disabled = false;
+});
 
 /**
  * Handle install update
  */
 async function handleInstallUpdate() {
   try {
-    // Confirm update installation
-    if (confirm('The app will close and the update will be installed. Continue?')) {
-      // Install update
-      await window.settings.installUpdate();
+    // 설치 확인
+    if (confirm('앱이 종료되고 업데이트가 설치됩니다. 계속하시겠습니까?')) {
+      // 자동 업데이트 설치 (자동 업데이트 시스템 사용)
+      try {
+        // 버튼 비활성화 및 로딩 표시
+        installUpdateButton.disabled = true;
+        setLoading(updateLoading, true);
+
+        // 다운로드된 업데이트 설치
+        await window.settings.installAutoUpdate();
+
+        // 여기까지 도달하면 설치가 실패한 것 (정상 설치 시 앱이 종료됨)
+        setLoading(updateLoading, false);
+        updateMessage.textContent = '업데이트 설치를 시작할 수 없습니다. 앱을 수동으로 재시작해 보세요.';
+        installUpdateButton.disabled = false;
+      } catch (autoInstallError) {
+        // 자동 업데이트 설치 실패 시 수동 설치로 폴백
+        console.error('자동 업데이트 설치 실패:', autoInstallError);
+
+        // 수동 설치 (앱 종료)
+        await window.settings.installUpdate();
+      }
     }
   } catch (error) {
-    console.error('Error installing update:', error);
+    console.error('업데이트 설치 오류:', error);
 
-    // Display error
-    updateMessage.textContent = `Error installing update: ${error.message || 'Unknown error'}`;
+    // 오류 표시
+    setLoading(updateLoading, false);
+    updateMessage.textContent = `업데이트 설치 오류: ${error.message || '알 수 없는 오류'}`;
     installUpdateButton.disabled = false;
   }
 }
+
+// 설치 시작 이벤트 리스너
+window.addEventListener('install-started', event => {
+  updateMessage.textContent = '업데이트를 설치하는 중입니다. 앱이 곧 종료됩니다...';
+  installUpdateButton.disabled = true;
+});
 
 /**
  * Handle manual sync resolve

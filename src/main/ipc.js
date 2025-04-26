@@ -14,6 +14,7 @@ const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('./shortc
 const auth = require('./auth');
 const authManager = require('./auth-manager');
 const userDataManager = require('./user-data-manager');
+const updater = require('./updater');
 
 // Track button edit modal state
 let isModalOpen = false;
@@ -47,6 +48,9 @@ function setupIpcHandlers(windows) {
 
   // Initialize user data manager (pass window references)
   userDataManager.initialize(windows);
+
+  // Initialize auto updater (pass window references)
+  updater.initAutoUpdater(windows);
 
   // Register URL protocol handler (OAuth redirection handling)
   auth.registerProtocolHandler();
@@ -801,6 +805,115 @@ function setupIpcHandlers(windows) {
       };
     } catch (error) {
       console.error('Error checking latest version:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
+    }
+  });
+
+  // Download application update
+  ipcMain.handle('download-update', async () => {
+    try {
+      const https = require('https');
+      const fs = require('fs');
+      const path = require('path');
+      const { app } = require('electron');
+      const { shell } = require('electron');
+
+      // URL for checking version information
+      const versionsJsonUrl = 'https://opspresso.github.io/toast-dist/versions.json';
+
+      // Function to get data from URL
+      const fetchJson = (url) => {
+        return new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+            res.on('end', () => {
+              try {
+                const jsonData = JSON.parse(data);
+                resolve(jsonData);
+              } catch (e) {
+                reject(new Error(`Failed to parse JSON: ${e.message}`));
+              }
+            });
+          }).on('error', (e) => {
+            reject(new Error(`Request failed: ${e.message}`));
+          });
+        });
+      };
+
+      // Fetch version data to get download URL
+      const versionData = await fetchJson(versionsJsonUrl);
+
+      if (!versionData.toast?.downloadUrl) {
+        return {
+          success: false,
+          message: 'Download URL not found in version data'
+        };
+      }
+
+      // Get the download URL for the user's platform
+      let downloadUrl;
+
+      // Determine platform-specific download URL
+      switch (process.platform) {
+        case 'darwin': // macOS
+          downloadUrl = versionData.toast.downloadUrl.mac;
+          break;
+        case 'win32': // Windows
+          downloadUrl = versionData.toast.downloadUrl.win;
+          break;
+        case 'linux': // Linux
+          downloadUrl = versionData.toast.downloadUrl.linux;
+          break;
+        default:
+          return {
+            success: false,
+            message: `Unsupported platform: ${process.platform}`
+          };
+      }
+
+      if (!downloadUrl) {
+        return {
+          success: false,
+          message: `Download not available for platform: ${process.platform}`
+        };
+      }
+
+      // Open download URL in browser (most appropriate for end users)
+      await shell.openExternal(downloadUrl);
+
+      return {
+        success: true,
+        message: 'Download started in your browser'
+      };
+    } catch (error) {
+      console.error('Error downloading update:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
+    }
+  });
+
+  // Install application update
+  ipcMain.handle('install-update', async () => {
+    try {
+      const { app } = require('electron');
+
+      // For now, we simply quit the app and let the user manually install the update
+      // In a future version, we could implement auto-update with electron-updater
+      app.quit();
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Error installing update:', error);
       return {
         success: false,
         error: error.message || 'Unknown error'
