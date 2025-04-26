@@ -117,7 +117,7 @@ function initialize() {
   // Initialize authentication manager and cloud sync
   authManager.initialize(windows);
 
-  // 클라우드 싱크 초기화 및 인증 관리자와 연결
+  // Initialize cloud sync and connect with auth manager
   const syncManager = cloudSync.initCloudSync(authManager, userDataManager);
   authManager.setSyncManager(syncManager);
   console.log('Cloud sync module initialized and connected to auth manager');
