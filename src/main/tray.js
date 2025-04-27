@@ -63,9 +63,6 @@ function updateTrayMenu(tray, windows) {
   const config = createConfigStore();
   const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // 기본값 사용
 
-  // Global Hotkey 값 로그에 출력
-  console.log('현재 설정된 Global Hotkey:', configuredHotkey);
-
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Toast',
