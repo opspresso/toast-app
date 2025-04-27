@@ -1192,6 +1192,15 @@ async function loadUserDataAndUpdateUI() {
 function startRecordingHotkey() {
   window.settings.log.info('단축키 녹화 시작');
 
+  // 녹화 시작 전에 전역 단축키를 일시적으로 비활성화
+  window.settings.temporarilyDisableShortcuts()
+    .then(success => {
+      window.settings.log.info('전역 단축키 일시 비활성화:', success ? '성공' : '실패');
+    })
+    .catch(error => {
+      window.settings.log.error('전역 단축키 비활성화 중 오류:', error);
+    });
+
   isRecordingHotkey = true;
   if (globalHotkeyInput) {
     globalHotkeyInput.value = '단축키 입력 대기 중...';
@@ -1211,6 +1220,15 @@ function startRecordingHotkey() {
  */
 function clearHotkey() {
   window.settings.log.info('단축키 초기화');
+
+  // 녹화 취소 시 전역 단축키 복원
+  window.settings.restoreShortcuts()
+    .then(success => {
+      window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
+    })
+    .catch(error => {
+      window.settings.log.error('전역 단축키 복원 중 오류:', error);
+    });
 
   if (globalHotkeyInput) {
     globalHotkeyInput.value = '';
@@ -1249,7 +1267,17 @@ function handleHotkeyRecording(event) {
 
   // 일반 키 처리
   let key = event.key;
-  if (key.length === 1) {
+
+  // 모디파이어 키만 누른 경우 무시 - Alt, Shift, Control, Meta키 단독으로는 유효하지 않음
+  if (key === 'Alt' || key === 'Shift' || key === 'Control' || key === 'Meta') {
+    // 모디파이어 키만 누르면 녹화 상태 유지하고 리턴
+    return;
+  }
+
+  // 특수 키 처리
+  if (key === ' ') {
+    key = 'Space'; // 스페이스 키는 특별히 처리
+  } else if (key.length === 1) {
     key = key.toUpperCase();
   }
 
@@ -1258,9 +1286,31 @@ function handleHotkeyRecording(event) {
   if (key === 'ArrowDown') key = 'Down';
   if (key === 'ArrowLeft') key = 'Left';
   if (key === 'ArrowRight') key = 'Right';
+  if (key === 'Enter') key = 'Return';
+  if (key === 'Tab') key = 'Tab';
+  if (key === 'Backspace') key = 'Backspace';
+  if (key === 'Delete') key = 'Delete';
+  if (key === 'Home') key = 'Home';
+  if (key === 'End') key = 'End';
+  if (key === 'PageUp') key = 'PageUp';
+  if (key === 'PageDown') key = 'PageDown';
+  if (key === 'Escape') key = 'Escape';
+
+  // 적어도 하나의 모디파이어와 하나의 일반 키가 필요함
+  if (modifiers.length === 0) {
+    window.settings.log.warn('유효하지 않은 핫키: 모디파이어 키가 필요합니다.');
+    return;
+  }
 
   // 단축키 텍스트 생성
   const hotkey = [...modifiers, key].join('+');
+
+  // 유효한 핫키인지 검증
+  if (hotkey.includes('Alt+Alt') || hotkey.includes('Shift+Shift') ||
+      hotkey.includes('Ctrl+Ctrl') || hotkey.includes('Meta+Meta')) {
+    window.settings.log.warn('유효하지 않은 핫키 조합 감지:', hotkey);
+    return;
+  }
 
   // 입력 필드 업데이트
   if (globalHotkeyInput) {
@@ -1275,6 +1325,15 @@ function handleHotkeyRecording(event) {
 
   // 이벤트 기본 동작 방지
   event.preventDefault();
+
+  // 녹화 완료 시 전역 단축키 복원
+  window.settings.restoreShortcuts()
+    .then(success => {
+      window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
+    })
+    .catch(error => {
+      window.settings.log.error('전역 단축키 복원 중 오류:', error);
+    });
 
   // 설정 즉시 저장
   window.settings.setConfig('globalHotkey', hotkey);
