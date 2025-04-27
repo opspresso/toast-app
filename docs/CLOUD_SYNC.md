@@ -10,6 +10,7 @@
 - [동기화 이벤트](#동기화-이벤트)
 - [API 엔드포인트](#API-엔드포인트)
 - [동기화 구현](#동기화-구현)
+- [사용자 인터페이스](#사용자-인터페이스)
 - [로컬 데이터 관리](#로컬-데이터-관리)
 - [오류 처리 전략](#오류-처리-전략)
 - [충돌 해결 전략](#충돌-해결-전략)
@@ -422,385 +423,333 @@ function updateSyncMetadata(metadata) {
 }
 ```
 
-## 로컬 데이터 관리
+## 사용자 인터페이스
 
-Toast 앱은 사용자 프로필, 구독 정보, 설정 등을 로컬 파일로 저장하고 관리합니다. 이를 통해 오프라인 상태에서도 앱이 정상적으로 작동할 수 있습니다.
+클라우드 동기화는 설정 창의 "Cloud Sync" 탭을 통해 사용자에게 제공됩니다. 이 탭은 동기화 상태 확인 및 수동 동기화 작업을 위한 인터페이스를 제공합니다.
 
-### 로컬 파일 저장 위치
+### 클라우드 동기화 UI 구성
 
-사용자 데이터는 각 운영 체제의 표준 위치에 저장됩니다:
+설정 창의 Cloud Sync 탭은 다음과 같은 요소로 구성됩니다:
 
-- **Windows**: `C:\Users\{Username}\AppData\Roaming\toast-app\`
-- **macOS**: `/Users/{Username}/Library/Application Support/toast-app/`
-- **Linux**: `/home/{username}/.config/toast-app/`
+1. **동기화 상태 표시 영역**:
+   - 동기화 상태 배지(활성화/비활성화)
+   - 동기화 상태 텍스트
+   - 마지막 동기화 시간
+   - 현재 장치 정보
 
-### 저장되는 파일 종류
+2. **동기화 제어 영역**:
+   - 클라우드 동기화 활성화/비활성화 체크박스
+   - 수동 동기화 버튼들(업로드, 다운로드, 충돌 해결)
+   - 동기화 중 로딩 표시기
 
-| 파일명 | 설명 | 내용 |
-|--------|------|------|
-| `auth-tokens.json` | 인증 토큰 정보 | 액세스 토큰, 리프레시 토큰, 만료 시간 |
-| `user-profile.json` | 사용자 프로필 정보 | 이름, 이메일, 아바타, 구독 정보 등 |
-| `user-settings.json` | 동기화 메타데이터 | 타임스탬프, 장치 식별자 정보 |
-| `config.json` | 앱 전체 설정 정보 | 페이지, 외관, 고급 설정, 창 크기, 위치 등 |
+```html
+<!-- HTML 구조 예시 -->
+<div id="cloud-sync" class="settings-tab">
+  <h2>Cloud Sync</h2>
 
-### 타임스탬프 및 장치 식별자
+  <!-- 동기화 상태 섹션 -->
+  <div id="sync-status-section" class="settings-group">
+    <div class="subscription-container">
+      <div class="subscription-details">
+        <div class="subscription-status">
+          <span id="sync-status-badge" class="badge">Disabled</span>
+          <span id="sync-status-text">Cloud Sync Status</span>
+        </div>
+        <p id="last-synced-time">Last Synced: -</p>
+        <p id="sync-device-info">Current Device: -</p>
+      </div>
+    </div>
+  </div>
 
-동기화와 충돌 해결을 위해 다음 메타데이터를 관리합니다:
+  <!-- 동기화 제어 섹션 -->
+  <div class="settings-group">
+    <h3>Sync Settings</h3>
+    <div class="settings-group">
+      <label>
+        <input type="checkbox" id="enable-cloud-sync" />
+        Enable Cloud Sync
+      </label>
+      <p class="help-text">
+        Synchronize settings and pages across multiple devices.
+        Premium subscription required.
+      </p>
+    </div>
 
-1. **lastSyncedAt**: 마지막으로 서버와 동기화된 시간 (밀리초 타임스탬프)
-2. **lastSyncedDevice**: 마지막으로 동기화를 수행한 장치 식별자
-3. **lastModifiedAt**: 마지막으로 설정이 수정된 시간 (밀리초 타임스탬프)
-4. **lastModifiedDevice**: 마지막으로 설정을 수정한 장치 식별자
+    <div class="settings-group">
+      <div class="subscription-actions">
+        <button id="manual-sync-upload" class="primary-button">
+          Upload to Server
+        </button>
+        <button id="manual-sync-download" class="primary-button">
+          Download from Server
+        </button>
+        <button id="manual-sync-resolve" class="secondary-button">
+          Resolve Conflicts
+        </button>
+      </div>
+      <div id="sync-loading" class="loading-indicator hidden">
+        <div class="spinner"></div>
+        <p>Syncing...</p>
+      </div>
+    </div>
+  </div>
+</div>
+```
 
-장치 식별자는 다음과 같이 생성됩니다:
+### 클라우드 동기화 UI 초기화
+
+Cloud Sync 탭이 렌더링될 때 동기화 상태를 업데이트하고 권한에 따라 UI 요소를 활성화/비활성화합니다:
 
 ```javascript
-function getDeviceIdentifier() {
-  const platform = process.platform;
-  const hostname = os.hostname();
-  const username = os.userInfo().username;
-  return `${platform}-${hostname}-${username}`;
+function initializeCloudSyncUI() {
+  try {
+    // Premium 구독 사용자는 항상 Cloud Sync 기능 활성화
+    if (authState.subscription?.plan) {
+      const plan = authState.subscription.plan.toLowerCase();
+      if (plan.includes('premium') || plan.includes('pro')) {
+        enableCloudSyncCheckbox.disabled = false;
+
+        // 구독 정보에 cloud_sync 기능 활성화 설정
+        if (!authState.subscription.features) {
+          authState.subscription.features = {};
+        }
+        authState.subscription.features.cloud_sync = true;
+      }
+    }
+
+    // VIP 사용자 확인
+    if (authState.subscription?.isVip || authState.subscription?.vip) {
+      enableCloudSyncCheckbox.disabled = false;
+    }
+
+    // 클라우드 동기화 활성화/비활성화 상태 설정
+    const cloudSyncEnabled = config.cloudSync?.enabled !== false;
+    enableCloudSyncCheckbox.checked = cloudSyncEnabled;
+
+    // 현재 동기화 상태 가져오기
+    window.settings.getSyncStatus()
+      .then(status => {
+        updateSyncStatusUI(status);
+      })
+      .catch(error => {
+        console.error('동기화 상태 가져오기 오류:', error);
+      });
+  } catch (error) {
+    console.error('클라우드 동기화 UI 초기화 오류:', error);
+  }
 }
 ```
 
-메타데이터는 다음과 같이 사용됩니다:
+### 동기화 상태 UI 업데이트
 
-1. **변경 감지**: 로컬 설정과 서버 설정의 변경 시간을 비교하여 최신 버전 식별
-2. **충돌 해결**: 여러 장치에서 동시에 변경이 발생한 경우 타임스탬프를 기준으로 병합 또는 우선순위 지정
-3. **동기화 최적화**: 마지막 동기화 이후 변경이 없으면 불필요한 네트워크 요청 방지
-
-## 오류 처리 전략
-
-Toast 앱은 다양한 네트워크 오류와 API 응답 오류를 적절하게 처리하여 사용자 경험을 유지합니다.
-
-### 재시도 로직
-
-네트워크 오류나 일시적인 서버 오류가 발생할 경우 자동 재시도를 수행합니다:
+동기화 상태에 따라 UI 요소를 업데이트합니다:
 
 ```javascript
-// 재시도 상수
-const MAX_RETRY_COUNT = 3;
-const RETRY_DELAY_MS = 5000; // 5초 간격
+function updateSyncStatusUI(status) {
+  // 구독/VIP 여부 확인
+  let hasCloudSyncPermission = checkCloudSyncPermission();
+  const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
 
-// 재시도 로직을 포함한 업로드 함수
-async function uploadSettingsWithRetry() {
-  if (state.isSyncing) {
+  // 권한이 없으면 UI 비활성화
+  if (!canUseCloudSync) {
+    disableCloudSyncUI();
     return;
   }
 
-  try {
-    state.isSyncing = true;
-    const result = await uploadSettings();
+  // 동기화 상태 배지 업데이트
+  if (status.enabled) {
+    // 활성화 상태 - 애니메이션 스피너 표시
+    syncStatusBadge.textContent = '';
+    syncStatusBadge.className = 'badge premium badge-with-spinner';
 
-    if (result.success) {
-      state.retryCount = 0;
-      state.pendingSync = false;
-    } else {
-      state.retryCount++;
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-inline';
+    syncStatusBadge.appendChild(spinner);
+  } else {
+    // 비활성화 상태 - 정지 아이콘 표시
+    syncStatusBadge.textContent = '⏹️';
+    syncStatusBadge.className = 'badge secondary';
+  }
 
-      if (state.retryCount <= MAX_RETRY_COUNT) {
-        // 재시도 예약
-        setTimeout(() => {
-          uploadSettingsWithRetry();
-        }, RETRY_DELAY_MS);
+  // 상태 텍스트 업데이트
+  syncStatusText.textContent = status.enabled ?
+    'Cloud Sync Enabled' : 'Cloud Sync Disabled';
+
+  // 마지막 동기화 시간 업데이트
+  const lastSyncTime = status.lastSyncTime ?
+    new Date(status.lastSyncTime) : new Date();
+  const formattedDate = formatDate(lastSyncTime);
+
+  lastSyncedTime.textContent = status.lastSyncTime ?
+    `Last Synced: ${formattedDate}` :
+    `Sync Status: Ready to sync (${formattedDate})`;
+
+  // 장치 정보 업데이트
+  syncDeviceInfo.textContent = status.deviceId ?
+    `Current Device: ${status.deviceId}` :
+    'Current Device: Unknown';
+
+  // 컨트롤 활성화/비활성화
+  enableCloudSyncCheckbox.disabled = !canUseCloudSync;
+  enableCloudSyncCheckbox.checked = status.enabled;
+
+  // 동기화 버튼 활성화/비활성화
+  manualSyncUploadButton.disabled = !canUseCloudSync || !status.enabled;
+  manualSyncDownloadButton.disabled = !canUseCloudSync || !status.enabled;
+  manualSyncResolveButton.disabled = !canUseCloudSync || !status.enabled;
+}
+```
+
+### 수동 동기화 작업
+
+사용자가 수동으로 동기화를 수행할 수 있는 기능을 제공합니다:
+
+1. **서버에 업로드**: 로컬 설정을 서버로 업로드
+2. **서버에서 다운로드**: 서버 설정을 로컬로 다운로드 (기존 설정 덮어쓰기)
+3. **충돌 해결**: 로컬 설정과 서버 설정 간 충돌 자동 해결
+
+```javascript
+// 서버에 업로드 처리
+function handleManualSyncUpload() {
+  // 로딩 표시 및 버튼 비활성화
+  setLoading(syncLoading, true);
+  disableSyncButtons();
+
+  // 업로드 실행
+  window.settings.manualSync('upload')
+    .then(result => {
+      if (result.success) {
+        manualSyncUploadButton.textContent = '업로드 완료!';
       } else {
-        state.retryCount = 0;
+        throw new Error(result.error || '알 수 없는 오류');
       }
-    }
-  } catch (error) {
-    state.retryCount++;
+    })
+    .catch(error => {
+      manualSyncUploadButton.textContent = '업로드 실패';
+    })
+    .finally(() => {
+      // 상태 복원
+      setLoading(syncLoading, false);
 
-    if (state.retryCount <= MAX_RETRY_COUNT) {
-      // 재시도 예약
       setTimeout(() => {
-        uploadSettingsWithRetry();
-      }, RETRY_DELAY_MS);
-    } else {
-      state.retryCount = 0;
-    }
-  } finally {
-    state.isSyncing = false;
-  }
+        resetSyncButtons();
+      }, 1500);
+    });
 }
-```
 
-### 오류 유형 및 처리 방법
+// 서버에서 다운로드 처리
+function handleManualSyncDownload() {
+  // 확인 대화상자
+  if (!confirm('서버에서 설정을 다운로드하면 로컬 설정을 덮어씁니다. 계속하시겠습니까?')) {
+    return;
+  }
 
-| 오류 유형 | 설명 | 처리 방법 |
-|-----------|------|-----------|
-| **네트워크 연결 오류** | 인터넷 연결 문제 | 자동 재시도, 로컬 데이터 사용 |
-| **인증 오류 (401)** | 토큰 만료 또는 유효하지 않음 | 토큰 갱신 시도, 실패 시 재로그인 요청 |
-| **서버 오류 (5xx)** | API 서버 내부 오류 | 지수 백오프로 재시도 |
-| **충돌 오류** | 동시 수정으로 인한 충돌 | 타임스탬프 기반 해결 전략 적용 |
-| **파일 읽기/쓰기 오류** | 로컬 파일 접근 오류 | 임시 파일을 사용한 안전한 쓰기, 복구 로직 |
+  // 로딩 표시 및 버튼 비활성화
+  setLoading(syncLoading, true);
+  disableSyncButtons();
 
-### 인증 토큰 갱신
-
-인증 오류(401) 발생 시 토큰 갱신 로직을 적용합니다:
-
-```javascript
-async function authenticatedRequest(apiCall, options = {}) {
-  const { onUnauthorized = null } = options;
-
-  try {
-    return await apiCall();
-  } catch (error) {
-    // 401 오류 처리
-    if (error.response && error.response.status === 401) {
-      // 토큰 갱신 콜백 실행
-      if (onUnauthorized && typeof onUnauthorized === 'function') {
-        const refreshResult = await onUnauthorized();
-
-        if (refreshResult && refreshResult.success) {
-          // 토큰 갱신 성공 시 원래 API 호출 재시도
-          return await apiCall();
-        } else {
-          // 토큰 갱신 실패 시 에러 반환
-          return {
-            error: {
-              code: 'AUTH_REFRESH_FAILED',
-              message: '인증 갱신에 실패했습니다. 다시 로그인해주세요.',
-              requireRelogin: true,
-            },
-          };
-        }
+  // 다운로드 실행
+  window.settings.manualSync('download')
+    .then(result => {
+      if (result.success) {
+        manualSyncDownloadButton.textContent = '다운로드 완료!';
+        return window.settings.getConfig();
+      } else {
+        throw new Error(result.error || '알 수 없는 오류');
       }
+    })
+    .then(loadedConfig => {
+      // 설정 UI 업데이트
+      config = loadedConfig;
+      initializeUI();
+    })
+    .catch(error => {
+      manualSyncDownloadButton.textContent = '다운로드 실패';
+    })
+    .finally(() => {
+      // 상태 복원
+      setLoading(syncLoading, false);
+
+      setTimeout(() => {
+        resetSyncButtons();
+      }, 1500);
+    });
+}
+```
+
+### 구독 기반 동기화 권한 제어
+
+클라우드 동기화 기능은 프리미엄 구독 사용자에게만 제공됩니다:
+
+```javascript
+function checkCloudSyncPermission() {
+  let hasPermission = false;
+
+  // 1. 직접적인 구독 상태 확인
+  if (
+    authState.subscription?.isSubscribed === true ||
+    authState.subscription?.active === true ||
+    authState.subscription?.is_subscribed === true
+  ) {
+    hasPermission = true;
+  }
+
+  // 2. VIP 사용자 확인
+  if (authState.subscription?.isVip || authState.subscription?.vip) {
+    hasPermission = true;
+  }
+
+  // 3. Premium/Pro 플랜 확인
+  if (authState.subscription?.plan) {
+    const plan = authState.subscription.plan.toLowerCase();
+    if (plan.includes('premium') || plan.includes('pro')) {
+      hasPermission = true;
     }
-
-    // 기타 오류 처리
-    return { error: { code: 'API_ERROR', message: error.message } };
   }
+
+  // 4. 특정 기능 확인
+  if (authState.subscription?.features?.cloud_sync === true) {
+    hasPermission = true;
+  }
+
+  return hasPermission;
 }
 ```
 
-### 안전한 파일 작업
+### UI 및 서버 상태 동기화
 
-파일 쓰기 오류를 방지하기 위해 임시 파일과 원자적 이름 변경 작업을 사용합니다:
+UI 액션이 서버 상태와 일치하도록 동기화합니다:
 
 ```javascript
-function updateSettings(settings) {
-  if (!settings) {
-    return false;
-  }
+// 클라우드 동기화 활성화/비활성화 처리
+function handleCloudSyncToggle() {
+  const enabled = enableCloudSyncCheckbox.checked;
 
-  // 임시 파일 경로
-  const tempFilePath = `${SETTINGS_FILE_PATH}.temp`;
+  // 로딩 표시 및 체크박스 비활성화
+  setLoading(syncLoading, true);
+  enableCloudSyncCheckbox.disabled = true;
 
-  try {
-    // 먼저 임시 파일에 쓰기
-    fs.writeFileSync(tempFilePath, JSON.stringify(settings, null, 2), 'utf8');
-
-    // 작성된 데이터가 유효한지 확인
-    const verifyData = fs.readFileSync(tempFilePath, 'utf8');
-    JSON.parse(verifyData); // 유효한 JSON인지 확인
-
-    // 원자적 이름 변경 작업 (Windows에서는 기존 파일 먼저 삭제)
-    if (process.platform === 'win32' && fs.existsSync(SETTINGS_FILE_PATH)) {
-      fs.unlinkSync(SETTINGS_FILE_PATH);
-    }
-
-    fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
-    return true;
-  } catch (error) {
-    // 오류 발생 시 임시 파일 정리
-    try {
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
-      }
-    } catch (cleanupError) {
-      // 정리 오류 무시
-    }
-    return false;
-  }
+  // 서버에 상태 동기화
+  window.settings.setCloudSyncEnabled(enabled)
+    .then(() => {
+      // 상태 업데이트 후 UI 갱신
+      return window.settings.getSyncStatus();
+    })
+    .then(status => {
+      // UI 업데이트
+      updateSyncStatusUI(status);
+    })
+    .catch(error => {
+      console.error('동기화 상태 변경 오류:', error);
+      // 오류 시 상태 복원
+      enableCloudSyncCheckbox.checked = !enabled;
+    })
+    .finally(() => {
+      // 로딩 숨김 및 컨트롤 활성화
+      setLoading(syncLoading, false);
+      enableCloudSyncCheckbox.disabled = false;
+    });
 }
 ```
 
-## 충돌 해결 전략
-
-여러 장치에서 동시에 설정이 변경될 경우 발생하는 충돌을 해결하기 위한 전략입니다.
-
-### 타임스탬프 기반 해결
-
-기본적으로 가장 최근에 수정된 설정을 우선시합니다:
-
-```javascript
-function mergeSettings(localSettings, serverSettings) {
-  if (!localSettings) return serverSettings;
-  if (!serverSettings) return localSettings;
-
-  // 타임스탬프 기반 충돌 해결
-  const localTime = localSettings.lastModifiedAt || 0;
-  const serverTime = serverSettings.lastModifiedAt || 0;
-
-  // 서버 설정이 더 최신인 경우
-  if (serverTime > localTime) {
-    return {
-      ...localSettings,
-      ...serverSettings,
-      lastSyncedAt: getCurrentTimestamp(),
-    };
-  }
-
-  // 로컬 설정이 더 최신인 경우
-  return {
-    ...serverSettings,
-    ...localSettings,
-    lastSyncedAt: getCurrentTimestamp(),
-  };
-}
-```
-
-### 수동 충돌 해결
-
-더 복잡한 충돌이 발생할 경우 사용자가 직접 해결 방법을 선택할 수 있도록 지원합니다:
-
-```javascript
-// 수동 동기화 처리 함수
-async function syncSettings(action = 'resolve') {
-  logger.info(`Manual synchronization request: ${action}`);
-
-  try {
-    if (action === 'upload') {
-      // 로컬 설정을 서버로 업로드
-      return await uploadSettings();
-    } else if (action === 'download') {
-      // 서버 설정을 로컬로 다운로드
-      return await downloadSettings();
-    } else {
-      // 충돌 해결 (resolve)
-
-      // 1. 현재 로컬 설정 가져오기
-      const localSettings = await userDataManager.getUserSettings();
-
-      // 2. 서버 설정 다운로드
-      const serverResult = await apiSync.downloadSettings({
-        hasValidToken: authManager.hasValidToken,
-        onUnauthorized: authManager.refreshAccessToken,
-        configStore,
-        directData: {},
-      });
-
-      if (!serverResult.success) {
-        return serverResult;
-      }
-
-      // 3. 설정 병합
-      const serverSettings = serverResult.data;
-      const mergedSettings = mergeSettings(localSettings, serverSettings);
-
-      // 4. 병합된 설정 저장
-      userDataManager.updateSettings(mergedSettings);
-
-      // 5. 필요한 경우 병합된 설정 업로드
-      if (localSettings && localSettings.lastModifiedAt > (serverSettings?.lastModifiedAt || 0)) {
-        await uploadSettings();
-      }
-
-      return { success: true, message: '설정 동기화가 완료되었습니다' };
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message || '알 수 없는 오류',
-    };
-  }
-}
-```
-
-### 설정 데이터 중복 최소화
-
-불필요한 데이터 중복을 피하고 동기화 효율성을 높이기 위한 전략:
-
-1. **차등 업로드**: 변경된 필드만 업로드하는 기능 (미구현, 향후 확장 가능)
-2. **중복 동기화 방지**: 메타데이터 비교를 통해 변경되지 않은 데이터는 동기화 건너뛰기
-3. **효율적인 상태 관리**: ConfigStore 변경 감지를 활용한 필요한 경우에만 동기화 트리거
-
-## 보안 고려사항
-
-클라우드 동기화 관련 데이터 보안을 유지하기 위한 조치:
-
-### 데이터 전송 보안
-
-1. **HTTPS 사용**: 모든 API 통신은 HTTPS를 통해 암호화
-2. **토큰 기반 인증**: OAuth 2.0 기반의 액세스 토큰 및 리프레시 토큰 사용
-3. **제한된 토큰 수명**: 액세스 토큰의 짧은 유효 기간 설정 (일반적으로 1시간)
-
-```javascript
-// 모든 API 요청에 인증 헤더 추가
-function getAuthHeaders() {
-  if (!currentToken) {
-    throw new Error('No authentication token available');
-  }
-
-  return {
-    Authorization: `Bearer ${currentToken}`,
-    'Content-Type': 'application/json',
-  };
-}
-```
-
-### 로컬 데이터 보안
-
-1. **OS 보안 활용**: 각 운영체제에서 제공하는 사용자 디렉토리 권한을 통한 파일 보호
-2. **임시 파일 활용**: 파일 손상 방지를 위한 안전한 파일 쓰기 전략
-3. **데이터 검증**: 파일 입출력 시 데이터 유효성 검사
-
-```javascript
-// 안전한 파일 쓰기 예시
-function writeToFile(filePath, data) {
-  try {
-    const tempFilePath = `${filePath}.temp`;
-
-    // 1. 임시 파일에 쓰기
-    fs.writeFileSync(tempFilePath, JSON.stringify(data, null, 2), 'utf8');
-
-    // 2. 데이터 유효성 검사
-    const verifyData = fs.readFileSync(tempFilePath, 'utf8');
-    JSON.parse(verifyData);
-
-    // 3. 원자적 파일 교체
-    fs.renameSync(tempFilePath, filePath);
-
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-```
-
-### 구독 기반 접근 제어
-
-1. **구독 검증**: 클라우드 동기화는 프리미엄 구독자에게만 제공
-2. **권한 검사**: 모든 동기화 작업 전에 구독 상태 확인
-
-```javascript
-// 동기화 권한 확인
-async function isCloudSyncEnabled({ hasValidToken, configStore }) {
-  // 인증 상태 확인
-  const isAuthenticated = await hasValidToken();
-  if (!isAuthenticated) {
-    return false;
-  }
-
-  // 구독 정보 확인
-  const subscription = configStore.get('subscription') || {};
-  let hasSyncFeature = false;
-
-  // Premium/Pro 플랜 확인
-  if (subscription.plan &&
-      (subscription.plan.toLowerCase().includes('premium') ||
-       subscription.plan.toLowerCase().includes('pro'))) {
-    hasSyncFeature = true;
-  }
-
-  return hasSyncFeature;
-}
-```
-
-### 민감한 정보 보호
-
-1. **데이터 최소화**: 필수 데이터만 동기화하여 민감한 정보 노출 최소화
-2. **비밀번호 제외**: 인증 정보는 절대 클라우드에 동기화하지 않음
-3. **세션 정보 격리**: 장치별 세션 정보 분리 관리
-
-이러한 보안 조치를 통해 여러 장치 간의 안전한 설정 동기화를 보장하며, 사용자의 개인 정보와 구성을 보호합니다.
+## 로컬 데이터 관리
