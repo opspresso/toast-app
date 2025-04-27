@@ -104,18 +104,16 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      # - name: Checkout code 🛎️
-      #   uses: actions/checkout@v4
-
-      - name: Listup sources 🔍
-        run: |
-          echo "📂 Directory contents:"
-          ls -la
-
       - name: Download all artifacts 🚚
         uses: actions/download-artifact@v4
         with:
           path: artifacts # Download all artifacts to artifacts directory
+
+      - name: Listup contents 🔍
+        run: |
+          echo "📂 Directory contents:"
+          ls -la
+          ls -la artifacts
 
       - name: Get Tag Message 📝
         id: tag_message

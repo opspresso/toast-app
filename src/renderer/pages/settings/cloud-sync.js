@@ -53,7 +53,7 @@ function initElements() {
  */
 function initializeCloudSyncUI(config, authState, logger) {
   try {
-    logger.info('클라우드 동기화 UI 초기화 시작');
+    logger.info('Starting cloud sync UI initialization');
     initElements();
 
     // Premium/Pro 구독 사용자는 항상 Cloud Sync 기능 활성화
@@ -65,25 +65,25 @@ function initializeCloudSyncUI(config, authState, logger) {
         // 구독 정보에 cloud_sync 기능 활성화 설정
         ensureCloudSyncFeature(authState.subscription);
 
-        logger.info('프리미엄 구독 사용자 확인 - 클라우드 동기화 활성화');
+        logger.info('Premium subscription user verified - cloud sync enabled');
       }
     }
 
     // VIP 사용자 확인
     if (authState.subscription?.isVip || authState.subscription?.vip) {
       DOM.enableCloudSyncCheckbox.disabled = false;
-      logger.info('VIP 사용자 확인 - 클라우드 동기화 활성화');
+      logger.info('VIP user verified - cloud sync enabled');
     }
 
     // 클라우드 동기화 활성화/비활성화 상태 설정
     const cloudSyncEnabled = config.cloudSync?.enabled !== false;
     DOM.enableCloudSyncCheckbox.checked = cloudSyncEnabled;
-    logger.info(`클라우드 동기화 초기 상태: ${cloudSyncEnabled ? '활성화' : '비활성화'}`);
+    logger.info(`Cloud sync initial state: ${cloudSyncEnabled ? 'enabled' : 'disabled'}`);
 
     // 현재 동기화 상태 가져오기
     window.settings.getSyncStatus()
       .then(status => {
-        logger.info('동기화 상태 조회 결과:', status);
+        logger.info('Sync status query result:', status);
         updateSyncStatusUI(status, authState, logger);
       })
       .catch(error => {
@@ -93,9 +93,9 @@ function initializeCloudSyncUI(config, authState, logger) {
     // 이벤트 리스너 설정
     setupEventListeners(authState, logger);
 
-    logger.info('클라우드 동기화 UI 초기화 완료');
+    logger.info('Cloud sync UI initialization completed');
   } catch (error) {
-    logger.error('클라우드 동기화 UI 초기화 오류:', error);
+    logger.error('Cloud sync UI initialization error:', error);
   }
 }
 
@@ -159,12 +159,12 @@ function updateSyncStatusUI(status, authState, logger) {
 
     const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
     logger.info(
-      `동기화 권한 확인: 권한=${hasCloudSyncPermission}, 로그인=${authState.isLoggedIn}`,
+      `Sync permission check: permission=${hasCloudSyncPermission}, logged in=${authState.isLoggedIn}`,
     );
 
     // 권한이 없으면 UI 비활성화
     if (!canUseCloudSync) {
-      logger.info('클라우드 동기화 권한 없음 - UI 비활성화');
+      logger.info('No cloud sync permission - UI disabled');
       disableCloudSyncUI(logger);
       return;
     }
@@ -197,9 +197,9 @@ function updateSyncStatusUI(status, authState, logger) {
     // 버튼 스타일 업데이트
     updateButtonStyles(buttonDisabled);
 
-    logger.info('동기화 상태 UI 업데이트 완료');
+    logger.info('Sync status UI update completed');
   } catch (error) {
-    logger.error('동기화 상태 UI 업데이트 오류:', error);
+    logger.error('Sync status UI update error:', error);
   }
 }
 
@@ -303,9 +303,9 @@ function disableCloudSyncUI(logger) {
     // 버튼 스타일 업데이트
     updateButtonStyles(true);
 
-    logger.info('클라우드 동기화 UI 비활성화 완료');
+    logger.info('Cloud sync UI disable completed');
   } catch (error) {
-    logger.error('클라우드 동기화 UI 비활성화 오류:', error);
+    logger.error('Cloud sync UI disable error:', error);
   }
 }
 
@@ -401,7 +401,7 @@ function resetSyncButtons() {
  */
 function handleCloudSyncToggle(authState, logger) {
   const enabled = DOM.enableCloudSyncCheckbox.checked;
-  logger.info(`클라우드 동기화 상태 변경: ${enabled ? '활성화' : '비활성화'}`);
+  logger.info(`Cloud sync status change: ${enabled ? 'enabled' : 'disabled'}`);
 
   // 로딩 표시 및 체크박스 비활성화
   setLoading(true);
@@ -416,10 +416,10 @@ function handleCloudSyncToggle(authState, logger) {
     .then(status => {
       // UI 업데이트
       updateSyncStatusUI(status, authState, logger);
-      logger.info('클라우드 동기화 상태 변경 성공');
+      logger.info('Cloud sync status change successful');
     })
     .catch(error => {
-      logger.error('클라우드 동기화 상태 변경 오류:', error);
+      logger.error('Cloud sync status change error:', error);
       // 오류 시 상태 복원
       DOM.enableCloudSyncCheckbox.checked = !enabled;
     })
@@ -435,7 +435,7 @@ function handleCloudSyncToggle(authState, logger) {
  * @param {Object} logger - 로거
  */
 function handleManualSyncUpload(logger) {
-  logger.info('수동 동기화 - 업로드 시작');
+  logger.info('Manual sync - upload started');
 
   // 로딩 표시 및 버튼 비활성화
   setLoading(true);
@@ -445,15 +445,15 @@ function handleManualSyncUpload(logger) {
   window.settings.manualSync('upload')
     .then(result => {
       if (result.success) {
-        logger.info('설정 업로드 성공');
+        logger.info('Settings upload successful');
         DOM.manualSyncUploadButton.textContent = 'Upload Complete!';
       } else {
-        logger.error('설정 업로드 실패:', result.error);
-        throw new Error(result.error || '알 수 없는 오류');
+        logger.error('Settings upload failed:', result.error);
+        throw new Error(result.error || 'Unknown error');
       }
     })
     .catch(error => {
-      logger.error('설정 업로드 오류:', error);
+      logger.error('Settings upload error:', error);
       DOM.manualSyncUploadButton.textContent = 'Upload Failed';
     })
     .finally(() => {
@@ -471,11 +471,11 @@ function handleManualSyncUpload(logger) {
  * @param {Object} logger - 로거
  */
 function handleManualSyncDownload(logger) {
-  logger.info('수동 동기화 - 다운로드 시작');
+  logger.info('Manual sync - download started');
 
   // 확인 대화상자
-  if (!confirm('서버에서 설정을 다운로드하면 로컬 설정을 덮어씁니다. 계속하시겠습니까?')) {
-    logger.info('사용자가 다운로드를 취소함');
+  if (!confirm('Downloading settings from the server will overwrite your local settings. Do you want to continue?')) {
+    logger.info('User canceled the download');
     return;
   }
 
@@ -487,23 +487,23 @@ function handleManualSyncDownload(logger) {
   window.settings.manualSync('download')
     .then(result => {
       if (result.success) {
-        logger.info('설정 다운로드 성공');
+        logger.info('Settings download successful');
         DOM.manualSyncDownloadButton.textContent = 'Download Complete!';
 
         // 설정 다시 로드
         return window.settings.getConfig();
       } else {
-        logger.error('설정 다운로드 실패:', result.error);
-        throw new Error(result.error || '알 수 없는 오류');
+        logger.error('Settings download failed:', result.error);
+        throw new Error(result.error || 'Unknown error');
       }
     })
     .then(loadedConfig => {
       // 이벤트 발생 - 설정 로드
       window.dispatchEvent(new CustomEvent('config-loaded', { detail: loadedConfig }));
-      logger.info('새 설정 로드 및 이벤트 발생');
+      logger.info('New settings loaded and event triggered');
     })
     .catch(error => {
-      logger.error('설정 다운로드 오류:', error);
+      logger.error('Settings download error:', error);
       DOM.manualSyncDownloadButton.textContent = 'Download Failed';
     })
     .finally(() => {
@@ -521,11 +521,11 @@ function handleManualSyncDownload(logger) {
  * @param {Object} logger - 로거
  */
 function handleManualSyncResolve(logger) {
-  logger.info('수동 동기화 - 충돌 해결 시작');
+  logger.info('Manual sync - conflict resolution started');
 
   // 확인 대화상자
-  if (!confirm('로컬 설정과 서버 설정 간의 충돌을 해결합니다. 타임스탬프가 더 최신인 설정이 적용됩니다. 계속하시겠습니까?')) {
-    logger.info('사용자가 충돌 해결을 취소함');
+  if (!confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')) {
+    logger.info('User canceled the conflict resolution');
     return;
   }
 
@@ -537,23 +537,23 @@ function handleManualSyncResolve(logger) {
   window.settings.manualSync('resolve')
     .then(result => {
       if (result.success) {
-        logger.info('설정 충돌 해결 성공');
+        logger.info('Settings conflict resolution successful');
         DOM.manualSyncResolveButton.textContent = 'Resolved!';
 
         // 설정 다시 로드
         return window.settings.getConfig();
       } else {
-        logger.error('설정 충돌 해결 실패:', result.error);
-        throw new Error(result.error || '알 수 없는 오류');
+        logger.error('Settings conflict resolution failed:', result.error);
+        throw new Error(result.error || 'Unknown error');
       }
     })
     .then(loadedConfig => {
       // 이벤트 발생 - 설정 로드
       window.dispatchEvent(new CustomEvent('config-loaded', { detail: loadedConfig }));
-      logger.info('병합된 설정 로드 및 이벤트 발생');
+      logger.info('Merged settings loaded and event triggered');
     })
     .catch(error => {
-      logger.error('설정 충돌 해결 오류:', error);
+      logger.error('Settings conflict resolution error:', error);
       DOM.manualSyncResolveButton.textContent = 'Resolution Failed';
     })
     .finally(() => {
