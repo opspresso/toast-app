@@ -61,6 +61,7 @@ function updateTrayMenu(tray, windows) {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Toast',
+      accelerator: 'CommandOrControl+Shift+Space', // 단축키 표시
       click: () => {
         if (windows.toast) {
           windows.toast.show();
