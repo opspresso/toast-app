@@ -230,6 +230,13 @@ jobs:
           PROJECT: "toast"
           VERSION: ${{ github.ref_name }}
 
+  # Cleanup job: Delete existing draft releases
+  cleanup:
+    name: Delete Draft Releases
+    runs-on: ubuntu-latest
+    # 항상 실행되도록 설정 (다른 job의 성공/실패와 무관)
+    if: always()
+    steps:
       - name: Delete existing draft releases 🧹
         run: |
           echo "🔍 Checking for existing draft releases for tag ${{ github.ref_name }}..."
