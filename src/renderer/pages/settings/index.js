@@ -139,11 +139,40 @@ document.addEventListener('DOMContentLoaded', () => {
     window.settings.log.error('설정 로드 오류:', error);
   });
 
-  // Config update listener
+  // Config update listener - 필요한 설정만 업데이트하도록 최적화
   window.addEventListener('config-loaded', event => {
-    window.settings.log.info('config-loaded 이벤트 수신');
-    config = event.detail;
-    initializeUI();
+    window.settings.log.info('config-loaded 이벤트 수신 - 최적화된 업데이트 사용');
+    const newConfig = event.detail;
+
+    // 이전 설정과 새 설정을 비교해 필요한 요소만 업데이트
+    if (newConfig) {
+      // 설정 객체 업데이트
+      config = newConfig;
+
+      // 현재 활성화된 탭만 업데이트 (전체 UI 초기화 방지)
+      const activeTab = Array.from(tabContents).find(tab => tab.classList.contains('active'));
+      if (activeTab) {
+        const tabId = activeTab.id;
+        window.settings.log.info(`현재 활성 탭 "${tabId}"만 선택적으로 업데이트`);
+
+        // 선택적으로 필요한 설정만 업데이트
+        if (tabId === 'general') {
+          globalHotkeyInput.value = config.globalHotkey || '';
+          launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
+        } else if (tabId === 'appearance') {
+          themeSelect.value = config.appearance?.theme || 'system';
+          positionSelect.value = config.appearance?.position || 'center';
+          sizeSelect.value = config.appearance?.size || 'medium';
+          opacityRange.value = config.appearance?.opacity || 0.95;
+          opacityValue.textContent = opacityRange.value;
+        } else if (tabId === 'advanced') {
+          hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
+          hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
+          hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
+          showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
+        }
+      }
+    }
   });
 });
 
@@ -744,19 +773,34 @@ function initializeCloudSyncUI() {
   }
 }
 
+// 중복 호출 방지를 위한 상태 관리
+let authStateInitialized = false;
+let profileDataFetchInProgress = false;
+
 /**
- * Initialize authentication state
+ * Initialize authentication state - 중복 호출 방지 및 최적화
  */
 async function initializeAuthState() {
+  if (authStateInitialized) {
+    window.settings.log.info('인증 상태가 이미 초기화되어 있어 중복 초기화를 건너뜁니다.');
+    return;
+  }
+
+  // 초기화 진행 중 표시
+  authStateInitialized = true;
+
   try {
     // Check if we have authentication tokens
     const token = await window.settings.getAuthToken();
 
     if (token) {
-      // We have tokens, fetch user profile
+      // 로그인 상태 UI 업데이트
       updateAuthStateUI(true);
-      fetchUserProfile();
-      fetchSubscriptionInfo();
+
+      // 프로필 및 구독 정보 로드 (중복 호출 방지)
+      if (!profileDataFetchInProgress && !authState.profile) {
+        await loadUserDataEfficiently();
+      }
     } else {
       // No tokens, show login UI
       updateAuthStateUI(false);
@@ -765,6 +809,48 @@ async function initializeAuthState() {
     window.settings.log.error('Failed to initialize auth state:', error);
     // Show login UI when error occurs
     updateAuthStateUI(false);
+    // 오류 발생 시 초기화 상태 리셋
+    authStateInitialized = false;
+  }
+}
+
+/**
+ * 프로필 및 구독 정보 효율적으로 로드 (중복 호출 방지)
+ */
+async function loadUserDataEfficiently() {
+  // 이미 데이터 로드 중이면 건너뜀
+  if (profileDataFetchInProgress) {
+    window.settings.log.info('프로필 데이터 로드가 이미 진행 중입니다.');
+    return;
+  }
+
+  profileDataFetchInProgress = true;
+
+  try {
+    window.settings.log.info('사용자 프로필 및 구독 정보 효율적 로드 시작');
+
+    // 로딩 표시
+    if (authLoading) setLoading(authLoading, true);
+    if (subscriptionLoading) setLoading(subscriptionLoading, true);
+
+    // 프로필 정보 로드
+    await fetchUserProfile();
+
+    // 구독 정보 로드 (프로필 이미 있으면 중복 요청 방지)
+    await fetchSubscriptionInfo();
+
+    // 로딩 숨김
+    if (authLoading) setLoading(authLoading, false);
+    if (subscriptionLoading) setLoading(subscriptionLoading, false);
+
+    window.settings.log.info('사용자 프로필 및 구독 정보 로드 완료');
+  } catch (error) {
+    window.settings.log.error('사용자 데이터 로드 중 오류:', error);
+    if (authLoading) setLoading(authLoading, false);
+    if (subscriptionLoading) setLoading(subscriptionLoading, false);
+  } finally {
+    // 데이터 로드 완료 표시
+    profileDataFetchInProgress = false;
   }
 }
 
@@ -822,25 +908,9 @@ function initializeAccountSettings() {
   window.settings.log.info('initializeAccountSettings 호출');
 
   try {
-    // 인증 상태 초기화
+    // 중복 호출 방지를 위해 인증 상태 초기화만 수행
+    // initializeAuthState()는 이미 내부적으로 필요한 프로필 및 구독 정보를 로드함
     initializeAuthState();
-
-    // 인증 토큰이 있으면 구독 정보도 직접 로드
-    window.settings.getAuthToken().then(token => {
-      if (token) {
-        window.settings.log.info('계정 탭 초기화: 토큰 감지, 구독 정보 로딩 시작');
-
-        // 구독 정보 로드
-        fetchSubscriptionInfo();
-
-        // 프로필 정보 로드
-        fetchUserProfile();
-      } else {
-        window.settings.log.info('계정 탭 초기화: 토큰 없음, 구독 정보 로딩 생략');
-      }
-    }).catch(error => {
-      window.settings.log.error('계정 탭 초기화 중 토큰 확인 오류:', error);
-    });
   } catch (error) {
     window.settings.log.error('계정 설정 초기화 중 오류 발생:', error);
   }
@@ -1607,30 +1677,41 @@ function handleManualSyncResolve() {
 }
 
 /**
- * Fetch user profile information
+ * Fetch user profile information - 중복 요청 방지
  */
 async function fetchUserProfile() {
   try {
+    // 이미 프로필 정보가 있으면 중복 요청 방지
+    if (authState.profile) {
+      window.settings.log.info('기존 프로필 정보 사용 (중복 요청 방지)');
+      updateProfileDisplay(authState.profile);
+      return authState.profile;
+    }
+
     // Check if token exists first
     const token = await window.settings.getAuthToken();
     if (!token) {
       window.settings.log.info('No auth token available, skipping profile fetch');
-      return;
+      return null;
     }
 
+    window.settings.log.info('프로필 정보 새로 요청');
     const profile = await window.settings.fetchUserProfile();
     if (profile) {
       authState.profile = profile;
 
       // Update UI with profile information
       updateProfileDisplay(profile);
+      return profile;
     }
+    return null;
   } catch (error) {
     window.settings.log.error('Failed to fetch user profile:', error);
     // Handle token expired case
     if (error.message && error.message.includes('token expired')) {
       handleTokenExpired();
     }
+    return null;
   }
 }
 
@@ -1682,34 +1763,45 @@ function getInitials(name) {
 }
 
 /**
- * Fetch subscription information
- * (subscription information is provided by the profile API)
+ * Fetch subscription information - 중복 요청 및 불필요한 API 호출 방지
  */
 async function fetchSubscriptionInfo() {
   try {
-    // Show loading state
-    setLoading(subscriptionLoading, true);
+    // 이미 구독 정보가 있으면 중복 요청 방지
+    if (authState.subscription) {
+      window.settings.log.info('기존 구독 정보 사용 (중복 요청 방지)');
+      updateSubscriptionUI(authState.subscription);
+      return authState.subscription;
+    }
 
     // Check if token exists first
     const token = await window.settings.getAuthToken();
     if (!token) {
       window.settings.log.info('No auth token available, skipping subscription fetch');
       setLoading(subscriptionLoading, false);
-      return;
+      return null;
     }
 
     // 구독 정보 확인을 위한 로그
     window.settings.log.info('구독 정보 요청 시작');
 
-    // 프로필 정보를 먼저 가져와 구독 정보 확인
-    const profile = await window.settings.fetchUserProfile();
-    window.settings.log.info('프로필 정보 수신:', profile ? '성공' : '실패');
-
-    if (profile && profile.subscription) {
-      window.settings.log.info('프로필에서 구독 정보 발견:', JSON.stringify(profile.subscription));
+    // 이미 프로필 정보가 있으면 재사용, 없으면 가져오기
+    let profile = authState.profile;
+    if (!profile) {
+      profile = await fetchUserProfile();
     }
 
-    // fetchSubscription gets subscription info through the profile API
+    // 프로필에 이미 구독 정보가 포함되어 있으면 재사용
+    if (profile && profile.subscription) {
+      window.settings.log.info('프로필에서 구독 정보 사용:', JSON.stringify(profile.subscription));
+      authState.subscription = profile.subscription;
+      updateSubscriptionUI(profile.subscription);
+      saveSubscriptionToConfig(profile.subscription);
+      return profile.subscription;
+    }
+
+    // 프로필에 구독 정보가 없는 경우에만 별도 요청
+    window.settings.log.info('구독 정보 별도 요청');
     const subscription = await window.settings.fetchSubscription();
     window.settings.log.info('구독 정보 수신:', subscription ? '성공' : '실패');
 
@@ -1740,19 +1832,23 @@ async function fetchSubscriptionInfo() {
 
       // 구독 정보를 설정에 직접 저장
       await window.settings.setConfig('subscription', subscription);
+
+      return subscription;
     }
 
-    // Hide loading state
-    setLoading(subscriptionLoading, false);
+    return null;
   } catch (error) {
     window.settings.log.error('Failed to fetch subscription info:', error);
-    // Hide loading state
-    setLoading(subscriptionLoading, false);
 
     // Handle token expired case
     if (error.message && error.message.includes('token expired')) {
       handleTokenExpired();
     }
+
+    return null;
+  } finally {
+    // Hide loading state
+    setLoading(subscriptionLoading, false);
   }
 }
 
@@ -1836,6 +1932,19 @@ function saveSubscriptionToConfig(subscription) {
   };
 
   window.settings.setConfig('subscription', subscriptionConfig);
+}
+
+/**
+ * Load user profile information and update UI - 효율적 데이터 로드 사용
+ */
+async function loadUserDataAndUpdateUI() {
+  window.settings.log.info('loadUserDataAndUpdateUI 호출');
+
+  // 최적화된 데이터 로드 함수 호출
+  await loadUserDataEfficiently();
+
+  // 인증 상태 UI 업데이트
+  updateAuthStateUI(true);
 }
 
 /**
