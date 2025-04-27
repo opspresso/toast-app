@@ -1330,18 +1330,20 @@ function handleHotkeyRecording(event) {
   // 이벤트 기본 동작 방지
   event.preventDefault();
 
-  // 녹화 완료 시 전역 단축키 복원
-  window.settings.restoreShortcuts()
+  // 설정 즉시 저장
+  window.settings.setConfig('globalHotkey', hotkey)
+    .then(() => {
+      window.settings.log.info('전역 단축키 설정 변경:', hotkey);
+
+      // 핫키 녹화 직후 해당 핫키를 즉시 등록하여 테스트 가능하게 함
+      return window.settings.restoreShortcuts();
+    })
     .then(success => {
       window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
     })
     .catch(error => {
-      window.settings.log.error('전역 단축키 복원 중 오류:', error);
+      window.settings.log.error('전역 단축키 설정 및 복원 중 오류:', error);
     });
-
-  // 설정 즉시 저장
-  window.settings.setConfig('globalHotkey', hotkey);
-  window.settings.log.info('전역 단축키 설정 변경:', hotkey);
 }
 
 /**
