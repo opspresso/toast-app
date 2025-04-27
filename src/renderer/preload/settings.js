@@ -151,7 +151,7 @@ ipcRenderer.on('config-updated', (event, data) => {
 });
 
 // Auto Update Events Handlers
-// 업데이트 확인 시작
+// Update check started
 ipcRenderer.on('checking-for-update', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('checking-for-update', {
@@ -160,7 +160,7 @@ ipcRenderer.on('checking-for-update', (event, data) => {
   );
 });
 
-// 업데이트 가능
+// Update available
 ipcRenderer.on('update-available', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('update-available', {
@@ -169,7 +169,7 @@ ipcRenderer.on('update-available', (event, data) => {
   );
 });
 
-// 업데이트 없음
+// No updates available
 ipcRenderer.on('update-not-available', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('update-not-available', {
@@ -178,7 +178,7 @@ ipcRenderer.on('update-not-available', (event, data) => {
   );
 });
 
-// 다운로드 진행 상황
+// Download progress
 ipcRenderer.on('download-progress', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('download-progress', {
@@ -187,7 +187,7 @@ ipcRenderer.on('download-progress', (event, data) => {
   );
 });
 
-// 다운로드 시작
+// Download started
 ipcRenderer.on('download-started', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('download-started', {
@@ -196,7 +196,7 @@ ipcRenderer.on('download-started', (event, data) => {
   );
 });
 
-// 업데이트 다운로드 완료
+// Update download completed
 ipcRenderer.on('update-downloaded', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('update-downloaded', {
@@ -205,7 +205,7 @@ ipcRenderer.on('update-downloaded', (event, data) => {
   );
 });
 
-// 설치 시작
+// Installation started
 ipcRenderer.on('install-started', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('install-started', {
@@ -214,7 +214,7 @@ ipcRenderer.on('install-started', (event, data) => {
   );
 });
 
-// 업데이트 오류
+// Update error
 ipcRenderer.on('update-error', (event, data) => {
   window.dispatchEvent(
     new CustomEvent('update-error', {
@@ -223,9 +223,9 @@ ipcRenderer.on('update-error', (event, data) => {
   );
 });
 
-// 탭 선택 이벤트 처리
+// Tab selection event handler
 ipcRenderer.on('select-settings-tab', (event, tabName) => {
-  window.settings.log.info('select-settings-tab 이벤트 수신:', tabName);
+  window.settings.log.info('select-settings-tab event received:', tabName);
   window.dispatchEvent(
     new CustomEvent('select-settings-tab', {
       detail: tabName,

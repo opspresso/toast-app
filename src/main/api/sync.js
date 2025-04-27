@@ -121,7 +121,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
 async function uploadSettings({ hasValidToken, onUnauthorized, configStore, directData }) {
   // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
-    return { success: false, error: '이미 동기화 중' };
+    return { success: false, error: 'Sync already in progress' };
   }
 
   state.isSyncing = true;
@@ -129,7 +129,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
   try {
     // 유효한 데이터 확인
     if (!directData) {
-      throw new Error('유효하지 않은 데이터');
+      throw new Error('Invalid data');
     }
 
     // API 요청
@@ -181,7 +181,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
 async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) {
   // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
-    return { success: false, error: '이미 동기화 중' };
+    return { success: false, error: 'Sync already in progress' };
   }
 
   state.isSyncing = true;
@@ -207,7 +207,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         // 유효성 검사
         if (!settings) {
-          throw new Error('유효하지 않은 설정 데이터: 응답이 비어 있습니다');
+          throw new Error('Invalid settings data: Response is empty');
         }
 
         // 표준화된 데이터 추출
@@ -293,7 +293,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         if (!pagesData) {
           logger.error('응답에서 페이지 데이터를 찾을 수 없음:', JSON.stringify(settings));
           throw new Error(
-            '유효하지 않은 설정 데이터: 예상되는 어떤 형식으로도 페이지 정보를 찾을 수 없습니다',
+            'Invalid settings data: Could not find page information in any expected format',
           );
         }
 
@@ -309,7 +309,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         if (!isValidPageData) {
           logger.error('유효하지 않은 페이지 데이터 구조:', JSON.stringify(pagesData.slice(0, 2)));
-          throw new Error('유효하지 않은 설정 데이터: 페이지 구조가 예상 형식이 아닙니다');
+          throw new Error('Invalid settings data: Page structure does not match expected format');
         }
 
         logger.info(`동기화 데이터에서 ${pagesData.length}개의 페이지 발견`);

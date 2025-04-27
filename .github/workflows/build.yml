@@ -107,6 +107,11 @@ jobs:
       # - name: Checkout code 🛎️
       #   uses: actions/checkout@v4
 
+      - name: Listup sources 🔍
+        run: |
+          echo "📂 Directory contents:"
+          ls -la
+
       - name: Download all artifacts 🚚
         uses: actions/download-artifact@v4
         with:
