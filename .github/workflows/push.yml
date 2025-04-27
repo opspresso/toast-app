@@ -65,10 +65,23 @@ jobs:
 
             echo "📄 Using PR title: $PR_TITLE"
 
-            # Combine title and body with a separator
+            # Complete cleanup of PR body to create a compact message
             if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "null" ]; then
-              PR_BODY_JSON="$PR_TITLE"$'\n\n'"$PR_BODY"
-              echo "📝 Retrieved PR title and body"
+              # Create a temporary file for multiline processing
+              echo "$PR_BODY" > pr_body_temp.txt
+
+              # Remove HTML comments (including multiline)
+              sed -i -e '/<!--/,/-->/d' pr_body_temp.txt
+
+              # Remove empty lines and leading/trailing whitespace
+              sed -i -e '/^[[:space:]]*$/d' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' pr_body_temp.txt
+
+              # Create a compact version with minimal whitespace
+              PR_BODY_CLEAN=$(cat pr_body_temp.txt | tr '\n' ' ' | sed -e 's/[[:space:]]\+/ /g')
+
+              # Format the final message - just title and compact body
+              PR_BODY_JSON="$PR_TITLE"$'\n'"$PR_BODY_CLEAN"
+              echo "📝 Retrieved PR title and compact body"
             else
               PR_BODY_JSON="$PR_TITLE"
               echo "📝 Retrieved PR title (no body found)"
