@@ -46,10 +46,24 @@ jobs:
           git config --local user.name "nalbam-bot"
           git config --local user.email "bot@nalbam.com"
 
+          # Get PR message for release notes if available
+          if [ -f ".github/temp/PR_MESSAGE.md" ]; then
+            PR_MESSAGE=$(cat .github/temp/PR_MESSAGE.md)
+            echo "📄 Found PR message to use for tag"
+          else
+            PR_MESSAGE="Release $VERSION"
+            echo "⚠️ No PR message found, using default: 'Release $VERSION'"
+          fi
+
+          # Save PR message for build workflow
+          echo "PR_MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$PR_MESSAGE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
           # Create and push new tag only if it doesn't exist
           if ! git tag | grep -q "^$VERSION$"; then
-            echo "🏷️ Creating new tag: $VERSION"
-            git tag -a "$VERSION" -m "Release $VERSION"
+            echo "🏷️ Creating new tag: $VERSION with PR message"
+            git tag -a "$VERSION" -m "$PR_MESSAGE"
             git push origin $VERSION
             echo "TAG_CREATED=true" >> $GITHUB_ENV
             echo "✅ Successfully created and pushed tag $VERSION"

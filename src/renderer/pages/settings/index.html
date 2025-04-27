@@ -12,7 +12,6 @@
       <header class="settings-header">
         <h1>Toast Settings</h1>
         <div class="header-actions">
-          <button id="save-button" class="primary-button">Save</button>
           <button id="cancel-button" class="secondary-button">Close</button>
         </div>
       </header>
@@ -308,6 +307,50 @@
       </div>
     </div>
 
+    <script src="cloud-sync.js"></script>
     <script src="index.js"></script>
+    <!-- 탭 활성화 문제 해결을 위한 즉시 실행 스크립트 -->
+    <script>
+      // 모든 컨텐츠가 로드된 후 실행
+      document.addEventListener('DOMContentLoaded', function() {
+        // 탭 관련 요소 선택
+        const tabLinks = document.querySelectorAll('.settings-nav li');
+        const tabContents = document.querySelectorAll('.settings-tab');
+
+        // 각 탭 링크에 클릭 리스너 직접 추가
+        tabLinks.forEach(link => {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabId = this.getAttribute('data-tab');
+
+            // 모든 탭에서 active 클래스 제거
+            tabLinks.forEach(item => {
+              item.removeAttribute('class');
+              item.style.backgroundColor = ''; // 스타일 리셋
+              item.style.fontWeight = '';     // 스타일 리셋
+            });
+
+            // 클릭한 탭에 active 클래스 추가
+            this.setAttribute('class', 'active');
+            this.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-active-bg');
+            this.style.fontWeight = '600';
+
+            // 모든 컨텐츠 숨기기
+            tabContents.forEach(content => {
+              content.classList.remove('active');
+            });
+
+            // 선택한 탭 컨텐츠 표시
+            const activeContent = document.getElementById(tabId);
+            if (activeContent) {
+              activeContent.classList.add('active');
+            }
+
+            // 로깅
+            console.log(`탭 전환: ${tabId} / 활성화 여부: ${this.classList.contains('active')}`);
+          });
+        });
+      });
+    </script>
   </body>
 </html>
