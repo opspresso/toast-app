@@ -132,45 +132,127 @@ jobs:
           echo "✅ Saved tag message to release_notes.md"
 
       - name: Create Release in This Repo 🚀
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          body_path: release_notes.md
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
-            artifacts/**/*.zip
-            artifacts/**/*-mac.yml
-            artifacts/**/*-linux.yml
-            artifacts/**/latest.yml
+        run: |
+          # Read release notes
+          RELEASE_NOTES=$(cat release_notes.md)
+
+          # Create release with GitHub API, disabling source code attachments
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases \
+            -d @- << EOF
+          {
+            "tag_name": "${{ github.ref_name }}",
+            "name": "Release ${{ github.ref_name }}",
+            "body": "$RELEASE_NOTES",
+            "draft": false,
+            "prerelease": false,
+            "generate_release_notes": false,
+            "make_latest": "true"
+          }
+          EOF
+
+          # Get release ID from response
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" | \
+            jq -r '.id')
+
+          echo "Created release with ID: $RELEASE_ID"
+
+          # Upload release assets
+          for file in artifacts/**/*.{AppImage,deb,dmg,exe,zip,yml}; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file to release..."
+              FILENAME=$(basename "$file")
+              CONTENT_TYPE=$(file --mime-type -b "$file")
+
+              curl -X POST \
+                -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Content-Type: $CONTENT_TYPE" \
+                --data-binary @"$file" \
+                "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$FILENAME"
+            fi
+          done
 
       - name: Create Release in Releases Repo 🚀
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-        with:
-          repository: opspresso/toast-dist # Also create release in distribution repository
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          body_path: release_notes.md
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
-            artifacts/**/*.zip
-            artifacts/**/*-mac.yml
-            artifacts/**/*-linux.yml
-            artifacts/**/latest.yml
+        run: |
+          # Read release notes
+          RELEASE_NOTES=$(cat release_notes.md)
+
+          # Check if tag exists in opspresso/toast-dist
+          TAG_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/opspresso/toast-dist/git/refs/tags/${{ github.ref_name }}")
+
+          # Create tag if it doesn't exist
+          if [ "$TAG_EXISTS" != "200" ]; then
+            echo "Tag doesn't exist in opspresso/toast-dist, creating it..."
+            # Get latest commit in toast-dist repo
+            LATEST_COMMIT=$(curl -s \
+              -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/opspresso/toast-dist/git/refs/heads/main" | \
+              jq -r '.object.sha')
+
+            # Create tag pointing to that commit
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/opspresso/toast-dist/git/refs" \
+              -d @- << EOF
+            {
+              "ref": "refs/tags/${{ github.ref_name }}",
+              "sha": "$LATEST_COMMIT"
+            }
+            EOF
+          fi
+
+          # Create release with GitHub API, disabling source code attachments
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/opspresso/toast-dist/releases" \
+            -d @- << EOF
+          {
+            "tag_name": "${{ github.ref_name }}",
+            "name": "Release ${{ github.ref_name }}",
+            "body": "$RELEASE_NOTES",
+            "draft": false,
+            "prerelease": false,
+            "generate_release_notes": false,
+            "make_latest": "true"
+          }
+          EOF
+
+          # Get release ID from response
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/opspresso/toast-dist/releases/tags/${{ github.ref_name }}" | \
+            jq -r '.id')
+
+          echo "Created release with ID: $RELEASE_ID in opspresso/toast-dist"
+
+          # Upload release assets
+          for file in artifacts/**/*.{AppImage,deb,dmg,exe,zip,yml}; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file to opspresso/toast-dist release..."
+              FILENAME=$(basename "$file")
+              CONTENT_TYPE=$(file --mime-type -b "$file")
+
+              curl -X POST \
+                -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Content-Type: $CONTENT_TYPE" \
+                --data-binary @"$file" \
+                "https://uploads.github.com/repos/opspresso/toast-dist/releases/$RELEASE_ID/assets?name=$FILENAME"
+            fi
+          done
 
       - name: Trigger for Homebrew 🚀
         uses: opspresso/action-builder@master
