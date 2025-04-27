@@ -4,9 +4,8 @@
 # 2. Increments the patch version based on the higher of the two versions
 # 3. Updates the new version in package.json
 # 4. Changes the PR title to "Release [new version]"
-# 5. Saves the PR message for later use in release notes
 
-name: Bump Version and Save PR Message
+name: Bump Version
 
 on:
   pull_request:
@@ -113,28 +112,6 @@ jobs:
           # Change PR title
           echo "📄 Updating PR title to reflect new version"
           gh pr edit ${{ github.event.pull_request.number }} --title "Release v$NEW_VERSION"
-
-          # Save PR message for later use in tag and release
-          echo "📝 Retrieving PR message to use in release notes"
-          PR_MESSAGE=$(gh pr view ${{ github.event.pull_request.number }} --json body --jq .body)
-
-          # Create directory if it doesn't exist
-          mkdir -p .github/temp
-
-          # Save PR message to file
-          echo "$PR_MESSAGE" > .github/temp/PR_MESSAGE.md
-
-          # Commit PR message file
-          git add .github/temp/PR_MESSAGE.md
-
-          # Only commit if there are changes
-          if ! git diff --cached --quiet; then
-            git commit -m "Save PR message for release notes [skip ci]"
-            git push origin HEAD:$HEAD_REF
-            echo "✅ Successfully saved PR message for release notes"
-          else
-            echo "⏭️ No changes to commit for PR message"
-          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
