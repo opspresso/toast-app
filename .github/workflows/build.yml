@@ -118,6 +118,9 @@ jobs:
         with:
           github_token: ${{ secrets.GHP_TOKEN }}
           release: ${{ startsWith(github.ref, 'refs/tags/v') }} # Only release when tag starts with v
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CERTS }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
       - name: Listup artifacts 🔍
         run: |
