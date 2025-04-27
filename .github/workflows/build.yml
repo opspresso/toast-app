@@ -107,6 +107,24 @@ jobs:
         with:
           path: artifacts # Download all artifacts to artifacts directory
 
+      - name: Get Tag Message 📝
+        id: tag_message
+        run: |
+          # Get the tag message from the annotated tag
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+
+          # Check if we have a tag message
+          if [ -z "$TAG_MESSAGE" ]; then
+            echo "⚠️ No tag message found, using default release notes"
+            TAG_MESSAGE="Release ${{ github.ref_name }}"
+          else
+            echo "📄 Found tag message to use for release notes"
+          fi
+
+          # Save tag message to a file for use in release creation
+          echo "$TAG_MESSAGE" > release_notes.md
+          echo "✅ Successfully saved tag message to release_notes.md"
+
       - name: Create Release in This Repo 🚀
         uses: softprops/action-gh-release@v1
         env:
@@ -116,6 +134,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
+          body_path: release_notes.md
           files: | # List of files to attach to the release
             artifacts/**/*.AppImage
             artifacts/**/*.deb
@@ -136,6 +155,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
+          body_path: release_notes.md
           files: | # List of files to attach to the release
             artifacts/**/*.AppImage
             artifacts/**/*.deb
