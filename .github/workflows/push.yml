@@ -46,18 +46,38 @@ jobs:
           git config --local user.name "nalbam-bot"
           git config --local user.email "bot@nalbam.com"
 
-          # Get PR message from the last merged PR
-          PR_MESSAGE=$(git log -1 --pretty=%B | grep -v "Merge pull request")
-          if [ -z "$PR_MESSAGE" ]; then
-            # Try to get PR title from GitHub API
-            PR_NUMBER=$(git log -1 --pretty=%s | grep -o '#[0-9]\+' | grep -o '[0-9]\+')
-            if [ -n "$PR_NUMBER" ]; then
-              echo "🔍 Found PR #$PR_NUMBER, fetching title from GitHub API"
-              PR_MESSAGE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                           "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
-                           | jq -r .title)
-              echo "📝 Retrieved PR title: $PR_MESSAGE"
+          # Try to get PR title and body from GitHub API
+          PR_NUMBER=$(git log -1 --pretty=%s | grep -o '#[0-9]\+' | grep -o '[0-9]\+')
+          if [ -n "$PR_NUMBER" ]; then
+            echo "🔍 Found PR #$PR_NUMBER, fetching PR data from GitHub API"
+
+            # Fetch PR details from GitHub API
+            PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                      "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
+
+            # Extract title and body separately
+            PR_TITLE=$(echo "$PR_DATA" | jq -r .title)
+            PR_BODY=$(echo "$PR_DATA" | jq -r .body)
+
+            # Save original values to files for reference (if needed later)
+            echo "$PR_TITLE" > pr_title.txt
+            echo "$PR_BODY" > pr_body.txt
+
+            # Combine title and body with a separator
+            if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "null" ]; then
+              PR_BODY_JSON="$PR_TITLE"$'\n\n'"$PR_BODY"
+              echo "📝 Retrieved PR title and body"
+            else
+              PR_BODY_JSON="$PR_TITLE"
+              echo "📝 Retrieved PR title (no body found)"
             fi
+
+            # Get first paragraph or first line for PR_MESSAGE
+            # This avoids issues with multiline messages in git commands
+            PR_MESSAGE=$(echo "$PR_TITLE" | head -n 1)
+
+            # Save combined message to a file
+            echo "$PR_BODY_JSON" > pr_combined.txt
           fi
 
           # Use default message if we couldn't get PR message
@@ -65,18 +85,16 @@ jobs:
             PR_MESSAGE="Release $VERSION"
             echo "⚠️ No PR message found, using default: 'Release $VERSION'"
           else
+            # Ensure PR_MESSAGE is safe for use in git commands by escaping special characters
+            PR_MESSAGE=$(echo "$PR_MESSAGE" | sed 's/"/\\"/g')
             echo "📄 Using PR message for tag: $PR_MESSAGE"
           fi
-
-          # Save PR message for build workflow
-          echo "PR_MESSAGE<<EOF" >> $GITHUB_ENV
-          echo "$PR_MESSAGE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
 
           # Create and push new tag only if it doesn't exist
           if ! git tag | grep -q "^$VERSION$"; then
             echo "🏷️ Creating new tag: $VERSION with PR message"
-            git tag -a "$VERSION" -m "$PR_MESSAGE"
+            # Use the PR_MESSAGE safely with proper quoting
+            git tag -a "$VERSION" -m "${PR_MESSAGE}"
             git push origin $VERSION
             echo "TAG_CREATED=true" >> $GITHUB_ENV
             echo "✅ Successfully created and pushed tag $VERSION"
