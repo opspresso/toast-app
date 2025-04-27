@@ -46,18 +46,14 @@ jobs:
           git config --local user.name "nalbam-bot"
           git config --local user.email "bot@nalbam.com"
 
-          # Get PR message from the last merged PR
-          PR_MESSAGE=$(git log -1 --pretty=%B | grep -v "Merge pull request")
-          if [ -z "$PR_MESSAGE" ]; then
-            # Try to get PR title from GitHub API
-            PR_NUMBER=$(git log -1 --pretty=%s | grep -o '#[0-9]\+' | grep -o '[0-9]\+')
-            if [ -n "$PR_NUMBER" ]; then
-              echo "🔍 Found PR #$PR_NUMBER, fetching title from GitHub API"
-              PR_MESSAGE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                           "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
-                           | jq -r .title)
-              echo "📝 Retrieved PR title: $PR_MESSAGE"
-            fi
+          # Try to get PR title from GitHub API
+          PR_NUMBER=$(git log -1 --pretty=%s | grep -o '#[0-9]\+' | grep -o '[0-9]\+')
+          if [ -n "$PR_NUMBER" ]; then
+            echo "🔍 Found PR #$PR_NUMBER, fetching title from GitHub API"
+            PR_MESSAGE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                          "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
+                          | jq -r .title)
+            echo "📝 Retrieved PR title: $PR_MESSAGE"
           fi
 
           # Use default message if we couldn't get PR message
