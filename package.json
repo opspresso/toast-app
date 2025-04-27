@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.5.22",
+  "version": "0.5.25",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -84,14 +84,20 @@
         "nsis",
         "portable"
       ],
-      "icon": "assets/icons/icon.ico"
+      "icon": "assets/icons/icon.ico",
+      "publish": [
+        "github"
+      ]
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "publish": [
+        "github"
+      ]
     }
   },
   "publish": [
