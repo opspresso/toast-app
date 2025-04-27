@@ -18,7 +18,7 @@ try {
 }
 
 // Log file configuration
-electronLog.transports.file.resolvePath = () => path.join(userDataPath, 'logs/toast-app.log');
+electronLog.transports.file.resolvePathFn = () => path.join(userDataPath, 'logs/toast-app.log');
 
 // Configure log rotation (max size, max files)
 electronLog.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
