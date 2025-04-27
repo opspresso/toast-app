@@ -135,8 +135,9 @@ jobs:
 
   # Release job: Attach built artifacts to GitHub release
   release:
-    needs: [build-macos, build-windows] # Depends on both builds to access artifacts
-    if: ${{ success('build-macos') }}
+    needs: [build-macos, build-windows] # Depends on both builds for artifacts
+    if: always() && needs.build-macos.result == 'success'
+    # Always run if macOS build succeeds, regardless of Windows build result
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code 🛎️
