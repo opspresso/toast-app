@@ -82,31 +82,298 @@ let authState = {
   subscription: null,
 };
 
+// 탭 초기화 상태 추적을 위한 객체
+const tabInitState = {
+  general: false,
+  appearance: false,
+  account: false,
+  advanced: false,
+  'cloud-sync': false,
+  about: false
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  // Load configuration
-  window.addEventListener('config-loaded', event => {
-    config = event.detail;
+  window.settings.log.info('DOMContentLoaded 이벤트 발생 - 초기화 시작');
 
-    // Initialize UI with config values
-    initializeUI();
+  // Load configuration from main process
+  window.settings.getConfig().then(loadedConfig => {
+    try {
+      // 설정 초기화
+      window.settings.log.info('설정 로드 완료');
+      config = loadedConfig;
 
-    // Set up event listeners
-    setupEventListeners();
+      // 테마 적용 (가장 우선순위로 처리)
+      window.settings.log.info('테마 적용 중...');
+      applyTheme(config.appearance?.theme || 'system');
+
+      // 이벤트 리스너 설정 - UI 초기화 전에 처리
+      window.settings.log.info('이벤트 리스너 설정 중...');
+      setupEventListeners();
+
+      // 전체 UI 초기화 (모든 필요한 설정 한 번에 처리)
+      window.settings.log.info('전체 UI 초기화 중...');
+      initializeUI();
+
+      // 인증 상태 초기화
+      window.settings.log.info('인증 상태 초기화 중...');
+      initializeAuthState();
+
+      // 첫 번째 탭 선택 (반드시 UI 초기화 후)
+      window.settings.log.info('첫 번째 탭 선택 중...');
+      const firstTabLink = document.querySelector('.settings-nav li');
+      if (firstTabLink) {
+        const firstTabId = firstTabLink.getAttribute('data-tab');
+        window.settings.log.info(`기본 탭 선택: ${firstTabId}`);
+        switchTab(firstTabId);
+      }
+
+      window.settings.log.info('초기화 완료');
+    } catch (error) {
+      window.settings.log.error('초기화 오류:', error);
+    }
+  }).catch(error => {
+    window.settings.log.error('설정 로드 오류:', error);
   });
 
-  // Load config
-  window.settings.getConfig().then(loadedConfig => {
-    config = loadedConfig;
+  // Config update listener
+  window.addEventListener('config-loaded', event => {
+    window.settings.log.info('config-loaded 이벤트 수신');
+    config = event.detail;
     initializeUI();
-
-    // Apply current theme
-    applyTheme(config.appearance?.theme || 'system');
-
-    // Initialize auth state
-    initializeAuthState();
   });
 });
+
+/**
+ * Set up event listeners
+ */
+function setupEventListeners() {
+  window.settings.log.info('이벤트 리스너 설정 중...');
+
+  // Tab navigation - 탭 클릭 이벤트 리스너
+  tabLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      const tabId = link.getAttribute('data-tab');
+      window.settings.log.info(`탭 클릭 감지: ${tabId}`);
+      switchTab(tabId);
+    });
+  });
+
+  // 일반 설정 이벤트 리스너
+  if (recordHotkeyButton) {
+    recordHotkeyButton.addEventListener('click', startRecordingHotkey);
+  }
+
+  if (clearHotkeyButton) {
+    clearHotkeyButton.addEventListener('click', clearHotkey);
+  }
+
+  // 저장 및 취소 버튼
+  if (saveButton) {
+    saveButton.addEventListener('click', saveSettings);
+  }
+
+  if (cancelButton) {
+    cancelButton.addEventListener('click', confirmCancel);
+  }
+
+  // 계정 관련 버튼
+  if (loginButton) {
+    loginButton.addEventListener('click', handleLogin);
+  }
+
+  if (logoutButton) {
+    logoutButton.addEventListener('click', handleLogout);
+  }
+
+  if (manageSubscriptionButton) {
+    manageSubscriptionButton.addEventListener('click', handleManageSubscription);
+  }
+
+  if (refreshSubscriptionButton) {
+    refreshSubscriptionButton.addEventListener('click', handleRefreshSubscription);
+  }
+
+  // Cloud Sync 관련 버튼
+  if (enableCloudSyncCheckbox) {
+    enableCloudSyncCheckbox.addEventListener('change', handleCloudSyncToggle);
+  }
+
+  if (manualSyncUploadButton) {
+    manualSyncUploadButton.addEventListener('click', handleManualSyncUpload);
+  }
+
+  if (manualSyncDownloadButton) {
+    manualSyncDownloadButton.addEventListener('click', handleManualSyncDownload);
+  }
+
+  if (manualSyncResolveButton) {
+    manualSyncResolveButton.addEventListener('click', handleManualSyncResolve);
+  }
+
+  // ESC 키 이벤트 리스너
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !isRecordingHotkey) {
+      window.settings.log.info('ESC 키 감지 - 창 닫기 시도');
+      if (unsavedChanges) {
+        if (confirm('저장되지 않은 변경사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+          window.settings.closeWindow();
+        }
+      } else {
+        window.settings.closeWindow();
+      }
+    }
+  });
+
+  // Hotkey 녹화 이벤트 리스너
+  document.addEventListener('keydown', handleHotkeyRecording);
+
+  // 구독 정보와 관련된 이벤트
+  window.addEventListener('login-success', event => {
+    window.settings.log.info('Login success event received in settings window');
+    // Load user data and update UI when login is successful
+    loadUserDataAndUpdateUI();
+  });
+
+  window.settings.log.info('이벤트 리스너 설정 완료');
+}
+
+/**
+ * Switch between tabs
+ * @param {string} tabId - ID of the tab to switch to
+ */
+function switchTab(tabId) {
+  window.settings.log.info(`탭 전환: ${tabId}`);
+
+  // 탭 링크 활성화 상태 업데이트
+  tabLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('data-tab') === tabId);
+  });
+
+  // 탭 컨텐츠 표시/숨김 처리
+  tabContents.forEach(content => {
+    content.classList.toggle('active', content.id === tabId);
+  });
+
+  // 탭 내용 초기화 (필요한 경우에만)
+  if (tabId && !tabInitState[tabId]) {
+    window.settings.log.info(`탭 컨텐츠 초기화 필요: ${tabId}`);
+    initializeTabContent(tabId);
+  }
+}
+
+/**
+ * 선택한 탭의 콘텐츠만 초기화하는 함수
+ * @param {string} tabId - 초기화할 탭 ID
+ */
+function initializeTabContent(tabId) {
+  window.settings.log.info(`initializeTabContent 호출 - 탭 ID: ${tabId}`);
+
+  // 이미 초기화된 탭이면 다시 초기화하지 않음
+  if (tabInitState[tabId]) {
+    window.settings.log.info(`${tabId} 탭은 이미 초기화되어 있습니다.`);
+    return;
+  }
+
+  // 각 탭에 맞는 초기화 함수 호출
+  switch (tabId) {
+    case 'general':
+      initializeGeneralSettings();
+      break;
+    case 'appearance':
+      initializeAppearanceSettings();
+      break;
+    case 'account':
+      initializeAccountSettings();
+      break;
+    case 'advanced':
+      initializeAdvancedSettings();
+      break;
+    case 'cloud-sync':
+      initializeCloudSyncUI();
+      break;
+    case 'about':
+      initializeAboutSettings();
+      break;
+  }
+
+  // 초기화 상태 업데이트
+  tabInitState[tabId] = true;
+  window.settings.log.info(`탭 초기화 상태 업데이트: ${tabId} = 초기화됨`);
+}
+
+/**
+ * Initialize UI with config values - 필수적인 작업만 수행
+ */
+function initializeUI() {
+  window.settings.log.info('initializeUI 호출 - 모든 필수 설정 초기화');
+
+  // 전체 초기화 전 분석 - 진행상황 로깅
+  window.settings.log.info('작업 분석: 모든 탭 초기화 수행 (최적화된 방식)');
+
+  // 필수 사항: 반드시 모든 설정을 초기화해야 함
+
+  // General settings - 필수 설정
+  window.settings.log.info('일반 설정 초기화');
+  globalHotkeyInput.value = config.globalHotkey || '';
+  launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
+
+  // Appearance settings - 필수 설정 (테마 등)
+  window.settings.log.info('모양 설정 초기화');
+  themeSelect.value = config.appearance?.theme || 'system';
+  positionSelect.value = config.appearance?.position || 'center';
+  sizeSelect.value = config.appearance?.size || 'medium';
+  opacityRange.value = config.appearance?.opacity || 0.95;
+  opacityValue.textContent = opacityRange.value;
+
+  // Advanced settings - 필수 설정
+  window.settings.log.info('고급 설정 초기화');
+  hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
+  hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
+  hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
+  showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
+
+  // Cloud Sync settings
+  window.settings.log.info('클라우드 동기화 설정 초기화');
+  initializeCloudSyncUI();
+
+  // About settings
+  window.settings.log.info('정보 탭 초기화');
+  initializeAboutSettings();
+
+  // 모든 탭 콘텐츠 초기화 완료
+  window.settings.log.info('모든 탭 콘텐츠가 초기화되었습니다.');
+}
+
+/**
+ * Initialize About tab with version information
+ */
+function initializeAboutSettings() {
+  window.settings.log.info('initializeAboutSettings 호출');
+
+  try {
+    // 버전 표시
+    if (appVersionElement) {
+      // 앱 버전 가져오기
+      window.settings.getVersion().then(version => {
+        // 버전 정보 표시
+        appVersionElement.innerHTML = `<strong>${version}</strong>`;
+        window.settings.log.info(`앱 버전 정보: ${version}`);
+      }).catch(error => {
+        window.settings.log.error('버전 정보를 가져오는 중 오류 발생:', error);
+        appVersionElement.innerHTML = '<strong>Version information unavailable</strong>';
+      });
+    }
+
+    // 업데이트 상태 초기화
+    if (updateStatus) updateStatus.classList.add('hidden');
+    if (updateActions) updateActions.classList.add('hidden');
+    if (updateLoading) updateLoading.classList.add('hidden');
+
+  } catch (error) {
+    window.settings.log.error('정보 탭 초기화 중 오류 발생:', error);
+  }
+}
 
 /**
  * Apply theme to the application
@@ -128,36 +395,6 @@ function applyTheme(theme) {
 
   // Log theme change
   window.settings.log.info('Theme changed to:', theme);
-}
-
-/**
- * Initialize UI with config values
- */
-function initializeUI() {
-  window.settings.log.info('initializeUI 호출');
-
-  // General settings
-  globalHotkeyInput.value = config.globalHotkey || '';
-  launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
-
-  // Appearance settings
-  themeSelect.value = config.appearance?.theme || 'system';
-  positionSelect.value = config.appearance?.position || 'center';
-  sizeSelect.value = config.appearance?.size || 'medium';
-  opacityRange.value = config.appearance?.opacity || 0.95;
-  opacityValue.textContent = opacityRange.value;
-
-  // Advanced settings
-  hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
-  hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
-  hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
-  showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
-
-  // Cloud Sync settings
-  initializeCloudSyncUI();
-
-  // About settings
-  initializeAboutTab();
 }
 
 /**
@@ -286,6 +523,37 @@ function updateAuthStateUI(isLoggedIn) {
 
     // Disable Cloud Sync UI
     disableCloudSyncUI();
+  }
+}
+
+/**
+ * 계정 설정 탭 초기화
+ */
+function initializeAccountSettings() {
+  window.settings.log.info('initializeAccountSettings 호출');
+
+  try {
+    // 인증 상태 초기화
+    initializeAuthState();
+
+    // 인증 토큰이 있으면 구독 정보도 직접 로드
+    window.settings.getAuthToken().then(token => {
+      if (token) {
+        window.settings.log.info('계정 탭 초기화: 토큰 감지, 구독 정보 로딩 시작');
+
+        // 구독 정보 로드
+        fetchSubscriptionInfo();
+
+        // 프로필 정보 로드
+        fetchUserProfile();
+      } else {
+        window.settings.log.info('계정 탭 초기화: 토큰 없음, 구독 정보 로딩 생략');
+      }
+    }).catch(error => {
+      window.settings.log.error('계정 탭 초기화 중 토큰 확인 오류:', error);
+    });
+  } catch (error) {
+    window.settings.log.error('계정 설정 초기화 중 오류 발생:', error);
   }
 }
 
@@ -456,6 +724,596 @@ function disableCloudSyncUI() {
   manualSyncUploadButton.style.cursor = 'not-allowed';
   manualSyncDownloadButton.style.cursor = 'not-allowed';
   manualSyncResolveButton.style.cursor = 'not-allowed';
+}
+
+/**
+ * Show/hide loading state for UI elements
+ * @param {HTMLElement} loadingElement - Loading indicator element
+ * @param {boolean} isLoading - Loading state
+ */
+function setLoading(loadingElement, isLoading) {
+  if (loadingElement) {
+    if (isLoading) {
+      loadingElement.classList.remove('hidden');
+    } else {
+      loadingElement.classList.add('hidden');
+    }
+  }
+}
+
+/**
+ * Load user profile information and update UI
+ */
+async function loadUserDataAndUpdateUI() {
+  window.settings.log.info('loadUserDataAndUpdateUI 호출');
+
+  try {
+    // 로딩 표시
+    if (authLoading) setLoading(authLoading, true);
+
+    // 프로필 정보 로드
+    await fetchUserProfile();
+
+    // 구독 정보 로드
+    await fetchSubscriptionInfo();
+
+    // 인증 상태 UI 업데이트
+    updateAuthStateUI(true);
+
+    // 로딩 숨김
+    if (authLoading) setLoading(authLoading, false);
+  } catch (error) {
+    window.settings.log.error('사용자 데이터 로드 오류:', error);
+
+    // 오류 발생 시 로딩 숨김
+    if (authLoading) setLoading(authLoading, false);
+  }
+}
+
+/**
+ * Start recording hotkey
+ */
+function startRecordingHotkey() {
+  window.settings.log.info('단축키 녹화 시작');
+
+  isRecordingHotkey = true;
+  if (globalHotkeyInput) {
+    globalHotkeyInput.value = '단축키 입력 대기 중...';
+    globalHotkeyInput.classList.add('recording');
+  }
+
+  if (recordHotkeyButton) {
+    recordHotkeyButton.disabled = true;
+  }
+
+  // 변경 사항 감지
+  markUnsavedChanges();
+}
+
+/**
+ * Clear the hotkey
+ */
+function clearHotkey() {
+  window.settings.log.info('단축키 초기화');
+
+  if (globalHotkeyInput) {
+    globalHotkeyInput.value = '';
+    globalHotkeyInput.classList.remove('recording');
+  }
+
+  isRecordingHotkey = false;
+
+  if (recordHotkeyButton) {
+    recordHotkeyButton.disabled = false;
+  }
+
+  // 변경 사항 감지
+  markUnsavedChanges();
+}
+
+/**
+ * Handle hotkey recording
+ */
+function handleHotkeyRecording(event) {
+  if (!isRecordingHotkey) return;
+
+  // 키 조합 처리
+  if (event.key === 'Escape') {
+    // ESC 키는 녹화 취소
+    clearHotkey();
+    return;
+  }
+
+  // 단축키 조합 생성
+  const modifiers = [];
+  if (event.ctrlKey) modifiers.push('Ctrl');
+  if (event.shiftKey) modifiers.push('Shift');
+  if (event.altKey) modifiers.push('Alt');
+  if (event.metaKey) modifiers.push('Meta');
+
+  // 일반 키 처리
+  let key = event.key;
+  if (key.length === 1) {
+    key = key.toUpperCase();
+  }
+
+  // 특수 키 처리 (화살표 등)
+  if (key === 'ArrowUp') key = 'Up';
+  if (key === 'ArrowDown') key = 'Down';
+  if (key === 'ArrowLeft') key = 'Left';
+  if (key === 'ArrowRight') key = 'Right';
+
+  // 단축키 텍스트 생성
+  const hotkey = [...modifiers, key].join('+');
+
+  // 입력 필드 업데이트
+  if (globalHotkeyInput) {
+    globalHotkeyInput.value = hotkey;
+    globalHotkeyInput.classList.remove('recording');
+  }
+
+  isRecordingHotkey = false;
+  if (recordHotkeyButton) {
+    recordHotkeyButton.disabled = false;
+  }
+
+  // 이벤트 기본 동작 방지
+  event.preventDefault();
+
+  // 변경 사항 감지
+  markUnsavedChanges();
+}
+
+/**
+ * Handle login button click
+ */
+function handleLogin() {
+  window.settings.log.info('로그인 시작');
+
+  try {
+    // 로딩 표시
+    if (authLoading) setLoading(authLoading, true);
+    if (loginButton) loginButton.disabled = true;
+
+    // 로그인 시작
+    window.settings.initiateLogin()
+      .then(success => {
+        if (!success) {
+          // 로그인 실패
+          if (authLoading) setLoading(authLoading, false);
+          if (loginButton) loginButton.disabled = false;
+          window.settings.log.error('로그인 시작 실패');
+        }
+      })
+      .catch(error => {
+        // 오류 처리
+        window.settings.log.error('로그인 오류:', error);
+        if (authLoading) setLoading(authLoading, false);
+        if (loginButton) loginButton.disabled = false;
+      });
+  } catch (error) {
+    window.settings.log.error('로그인 처리 중 오류:', error);
+    if (authLoading) setLoading(authLoading, false);
+    if (loginButton) loginButton.disabled = false;
+  }
+}
+
+/**
+ * Handle logout button click
+ */
+function handleLogout() {
+  window.settings.log.info('로그아웃 시작');
+
+  try {
+    window.settings.logout()
+      .then(() => {
+        // 로그아웃 성공 시 UI 업데이트
+        updateAuthStateUI(false);
+        window.settings.log.info('로그아웃 성공');
+      })
+      .catch(error => {
+        window.settings.log.error('로그아웃 오류:', error);
+      });
+  } catch (error) {
+    window.settings.log.error('로그아웃 처리 중 오류:', error);
+  }
+}
+
+/**
+ * Handle token expiration
+ */
+function handleTokenExpired() {
+  window.settings.log.info('토큰 만료 감지, 로그아웃 처리');
+  handleLogout();
+}
+
+/**
+ * Mark settings as having unsaved changes
+ */
+function markUnsavedChanges() {
+  unsavedChanges = true;
+  if (saveButton) {
+    saveButton.disabled = false;
+  }
+}
+
+/**
+ * Save settings
+ */
+function saveSettings() {
+  window.settings.log.info('설정 저장 시작');
+
+  try {
+    // 버튼 비활성화
+    if (saveButton) saveButton.disabled = true;
+
+    // 설정 객체 생성
+    const settings = {
+      globalHotkey: globalHotkeyInput ? globalHotkeyInput.value : '',
+      appearance: {
+        theme: themeSelect ? themeSelect.value : 'system',
+        position: positionSelect ? positionSelect.value : 'center',
+        size: sizeSelect ? sizeSelect.value : 'medium',
+        opacity: opacityRange ? parseFloat(opacityRange.value) : 0.95,
+      },
+      advanced: {
+        launchAtLogin: launchAtLoginCheckbox ? launchAtLoginCheckbox.checked : false,
+        hideAfterAction: hideAfterActionCheckbox ? hideAfterActionCheckbox.checked : true,
+        hideOnBlur: hideOnBlurCheckbox ? hideOnBlurCheckbox.checked : true,
+        hideOnEscape: hideOnEscapeCheckbox ? hideOnEscapeCheckbox.checked : true,
+        showInTaskbar: showInTaskbarCheckbox ? showInTaskbarCheckbox.checked : false,
+      },
+    };
+
+    // 설정 저장
+    window.settings.setConfig('globalHotkey', settings.globalHotkey);
+    window.settings.setConfig('appearance', settings.appearance);
+    window.settings.setConfig('advanced', settings.advanced);
+
+    // 변경 사항 플래그 초기화
+    unsavedChanges = false;
+
+    // 성공 메시지 표시
+    if (saveButton) {
+      saveButton.textContent = '저장 완료!';
+      setTimeout(() => {
+        saveButton.textContent = '저장';
+        saveButton.disabled = false;
+      }, 1500);
+    }
+
+    window.settings.log.info('설정 저장 완료');
+  } catch (error) {
+    window.settings.log.error('설정 저장 중 오류:', error);
+
+    // 오류 시 버튼 복원
+    if (saveButton) {
+      saveButton.textContent = '저장 실패';
+      setTimeout(() => {
+        saveButton.textContent = '저장';
+        saveButton.disabled = false;
+      }, 1500);
+    }
+  }
+}
+
+/**
+ * Confirm cancel changes
+ */
+function confirmCancel() {
+  window.settings.log.info('설정 취소');
+
+  if (unsavedChanges) {
+    if (confirm('변경사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+      window.settings.closeWindow();
+    }
+  } else {
+    window.settings.closeWindow();
+  }
+}
+
+/**
+ * Handle manage subscription button click
+ */
+function handleManageSubscription() {
+  window.settings.log.info('구독 관리 페이지 열기');
+  window.settings.openUrl('https://app.toast.sh/subscription');
+}
+
+/**
+ * Handle refresh subscription button click
+ */
+function handleRefreshSubscription() {
+  window.settings.log.info('구독 정보 새로고침');
+
+  try {
+    // 버튼 비활성화 및 로딩 표시
+    if (refreshSubscriptionButton) {
+      refreshSubscriptionButton.disabled = true;
+      refreshSubscriptionButton.textContent = '갱신 중...';
+    }
+
+    if (subscriptionLoading) setLoading(subscriptionLoading, true);
+
+    // 구독 정보 다시 로드
+    fetchSubscriptionInfo()
+      .then(() => {
+        // 성공 메시지 표시
+        if (refreshSubscriptionButton) {
+          refreshSubscriptionButton.textContent = '갱신 완료!';
+          setTimeout(() => {
+            refreshSubscriptionButton.textContent = '구독 정보 새로고침';
+            refreshSubscriptionButton.disabled = false;
+          }, 1500);
+        }
+      })
+      .catch(error => {
+        window.settings.log.error('구독 정보 새로고침 오류:', error);
+
+        // 오류 메시지 표시
+        if (refreshSubscriptionButton) {
+          refreshSubscriptionButton.textContent = '갱신 실패';
+          setTimeout(() => {
+            refreshSubscriptionButton.textContent = '구독 정보 새로고침';
+            refreshSubscriptionButton.disabled = false;
+          }, 1500);
+        }
+      });
+  } catch (error) {
+    window.settings.log.error('구독 정보 새로고침 처리 중 오류:', error);
+
+    // 오류 시 버튼 및 로딩 상태 복원
+    if (subscriptionLoading) setLoading(subscriptionLoading, false);
+    if (refreshSubscriptionButton) {
+      refreshSubscriptionButton.textContent = '구독 정보 새로고침';
+      refreshSubscriptionButton.disabled = false;
+    }
+  }
+}
+
+/**
+ * Handle Cloud Sync toggle
+ */
+function handleCloudSyncToggle() {
+  const enabled = enableCloudSyncCheckbox.checked;
+  window.settings.log.info(`클라우드 동기화 상태 변경: ${enabled ? '활성화' : '비활성화'}`);
+
+  try {
+    // 로딩 표시 및 버튼 비활성화
+    if (syncLoading) setLoading(syncLoading, true);
+    if (enableCloudSyncCheckbox) enableCloudSyncCheckbox.disabled = true;
+
+    // 동기화 상태 변경
+    window.settings.setCloudSyncEnabled(enabled)
+      .then(() => {
+        // 상태 업데이트
+        return window.settings.getSyncStatus();
+      })
+      .then(status => {
+        // UI 업데이트
+        updateSyncStatusUI(status);
+
+        // 로딩 숨김 및 버튼 활성화
+        if (syncLoading) setLoading(syncLoading, false);
+        if (enableCloudSyncCheckbox) enableCloudSyncCheckbox.disabled = false;
+      })
+      .catch(error => {
+        window.settings.log.error('클라우드 동기화 상태 변경 오류:', error);
+
+        // 오류 시 체크박스 상태 복원
+        if (enableCloudSyncCheckbox) {
+          enableCloudSyncCheckbox.checked = !enabled;
+          enableCloudSyncCheckbox.disabled = false;
+        }
+
+        // 로딩 숨김
+        if (syncLoading) setLoading(syncLoading, false);
+      });
+  } catch (error) {
+    window.settings.log.error('클라우드 동기화 상태 변경 처리 중 오류:', error);
+
+    // 오류 시 UI 복원
+    if (syncLoading) setLoading(syncLoading, false);
+    if (enableCloudSyncCheckbox) {
+      enableCloudSyncCheckbox.checked = !enabled;
+      enableCloudSyncCheckbox.disabled = false;
+    }
+  }
+}
+
+/**
+ * Handle manual sync upload
+ */
+function handleManualSyncUpload() {
+  window.settings.log.info('수동 동기화 - 업로드 시작');
+
+  try {
+    // 로딩 표시 및 버튼 비활성화
+    if (syncLoading) setLoading(syncLoading, true);
+    if (manualSyncUploadButton) manualSyncUploadButton.disabled = true;
+    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = true;
+    if (manualSyncResolveButton) manualSyncResolveButton.disabled = true;
+
+    // 업로드 실행
+    window.settings.manualSync('upload')
+      .then(result => {
+        if (result.success) {
+          // 성공 메시지
+          if (manualSyncUploadButton) {
+            manualSyncUploadButton.textContent = '업로드 완료!';
+          }
+        } else {
+          throw new Error(result.error || '알 수 없는 오류');
+        }
+      })
+      .catch(error => {
+        window.settings.log.error('수동 동기화 업로드 오류:', error);
+
+        // 오류 메시지
+        if (manualSyncUploadButton) {
+          manualSyncUploadButton.textContent = '업로드 실패';
+        }
+      })
+      .finally(() => {
+        // 상태 복원
+        if (syncLoading) setLoading(syncLoading, false);
+
+        setTimeout(() => {
+          if (manualSyncUploadButton) {
+            manualSyncUploadButton.textContent = '서버에 업로드';
+            manualSyncUploadButton.disabled = false;
+          }
+          if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
+          if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+        }, 1500);
+      });
+  } catch (error) {
+    window.settings.log.error('수동 동기화 업로드 처리 중 오류:', error);
+
+    // 로딩 및 버튼 상태 복원
+    if (syncLoading) setLoading(syncLoading, false);
+    if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
+    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
+    if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+  }
+}
+
+/**
+ * Handle manual sync download
+ */
+function handleManualSyncDownload() {
+  window.settings.log.info('수동 동기화 - 다운로드 시작');
+
+  try {
+    // 확인 대화상자
+    if (!confirm('서버에서 설정을 다운로드하면 로컬 설정을 덮어씁니다. 계속하시겠습니까?')) {
+      return;
+    }
+
+    // 로딩 표시 및 버튼 비활성화
+    if (syncLoading) setLoading(syncLoading, true);
+    if (manualSyncUploadButton) manualSyncUploadButton.disabled = true;
+    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = true;
+    if (manualSyncResolveButton) manualSyncResolveButton.disabled = true;
+
+    // 다운로드 실행
+    window.settings.manualSync('download')
+      .then(result => {
+        if (result.success) {
+          // 성공 메시지
+          if (manualSyncDownloadButton) {
+            manualSyncDownloadButton.textContent = '다운로드 완료!';
+          }
+
+          // 설정 다시 로드
+          return window.settings.getConfig();
+        } else {
+          throw new Error(result.error || '알 수 없는 오류');
+        }
+      })
+      .then(loadedConfig => {
+        config = loadedConfig;
+        initializeUI();
+      })
+      .catch(error => {
+        window.settings.log.error('수동 동기화 다운로드 오류:', error);
+
+        // 오류 메시지
+        if (manualSyncDownloadButton) {
+          manualSyncDownloadButton.textContent = '다운로드 실패';
+        }
+      })
+      .finally(() => {
+        // 상태 복원
+        if (syncLoading) setLoading(syncLoading, false);
+
+        setTimeout(() => {
+          if (manualSyncDownloadButton) {
+            manualSyncDownloadButton.textContent = '서버에서 다운로드';
+            manualSyncDownloadButton.disabled = false;
+          }
+          if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
+          if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+        }, 1500);
+      });
+  } catch (error) {
+    window.settings.log.error('수동 동기화 다운로드 처리 중 오류:', error);
+
+    // 로딩 및 버튼 상태 복원
+    if (syncLoading) setLoading(syncLoading, false);
+    if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
+    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
+    if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+  }
+}
+
+/**
+ * Handle manual sync resolve
+ */
+function handleManualSyncResolve() {
+  window.settings.log.info('수동 동기화 - 충돌 해결 시작');
+
+  try {
+    // 확인 대화상자
+    if (!confirm('로컬 설정과 서버 설정 간의 충돌을 해결합니다. 타임스탬프가 더 최신인 설정이 적용됩니다. 계속하시겠습니까?')) {
+      return;
+    }
+
+    // 로딩 표시 및 버튼 비활성화
+    if (syncLoading) setLoading(syncLoading, true);
+    if (manualSyncUploadButton) manualSyncUploadButton.disabled = true;
+    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = true;
+    if (manualSyncResolveButton) manualSyncResolveButton.disabled = true;
+
+    // 충돌 해결 실행
+    window.settings.manualSync('resolve')
+      .then(result => {
+        if (result.success) {
+          // 성공 메시지
+          if (manualSyncResolveButton) {
+            manualSyncResolveButton.textContent = '충돌 해결 완료!';
+          }
+
+          // 설정 다시 로드
+          return window.settings.getConfig();
+        } else {
+          throw new Error(result.error || '알 수 없는 오류');
+        }
+      })
+      .then(loadedConfig => {
+        config = loadedConfig;
+        initializeUI();
+      })
+      .catch(error => {
+        window.settings.log.error('수동 동기화 충돌 해결 오류:', error);
+
+        // 오류 메시지
+        if (manualSyncResolveButton) {
+          manualSyncResolveButton.textContent = '충돌 해결 실패';
+        }
+      })
+      .finally(() => {
+        // 상태 복원
+        if (syncLoading) setLoading(syncLoading, false);
+
+        setTimeout(() => {
+          if (manualSyncResolveButton) {
+            manualSyncResolveButton.textContent = '충돌 해결';
+            manualSyncResolveButton.disabled = false;
+          }
+          if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
+          if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
+        }, 1500);
+      });
+  } catch (error) {
+    window.settings.log.error('수동 동기화 충돌 해결 처리 중 오류:', error);
+
+    // 로딩 및 버튼 상태 복원
+    if (syncLoading) setLoading(syncLoading, false);
+    if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
+    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
+    if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+  }
 }
 
 /**
@@ -688,1294 +1546,4 @@ function saveSubscriptionToConfig(subscription) {
   };
 
   window.settings.setConfig('subscription', subscriptionConfig);
-}
-
-/**
- * Handle token expiration
- */
-function handleTokenExpired() {
-  // Show token expired notification
-  alert('Your session has expired. Please sign in again.');
-
-  // Log out
-  handleLogout();
-}
-
-/**
- * Show/hide loading state
- * @param {HTMLElement} loadingElement - Loading indicator element
- * @param {boolean} isLoading - Loading state
- */
-function setLoading(loadingElement, isLoading) {
-  if (isLoading) {
-    loadingElement.classList.remove('hidden');
-  } else {
-    loadingElement.classList.add('hidden');
-  }
-}
-
-/**
- * Load user profile information and update UI
- * @returns {Promise<void>}
- */
-async function loadUserDataAndUpdateUI() {
-  try {
-    // Load profile information (now querying all information through profile API)
-    await fetchUserProfile();
-
-    // Update UI after loading data
-    updateAuthStateUI(true);
-
-    // Hide loading indicator
-    setLoading(authLoading, false);
-    loginButton.disabled = false;
-  } catch (error) {
-    window.settings.log.error('Error loading user data:', error);
-
-    // Return to login state if error occurs
-    updateAuthStateUI(false);
-    setLoading(authLoading, false);
-    loginButton.disabled = false;
-
-    // Notify user of error
-    alert(`Data loading failed: ${error.message || 'Unknown error'}`);
-  }
-}
-
-/**
- * Initialize About tab
- */
-async function initializeAboutTab() {
-  try {
-    // 버전 표시
-    if (appVersionElement) {
-      try {
-        // 앱 버전 자동으로 가져오기
-        const version = await window.settings.getVersion();
-
-        // 버전 정보 표시 (날짜 포함)
-        appVersionElement.innerHTML = `<strong>${version}</strong>`;
-
-        // 버전 정보 로깅
-        window.settings.log.info(`앱 버전 정보: ${version}`);
-      } catch (error) {
-        window.settings.log.error('버전 정보를 가져오는 중 오류 발생:', error);
-      }
-    }
-  } catch (error) {
-    window.settings.log.error('앱 정보를 가져오는 중 오류 발생:', error);
-  }
-
-  // 업데이트 상태 초기화
-  updateStatus.classList.add('hidden');
-  updateActions.classList.add('hidden');
-  updateLoading.classList.add('hidden');
-}
-
-/**
- * Handle login button click
- */
-async function handleLogin() {
-  try {
-    // Show loading state and disable button
-    setLoading(authLoading, true);
-    loginButton.disabled = true;
-
-    // Call the main process to initiate the OAuth flow
-    const success = await window.settings.initiateLogin();
-
-    if (success) {
-      // Authentication successful - load user data and update UI
-      // Note: UI is updated in loadUserDataAndUpdateUI after data loading
-      await loadUserDataAndUpdateUI();
-    } else {
-      // Login process start failed
-      setLoading(authLoading, false);
-      loginButton.disabled = false;
-    }
-  } catch (error) {
-    window.settings.log.error('Login error:', error);
-    alert(`Login failed: ${error.message || 'Unknown error'}`);
-    // Hide loading state and enable button
-    setLoading(authLoading, false);
-    loginButton.disabled = false;
-  }
-}
-
-/**
- * Handle logout button click
- */
-async function handleLogout() {
-  try {
-    // Call the main process to log out (logout only locally)
-    await window.settings.logout();
-
-    // Update UI
-    updateAuthStateUI(false);
-  } catch (error) {
-    window.settings.log.error('Logout error:', error);
-    alert(`Logout failed: ${error.message || 'Unknown error'}`);
-  }
-}
-
-/**
- * Handle manage subscription button click
- */
-function handleManageSubscription() {
-  // Open subscription management page in browser
-  window.settings.openUrl('https://app.toast.sh/dashboard');
-}
-
-/**
- * Handle refresh subscription button click
- */
-async function handleRefreshSubscription() {
-  try {
-    // Disable button and show loading
-    refreshSubscriptionButton.disabled = true;
-    refreshSubscriptionButton.textContent = 'Refreshing...';
-    setLoading(subscriptionLoading, true);
-
-    // Fetch latest subscription info
-    await fetchSubscriptionInfo();
-
-    // Show success message and restore button
-    refreshSubscriptionButton.textContent = 'Refreshed!';
-    setTimeout(() => {
-      refreshSubscriptionButton.textContent = 'Refresh Status';
-      refreshSubscriptionButton.disabled = false;
-    }, 2000);
-  } catch (error) {
-    console.error('Failed to refresh subscription:', error);
-    // Hide loading state
-    setLoading(subscriptionLoading, false);
-
-    // Show error message and restore button
-    refreshSubscriptionButton.textContent = 'Refresh Failed';
-    setTimeout(() => {
-      refreshSubscriptionButton.textContent = 'Refresh Status';
-      refreshSubscriptionButton.disabled = false;
-    }, 2000);
-  }
-}
-
-/**
- * Set up event listeners
- */
-function setupEventListeners() {
-  // Tab navigation
-  tabLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      const tabId = link.getAttribute('data-tab');
-      switchTab(tabId);
-
-      // Cloud Sync 탭 선택 시 구독 정보 확인 및 UI 갱신
-      if (tabId === 'cloud-sync') {
-        window.settings.log.info('Cloud Sync 탭 선택됨 - 구독 상태 확인 및 UI 갱신');
-
-        // Premium 사용자 강제 활성화
-        if (authState.subscription?.plan) {
-          const plan = String(authState.subscription.plan).toLowerCase();
-          if (plan.includes('premium') || plan.includes('pro')) {
-            window.settings.log.info('Premium/Pro 구독 감지 - Cloud Sync 강제 활성화');
-            enableCloudSyncCheckbox.disabled = false;
-
-            // 구독 정보에 cloud_sync 기능 추가
-            if (!authState.subscription.features) {
-              authState.subscription.features = {};
-            }
-            authState.subscription.features.cloud_sync = true;
-
-            // 서버에서 동기화 상태 다시 확인
-            window.settings.getSyncStatus().then(status => {
-              window.settings.log.info('Cloud Sync 탭 선택 시 동기화 상태 확인 결과:', status);
-              updateSyncStatusUI(status);
-            });
-          }
-        }
-
-        // VIP 사용자 확인 및 강제 활성화
-        if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
-          window.settings.log.info('VIP 사용자 감지 - Cloud Sync 강제 활성화');
-          enableCloudSyncCheckbox.disabled = false;
-        }
-
-        // 구독 상태 활성화 확인
-        if (
-          authState.subscription?.isSubscribed === true ||
-          authState.subscription?.active === true ||
-          authState.subscription?.is_subscribed === true
-        ) {
-          window.settings.log.info('구독 활성화 상태 확인됨 - Cloud Sync 강제 활성화');
-          enableCloudSyncCheckbox.disabled = false;
-        }
-      }
-    });
-  });
-
-  // General settings
-  recordHotkeyButton.addEventListener('click', startRecordingHotkey);
-  clearHotkeyButton.addEventListener('click', clearHotkey);
-  launchAtLoginCheckbox.addEventListener('change', () => {
-    markUnsavedChanges();
-  });
-
-  // Appearance settings
-  themeSelect.addEventListener('change', () => {
-    // Apply theme locally
-    applyTheme(themeSelect.value);
-
-    // // Also apply theme to Toast window immediately (show Toast window)
-    // window.settings.setConfig('appearance', {
-    //   ...config.appearance,
-    //   theme: themeSelect.value
-    // }).then(() => {
-    //   // Show Toast window (to verify theme change)
-    //   window.settings.showToast();
-    // });
-
-    markUnsavedChanges();
-  });
-  positionSelect.addEventListener('change', markUnsavedChanges);
-  sizeSelect.addEventListener('change', markUnsavedChanges);
-
-  opacityRange.addEventListener('input', () => {
-    opacityValue.textContent = opacityRange.value;
-    markUnsavedChanges();
-  });
-
-  // Account & Subscription
-  loginButton.addEventListener('click', handleLogin);
-  logoutButton.addEventListener('click', handleLogout);
-  manageSubscriptionButton.addEventListener('click', handleManageSubscription);
-  refreshSubscriptionButton.addEventListener('click', handleRefreshSubscription);
-
-  // Advanced settings
-  hideAfterActionCheckbox.addEventListener('change', markUnsavedChanges);
-  hideOnBlurCheckbox.addEventListener('change', markUnsavedChanges);
-  hideOnEscapeCheckbox.addEventListener('change', markUnsavedChanges);
-  showInTaskbarCheckbox.addEventListener('change', markUnsavedChanges);
-
-  resetSettingsButton.addEventListener('click', confirmResetSettings);
-
-  // Cloud Sync settings
-  enableCloudSyncCheckbox.addEventListener('change', handleCloudSyncToggle);
-  manualSyncUploadButton.addEventListener('click', handleManualSyncUpload);
-  manualSyncDownloadButton.addEventListener('click', handleManualSyncDownload);
-  manualSyncResolveButton.addEventListener('click', handleManualSyncResolve);
-
-  // Main buttons
-  saveButton.addEventListener('click', saveSettings);
-  cancelButton.addEventListener('click', confirmCancel);
-
-  // Hotkey recording
-  document.addEventListener('keydown', handleHotkeyRecording);
-
-  // Close settings window with ESC key
-  document.addEventListener('keydown', event => {
-    // Only process if ESC key is pressed and not in hotkey recording mode
-    if (event.key === 'Escape' && !isRecordingHotkey) {
-      // Confirm save if there are unsaved changes
-      if (unsavedChanges) {
-        if (confirm('You have unsaved changes. Close without saving?')) {
-          window.settings.closeWindow();
-        }
-      } else {
-        // Close directly if no changes
-        window.settings.closeWindow();
-      }
-    }
-  });
-
-  // Custom protocol handler for OAuth redirect
-  window.addEventListener('protocol-data', event => {
-    // Handle the OAuth redirect with auth code
-    if (event.detail && event.detail.includes('code=')) {
-      const code = extractAuthCode(event.detail);
-      if (code) {
-        handleAuthCode(code);
-      }
-    }
-  });
-
-  // Login success event listener
-  window.addEventListener('login-success', event => {
-    window.settings.log.info('Login success event received in settings window:', event.detail);
-    // Load user data and update UI when login is successful
-    loadUserDataAndUpdateUI();
-  });
-
-  // Login error event listener
-  window.addEventListener('login-error', event => {
-    window.settings.log.error('Login error event received in settings window:', event.detail);
-    // Update UI when login fails
-    updateAuthStateUI(false);
-    alert(`Login failed: ${event.detail.message || event.detail.error || 'Unknown error'}`);
-  });
-
-  // Logout success event listener
-  window.addEventListener('logout-success', event => {
-    window.settings.log.info('Logout success event received in settings window');
-    // Update UI when logout is successful
-    updateAuthStateUI(false);
-  });
-
-  // Authentication state change event listener
-  window.addEventListener('auth-state-changed', event => {
-    window.settings.log.info('Auth state changed event received in settings window:', event.detail);
-
-    // Handle based on authentication state change type
-    if (event.detail.type === 'auth-reload') {
-      // Load user data and update UI when authentication info is refreshed
-      loadUserDataAndUpdateUI();
-    }
-  });
-
-  // 구독 정보 및 설정 업데이트 이벤트 리스너
-  window.addEventListener('config-updated', event => {
-    window.settings.log.info('설정 업데이트 이벤트 감지:', event.detail);
-
-    // 설정 데이터 업데이트
-    if (event.detail) {
-      config = event.detail;
-
-      // UI 업데이트
-      initializeUI();
-
-      // 구독 정보가 있으면 구독 UI도 업데이트
-      if (event.detail.subscription) {
-        authState.subscription = event.detail.subscription;
-        updateSubscriptionUI(event.detail.subscription);
-
-        // 클라우드 싱크 UI 업데이트
-        initializeCloudSyncUI();
-      }
-    }
-  });
-
-  // 설정 동기화 이벤트 리스너
-  window.addEventListener('settings-synced', event => {
-    window.settings.log.info('설정 동기화 이벤트 감지:', event.detail);
-
-    // 동기화 상태 새로고침
-    window.settings.getSyncStatus().then(status => {
-        window.settings.log.info('새로운 동기화 상태:', status);
-      updateSyncStatusUI(status);
-    });
-  });
-
-  // 탭 선택 이벤트 리스너 - 외부에서 특정 탭을 선택하도록 요청할 때 사용
-  window.addEventListener('select-settings-tab', event => {
-    window.settings.log.info('선택된 탭 이벤트 감지:', event.detail);
-
-    // 탭 이름이 유효한지 확인
-    const tabName = event.detail;
-    if (tabName && typeof tabName === 'string') {
-      // 해당 이름의 탭이 존재하는지 확인
-      const tabExists = Array.from(tabLinks).some(
-        link => link.getAttribute('data-tab') === tabName
-      );
-
-      if (tabExists) {
-        window.settings.log.info(`'${tabName}' 탭으로 전환합니다.`);
-        switchTab(tabName);
-      } else {
-        window.settings.log.warn(`요청된 탭 '${tabName}'이 존재하지 않습니다.`);
-      }
-    }
-  });
-
-  // About 탭 이벤트 리스너
-  homepageButton.addEventListener('click', () => {
-    window.settings.openUrl('https://app.toast.sh');
-  });
-
-  checkUpdatesButton.addEventListener('click', handleCheckUpdates);
-  downloadUpdateButton.addEventListener('click', handleDownloadUpdate);
-  installUpdateButton.addEventListener('click', handleInstallUpdate);
-}
-
-/**
- * Extract authentication code from redirect URI
- * @param {string} uri - Redirect URI containing auth code
- * @returns {string|null} - Extracted auth code or null
- */
-function extractAuthCode(uri) {
-  const match = uri.match(/[?&]code=([^&]+)/);
-  return match ? match[1] : null;
-}
-
-/**
- * Handle authentication code
- * @param {string} code - Authentication code
- */
-async function handleAuthCode(code) {
-  try {
-    // Show loading state
-    setLoading(authLoading, true);
-
-    // Exchange code for token
-    const tokenResult = await window.settings.exchangeCodeForToken(code);
-
-    if (tokenResult.success) {
-      // Token exchange successful - load user data and update UI
-      // Note: UI is updated in loadUserDataAndUpdateUI after data loading
-      await loadUserDataAndUpdateUI();
-    } else {
-      throw new Error(tokenResult.error || 'Failed to exchange code for token');
-    }
-  } catch (error) {
-    window.settings.log.error('Authentication error:', error);
-    alert(`Authentication failed: ${error.message || 'Unknown error'}`);
-    updateAuthStateUI(false);
-    // Hide loading state
-    setLoading(authLoading, false);
-  }
-}
-
-/**
- * Switch between tabs
- * @param {string} tabId - ID of the tab to switch to
- */
-function switchTab(tabId) {
-  // Update tab links
-  tabLinks.forEach(link => {
-    link.classList.toggle('active', link.getAttribute('data-tab') === tabId);
-  });
-
-  // Update tab contents
-  tabContents.forEach(content => {
-    content.classList.toggle('active', content.id === tabId);
-  });
-}
-
-/**
- * Start recording a hotkey
- */
-function startRecordingHotkey() {
-  // Temporarily disable existing shortcuts (prevent other shortcuts from working during recording)
-  window.settings
-    .temporarilyDisableShortcuts()
-    .then(() => {
-      window.settings.log.info('Shortcuts temporarily disabled for recording');
-
-      isRecordingHotkey = true;
-      globalHotkeyInput.value = 'Press a key combination...';
-      globalHotkeyInput.classList.add('recording');
-      recordHotkeyButton.disabled = true;
-    })
-    .catch(err => {
-      window.settings.log.error('Failed to disable shortcuts for recording:', err);
-    });
-}
-
-/**
- * Handle hotkey recording
- * @param {KeyboardEvent} event - Keyboard event
- */
-function handleHotkeyRecording(event) {
-  if (!isRecordingHotkey) return;
-
-  // Prevent default behavior
-  event.preventDefault();
-  event.stopPropagation();
-
-  // Get modifier keys (convert to Electron accelerator format)
-  const modifiers = [];
-  if (event.ctrlKey) modifiers.push('CommandOrControl');
-  if (event.altKey) modifiers.push('Alt');
-  if (event.shiftKey) modifiers.push('Shift');
-  if (event.metaKey) modifiers.push('Super');
-
-  // Get the key (convert to Electron accelerator format)
-  let key = event.key;
-  let code = event.code;
-
-  // Skip if only modifier keys are pressed
-  if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
-    return;
-  }
-
-  // Format key name for Electron accelerator
-  if (key === ' ' || code === 'Space' || key === 'Spacebar' || key === 'Space') {
-    key = 'Space';
-  } else if (key.length === 1) {
-    key = key.toUpperCase();
-  } else if (code.startsWith('Key')) {
-    // Use the code for letter keys (KeyA, KeyB, etc)
-    key = code.slice(3);
-  } else if (code.startsWith('Digit')) {
-    // Use the code for number keys (Digit0, Digit1, etc)
-    key = code.slice(5);
-  } else {
-    // Handle special keys
-    const keyMap = {
-      Escape: 'Esc',
-      ArrowUp: 'Up',
-      ArrowDown: 'Down',
-      ArrowLeft: 'Left',
-      ArrowRight: 'Right',
-      Enter: 'Return',
-    };
-    key = keyMap[key] || key;
-  }
-
-  // Create hotkey string in Electron accelerator format
-  const hotkey = [...modifiers, key].join('+');
-
-  // Debug information (log to console)
-  window.settings.log.info('Recorded hotkey:', hotkey, 'from key:', event.key, 'code:', event.code);
-
-  // Set the hotkey
-  globalHotkeyInput.value = hotkey;
-  globalHotkeyInput.classList.remove('recording');
-  recordHotkeyButton.disabled = false;
-  isRecordingHotkey = false;
-
-  // Re-enable shortcuts
-  window.settings
-    .restoreShortcuts()
-    .then(() => window.settings.log.info('Shortcuts restored after recording'))
-    .catch(err => window.settings.log.error('Failed to restore shortcuts:', err));
-
-  // Mark as unsaved
-  markUnsavedChanges();
-}
-
-/**
- * Clear the hotkey
- */
-function clearHotkey() {
-  globalHotkeyInput.value = '';
-  isRecordingHotkey = false;
-  globalHotkeyInput.classList.remove('recording');
-  recordHotkeyButton.disabled = false;
-
-  // Mark as unsaved
-  markUnsavedChanges();
-}
-
-/**
- * Confirm resetting settings
- */
-function confirmResetSettings() {
-  if (
-    confirm(
-      'Are you sure you want to reset all settings to their default values? This cannot be undone.',
-    )
-  ) {
-    resetSettings();
-  }
-}
-
-/**
- * Reset settings to defaults
- */
-async function resetSettings() {
-  try {
-    const success = await window.settings.resetConfig();
-
-    if (success) {
-      // Reload config
-      const newConfig = await window.settings.getConfig();
-      config = newConfig;
-
-      // Update UI
-      initializeUI();
-
-      alert('Settings reset to defaults');
-    } else {
-      alert('Failed to reset settings');
-    }
-  } catch (error) {
-    alert(`Error resetting settings: ${error.message || 'Unknown error'}`);
-  }
-}
-
-/**
- * Save settings
- */
-async function saveSettings() {
-  // Save the original button text
-  const originalButtonText = saveButton.textContent;
-
-  // Collect settings
-  const settings = {
-    globalHotkey: globalHotkeyInput.value,
-    appearance: {
-      theme: themeSelect.value,
-      position: positionSelect.value,
-      size: sizeSelect.value,
-      opacity: parseFloat(opacityRange.value),
-    },
-    advanced: {
-      launchAtLogin: launchAtLoginCheckbox.checked,
-      hideAfterAction: hideAfterActionCheckbox.checked,
-      hideOnBlur: hideOnBlurCheckbox.checked,
-      hideOnEscape: hideOnEscapeCheckbox.checked,
-      showInTaskbar: showInTaskbarCheckbox.checked,
-    },
-  };
-
-  // Save settings
-  try {
-    // Disable button and change text to "Saving..."
-    saveButton.disabled = true;
-    // saveButton.textContent = "Saving...";
-
-    // Save changes first
-    await window.settings.setConfig('globalHotkey', settings.globalHotkey);
-    await window.settings.setConfig('appearance', settings.appearance);
-    await window.settings.setConfig('advanced', settings.advanced);
-
-    // Update config
-    config = await window.settings.getConfig();
-
-    // Clear unsaved changes flag
-    unsavedChanges = false;
-
-    // Change to saved message
-    saveButton.textContent = 'Saved!';
-
-    // Apply theme to Toast window immediately
-    if (settings.appearance && settings.appearance.theme) {
-      // Apply theme to Toast window immediately (display Toast window)
-      window.settings.setConfig('appearance.theme', settings.appearance.theme);
-    }
-
-    // // Show toast window to demonstrate the setting changes
-    // window.settings.showToast();
-
-    // Close window after a delay to let user see the changes
-    setTimeout(() => {
-      // Restore original button text
-      saveButton.textContent = originalButtonText;
-      saveButton.disabled = false;
-
-      // // Close settings window
-      // window.settings.closeWindow();
-    }, 1500);
-  } catch (error) {
-    alert(`Error saving settings: ${error.message || 'Unknown error'}`);
-    saveButton.textContent = originalButtonText;
-    saveButton.disabled = false;
-  }
-}
-
-/**
- * Confirm canceling changes
- */
-async function confirmCancel() {
-  // Close window without saving changes
-  unsavedChanges = false;
-  window.settings.closeWindow();
-}
-
-/**
- * Mark settings as having unsaved changes
- */
-function markUnsavedChanges() {
-  unsavedChanges = true;
-}
-
-/**
- * Handle Cloud Sync toggle
- */
-async function handleCloudSyncToggle() {
-  // 원래 체크박스 상태 저장
-  const originalChecked = enableCloudSyncCheckbox.checked;
-
-  // 체크박스 상태 텍스트
-  const statusText = originalChecked ? 'Enabling...' : 'Disabling...';
-
-  try {
-    // Show loading state
-    setLoading(syncLoading, true);
-    enableCloudSyncCheckbox.disabled = true;
-    manualSyncDisabled();
-
-    // 체크박스 레이블 근처에 있는 sync-status-text 업데이트하여 상태 표시
-    const originalStatusText = syncStatusText.textContent;
-    syncStatusText.textContent = statusText;
-
-    // Check if user has subscription permission
-    let hasCloudSyncPermission = false;
-
-    // 디버깅 로그 추가
-    window.settings.log.info(
-      'handleCloudSyncToggle: 구독 정보 확인:',
-      JSON.stringify(authState.subscription || {}),
-    );
-
-    // VIP 사용자 확인 (최우선)
-    if (authState.subscription?.isVip === true || authState.subscription?.vip === true) {
-      hasCloudSyncPermission = true;
-      window.settings.log.info('handleCloudSyncToggle: VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
-    }
-
-    // 구독 상태 확인
-    if (
-      authState.subscription?.isSubscribed === true ||
-      authState.subscription?.active === true ||
-      authState.subscription?.is_subscribed === true
-    ) {
-      hasCloudSyncPermission = true;
-      window.settings.log.info('handleCloudSyncToggle: 구독 활성화 상태 확인됨');
-    }
-
-    // Cloud Sync 기능 특화 확인
-    if (authState.subscription?.features && typeof authState.subscription.features === 'object') {
-      if (authState.subscription.features.cloud_sync === true) {
-        hasCloudSyncPermission = true;
-        window.settings.log.info('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features 객체)');
-      }
-    }
-
-    // features_array 확인
-    if (Array.isArray(authState.subscription?.features_array)) {
-      if (authState.subscription.features_array.includes('cloud_sync')) {
-        hasCloudSyncPermission = true;
-        window.settings.log.info('handleCloudSyncToggle: cloud_sync 기능 활성화됨 (features_array)');
-      }
-    }
-
-    window.settings.log.info('handleCloudSyncToggle: 최종 클라우드 싱크 권한:', hasCloudSyncPermission);
-
-    if (!hasCloudSyncPermission) {
-      syncStatusText.textContent = 'Premium subscription required';
-      enableCloudSyncCheckbox.checked = false;
-
-      // 일정 시간 후 원래 상태로 복원
-      setTimeout(() => {
-        syncStatusText.textContent = originalStatusText;
-        enableCloudSyncCheckbox.disabled = false;
-        manualSyncEnabled();
-      }, 1500);
-
-      setLoading(syncLoading, false);
-      return;
-    }
-
-    // Enable/disable cloud sync
-    const enabled = originalChecked;
-
-    // Update cloud sync configuration
-    await window.settings.setCloudSyncEnabled(enabled);
-
-    // Update UI based on new status
-    const status = await window.settings.getSyncStatus();
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // 성공 메시지 표시
-    syncStatusText.textContent = enabled
-      ? 'Sync enabled successfully!'
-      : 'Sync disabled successfully!';
-
-    // 일정 시간 후 UI 업데이트 및 원래 상태로 복원
-    setTimeout(() => {
-      updateSyncStatusUI(status);
-      enableCloudSyncCheckbox.disabled = false;
-      manualSyncEnabled();
-    }, 1500);
-  } catch (error) {
-    window.settings.log.error('Cloud sync toggle error:', error);
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Show error in status text
-    syncStatusText.textContent = `Error: ${error.message || 'Unknown error'}`;
-
-    // Restore checkbox state
-    enableCloudSyncCheckbox.checked = !originalChecked;
-
-    // Restore original state after a delay
-    setTimeout(() => {
-      window.settings.getSyncStatus().then(status => {
-        updateSyncStatusUI(status);
-        enableCloudSyncCheckbox.disabled = false;
-        manualSyncEnabled();
-      });
-    }, 2000);
-
-    // Log error
-    window.settings.log.error(`Cloud sync configuration error: ${error.message || 'Unknown error'}`);
-  }
-}
-
-/**
- * Disable manual sync buttons
- */
-function manualSyncDisabled() {
-  manualSyncUploadButton.disabled = true;
-  manualSyncDownloadButton.disabled = true;
-  manualSyncResolveButton.disabled = true;
-}
-
-/**
- * Enable manual sync buttons
- */
-function manualSyncEnabled() {
-  manualSyncUploadButton.disabled = false;
-  manualSyncDownloadButton.disabled = false;
-  manualSyncResolveButton.disabled = false;
-
-  // 원래 스타일로 복원
-  manualSyncUploadButton.style.backgroundColor = '';
-  manualSyncDownloadButton.style.backgroundColor = '';
-  manualSyncResolveButton.style.backgroundColor = '';
-  manualSyncUploadButton.style.color = '';
-  manualSyncDownloadButton.style.color = '';
-  manualSyncResolveButton.style.color = '';
-  manualSyncUploadButton.style.cursor = '';
-  manualSyncDownloadButton.style.cursor = '';
-  manualSyncResolveButton.style.cursor = '';
-}
-
-/**
- * Handle manual sync upload
- */
-async function handleManualSyncUpload() {
-  try {
-    // Save the original button text
-    const originalButtonText = manualSyncUploadButton.textContent;
-
-    // Disable buttons and show loading
-    setLoading(syncLoading, true);
-    manualSyncDisabled();
-    manualSyncUploadButton.textContent = 'Uploading...';
-
-    // Upload settings to server
-    const result = await window.settings.manualSync('upload');
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Update UI based on new status
-    const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
-
-    if (result.success) {
-      // Show success message in button
-      manualSyncUploadButton.textContent = 'Upload Complete!';
-
-      // Enable only the current button to show the success message
-      manualSyncUploadButton.disabled = false;
-
-      // Reset button after delay
-      setTimeout(() => {
-        manualSyncUploadButton.textContent = originalButtonText;
-        manualSyncEnabled();
-      }, 1500);
-    } else {
-      throw new Error(result.error || '업로드 실패');
-    }
-  } catch (error) {
-    window.settings.log.error('Manual sync upload error:', error);
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Show error in button
-    manualSyncUploadButton.textContent = 'Upload Failed';
-    manualSyncUploadButton.disabled = false;
-
-    // Re-enable buttons after delay
-    setTimeout(() => {
-      manualSyncUploadButton.textContent = 'Upload to Server';
-      manualSyncEnabled();
-    }, 1500);
-
-    // Log error to console
-    window.settings.log.error(`Settings upload error: ${error.message || 'Unknown error'}`);
-  }
-}
-
-/**
- * Handle manual sync download
- */
-async function handleManualSyncDownload() {
-  try {
-    // Save the original button text
-    const originalButtonText = manualSyncDownloadButton.textContent;
-
-    // Show loading state
-    setLoading(syncLoading, true);
-    manualSyncDisabled();
-
-    // Confirm download (will overwrite local settings)
-    if (
-      !confirm('Downloading settings from the server will overwrite your local settings. Continue?')
-    ) {
-      setLoading(syncLoading, false);
-
-      // Re-enable buttons
-      const status = await window.settings.getSyncStatus();
-      updateSyncStatusUI(status);
-      return;
-    }
-
-    // Update button text
-    manualSyncDownloadButton.textContent = 'Downloading...';
-
-    // Download settings from server
-    const result = await window.settings.manualSync('download');
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Update UI based on new status
-    const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
-
-    if (result.success) {
-      // Show success in button
-      manualSyncDownloadButton.textContent = 'Download Complete!';
-      manualSyncDownloadButton.disabled = false;
-
-      // Reload config
-      const newConfig = await window.settings.getConfig();
-      config = newConfig;
-
-      // Update UI to reflect new settings
-      initializeUI();
-
-      // Reset button after delay
-      setTimeout(() => {
-        manualSyncDownloadButton.textContent = originalButtonText;
-        manualSyncEnabled();
-      }, 1500);
-    } else {
-      throw new Error(result.error || '다운로드 실패');
-    }
-  } catch (error) {
-    window.settings.log.error('Manual sync download error:', error);
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Show error in button
-    manualSyncDownloadButton.textContent = 'Download Failed';
-    manualSyncDownloadButton.disabled = false;
-
-    // Reset button after delay
-    setTimeout(() => {
-      manualSyncDownloadButton.textContent = originalButtonText;
-      manualSyncEnabled();
-    }, 1500);
-
-    // Log error to console
-    window.settings.log.error(`Settings download error: ${error.message || 'Unknown error'}`);
-  }
-}
-
-/**
- * Handle check for updates
- */
-async function handleCheckUpdates() {
-  try {
-    // Disable button and show loading
-    checkUpdatesButton.disabled = true;
-    setLoading(updateLoading, true);
-    updateStatus.classList.remove('hidden');
-    updateActions.classList.add('hidden');
-
-    // 로깅 추가
-    window.settings.log.info('Starting update check');
-
-    // Save original button text
-    const originalButtonText = checkUpdatesButton.textContent;
-    checkUpdatesButton.textContent = 'Checking...';
-
-    // electron-updater를 통해 최신 버전 확인
-    window.settings.log.info('Starting update check through electron-updater');
-    const result = await window.settings.checkForUpdates(false); // false: silent모드 아님 (사용자에게 알림)
-
-    // Hide loading
-    setLoading(updateLoading, false);
-
-    window.settings.log.info('Update check result:', result);
-
-    if (result.success) {
-      // 현재 버전과 최신 버전 비교
-      const currentVersion = result.versionInfo.current;
-      const latestVersion = result.versionInfo.latest;
-
-      // 업데이트 정보 추출
-      const updateInfo = result.updateInfo || {};
-      const releaseDate = updateInfo.releaseDate
-        ? new Date(updateInfo.releaseDate).toLocaleDateString()
-        : 'Unknown';
-      const releaseNotes = updateInfo.releaseNotes || '';
-
-      // 업데이트 필요 여부 확인
-      const hasUpdate = result.hasUpdate;
-
-      if (hasUpdate) {
-        // 새 버전이 있는 경우
-        updateMessage.innerHTML = `
-          <strong>New version available!</strong><br>
-          Current version: ${currentVersion}<br>
-          Latest version: ${latestVersion} (Update required)<br>
-          Release date: ${releaseDate}<br>
-          ${releaseNotes ? `<small>${releaseNotes}</small>` : ''}
-        `;
-        updateActions.classList.remove('hidden');
-        downloadUpdateButton.classList.remove('hidden');
-        installUpdateButton.classList.add('hidden');
-      } else {
-        // 최신 버전인 경우
-        updateMessage.innerHTML = `
-          <strong>You are using the latest version.</strong><br>
-          Current version: ${currentVersion}<br>
-          Latest version: ${latestVersion}
-        `;
-        updateActions.classList.add('hidden');
-
-        // 3초 후 메시지 숨김
-        setTimeout(() => {
-          updateStatus.classList.add('hidden');
-        }, 3000);
-      }
-    } else {
-      // 업데이트 확인 실패
-      throw new Error(result.error || 'Could not retrieve version information.');
-    }
-
-    // 버튼 원래 상태로 복원
-    setTimeout(() => {
-      checkUpdatesButton.textContent = originalButtonText;
-      checkUpdatesButton.disabled = false;
-    }, 1000);
-  } catch (error) {
-    console.error('Update check error:', error);
-
-    // 오류 표시
-    updateMessage.textContent = `Update check error: ${error.message || 'Unknown error'}`;
-    updateActions.classList.add('hidden');
-    setLoading(updateLoading, false);
-
-    // 버튼 원래 상태로 복원
-    checkUpdatesButton.textContent = 'Check for Updates';
-    checkUpdatesButton.disabled = false;
-  }
-}
-
-/**
- * Handle download update
- */
-async function handleDownloadUpdate() {
-  try {
-    // 버튼 비활성화 및 로딩 표시
-    downloadUpdateButton.disabled = true;
-    installUpdateButton.disabled = true;
-    setLoading(updateLoading, true);
-
-    // 원래 버튼 텍스트 저장
-    const originalButtonText = downloadUpdateButton.textContent;
-    downloadUpdateButton.textContent = 'Downloading...';
-
-    // 먼저 자동 업데이트 시도
-    try {
-      // 자동 업데이트 다운로드 시작
-      const autoUpdateResult = await window.settings.downloadAutoUpdate();
-      window.settings.log.info('Starting automatic update download:', autoUpdateResult);
-
-      // 다운로드 진행 상황은 이벤트로 전달됨
-      updateMessage.textContent = 'Downloading update. Please wait...';
-
-      // 이벤트 리스너는 이미 preload에서 설정되어 있음
-      // 다운로드 진행 상황 및 완료는 이벤트로 처리
-      return;
-    } catch (autoUpdateError) {
-      // 자동 업데이트 실패 시 수동 다운로드로 폴백
-      console.error('Automatic update failed, switching to manual download:', autoUpdateError);
-
-      // 수동 다운로드 시작 (브라우저에서 다운로드 URL 열기)
-      const manualResult = await window.settings.downloadManualUpdate();
-
-      // 로딩 숨기기
-      setLoading(updateLoading, false);
-
-      if (manualResult && manualResult.success) {
-        // 수동 다운로드 성공
-        updateMessage.textContent =
-          'Update download has started in your browser. After downloading, please install it manually.';
-        downloadUpdateButton.classList.add('hidden');
-        installUpdateButton.classList.remove('hidden');
-        installUpdateButton.disabled = false;
-      } else {
-        // 수동 다운로드 실패
-        updateMessage.textContent = manualResult.message || 'Failed to download update.';
-
-        // 버튼 상태 복원
-        downloadUpdateButton.textContent = originalButtonText;
-        downloadUpdateButton.disabled = false;
-      }
-    }
-  } catch (error) {
-    console.error('Update download error:', error);
-
-    // 오류 표시
-    updateMessage.textContent = `Update download error: ${error.message || 'Unknown error'}`;
-    setLoading(updateLoading, false);
-
-    // 버튼 상태 복원
-    downloadUpdateButton.textContent = 'Download';
-    downloadUpdateButton.disabled = false;
-  }
-}
-
-// 자동 업데이트 이벤트 처리를 위한 리스너 설정
-window.addEventListener('download-progress', event => {
-  const progress = event.detail.progress;
-  if (progress && progress.percent) {
-    updateMessage.textContent = `Downloading: ${Math.round(progress.percent)}%`;
-  }
-});
-
-window.addEventListener('update-downloaded', event => {
-  // 다운로드 완료됨 - UI 업데이트
-  setLoading(updateLoading, false);
-  updateMessage.textContent = 'Update has been downloaded. Would you like to install it now?';
-  downloadUpdateButton.classList.add('hidden');
-  installUpdateButton.classList.remove('hidden');
-  installUpdateButton.disabled = false;
-});
-
-window.addEventListener('update-error', event => {
-  // 오류 발생
-  setLoading(updateLoading, false);
-  updateMessage.textContent = `Update error: ${event.detail.error || 'Unknown error'}`;
-  downloadUpdateButton.textContent = '다운로드';
-  downloadUpdateButton.disabled = false;
-});
-
-/**
- * Handle install update
- */
-async function handleInstallUpdate() {
-  try {
-    // 설치 확인
-    if (
-      confirm('The app will close and the update will be installed. Would you like to proceed?')
-    ) {
-      // 자동 업데이트 설치 (자동 업데이트 시스템 사용)
-      try {
-        // 버튼 비활성화 및 로딩 표시
-        installUpdateButton.disabled = true;
-        setLoading(updateLoading, true);
-
-        // 다운로드된 업데이트 설치
-        await window.settings.installAutoUpdate();
-
-        // 여기까지 도달하면 설치가 실패한 것 (정상 설치 시 앱이 종료됨)
-        setLoading(updateLoading, false);
-        updateMessage.textContent =
-          'Could not start update installation. Please restart the app manually.';
-        installUpdateButton.disabled = false;
-      } catch (autoInstallError) {
-        // 자동 업데이트 설치 실패 시 수동 설치로 폴백
-        console.error('Automatic update installation failed:', autoInstallError);
-
-        // 수동 설치 (앱 종료)
-        await window.settings.installUpdate();
-      }
-    }
-  } catch (error) {
-    console.error('Update installation error:', error);
-
-    // 오류 표시
-    setLoading(updateLoading, false);
-    updateMessage.textContent = `Update installation error: ${error.message || 'Unknown error'}`;
-    installUpdateButton.disabled = false;
-  }
-}
-
-// 설치 시작 이벤트 리스너
-window.addEventListener('install-started', event => {
-  updateMessage.textContent = 'Installing update. The app will close shortly...';
-  installUpdateButton.disabled = true;
-});
-
-/**
- * Handle manual sync resolve
- */
-async function handleManualSyncResolve() {
-  try {
-    // Save the original button text
-    const originalButtonText = manualSyncResolveButton.textContent;
-
-    // Show loading state
-    setLoading(syncLoading, true);
-    manualSyncDisabled();
-
-    // Confirm conflict resolution
-    if (
-      !confirm(
-        'This will resolve conflicts between local and server settings. The most recent settings based on timestamp will be applied. Continue?',
-      )
-    ) {
-      setLoading(syncLoading, false);
-
-      // Re-enable buttons
-      const status = await window.settings.getSyncStatus();
-      updateSyncStatusUI(status);
-      return;
-    }
-
-    // Update button text
-    manualSyncResolveButton.textContent = 'Resolving Conflicts...';
-
-    // Resolve conflicts
-    const result = await window.settings.manualSync('resolve');
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Update UI based on new status
-    const status = await window.settings.getSyncStatus();
-    updateSyncStatusUI(status);
-
-    if (result.success) {
-      // Show success in button
-      manualSyncResolveButton.textContent = 'Conflicts Resolved!';
-      manualSyncResolveButton.disabled = false;
-
-      // Reload config
-      const newConfig = await window.settings.getConfig();
-      config = newConfig;
-
-      // Update UI to reflect new settings
-      initializeUI();
-
-      // Reset button after delay
-      setTimeout(() => {
-        manualSyncResolveButton.textContent = originalButtonText;
-        manualSyncEnabled();
-      }, 1500);
-    } else {
-      throw new Error(result.error || '충돌 해결 실패');
-    }
-  } catch (error) {
-    window.settings.log.error('Manual sync resolve error:', error);
-
-    // Hide loading state
-    setLoading(syncLoading, false);
-
-    // Show error in button
-    manualSyncResolveButton.textContent = 'Resolution Failed';
-    manualSyncResolveButton.disabled = false;
-
-    // Reset button after delay
-    setTimeout(() => {
-      manualSyncResolveButton.textContent = originalButtonText;
-      manualSyncEnabled();
-    }, 1500);
-
-    // Log error to console
-    window.settings.log.error(`Settings conflict resolution error: ${error.message || 'Unknown error'}`);
-  }
 }
