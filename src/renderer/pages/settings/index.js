@@ -72,7 +72,6 @@ const installUpdateButton = document.getElementById('install-update');
 const updateLoading = document.getElementById('update-loading');
 
 // DOM Elements - Main Buttons
-const saveButton = document.getElementById('save-button');
 const cancelButton = document.getElementById('cancel-button');
 
 // State
@@ -435,14 +434,7 @@ function setupEventListeners() {
     });
   }
 
-  // 저장 및 취소 버튼 (저장 버튼은 이제 "닫기" 버튼 역할)
-  if (saveButton) {
-    saveButton.textContent = '닫기';
-    saveButton.addEventListener('click', () => {
-      window.settings.closeWindow();
-    });
-  }
-
+  // 닫기 버튼
   if (cancelButton) {
     cancelButton.addEventListener('click', () => {
       window.settings.closeWindow();
@@ -1357,9 +1349,6 @@ function handleTokenExpired() {
  */
 function markUnsavedChanges() {
   unsavedChanges = true;
-  if (saveButton) {
-    saveButton.disabled = false;
-  }
 }
 
 /**
@@ -1369,9 +1358,6 @@ function saveSettings() {
   window.settings.log.info('설정 저장 시작');
 
   try {
-    // 버튼 비활성화
-    if (saveButton) saveButton.disabled = true;
-
     // 설정 객체 생성
     const settings = {
       globalHotkey: globalHotkeyInput ? globalHotkeyInput.value : '',
@@ -1398,27 +1384,9 @@ function saveSettings() {
     // 변경 사항 플래그 초기화
     unsavedChanges = false;
 
-    // 성공 메시지 표시
-    if (saveButton) {
-      saveButton.textContent = '저장 완료!';
-      setTimeout(() => {
-        saveButton.textContent = '저장';
-        saveButton.disabled = false;
-      }, 1500);
-    }
-
     window.settings.log.info('설정 저장 완료');
   } catch (error) {
     window.settings.log.error('설정 저장 중 오류:', error);
-
-    // 오류 시 버튼 복원
-    if (saveButton) {
-      saveButton.textContent = '저장 실패';
-      setTimeout(() => {
-        saveButton.textContent = '저장';
-        saveButton.disabled = false;
-      }, 1500);
-    }
   }
 }
 
