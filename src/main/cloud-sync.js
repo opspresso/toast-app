@@ -205,17 +205,17 @@ async function uploadSettings() {
   // 동기화 상태 확인
   if (!state.enabled) {
     logger.info('클라우드 동기화가 비활성화되어 업로드를 건너뜁니다');
-    return { success: false, error: '클라우드 동기화 비활성화됨' };
+    return { success: false, error: 'Cloud sync disabled' };
   }
 
   // 동기화 가능 여부 확인
   if (!(await canSync())) {
-    return { success: false, error: '클라우드 동기화가 활성화되지 않음' };
+    return { success: false, error: 'Cloud sync not enabled' };
   }
 
   if (state.isSyncing) {
     logger.info('이미 동기화 중, 업로드 건너뜀');
-    return { success: false, error: '이미 동기화 중' };
+    return { success: false, error: 'Sync already in progress' };
   }
 
   try {
@@ -287,17 +287,17 @@ async function downloadSettings() {
   // 동기화 상태 확인
   if (!state.enabled) {
     logger.info('클라우드 동기화가 비활성화되어 다운로드를 건너뜁니다');
-    return { success: false, error: '클라우드 동기화 비활성화됨' };
+    return { success: false, error: 'Cloud sync disabled' };
   }
 
   // 동기화 가능 여부 확인
   if (!(await canSync())) {
-    return { success: false, error: '클라우드 동기화가 활성화되지 않음' };
+    return { success: false, error: 'Cloud sync not enabled' };
   }
 
   if (state.isSyncing) {
     logger.info('이미 동기화 중, 다운로드 건너뜀');
-    return { success: false, error: '이미 동기화 중' };
+    return { success: false, error: 'Sync already in progress' };
   }
 
   try {
@@ -417,11 +417,11 @@ async function syncSettings(action = 'resolve') {
 
       // 5. 필요한 경우 병합된 설정 업로드
       if (localSettings && localSettings.lastModifiedAt > (serverSettings?.lastModifiedAt || 0)) {
-        logger.info('로컬 설정이 더 최신입니다. 병합된 설정을 서버에 업로드합니다.');
+        logger.info('Local settings are more recent. Uploading merged settings to the server.');
         await uploadSettings();
       }
 
-      return { success: true, message: '설정 동기화 완료' };
+      return { success: true, message: 'Settings synchronization completed' };
     }
   } catch (error) {
     logger.error('수동 동기화 오류:', error);
@@ -452,7 +452,7 @@ function mergeSettings(localSettings, serverSettings) {
 
   // 서버 설정이 더 최신인 경우
   if (serverTime > localTime) {
-    logger.info('서버 설정이 더 최신입니다. 서버 설정을 우선 적용합니다');
+    logger.info('Server settings are more recent. Applying server settings with priority.');
     return {
       ...localSettings,
       ...serverSettings,
@@ -461,7 +461,7 @@ function mergeSettings(localSettings, serverSettings) {
   }
 
   // 로컬 설정이 더 최신인 경우
-  logger.info('로컬 설정이 더 최신입니다. 로컬 설정을 우선 적용합니다');
+  logger.info('Local settings are more recent. Applying local settings with priority.');
   return {
     ...serverSettings,
     ...localSettings,
@@ -496,15 +496,15 @@ function setupConfigListeners() {
     }
 
     // 변경 유형 감지
-    let changeType = '알 수 없는 변경';
+    let changeType = 'unknown_change';
 
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
       if (newValue.length > oldValue.length) {
-        changeType = '페이지 추가됨';
+        changeType = 'page_added';
       } else if (newValue.length < oldValue.length) {
-        changeType = '페이지 삭제됨';
+        changeType = 'page_deleted';
       } else {
-        changeType = '버튼 수정됨';
+        changeType = 'button_modified';
       }
     }
 
@@ -541,7 +541,7 @@ function setupConfigListeners() {
     logger.info('설정 파일 메타데이터 업데이트 완료');
 
     // 동기화 예약
-    scheduleSync('외관 변경');
+    scheduleSync('appearance_changed');
   });
 
   // 고급 설정 변경 감지
@@ -562,7 +562,7 @@ function setupConfigListeners() {
     logger.info('설정 파일 메타데이터 업데이트 완료');
 
     // 동기화 예약
-    scheduleSync('고급 설정 변경');
+    scheduleSync('advanced_settings_changed');
   });
 }
 
