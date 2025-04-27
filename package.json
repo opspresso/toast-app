@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.5.35",
+  "version": "0.5.36",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
@@ -81,10 +81,6 @@
       ]
     },
     "win": {
-      "signingHashAlgorithms": [
-        "sha256"
-      ],
-      "publisherName": "OpsPresso",
       "icon": "assets/icons/icon.ico",
       "target": [
         "nsis",
@@ -92,7 +88,10 @@
       ],
       "publish": [
         "github"
-      ]
+      ],
+      "signtoolOptions": {
+        "hashAlgorithm": "sha256"
+      }
     },
     "linux": {
       "target": [
