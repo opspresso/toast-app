@@ -66,7 +66,7 @@ function updateTrayMenu(tray, windows) {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Toast',
-      accelerator: configuredHotkey, // 설정에서 가져온 글로벌 핫키 사용
+      accelerator: configuredHotkey,
       click: () => {
         if (windows.toast) {
           windows.toast.show();
@@ -83,15 +83,18 @@ function updateTrayMenu(tray, windows) {
         ipcMain.emit('show-settings', null);
       },
     },
-    { type: 'separator' },
     {
-      label: 'About Toast',
+      label: 'About',
       click: () => {
         const { ipcMain } = require('electron');
         // 설정 창을 열고 about 탭을 선택하도록 이벤트 발생
         // 두 번째 인자는 이벤트 객체, 세 번째 인자부터 추가 데이터
         ipcMain.emit('show-settings-tab', null, 'about');
       },
+    },
+    {
+      label: `Version: ${app.getVersion()}`,
+      enabled: false,
     },
     { type: 'separator' },
     {
