@@ -1274,9 +1274,13 @@ function handleHotkeyRecording(event) {
     return;
   }
 
-  // 특수 키 처리
-  if (key === ' ') {
-    key = 'Space'; // 스페이스 키는 특별히 처리
+  // 키 코드 디버깅 로그
+  window.settings.log.debug(`키 입력 감지 - key: "${key}", keyCode: ${event.keyCode}, code: ${event.code}`);
+
+  // 특수 키 처리 (코드를 확인하는 방식으로 변경)
+  if (event.code === 'Space') {
+    key = 'Space';
+    window.settings.log.debug('스페이스 키 감지 및 변환');
   } else if (key.length === 1) {
     key = key.toUpperCase();
   }
