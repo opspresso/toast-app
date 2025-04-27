@@ -459,8 +459,13 @@ async function downloadUpdate() {
     // 다운로드 시작 전 잠시 대기 (타이밍 문제 방지)
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 다운로드 정보 로깅 - electron-updater 버전 6에서는 downloadUpdateInfo 함수가 지원되지 않음
-    logger.info('Preparing to download update package');
+    // 다운로드 정보 조회
+    logger.info('Retrieving update package information');
+    const updateFileInfo = await autoUpdater.downloadUpdateInfo();
+
+    if (updateFileInfo) {
+      logger.info(`Update file information: ${JSON.stringify(updateFileInfo)}`);
+    }
 
     // 업데이트 다운로드 시작
     logger.info('Starting update download');
