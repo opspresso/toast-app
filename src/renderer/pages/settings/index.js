@@ -203,49 +203,60 @@ function setupEventListeners() {
 
     window.settings.log.info('모든 이벤트 리스너 등록 시작...');
 
-    // 탭 클릭 이벤트 처리
-    function handleTabClick(event) {
-      // 이벤트 전파 완전 차단 (캡처링과 버블링 모두 방지)
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      // 현재 시간 기록
-      const now = Date.now();
-      const tabId = this.getAttribute('data-tab');
-
-      // 이미 처리 중인 디바운스 타이머가 있다면 취소
-      if (tabClickTimer) {
-        clearTimeout(tabClickTimer);
+    // 탭 클릭 이벤트 처리를 위한 이벤트 위임 패턴 사용
+    // 각 탭 요소에 직접 이벤트를 추가하는 대신 부모 요소인 .settings-nav에 이벤트를 추가
+    const settingsNav = document.querySelector('.settings-nav');
+    if (settingsNav) {
+      // 이전 이벤트 리스너를 모두 제거하기 위해 새 요소로 복제
+      const newNav = settingsNav.cloneNode(true);
+      if (settingsNav.parentNode) {
+        settingsNav.parentNode.replaceChild(newNav, settingsNav);
       }
 
-      // 연속 클릭 방지 (300ms 이내 같은 탭)
-      if (now - lastTabClickTime < 300) {
-        window.settings.log.info(`빠른 연속 클릭 감지됨 (${tabId}), 무시합니다.`);
-        return;
-      }
+      // 이벤트 위임 방식으로 이벤트 리스너 등록
+      newNav.addEventListener('click', function(event) {
+        // li 요소 또는 li의 자식 요소를 클릭했는지 확인
+        let targetLi = event.target;
+        while (targetLi && targetLi !== newNav) {
+          if (targetLi.tagName === 'LI') {
+            break;
+          }
+          targetLi = targetLi.parentNode;
+        }
 
-      // 시간 업데이트
-      lastTabClickTime = now;
+        // 클릭한 요소가 li가 아니면 무시
+        if (!targetLi || targetLi === newNav) return;
 
-      // 디바운싱 처리 (10ms 내에 처리가 집중되면 하나로 병합)
-      tabClickTimer = setTimeout(() => {
-        window.settings.log.info(`탭 클릭 감지: ${tabId}`);
-        switchTab(tabId);
-        tabClickTimer = null;
-      }, 10);
+        // 이벤트 전파 완전 차단
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        // 현재 시간 기록
+        const now = Date.now();
+        const tabId = targetLi.getAttribute('data-tab');
+
+        // 이미 처리 중인 디바운스 타이머가 있다면 취소
+        if (tabClickTimer) {
+          clearTimeout(tabClickTimer);
+        }
+
+        // 연속 클릭 방지 (300ms 이내 같은 탭)
+        if (now - lastTabClickTime < 300) {
+          window.settings.log.info(`빠른 연속 클릭 감지됨 (${tabId}), 무시합니다.`);
+          return;
+        }
+
+        // 시간 업데이트
+        lastTabClickTime = now;
+
+        // 디바운싱 처리 (10ms 내에 처리가 집중되면 하나로 병합)
+        tabClickTimer = setTimeout(() => {
+          window.settings.log.info(`탭 클릭 감지: ${tabId}`);
+          switchTab(tabId);
+          tabClickTimer = null;
+        }, 10);
+      }, true);
     }
-
-    // 각 탭에 이벤트 리스너 등록 (기존 리스너 모두 제거 후)
-    tabLinks.forEach(link => {
-      // 클론 생성으로 모든 이벤트 리스너 제거
-      const newLink = link.cloneNode(true);
-      if (link.parentNode) {
-        link.parentNode.replaceChild(newLink, link);
-      }
-
-      // 새 이벤트 리스너 등록
-      newLink.addEventListener('click', handleTabClick, { capture: true });
-    });
 
     // ESC 키 이벤트 핸들러 (전역 핸들러)
     function handleEscKey(event) {
@@ -511,22 +522,76 @@ function setupEventListeners() {
  * @param {string} tabId - ID of the tab to switch to
  */
 function switchTab(tabId) {
-  window.settings.log.info(`탭 전환: ${tabId}`);
+  window.settings.log.info(`탭 전환 시작: ${tabId}`);
 
-  // 탭 링크 활성화 상태 업데이트
-  tabLinks.forEach(link => {
-    link.classList.toggle('active', link.getAttribute('data-tab') === tabId);
-  });
+  try {
+    // DOM 조작을 최소화하기 위해 직접 attribute 선택자로 요소 선택
+    const allTabLinks = document.querySelectorAll('.settings-nav li');
+    window.settings.log.info(`발견된 탭 링크 수: ${allTabLinks.length}`);
 
-  // 탭 컨텐츠 표시/숨김 처리
-  tabContents.forEach(content => {
-    content.classList.toggle('active', content.id === tabId);
-  });
+    // 명확한 로깅을 위해 처음 상태 기록
+    for (const link of allTabLinks) {
+      const tabID = link.getAttribute('data-tab');
+      const isActive = link.classList.contains('active');
+      window.settings.log.info(`탭 [${tabID}] 초기 상태: ${isActive ? '활성' : '비활성'}`);
+    }
 
-  // 탭 내용 초기화 (필요한 경우에만)
-  if (tabId && !tabInitState[tabId]) {
-    window.settings.log.info(`탭 컨텐츠 초기화 필요: ${tabId}`);
-    initializeTabContent(tabId);
+    // 먼저 모든 탭에서 active 클래스 제거 - 기본 DOM API 사용
+    for (let i = 0; i < allTabLinks.length; i++) {
+      allTabLinks[i].className = allTabLinks[i].className.replace(/\bactive\b/g, '').trim();
+    }
+
+    // 해당하는 탭에 active 클래스 추가 - 직접 속성 설정
+    for (let i = 0; i < allTabLinks.length; i++) {
+      const link = allTabLinks[i];
+      const linkTabId = link.getAttribute('data-tab');
+
+      if (linkTabId === tabId) {
+        // active 클래스가 없을 경우에만 추가
+        if (!link.className.includes('active')) {
+          link.className = link.className ? link.className + ' active' : 'active';
+          window.settings.log.info(`탭 링크 [${tabId}] 활성화됨 - 클래스: ${link.className}`);
+        }
+      }
+    }
+
+    // 모든 컨텐츠 영역 비활성화 및 선택한 영역만 활성화
+    const contentTabs = document.querySelectorAll('.settings-tab');
+    for (const tab of contentTabs) {
+      if (tab.id === tabId) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    }
+
+    // 탭 내용 초기화 (필요한 경우에만)
+    if (tabId && !tabInitState[tabId]) {
+      window.settings.log.info(`탭 컨텐츠 초기화 필요: ${tabId}`);
+      initializeTabContent(tabId);
+    }
+
+    // DOM 갱신 후 최종 검증
+    setTimeout(() => {
+      // 최종 상태 확인
+      const finalLinks = document.querySelectorAll('.settings-nav li');
+      window.settings.log.info('탭 전환 후 최종 상태:');
+      for (const link of finalLinks) {
+        const linkId = link.getAttribute('data-tab');
+        const hasActiveClass = link.classList.contains('active');
+        window.settings.log.info(`  탭 [${linkId}]: ${hasActiveClass ? '활성' : '비활성'} (클래스: ${link.className})`);
+      }
+
+      // 선택된 탭 컨텐츠 확인
+      const activeContent = document.querySelector('.settings-tab.active');
+      if (activeContent) {
+        window.settings.log.info(`활성 컨텐츠: [${activeContent.id}]`);
+      } else {
+        window.settings.log.error('활성화된 컨텐츠 탭이 없습니다.');
+      }
+    }, 10);
+  } catch (error) {
+    window.settings.log.error(`탭 전환 중 오류 발생: ${error.message}`, error);
   }
 }
 
