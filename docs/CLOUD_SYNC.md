@@ -6,14 +6,14 @@
 
 - [개요](#개요)
 - [클라우드 동기화 아키텍처](#클라우드-동기화-아키텍처)
+- [단일 데이터 소스 원칙](#단일-데이터-소스-원칙)
 - [동기화 이벤트](#동기화-이벤트)
-- [설정 다운로드 API](#설정-다운로드-API)
-- [설정 업로드 API](#설정-업로드-API)
+- [API 엔드포인트](#API-엔드포인트)
 - [동기화 구현](#동기화-구현)
 - [로컬 데이터 관리](#로컬-데이터-관리)
 - [오류 처리 전략](#오류-처리-전략)
+- [충돌 해결 전략](#충돌-해결-전략)
 - [보안 고려사항](#보안-고려사항)
-- [통합 설정 저장소 구현](#통합-설정-저장소-구현)
 
 ## 개요
 
@@ -23,56 +23,140 @@ Toast 앱은 사용자 설정(페이지 구성, 버튼 레이아웃, 테마 등)
 
 ```mermaid
 sequenceDiagram
+    participant User
     participant ToastApp
+    participant ConfigStore
+    participant UserDataManager
+    participant API
     participant ToastWeb
     participant Database
-    participant LocalFile
 
-    ToastApp->>ToastWeb: Upload Settings (PUT /api/users/settings)
-    ToastWeb->>Database: Save Settings
-    ToastWeb->>ToastApp: Response (Success/Failure)
-    ToastApp->>LocalFile: Save Settings Locally
+    User->>ToastApp: 변경 작업 수행
+    ToastApp->>ConfigStore: 설정 저장
+    ConfigStore-->>UserDataManager: onDidChange 이벤트 감지
+    UserDataManager->>UserDataManager: 메타데이터만 업데이트
+    UserDataManager-->>ToastApp: 동기화 일정 예약
 
-    alt Login from Another Device
-        ToastApp2->>ToastWeb: Download Settings (GET /api/users/settings)
-        ToastWeb->>Database: Retrieve Settings
-        Database->>ToastWeb: Settings Data
-        ToastWeb->>ToastApp2: Transmit Settings
-        ToastApp2->>LocalFile: Save Settings Locally
+    Note over ToastApp,API: 2초 후 디바운스
+
+    ToastApp->>API: 설정 업로드 요청
+    API->>ToastWeb: Upload Settings (PUT /api/users/settings)
+    ToastWeb->>Database: 설정 저장
+    ToastWeb-->>API: 응답 (성공/실패)
+    API-->>ToastApp: 결과 전달
+    ToastApp->>UserDataManager: 동기화 메타데이터 업데이트
+
+    alt 다른 장치에서 로그인
+        ToastApp2->>API: 설정 다운로드 요청
+        API->>ToastWeb: Download Settings (GET /api/users/settings)
+        ToastWeb->>Database: 설정 조회
+        Database-->>ToastWeb: 설정 데이터
+        ToastWeb-->>API: 설정 전송
+        API->>ConfigStore: 직접 설정 저장
+        API-->>ToastApp2: 동기화 완료
+        ToastApp2->>UserDataManager: 동기화 메타데이터 업데이트
     end
 ```
 
+## 단일 데이터 소스 원칙
+
+클라우드 동기화 시스템은 "단일 데이터 소스" 원칙을 따릅니다:
+
+1. **ConfigStore를 단일 소스로 사용**:
+   - 모든 설정 데이터는 Electron-Store로 관리되는 `ConfigStore`에서 읽고 씁니다.
+   - UI 변경, API 다운로드 등 모든 데이터 변경은 `ConfigStore`에 직접 적용됩니다.
+
+2. **UserSettings 파일의 역할 변경**:
+   - `user-settings.json` 파일은 전체 설정 복제본이 아닌 메타데이터(타임스탬프, 장치 정보)만 저장
+   - 이 파일의 주요 목적은 동기화 상태 및 충돌 감지를 위한 정보 유지
+
+3. **데이터 흐름 최적화**:
+   - 사용자 변경 → ConfigStore 저장 → 메타데이터 갱신 → API 업로드
+   - API 다운로드 → ConfigStore 직접 갱신 → 메타데이터 갱신
+
+이 구조는 불필요한 데이터 복제를 방지하고 일관성을 유지하여 데이터 불일치 가능성을 최소화합니다.
+
 ## 동기화 이벤트
 
-설정 동기화는 특정 타이밍 이벤트에 발생합니다:
+설정 동기화는 다음 이벤트에서 발생합니다:
 
 ### 서버에서 다운로드 트리거
 1. **로그인 성공 시**: 사용자가 성공적으로 로그인하면 최신 설정이 즉시 서버에서 다운로드됩니다.
    ```javascript
    // 로그인 후 설정 다운로드 예시
-   async function handleLoginSuccess() {
-     try {
-       await downloadSettings();
-       console.log('Settings download completed after login');
-     } catch (error) {
-       console.error('Failed to download settings:', error);
+   async function syncAfterLogin() {
+     logger.info('Performing cloud synchronization after login');
+     const result = await downloadSettings();
+
+     // 다운로드 성공 후 UI 업데이트
+     if (result.success) {
+       const configData = {
+         pages: configStore.get('pages'),
+         appearance: configStore.get('appearance'),
+         advanced: configStore.get('advanced'),
+         subscription: configStore.get('subscription'),
+       };
+       authManager.notifySettingsSynced(configData);
      }
+
+     // 주기적 동기화 시작
+     if (state.enabled) {
+       startPeriodicSync();
+     }
+
+     return result;
    }
    ```
 
-### 로컬 파일 저장 트리거
-1. **페이지 추가 시**: 사용자가 새 페이지를 추가하면 변경사항이 즉시 로컬 파일(user-settings.json)에 저장됩니다.
-2. **페이지 삭제 시**: 사용자가 페이지를 삭제하면 변경사항이 즉시 로컬 파일에 저장됩니다.
-3. **버튼 수정 시**: 사용자가 버튼을 추가, 편집 또는 삭제하면 변경사항이 로컬 파일에 저장됩니다.
-
-각 변경사항은 즉시 로컬 파일에 저장되며, configStore에 의해 감지된 변경사항은 자동으로 user-settings.json 파일에 저장됩니다.
-
-### 서버 동기화 트리거
-1. **주기적 동기화**: 설정된 간격(15분)으로 자동으로 동기화를 시도합니다.
 2. **앱 시작 시**: 사용자가 이미 로그인한 상태라면 앱 시작 시 동기화합니다.
-3. **네트워크 복구 시**: 오프라인에서 온라인 상태로 전환될 때 동기화를 시도합니다.
 
-## 설정 다운로드 API
+### 설정 변경 트리거
+1. **페이지 변경 시**: configStore의 'pages' 변경 감지 시
+2. **앱 외관 변경 시**: configStore의 'appearance' 변경 감지 시
+3. **고급 설정 변경 시**: configStore의 'advanced' 변경 감지 시
+
+각 변경은 메타데이터를 업데이트하고 2초 디바운스 후 동기화를 예약합니다:
+
+```javascript
+// 설정 변경 감지 예시
+configStore.onDidChange('pages', async (newValue, oldValue) => {
+  // 동기화 가능 상태 확인
+  if (!state.enabled || !(await canSync())) {
+    return;
+  }
+
+  // 변경 유형 감지
+  let changeType = 'Unknown change';
+  if (Array.isArray(newValue) && Array.isArray(oldValue)) {
+    if (newValue.length > oldValue.length) {
+      changeType = 'Page added';
+    } else if (newValue.length < oldValue.length) {
+      changeType = 'Page deleted';
+    } else {
+      changeType = 'Button modified';
+    }
+  }
+
+  // 메타데이터만 업데이트
+  const timestamp = getCurrentTimestamp();
+  userDataManager.updateSyncMetadata({
+    lastModifiedAt: timestamp,
+    lastModifiedDevice: state.deviceId,
+  });
+
+  // 동기화 예약
+  scheduleSync(changeType);
+});
+```
+
+### 기타 트리거
+1. **주기적 동기화**: 기본 15분 간격으로 자동 동기화 (`SYNC_INTERVAL_MS`)
+2. **네트워크 복구 시**: (미구현 - 향후 추가 가능)
+3. **수동 동기화 요청 시**: 사용자가 수동으로 동기화 요청 시
+
+## API 엔드포인트
+
+### 설정 다운로드 API
 
 ```http
 GET /api/users/settings HTTP/1.1
@@ -80,18 +164,21 @@ Host: app.toast.sh
 Authorization: Bearer ACCESS_TOKEN
 ```
 
-### 응답
+#### 응답
 
 ```json
 {
   "pages": [...],
   "appearance": {...},
   "advanced": {...},
-  "lastSyncedAt": "2024-04-01T12:30:45Z"
+  "lastSyncedAt": "2025-04-01T12:30:45Z",
+  "lastModifiedAt": "2025-04-01T12:30:45Z",
+  "lastSyncedDevice": "macbook-pro-m1",
+  "lastModifiedDevice": "macbook-pro-m1"
 }
 ```
 
-## 설정 업로드 API
+### 설정 업로드 API
 
 ```http
 PUT /api/users/settings HTTP/1.1
@@ -102,71 +189,237 @@ Content-Type: application/json
 {
   "pages": [...],
   "appearance": {...},
-  "advanced": {...}
+  "advanced": {...},
+  "lastSyncedAt": "2025-04-01T12:45:30Z",
+  "lastSyncedDevice": "macbook-pro-m1"
 }
 ```
 
-### 응답
+#### 응답
 
 ```json
 {
   "success": true,
   "message": "Settings updated successfully",
-  "lastSyncedAt": "2024-04-01T12:45:30Z"
+  "lastSyncedAt": "2025-04-01T12:45:30Z"
 }
 ```
 
 ## 동기화 구현
 
-설정 동기화는 `cloud-sync.js` 모듈에서 관리됩니다:
+클라우드 동기화는 세 가지 핵심 모듈로 구현됩니다:
+
+### 1. Cloud-Sync 모듈 (src/main/cloud-sync.js)
+
+동기화 프로세스를 조정하고 다양한 이벤트를 처리합니다:
 
 ```javascript
-const { sync: apiSync } = require('./api');
-const { createConfigStore } = require('./config');
-
-// 동기화 관련 상수
+// 주요 상수
+const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
 const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
-const PERIODIC_SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
+const MAX_RETRY_COUNT = 3; // 최대 재시도 횟수
 
-// 설정 변경 감지 및 로컬 파일 저장
-configStore.onDidChange('pages', async (newValue, oldValue) => {
-  // 변경 유형 감지(페이지 추가, 삭제, 버튼 수정)
-  if (Array.isArray(newValue) && Array.isArray(oldValue)) {
-    if (newValue.length > oldValue.length) {
-      // 페이지 추가 감지
-      console.log('Page addition detected, saving to local file...');
-    } else if (newValue.length < oldValue.length) {
-      // 페이지 삭제 감지
-      console.log('Page deletion detected, saving to local file...');
-    } else if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
-      // 버튼 수정 감지
-      console.log('Button modification detected, saving to local file...');
-    }
+// 모듈 상태 관리
+const state = {
+  enabled: true,
+  isSyncing: false,
+  lastSyncTime: 0,
+  lastChangeType: null,
+  pendingSync: false,
+  retryCount: 0,
+  deviceId: null,
+  timers: {
+    sync: null,
+    debounce: null,
+  },
+};
+
+// 동기화 가능 여부 확인
+async function canSync() {
+  if (!state.enabled || !authManager) {
+    return false;
   }
 
-  // user-settings.json 파일에 저장
-  if (userDataManagerRef) {
-    try {
-      const currentSettings = await userDataManagerRef.getUserSettings();
-      if (currentSettings) {
-        const timestamp = getCurrentTimestamp();
-        const updatedSettings = {
-          ...currentSettings,
-          pages: newValue,
-          lastModifiedAt: timestamp,
-          lastModifiedDevice: deviceInfo
-        };
+  return await apiSync.isCloudSyncEnabled({
+    hasValidToken: authManager.hasValidToken,
+    configStore,
+  });
+}
 
-        userDataManagerRef.updateSettings(updatedSettings);
-        console.log('Page information saved to local settings file');
+// 설정 업로드 함수
+async function uploadSettings() {
+  // 동기화 상태 확인
+  if (!state.enabled || !(await canSync()) || state.isSyncing) {
+    return { success: false, error: '동기화 불가 상태' };
+  }
+
+  try {
+    state.isSyncing = true;
+
+    // ConfigStore에서 직접 데이터 추출 (단일 소스)
+    const advanced = configStore.get('advanced');
+    const appearance = configStore.get('appearance');
+    const pages = configStore.get('pages') || [];
+
+    // 타임스탬프 업데이트
+    const timestamp = getCurrentTimestamp();
+
+    // 업로드 데이터 구성
+    const uploadData = {
+      advanced,
+      appearance,
+      lastSyncedAt: timestamp,
+      lastSyncedDevice: state.deviceId,
+      pages,
+    };
+
+    // API 호출
+    const result = await apiSync.uploadSettings({
+      hasValidToken: authManager.hasValidToken,
+      onUnauthorized: authManager.refreshAccessToken,
+      configStore,
+      directData: uploadData,
+    });
+
+    // 성공 시 메타데이터만 업데이트
+    if (result.success) {
+      state.lastSyncTime = timestamp;
+      userDataManager.updateSyncMetadata({
+        lastSyncedAt: timestamp,
+        lastSyncedDevice: state.deviceId,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || '알 수 없는 오류',
+    };
+  } finally {
+    state.isSyncing = false;
+  }
+}
+```
+
+### 2. API Sync 모듈 (src/main/api/sync.js)
+
+API 호출을 처리하고 서버와 통신합니다:
+
+```javascript
+// 클라우드 동기화 가능 여부 확인
+async function isCloudSyncEnabled({ hasValidToken, configStore }) {
+  // 인증 상태 확인
+  const isAuthenticated = await hasValidToken();
+  if (!isAuthenticated) {
+    return false;
+  }
+
+  // 구독 정보 확인
+  const subscription = configStore.get('subscription') || {};
+  let hasSyncFeature = false;
+
+  // 다양한 구독 형식 지원
+  if (subscription.isSubscribed || subscription.active || subscription.is_subscribed) {
+    hasSyncFeature = true;
+  }
+
+  // features 객체에서 확인
+  if (subscription.features?.cloud_sync === true) {
+    hasSyncFeature = true;
+  }
+
+  // Premium/Pro 플랜 확인
+  if (subscription.plan &&
+      (subscription.plan.toLowerCase().includes('premium') ||
+       subscription.plan.toLowerCase().includes('pro'))) {
+    hasSyncFeature = true;
+  }
+
+  return hasSyncFeature;
+}
+
+// 설정 다운로드 함수
+async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) {
+  // API 호출
+  return await authenticatedRequest(
+    async () => {
+      const headers = getAuthHeaders();
+      const apiClient = createApiClient();
+      const response = await apiClient.get(ENDPOINTS.SETTINGS, { headers });
+
+      const settings = response.data;
+
+      // 데이터 추출 및 저장
+      if (settings && settings.pages) {
+        configStore.set('pages', settings.pages);
+
+        if (settings.appearance) {
+          configStore.set('appearance', settings.appearance);
+        }
+
+        if (settings.advanced) {
+          configStore.set('advanced', settings.advanced);
+        }
       }
-    } catch (error) {
-      console.error('Settings file update error:', error);
-    }
-  }
 
-  // 주기적 서버 동기화는 별도 타이머로 수행
-});
+      // 메타데이터 추출
+      const syncMetadata = {
+        lastSyncedAt: settings.lastSyncedAt || Date.now(),
+        lastSyncedDevice: settings.lastSyncedDevice || 'server',
+        lastModifiedAt: settings.lastModifiedAt,
+        lastModifiedDevice: settings.lastModifiedDevice,
+      };
+
+      return {
+        success: true,
+        data: settings,
+        syncMetadata,
+      };
+    },
+    { onUnauthorized }
+  );
+}
+```
+
+### 3. User-Data-Manager 모듈 (src/main/user-data-manager.js)
+
+로컬 파일 관리와 메타데이터 업데이트를 처리합니다:
+
+```javascript
+// 동기화 메타데이터 업데이트
+function updateSyncMetadata(metadata) {
+  try {
+    // 기존 설정 파일 읽기
+    const currentSettings = readFromFile(SETTINGS_FILE_PATH);
+
+    // 파일이 없거나 손상되었을 경우 새로 생성
+    if (!currentSettings) {
+      const newSettings = {
+        lastSyncedAt: metadata.lastSyncedAt || Date.now(),
+        lastModifiedAt: metadata.lastModifiedAt || Date.now(),
+        lastSyncedDevice: metadata.lastSyncedDevice || 'unknown',
+        lastModifiedDevice: metadata.lastModifiedDevice || 'unknown',
+      };
+
+      return updateSettings(newSettings);
+    }
+
+    // 메타데이터만 업데이트
+    const updatedSettings = {
+      ...currentSettings,
+      lastSyncedAt: metadata.lastSyncedAt || currentSettings.lastSyncedAt,
+      lastModifiedAt: metadata.lastModifiedAt || currentSettings.lastModifiedAt,
+      lastSyncedDevice: metadata.lastSyncedDevice || currentSettings.lastSyncedDevice,
+      lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice,
+    };
+
+    return updateSettings(updatedSettings);
+  } catch (error) {
+    logger.error('동기화 메타데이터 업데이트 오류:', error);
+    return false;
+  }
+}
 ```
 
 ## 로컬 데이터 관리
@@ -187,393 +440,367 @@ Toast 앱은 사용자 프로필, 구독 정보, 설정 등을 로컬 파일로 
 |--------|------|------|
 | `auth-tokens.json` | 인증 토큰 정보 | 액세스 토큰, 리프레시 토큰, 만료 시간 |
 | `user-profile.json` | 사용자 프로필 정보 | 이름, 이메일, 아바타, 구독 정보 등 |
-| `user-settings.json` | 사용자 설정 정보 | 페이지 구성, 테마, 단축키, 타임스탬프 등 |
-| `config.json` | 앱 구성 정보 | 일반 설정, 창 크기, 위치 등 |
+| `user-settings.json` | 동기화 메타데이터 | 타임스탬프, 장치 식별자 정보 |
+| `config.json` | 앱 전체 설정 정보 | 페이지, 외관, 고급 설정, 창 크기, 위치 등 |
 
-### 타임스탬프 관리
+### 타임스탬프 및 장치 식별자
 
-모든 로컬 설정 파일에는 동기화 중 충돌을 방지하고 최신 데이터를 식별하기 위한 타임스탬프 정보가 포함됩니다:
+동기화와 충돌 해결을 위해 다음 메타데이터를 관리합니다:
+
+1. **lastSyncedAt**: 마지막으로 서버와 동기화된 시간 (밀리초 타임스탬프)
+2. **lastSyncedDevice**: 마지막으로 동기화를 수행한 장치 식별자
+3. **lastModifiedAt**: 마지막으로 설정이 수정된 시간 (밀리초 타임스탬프)
+4. **lastModifiedDevice**: 마지막으로 설정을 수정한 장치 식별자
+
+장치 식별자는 다음과 같이 생성됩니다:
 
 ```javascript
-// 설정 저장 시 타임스탬프 추가 예시
-function saveSettings(settingsData) {
-  // 현재 시간을 타임스탬프로 추가
-  const dataWithTimestamp = {
-    ...settingsData,
-    lastModifiedAt: Date.now(),
-    lastModifiedDevice: getDeviceIdentifier()
-  };
-
-  return writeToFile(SETTINGS_FILE_PATH, dataWithTimestamp);
-}
-
-// 설정 로드 시 타임스탬프 확인 예시
-function loadSettings() {
-  const settingsData = readFromFile(SETTINGS_FILE_PATH);
-
-  if (settingsData && !settingsData.lastModifiedAt) {
-    // 타임스탬프가 없으면 현재 시간 추가
-    settingsData.lastModifiedAt = Date.now();
-    settingsData.lastModifiedDevice = getDeviceIdentifier();
-    writeToFile(SETTINGS_FILE_PATH, settingsData);
-  }
-
-  return settingsData;
+function getDeviceIdentifier() {
+  const platform = process.platform;
+  const hostname = os.hostname();
+  const username = os.userInfo().username;
+  return `${platform}-${hostname}-${username}`;
 }
 ```
 
-타임스탬프는 다음 용도로 사용됩니다:
+메타데이터는 다음과 같이 사용됩니다:
 
 1. **변경 감지**: 로컬 설정과 서버 설정의 변경 시간을 비교하여 최신 버전 식별
 2. **충돌 해결**: 여러 장치에서 동시에 변경이 발생한 경우 타임스탬프를 기준으로 병합 또는 우선순위 지정
 3. **동기화 최적화**: 마지막 동기화 이후 변경이 없으면 불필요한 네트워크 요청 방지
 
-```json
-// user-settings.json 예시
-{
-  "pages": [...],
-  "appearance": {
-    "theme": "dark"
-  },
-  "lastModifiedAt": 1682932134590,
-  "lastModifiedDevice": "macbook-pro-m1",
-  "lastSyncedAt": 1682932134590
-}
-```
-
-### 파일 관리 모듈
-
-사용자 데이터 파일 관리는 `user-data-manager.js` 모듈에서 처리됩니다:
-
-```javascript
-const { app } = require('electron');
-const path = require('path');
-const fs = require('fs');
-
-// 파일 경로 상수
-const USER_DATA_PATH = app.getPath('userData');
-const PROFILE_FILE_PATH = path.join(USER_DATA_PATH, 'user-profile.json');
-const SETTINGS_FILE_PATH = path.join(USER_DATA_PATH, 'user-settings.json');
-
-// 파일 읽기
-function readFromFile(filePath) {
-  try {
-    if (!fs.existsSync(filePath)) {
-      return null;
-    }
-    const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error(`File reading error (${filePath}):`, error);
-    return null;
-  }
-}
-
-// 파일 쓰기
-function writeToFile(filePath, data) {
-  try {
-    const dirPath = path.dirname(filePath);
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error(`File saving error (${filePath}):`, error);
-    return false;
-  }
-}
-
-// 파일 삭제
-function deleteFile(filePath) {
-  try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error(`File deletion error (${filePath}):`, error);
-    return false;
-  }
-}
-```
-
-### 주기적 데이터 새로고침
-
-프로필 및 설정 정보는 설정된 간격으로 자동으로 새로고침됩니다:
-
-```javascript
-// 주기적 새로고침 설정
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30분마다 새로고침
-let profileRefreshTimer = null;
-let settingsRefreshTimer = null;
-
-// 주기적 프로필 새로고침 시작
-function startProfileRefresh() {
-  // 이미 실행 중인 타이머가 있으면 중지
-  stopProfileRefresh();
-
-  // 최초 한 번 즉시 실행한 다음 타이머 시작
-  getUserProfile(true).then(profile => {
-    console.log('Initial profile refresh complete');
-  });
-
-  // 주기적 새로고침 타이머 설정
-  profileRefreshTimer = setInterval(async () => {
-    try {
-      await getUserProfile(true);
-      console.log('Periodic profile refresh complete');
-    } catch (error) {
-      console.error('Periodic profile refresh error:', error);
-    }
-  }, REFRESH_INTERVAL_MS);
-}
-
-// 설정 정보도 유사한 방식으로 주기적 새로고침
-```
-
-### 로그아웃 시 데이터 정리
-
-```javascript
-// 로그아웃 시 데이터 정리
-function cleanupOnLogout() {
-  try {
-    // 주기적 새로고침 중지
-    stopProfileRefresh();
-    stopSettingsRefresh();
-
-    // 저장된 파일 삭제
-    deleteFile(PROFILE_FILE_PATH);
-    // deleteFile(SETTINGS_FILE_PATH); // 삭제하지 않음
-
-    console.log('User data cleanup complete');
-    return true;
-  } catch (error) {
-    console.error('Logout data cleanup error:', error);
-    return false;
-  }
-}
-```
-
 ## 오류 처리 전략
 
 Toast 앱은 다양한 네트워크 오류와 API 응답 오류를 적절하게 처리하여 사용자 경험을 유지합니다.
 
-### 주요 오류 처리 전략
+### 재시도 로직
 
-1. **네트워크 연결 오류**: 로컬에 저장된 데이터를 사용하여 오프라인 기능 유지
-2. **토큰 만료 오류**: 리프레시 토큰을 사용하여 자동으로 갱신 시도
-3. **API 요청 실패**: 적절한 재시도 로직 및 사용자 알림
-
-### 오류 처리 방법
-
-| 오류 유형 | 설명 | 처리 방법 |
-|-----------|------|-----------|
-| `NETWORK_ERROR` | 네트워크 연결 오류 | 로컬 데이터 사용, 재연결 시 동기화 |
-| `API_ERROR` | API 서버 오류 | 일정 시간 후 재시도 |
-| `CONFLICT` | 데이터 충돌 발생 | 타임스탬프를 기준으로 가장 최근 데이터 적용 |
-| `QUOTA_EXCEEDED` | 데이터 크기 제한 초과 | 필수적이지 않은 데이터 정리 후 재시도 |
-
-### 빈 파일 처리
-
-파일이 손상되었거나 비어있을 때 오류를 방지하기 위해 기본값 제공:
+네트워크 오류나 일시적인 서버 오류가 발생할 경우 자동 재시도를 수행합니다:
 
 ```javascript
-function getUserSettings() {
+// 재시도 상수
+const MAX_RETRY_COUNT = 3;
+const RETRY_DELAY_MS = 5000; // 5초 간격
+
+// 재시도 로직을 포함한 업로드 함수
+async function uploadSettingsWithRetry() {
+  if (state.isSyncing) {
+    return;
+  }
+
   try {
-    const settingsData = readFromFile(SETTINGS_FILE_PATH);
+    state.isSyncing = true;
+    const result = await uploadSettings();
 
-    if (!settingsData) {
-      // 파일이 없거나 비어있으면 기본 설정 반환
-      return {
-        pages: [],
-        appearance: { theme: 'system' },
-        advanced: { autoStart: true }
-      };
+    if (result.success) {
+      state.retryCount = 0;
+      state.pendingSync = false;
+    } else {
+      state.retryCount++;
+
+      if (state.retryCount <= MAX_RETRY_COUNT) {
+        // 재시도 예약
+        setTimeout(() => {
+          uploadSettingsWithRetry();
+        }, RETRY_DELAY_MS);
+      } else {
+        state.retryCount = 0;
+      }
     }
-
-    return settingsData;
   } catch (error) {
-    // 오류 발생 시 기본 설정 반환
-    console.error('Error retrieving settings:', error);
-    return getDefaultSettings();
+    state.retryCount++;
+
+    if (state.retryCount <= MAX_RETRY_COUNT) {
+      // 재시도 예약
+      setTimeout(() => {
+        uploadSettingsWithRetry();
+      }, RETRY_DELAY_MS);
+    } else {
+      state.retryCount = 0;
+    }
+  } finally {
+    state.isSyncing = false;
   }
 }
 ```
+
+### 오류 유형 및 처리 방법
+
+| 오류 유형 | 설명 | 처리 방법 |
+|-----------|------|-----------|
+| **네트워크 연결 오류** | 인터넷 연결 문제 | 자동 재시도, 로컬 데이터 사용 |
+| **인증 오류 (401)** | 토큰 만료 또는 유효하지 않음 | 토큰 갱신 시도, 실패 시 재로그인 요청 |
+| **서버 오류 (5xx)** | API 서버 내부 오류 | 지수 백오프로 재시도 |
+| **충돌 오류** | 동시 수정으로 인한 충돌 | 타임스탬프 기반 해결 전략 적용 |
+| **파일 읽기/쓰기 오류** | 로컬 파일 접근 오류 | 임시 파일을 사용한 안전한 쓰기, 복구 로직 |
+
+### 인증 토큰 갱신
+
+인증 오류(401) 발생 시 토큰 갱신 로직을 적용합니다:
+
+```javascript
+async function authenticatedRequest(apiCall, options = {}) {
+  const { onUnauthorized = null } = options;
+
+  try {
+    return await apiCall();
+  } catch (error) {
+    // 401 오류 처리
+    if (error.response && error.response.status === 401) {
+      // 토큰 갱신 콜백 실행
+      if (onUnauthorized && typeof onUnauthorized === 'function') {
+        const refreshResult = await onUnauthorized();
+
+        if (refreshResult && refreshResult.success) {
+          // 토큰 갱신 성공 시 원래 API 호출 재시도
+          return await apiCall();
+        } else {
+          // 토큰 갱신 실패 시 에러 반환
+          return {
+            error: {
+              code: 'AUTH_REFRESH_FAILED',
+              message: '인증 갱신에 실패했습니다. 다시 로그인해주세요.',
+              requireRelogin: true,
+            },
+          };
+        }
+      }
+    }
+
+    // 기타 오류 처리
+    return { error: { code: 'API_ERROR', message: error.message } };
+  }
+}
+```
+
+### 안전한 파일 작업
+
+파일 쓰기 오류를 방지하기 위해 임시 파일과 원자적 이름 변경 작업을 사용합니다:
+
+```javascript
+function updateSettings(settings) {
+  if (!settings) {
+    return false;
+  }
+
+  // 임시 파일 경로
+  const tempFilePath = `${SETTINGS_FILE_PATH}.temp`;
+
+  try {
+    // 먼저 임시 파일에 쓰기
+    fs.writeFileSync(tempFilePath, JSON.stringify(settings, null, 2), 'utf8');
+
+    // 작성된 데이터가 유효한지 확인
+    const verifyData = fs.readFileSync(tempFilePath, 'utf8');
+    JSON.parse(verifyData); // 유효한 JSON인지 확인
+
+    // 원자적 이름 변경 작업 (Windows에서는 기존 파일 먼저 삭제)
+    if (process.platform === 'win32' && fs.existsSync(SETTINGS_FILE_PATH)) {
+      fs.unlinkSync(SETTINGS_FILE_PATH);
+    }
+
+    fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
+    return true;
+  } catch (error) {
+    // 오류 발생 시 임시 파일 정리
+    try {
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    } catch (cleanupError) {
+      // 정리 오류 무시
+    }
+    return false;
+  }
+}
+```
+
+## 충돌 해결 전략
+
+여러 장치에서 동시에 설정이 변경될 경우 발생하는 충돌을 해결하기 위한 전략입니다.
+
+### 타임스탬프 기반 해결
+
+기본적으로 가장 최근에 수정된 설정을 우선시합니다:
+
+```javascript
+function mergeSettings(localSettings, serverSettings) {
+  if (!localSettings) return serverSettings;
+  if (!serverSettings) return localSettings;
+
+  // 타임스탬프 기반 충돌 해결
+  const localTime = localSettings.lastModifiedAt || 0;
+  const serverTime = serverSettings.lastModifiedAt || 0;
+
+  // 서버 설정이 더 최신인 경우
+  if (serverTime > localTime) {
+    return {
+      ...localSettings,
+      ...serverSettings,
+      lastSyncedAt: getCurrentTimestamp(),
+    };
+  }
+
+  // 로컬 설정이 더 최신인 경우
+  return {
+    ...serverSettings,
+    ...localSettings,
+    lastSyncedAt: getCurrentTimestamp(),
+  };
+}
+```
+
+### 수동 충돌 해결
+
+더 복잡한 충돌이 발생할 경우 사용자가 직접 해결 방법을 선택할 수 있도록 지원합니다:
+
+```javascript
+// 수동 동기화 처리 함수
+async function syncSettings(action = 'resolve') {
+  logger.info(`Manual synchronization request: ${action}`);
+
+  try {
+    if (action === 'upload') {
+      // 로컬 설정을 서버로 업로드
+      return await uploadSettings();
+    } else if (action === 'download') {
+      // 서버 설정을 로컬로 다운로드
+      return await downloadSettings();
+    } else {
+      // 충돌 해결 (resolve)
+
+      // 1. 현재 로컬 설정 가져오기
+      const localSettings = await userDataManager.getUserSettings();
+
+      // 2. 서버 설정 다운로드
+      const serverResult = await apiSync.downloadSettings({
+        hasValidToken: authManager.hasValidToken,
+        onUnauthorized: authManager.refreshAccessToken,
+        configStore,
+        directData: {},
+      });
+
+      if (!serverResult.success) {
+        return serverResult;
+      }
+
+      // 3. 설정 병합
+      const serverSettings = serverResult.data;
+      const mergedSettings = mergeSettings(localSettings, serverSettings);
+
+      // 4. 병합된 설정 저장
+      userDataManager.updateSettings(mergedSettings);
+
+      // 5. 필요한 경우 병합된 설정 업로드
+      if (localSettings && localSettings.lastModifiedAt > (serverSettings?.lastModifiedAt || 0)) {
+        await uploadSettings();
+      }
+
+      return { success: true, message: '설정 동기화가 완료되었습니다' };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || '알 수 없는 오류',
+    };
+  }
+}
+```
+
+### 설정 데이터 중복 최소화
+
+불필요한 데이터 중복을 피하고 동기화 효율성을 높이기 위한 전략:
+
+1. **차등 업로드**: 변경된 필드만 업로드하는 기능 (미구현, 향후 확장 가능)
+2. **중복 동기화 방지**: 메타데이터 비교를 통해 변경되지 않은 데이터는 동기화 건너뛰기
+3. **효율적인 상태 관리**: ConfigStore 변경 감지를 활용한 필요한 경우에만 동기화 트리거
 
 ## 보안 고려사항
 
 클라우드 동기화 관련 데이터 보안을 유지하기 위한 조치:
 
-1. **전송 보안**: 모든 API 통신은 HTTPS를 통해 암호화
-2. **저장 보안**: 로컬 파일은 OS 사용자 디렉토리 권한을 통해 보호
-3. **인증 보안**: 유효한 액세스 토큰을 통해서만 동기화 가능
-4. **데이터 최소화**: 필수 데이터만 동기화하여 민감한 정보 노출 최소화
+### 데이터 전송 보안
 
-### 동기화 충돌 해결
-
-여러 장치에서 동시에 설정이 변경될 때 다음과 같은 전략으로 충돌을 해결합니다:
-
-1. **타임스탬프 기반**: 가장 최근에 변경된 설정이 우선
-2. **병합 전략**: 가능한 경우 충돌하지 않는 필드를 병합하여 데이터 보존
-3. **사용자 알림**: 충돌이 발생할 때 사용자에게 알리고 선택 옵션 제공
-
-## 통합 설정 저장소 구현
-
-클라우드 동기화 신뢰성과 데이터 일관성을 향상시키기 위해 통합 설정 저장소 접근 방식이 구현되었습니다. 이 섹션에서는 구현 방법과 세부 사항을 설명합니다.
-
-### 구현 배경
-
-이전 시스템에는 다음과 같은 문제가 있었습니다:
-
-1. **이중 설정 저장**:
-   - `config.json`(electron-store로 관리): 앱 기본 설정, UI 설정, 페이지 정보 등 저장
-   - `user-settings.json`(파일 시스템에 직접 저장): API와 동기화할 사용자 설정 정보 저장
-
-2. **동기화 불일치**:
-   - `cloud-sync.js`는 configStore 변경을 감지하여 `user-settings.json` 파일에 저장
-   - `api/sync.js`는 서버에서 다운로드한 설정을 직접 `configStore`에 저장
-   - 실제 데이터는 `config.json`에 있지만 클라우드 동기화는 `user-settings.json` 참조
-
-3. **부자연스러운 동기화 흐름**:
-   - 사용자 변경 → configStore 변경 → user-settings.json 업데이트 → API에 업로드
-   - 서버 다운로드 → 직접 configStore 업데이트 → user-settings.json 타임스탬프만 업데이트
-   - 이로 인한 잠재적 데이터 불일치 가능성
-
-### 통합 설정 저장소 구현
-
-통합 설정 저장소 접근 방식은 electron-store(configStore)를 주 데이터 소스로 사용하고, `user-settings.json`은 동기화 메타데이터 저장용으로만 사용합니다.
-
-#### 1. 수정된 uploadSettings 함수
+1. **HTTPS 사용**: 모든 API 통신은 HTTPS를 통해 암호화
+2. **토큰 기반 인증**: OAuth 2.0 기반의 액세스 토큰 및 리프레시 토큰 사용
+3. **제한된 토큰 수명**: 액세스 토큰의 짧은 유효 기간 설정 (일반적으로 1시간)
 
 ```javascript
-// cloud-sync.js의 수정된 uploadSettings 함수
-async function uploadSettings() {
-  // 이전 코드 대신 configStore에서 직접 데이터 추출
-  const pages = configStore.get('pages') || [];
-  const appearance = configStore.get('appearance');
-  const advanced = configStore.get('advanced');
+// 모든 API 요청에 인증 헤더 추가
+function getAuthHeaders() {
+  if (!currentToken) {
+    throw new Error('No authentication token available');
+  }
 
-  // 타임스탬프 업데이트
-  const timestamp = getCurrentTimestamp();
-
-  // 업로드할 데이터 구성
-  const uploadData = {
-    pages,
-    lastSyncedDevice: state.deviceId,
-    lastSyncedAt: timestamp,
-    appearance,
-    advanced
+  return {
+    Authorization: `Bearer ${currentToken}`,
+    'Content-Type': 'application/json',
   };
-
-  // API 호출...
-
-  // 성공 시 user-settings.json에 마지막 동기화 정보만 저장
-  const metaData = {
-    lastSyncedAt: timestamp,
-    lastSyncedDevice: state.deviceId
-  };
-  userDataManager.updateSyncMetadata(metaData);
-
-  // ...
 }
 ```
 
-#### 2. 동기화 메타데이터 관리 함수 추가
+### 로컬 데이터 보안
+
+1. **OS 보안 활용**: 각 운영체제에서 제공하는 사용자 디렉토리 권한을 통한 파일 보호
+2. **임시 파일 활용**: 파일 손상 방지를 위한 안전한 파일 쓰기 전략
+3. **데이터 검증**: 파일 입출력 시 데이터 유효성 검사
 
 ```javascript
-// user-data-manager.js에 메타데이터 저장 함수 추가
-function updateSyncMetadata(metadata) {
+// 안전한 파일 쓰기 예시
+function writeToFile(filePath, data) {
   try {
-    const currentSettings = readFromFile(SETTINGS_FILE_PATH) || {};
-    const updatedSettings = {
-      ...currentSettings,
-      lastSyncedAt: metadata.lastSyncedAt,
-      lastSyncedDevice: metadata.lastSyncedDevice
-    };
+    const tempFilePath = `${filePath}.temp`;
 
-    return writeToFile(SETTINGS_FILE_PATH, updatedSettings);
+    // 1. 임시 파일에 쓰기
+    fs.writeFileSync(tempFilePath, JSON.stringify(data, null, 2), 'utf8');
+
+    // 2. 데이터 유효성 검사
+    const verifyData = fs.readFileSync(tempFilePath, 'utf8');
+    JSON.parse(verifyData);
+
+    // 3. 원자적 파일 교체
+    fs.renameSync(tempFilePath, filePath);
+
+    return true;
   } catch (error) {
-    console.error('Synchronization metadata update error:', error);
     return false;
   }
 }
 ```
 
-#### 3. 개선된 설정 변경 감지 로직
+### 구독 기반 접근 제어
+
+1. **구독 검증**: 클라우드 동기화는 프리미엄 구독자에게만 제공
+2. **권한 검사**: 모든 동기화 작업 전에 구독 상태 확인
 
 ```javascript
-// cloud-sync.js의 수정된 setupConfigListeners 함수
-function setupConfigListeners() {
-  // 페이지 설정 변경 감지
-  configStore.onDidChange('pages', async (newValue, oldValue) => {
-    // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 건너뛰기
-    if (!state.enabled || !await canSync()) {
-      return;
-    }
-
-    // 변경 유형 감지...
-
-    // 모든 데이터를 user-settings.json에 복제하는 대신 메타데이터만 업데이트
-    const timestamp = getCurrentTimestamp();
-    userDataManager.updateSyncMetadata({
-      lastModifiedAt: timestamp,
-      lastModifiedDevice: state.deviceId
-    });
-
-    // 동기화 예약...
-  });
-
-  // 다른 onDidChange 이벤트 핸들러도 유사하게 수정...
-}
-```
-
-#### 4. 개선된 다운로드 로직
-
-```javascript
-// cloud-sync.js의 수정된 downloadSettings 함수
-async function downloadSettings() {
-  // 기존 로직...
-
-  if (result.success) {
-    // user-settings.json에 메타데이터만 업데이트
-    const timestamp = getCurrentTimestamp();
-    userDataManager.updateSyncMetadata({
-      lastSyncedAt: timestamp,
-      lastModifiedAt: timestamp,
-      lastModifiedDevice: state.deviceId
-    });
+// 동기화 권한 확인
+async function isCloudSyncEnabled({ hasValidToken, configStore }) {
+  // 인증 상태 확인
+  const isAuthenticated = await hasValidToken();
+  if (!isAuthenticated) {
+    return false;
   }
 
-  // ...
+  // 구독 정보 확인
+  const subscription = configStore.get('subscription') || {};
+  let hasSyncFeature = false;
+
+  // Premium/Pro 플랜 확인
+  if (subscription.plan &&
+      (subscription.plan.toLowerCase().includes('premium') ||
+       subscription.plan.toLowerCase().includes('pro'))) {
+    hasSyncFeature = true;
+  }
+
+  return hasSyncFeature;
 }
 ```
 
-### 구현 변경 요약
+### 민감한 정보 보호
 
-1. **api/sync.js**:
-   - 변경 없음(이미 설정 저장 및 검색에 configStore 사용)
+1. **데이터 최소화**: 필수 데이터만 동기화하여 민감한 정보 노출 최소화
+2. **비밀번호 제외**: 인증 정보는 절대 클라우드에 동기화하지 않음
+3. **세션 정보 격리**: 장치별 세션 정보 분리 관리
 
-2. **cloud-sync.js**:
-   - `uploadSettings` 함수에서 데이터 소스를 user-settings.json에서 configStore로 변경
-   - 설정 변경 감지 시 메타데이터만 업데이트
-
-3. **user-data-manager.js**:
-   - 동기화 메타데이터만 관리하는 `updateSyncMetadata` 함수 추가
-
-### 마이그레이션 전략
-
-기존 데이터 구조에서 통합 저장소 접근 방식으로 원활하게 전환하기 위한 마이그레이션 전략:
-
-1. **데이터 마이그레이션 유틸리티 개발**:
-   - 앱 시작 시 아직 존재하지 않는 경우 user-settings.json에서 config.json으로 데이터 자동 마이그레이션
-   - 사용자에게 투명하게 구현
-
-2. **점진적 코드 전환**:
-   - 1단계: uploadSettings 및 설정 변경 감지 로직 수정
-   - 이후 관련 다른 코드 점진적으로 수정
-
-3. **하위 호환성**:
-   - 이전 버전과의 호환성을 유지하기 위해 전환 기간 동안 두 방법 모두 지원
-   - 특정 버전 이후 user-settings.json 데이터 구조를 메타데이터 전용으로 단순화
+이러한 보안 조치를 통해 여러 장치 간의 안전한 설정 동기화를 보장하며, 사용자의 개인 정보와 구성을 보호합니다.
