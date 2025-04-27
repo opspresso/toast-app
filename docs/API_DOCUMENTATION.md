@@ -37,7 +37,7 @@ function importConfig(config filePath)
  * @param {string} filePath - 구성 파일을 저장할 경로
  * @returns {boolean} 성공 상태
  */
-function exportConfig(config filePath)
+function exportConfig(config, filePath)
 ```
 
 #### 구성 스키마
@@ -152,7 +152,7 @@ const globalHotkey = config.get('globalHotkey');
 const pages = config.get('pages');
 
 // 구성 값 설정
-config.set('globalHotkey' 'Alt+Space');
+config.set('globalHotkey', 'Alt+Space');
 
 // 기본값으로 재설정
 resetToDefaults(config);
