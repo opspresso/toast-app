@@ -153,14 +153,126 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
   window.settings.log.info('이벤트 리스너 설정 중...');
 
-  // Tab navigation - 탭 클릭 이벤트 리스너
-  tabLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      const tabId = link.getAttribute('data-tab');
-      window.settings.log.info(`탭 클릭 감지: ${tabId}`);
-      switchTab(tabId);
+  // 이벤트 핸들러 등록 상태 관리를 위한 전역 변수
+  let eventListenersInitialized = false;
+
+  // 마지막 이벤트 처리 시간 추적을 위한 변수들
+  let lastTabClickTime = 0;
+  let lastEscKeyTime = 0;
+
+  // 이벤트 디바운싱을 위한 타이머 변수
+  let tabClickTimer = null;
+  let escKeyTimer = null;
+
+  // 모든 이벤트 리스너를 관리하는 함수
+  function registerAllEventListeners() {
+    // 이미 초기화되었다면 중복 등록 방지
+    if (eventListenersInitialized) {
+      window.settings.log.info('이벤트 리스너가 이미 초기화되어 있어 중복 등록을 건너뜁니다.');
+      return;
+    }
+
+    window.settings.log.info('모든 이벤트 리스너 등록 시작...');
+
+    // 탭 클릭 이벤트 처리
+    function handleTabClick(event) {
+      // 이벤트 전파 완전 차단 (캡처링과 버블링 모두 방지)
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      // 현재 시간 기록
+      const now = Date.now();
+      const tabId = this.getAttribute('data-tab');
+
+      // 이미 처리 중인 디바운스 타이머가 있다면 취소
+      if (tabClickTimer) {
+        clearTimeout(tabClickTimer);
+      }
+
+      // 연속 클릭 방지 (300ms 이내 같은 탭)
+      if (now - lastTabClickTime < 300) {
+        window.settings.log.info(`빠른 연속 클릭 감지됨 (${tabId}), 무시합니다.`);
+        return;
+      }
+
+      // 시간 업데이트
+      lastTabClickTime = now;
+
+      // 디바운싱 처리 (10ms 내에 처리가 집중되면 하나로 병합)
+      tabClickTimer = setTimeout(() => {
+        window.settings.log.info(`탭 클릭 감지: ${tabId}`);
+        switchTab(tabId);
+        tabClickTimer = null;
+      }, 10);
+    }
+
+    // 각 탭에 이벤트 리스너 등록 (기존 리스너 모두 제거 후)
+    tabLinks.forEach(link => {
+      // 클론 생성으로 모든 이벤트 리스너 제거
+      const newLink = link.cloneNode(true);
+      if (link.parentNode) {
+        link.parentNode.replaceChild(newLink, link);
+      }
+
+      // 새 이벤트 리스너 등록
+      newLink.addEventListener('click', handleTabClick, { capture: true });
     });
-  });
+
+    // ESC 키 이벤트 핸들러 (전역 핸들러)
+    function handleEscKey(event) {
+      if (event.key !== 'Escape' || isRecordingHotkey) return;
+
+      // 이벤트 전파 차단
+      event.stopImmediatePropagation();
+
+      // 현재 시간 기록
+      const now = Date.now();
+
+      // 연속 키 입력 방지 (300ms 이내)
+      if (now - lastEscKeyTime < 300) {
+        window.settings.log.info('빠른 연속 ESC 키 감지, 무시합니다.');
+        return;
+      }
+
+      // 시간 업데이트
+      lastEscKeyTime = now;
+
+      // 이미 처리 중인 디바운스 타이머가 있다면 취소
+      if (escKeyTimer) {
+        clearTimeout(escKeyTimer);
+      }
+
+      // 디바운싱 처리
+      escKeyTimer = setTimeout(() => {
+        window.settings.log.info('ESC 키 감지 - 창 닫기 시도');
+
+        if (unsavedChanges) {
+          if (confirm('저장되지 않은 변경사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+            window.settings.closeWindow();
+          }
+        } else {
+          window.settings.closeWindow();
+        }
+
+        escKeyTimer = null;
+      }, 10);
+    }
+
+    // 기존 이벤트 리스너 제거 후 새로 등록
+    document.removeEventListener('keydown', handleHotkeyRecording);
+    document.removeEventListener('keydown', handleEscKey);
+
+    // 키보드 이벤트 리스너 등록
+    document.addEventListener('keydown', handleEscKey, { capture: true });
+    document.addEventListener('keydown', handleHotkeyRecording);
+
+    // 이벤트 초기화 완료 표시
+    eventListenersInitialized = true;
+    window.settings.log.info('모든 이벤트 리스너가 성공적으로 등록되었습니다.');
+  }
+
+  // 이벤트 리스너 등록 실행
+  registerAllEventListeners();
 
   // 일반 설정 이벤트 리스너
   if (recordHotkeyButton) {
@@ -331,19 +443,7 @@ function setupEventListeners() {
     manualSyncResolveButton.addEventListener('click', handleManualSyncResolve);
   }
 
-  // ESC 키 이벤트 리스너
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !isRecordingHotkey) {
-      window.settings.log.info('ESC 키 감지 - 창 닫기 시도');
-      if (unsavedChanges) {
-        if (confirm('저장되지 않은 변경사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
-          window.settings.closeWindow();
-        }
-      } else {
-        window.settings.closeWindow();
-      }
-    }
-  });
+  // ESC 키 이벤트 리스너는 registerAllEventListeners 함수에서 설정하므로 여기서는 제거합니다
 
   // Hotkey 녹화 이벤트 리스너
   document.addEventListener('keydown', handleHotkeyRecording);
@@ -1801,7 +1901,7 @@ function handleCheckForUpdates() {
     checkUpdatesButton.disabled = true;
   }
 
-    // 상태 메시지 표시
+  // 상태 메시지 표시
   if (updateMessage) {
     updateMessage.textContent = 'Checking for updates...';
   }
