@@ -89,9 +89,9 @@
       "publish": [
         "github"
       ],
-      "signtoolOptions": {
-        "hashAlgorithm": "sha256"
-      }
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
     },
     "linux": {
       "target": [
