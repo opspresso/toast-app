@@ -21,13 +21,9 @@ on:
         default: 'v0.0.0' # Default version for manual dispatch
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest] # , ubuntu-latest
-
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
     steps:
       - name: Checkout code 🛎️
         uses: actions/checkout@v4
@@ -53,7 +49,6 @@ jobs:
           echo "TOKEN_EXPIRES_IN=${{ secrets.TOKEN_EXPIRES_IN }}" >> src/main/config/.env
 
       - name: Prepare for app notarization 🔑
-        if: matrix.os == 'macos-latest' # Only run for macOS builds
         run: |
           # Setup keys for macOS app notarization
           mkdir -p ~/private_keys/
@@ -83,20 +78,64 @@ jobs:
       - name: Upload artifacts 🚚
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-artifacts # Distinguish artifacts by OS
+          name: macos-artifacts
           path: |
-            dist/*.AppImage
-            dist/*.deb
             dist/*.dmg
-            dist/*.exe
             dist/*.zip
-            dist/*.yml
-            dist/*.yaml
+            dist/*-mac.yml
+          if-no-files-found: error # Fail if no files are found for macOS
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    continue-on-error: true # Continue even if this job fails
+    steps:
+      - name: Checkout code 🛎️
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch complete history
+
+      - name: Setup Node.js 🐍
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm' # Use npm cache
+
+      - name: Install dependencies 📦
+        run: npm ci # Install dependencies
+
+      - name: Configure environment variables 🔑
+        run: |
+          # Set environment variables needed for app execution
+          echo "CLIENT_ID=${{ secrets.TOAST_CLIENT_ID }}" >> src/main/config/.env
+          echo "CLIENT_SECRET=${{ secrets.TOAST_CLIENT_SECRET }}" >> src/main/config/.env
+          echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> src/main/config/.env
+          echo "TOAST_URL=${{ secrets.TOAST_URL }}" >> src/main/config/.env
+          echo "TOKEN_EXPIRES_IN=${{ secrets.TOKEN_EXPIRES_IN }}" >> src/main/config/.env
+
+      - name: Build/release Electron app 📦
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          github_token: ${{ secrets.GHP_TOKEN }}
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }} # Only release when tag starts with v
+
+      - name: Listup artifacts 🔍
+        run: |
+          echo "📂 Artifacts directory contents:"
+          dir dist
+
+      - name: Upload artifacts 🚚
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            dist/*.exe
+            dist/latest.yml
           if-no-files-found: ignore # Don't fail if no files are found
 
   # Release job: Attach built artifacts to GitHub release
   release:
-    needs: build # Run after build job completes
+    needs: build-macos # Only depends on macOS build success
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code 🛎️

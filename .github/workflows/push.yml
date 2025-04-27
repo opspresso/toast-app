@@ -63,6 +63,8 @@ jobs:
             echo "$PR_TITLE" > pr_title.txt
             echo "$PR_BODY" > pr_body.txt
 
+            "📄 Using PR title: $PR_TITLE"
+
             # Combine title and body with a separator
             if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "null" ]; then
               PR_BODY_JSON="$PR_TITLE"$'\n\n'"$PR_BODY"
