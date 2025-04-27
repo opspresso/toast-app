@@ -11,7 +11,7 @@ const { positionToastWindow } = require('./shortcuts');
 const { isModalOpened } = require('./ipc');
 const { isLoginProcessActive } = require('./api/auth'); // Import function to check login status
 
-// 모듈별 로거 생성
+// Create module-specific logger
 const logger = createLogger('Windows');
 
 // Store window references to prevent garbage collection
@@ -149,7 +149,7 @@ function setupToastWindowEvents(toastWindow, config) {
 
   // Prevent window from being destroyed, just hide it
   toastWindow.on('close', event => {
-    // 로그인 진행 중인지 확인
+    // Check if login is in progress
     const loginInProgress = isLoginProcessActive();
 
     if (loginInProgress) {
@@ -328,15 +328,15 @@ function showSettingsWindow(config, tabName) {
   if (!windows.settings || windows.settings.isDestroyed()) {
     settingsWindow = createSettingsWindow(config);
 
-    // 창이 준비되면 탭 선택 메시지 전송
+    // Send tab selection message when window is ready
     if (tabName) {
       windows.settings.webContents.once('did-finish-load', () => {
         setTimeout(() => {
           if (windows.settings && !windows.settings.isDestroyed()) {
-            logger.info(`설정 창이 로드됨, '${tabName}' 탭 선택 메시지 전송`);
+            logger.info(`Settings window loaded, sending '${tabName}' tab selection message`);
             windows.settings.webContents.send('select-settings-tab', tabName);
           }
-        }, 300); // 완전히 로드되기 위한 시간 추가
+        }, 300); // Add time for complete loading
       });
     }
   } else {
@@ -348,11 +348,11 @@ function showSettingsWindow(config, tabName) {
     windows.settings.show();
     windows.settings.focus();
 
-    // 이미 열려있는 창에서 탭 선택
+    // Select tab in already open window
     if (tabName) {
       setTimeout(() => {
         if (windows.settings && !windows.settings.isDestroyed()) {
-          logger.info(`설정 창이 이미 열려있음, '${tabName}' 탭 선택 메시지 전송`);
+          logger.info(`Settings window already open, sending '${tabName}' tab selection message`);
           windows.settings.webContents.send('select-settings-tab', tabName);
         }
       }, 100);
