@@ -64,6 +64,9 @@ const checkUpdatesButton = document.getElementById('check-updates');
 const updateMessage = document.getElementById('update-message');
 const updateStatus = document.getElementById('update-status');
 const updateActions = document.getElementById('update-actions');
+const alternativeUpdates = document.getElementById('alternative-updates');
+const copyBrewCommand = document.getElementById('copy-brew-command');
+const githubReleaseLink = document.getElementById('github-release-link');
 const downloadUpdateButton = document.getElementById('download-update');
 const installUpdateButton = document.getElementById('install-update');
 const updateLoading = document.getElementById('update-loading');
@@ -166,6 +169,24 @@ function setupEventListeners() {
 
   if (clearHotkeyButton) {
     clearHotkeyButton.addEventListener('click', clearHotkey);
+  }
+
+  // 대체 업데이트 방법 관련 버튼
+  if (copyBrewCommand) {
+    copyBrewCommand.addEventListener('click', () => {
+      const command = 'brew upgrade opspresso/tap/toast';
+      navigator.clipboard.writeText(command)
+        .then(() => {
+          copyBrewCommand.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBrewCommand.textContent = 'Copy';
+          }, 2000);
+        })
+        .catch(err => {
+          window.settings.log.error('클립보드 복사 오류:', err);
+          alert('Error occurred while copying the command.');
+        });
+    });
   }
 
   // 저장 및 취소 버튼
@@ -1584,6 +1605,11 @@ function resetUpdateUI() {
     updateActions.className = 'update-actions hidden';
   }
 
+  // 대체 업데이트 방법 섹션 숨기기
+  if (alternativeUpdates) {
+    alternativeUpdates.className = 'alternative-updates hidden';
+  }
+
   // 로딩 표시기 숨기기
   if (updateLoading) {
     updateLoading.className = 'loading-indicator hidden';
@@ -1623,9 +1649,9 @@ function handleCheckForUpdates() {
     checkUpdatesButton.disabled = true;
   }
 
-  // 상태 메시지 표시
+    // 상태 메시지 표시
   if (updateMessage) {
-    updateMessage.textContent = '업데이트 확인 중...';
+    updateMessage.textContent = 'Checking for updates...';
   }
 
   // 업데이트 확인 요청 (개선된 updater 사용)
@@ -1642,7 +1668,7 @@ function handleCheckForUpdates() {
         if (updateMessage) {
           const notes = result.updateInfo?.releaseNotes || '';
 
-          let messageText = `새 버전(${currentVersion} → ${latestVersion})이 있습니다.`;
+          let messageText = `New version available (${currentVersion} → ${latestVersion}).`;
           if (notes) {
             // 릴리스 노트가 HTML 형식이면 텍스트로 변환
             const tempDiv = document.createElement('div');
@@ -1655,7 +1681,7 @@ function handleCheckForUpdates() {
               ? plainText.substring(0, maxLength) + '...'
               : plainText;
 
-            messageText += ` 릴리스 노트: ${trimmedNotes}`;
+            messageText += ` Release notes: ${trimmedNotes}`;
           }
 
           updateMessage.textContent = messageText;
@@ -1664,6 +1690,11 @@ function handleCheckForUpdates() {
         // 업데이트 액션 영역 표시
         if (updateActions) {
           updateActions.className = 'update-actions';
+        }
+
+        // 대체 업데이트 방법 섹션 표시
+        if (alternativeUpdates) {
+          alternativeUpdates.className = 'alternative-updates';
         }
 
         // 다운로드 버튼 표시
@@ -1682,7 +1713,7 @@ function handleCheckForUpdates() {
       } else {
         // 업데이트가 없는 경우
         if (updateMessage) {
-          updateMessage.textContent = '현재 최신 버전을 사용 중입니다.';
+          updateMessage.textContent = 'You are using the latest version.';
         }
       }
     })
@@ -1691,7 +1722,7 @@ function handleCheckForUpdates() {
 
       // 오류 메시지 표시
       if (updateMessage) {
-        updateMessage.textContent = '업데이트를 확인하는 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류');
+        updateMessage.textContent = 'Error checking for updates: ' + (error.message || 'Unknown error');
       }
     })
     .finally(() => {

@@ -284,6 +284,16 @@
                   <button id="download-update" class="primary-button">Download Update</button>
                   <button id="install-update" class="primary-button">Install Update</button>
                 </div>
+                <div id="alternative-updates" class="alternative-updates hidden">
+                  <p class="alternative-updates-title">Or you can update using these alternative methods:</p>
+                  <div class="alternative-method">
+                    <code>brew upgrade opspresso/tap/toast</code>
+                    <button id="copy-brew-command" class="small-button" title="Copy to clipboard">Copy</button>
+                  </div>
+                  <div class="alternative-method">
+                    <a id="github-release-link" href="https://github.com/opspresso/toast-dist/releases/latest" target="_blank">Download from GitHub Releases page</a>
+                  </div>
+                </div>
                 <div id="update-loading" class="loading-indicator hidden">
                   <div class="spinner"></div>
                   <p>Checking for updates...</p>
