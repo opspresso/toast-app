@@ -1,13 +1,11 @@
 /**
  * Toast - Cloud Synchronization Module
  *
- * This module synchronizes Toast-App settings (pages and button information, etc.) with the Toast-Web server.
- * Synchronization points:
- * 1. On successful login (download from server)
- * 2. When settings change (local save then server upload)
- * 3. Periodic synchronization (15-minute intervals)
- * 4. At app startup (if already logged in)
- * 5. On manual synchronization request
+ * 클라우드 동기화 시스템은 "단일 데이터 소스" 원칙을 따릅니다:
+ * - ConfigStore를 단일 소스로 사용
+ * - UserSettings 파일은 메타데이터만 저장
+ * - 사용자 변경 → ConfigStore 저장 → 메타데이터 갱신 → API 업로드
+ * - API 다운로드 → ConfigStore 직접 갱신 → 메타데이터 갱신
  */
 
 const os = require('os');
@@ -18,35 +16,35 @@ const { createConfigStore } = require('./config');
 // 모듈별 로거 생성
 const logger = createLogger('CloudSync');
 
-// Synchronization related constants
-const SYNC_INTERVAL_MS = 15 * 60 * 1000; // Automatic sync every 15 minutes
-const SYNC_DEBOUNCE_MS = 2000; // Sync 2 seconds after the last change
-const MAX_RETRY_COUNT = 3; // Maximum retry count
-const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
+// 동기화 관련 상수
+const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15분마다 자동 동기화
+const SYNC_DEBOUNCE_MS = 2000; // 마지막 변경 후 2초 후에 동기화
+const MAX_RETRY_COUNT = 3; // 최대 재시도 횟수
+const RETRY_DELAY_MS = 5000; // 재시도 간격 (5초)
 
-// Synchronization module state
+// 동기화 모듈 상태
 const state = {
-  enabled: true,
-  isSyncing: false,
-  lastSyncTime: 0,
-  lastChangeType: null,
-  pendingSync: false,
-  retryCount: 0,
-  deviceId: null,
+  enabled: true, // 동기화 활성화 여부
+  isSyncing: false, // 현재 동기화 진행 중인지 여부
+  lastSyncTime: 0, // 마지막 동기화 시간
+  lastChangeType: null, // 마지막 변경 유형
+  pendingSync: false, // 대기 중인 동기화가 있는지 여부
+  retryCount: 0, // 현재 재시도 횟수
+  deviceId: null, // 장치 식별자
   timers: {
-    sync: null,
-    debounce: null,
+    sync: null, // 주기적 동기화 타이머
+    debounce: null, // 디바운스 타이머
   },
 };
 
-// External module references
+// 외부 모듈 참조
 let configStore = null;
 let authManager = null;
 let userDataManager = null;
 
 /**
- * Generate device identifier
- * @returns {string} Device identifier
+ * 장치 식별자 생성
+ * @returns {string} 장치 식별자
  */
 function getDeviceIdentifier() {
   const platform = process.platform;
@@ -56,20 +54,20 @@ function getDeviceIdentifier() {
 }
 
 /**
- * Get current timestamp
- * @returns {number} Current timestamp (milliseconds)
+ * 현재 타임스탬프 가져오기
+ * @returns {number} 현재 타임스탬프 (밀리초)
  */
 function getCurrentTimestamp() {
   return Date.now();
 }
 
 /**
- * Check if synchronization is possible
- * @returns {Promise<boolean>} Whether synchronization is possible
+ * 동기화 가능 여부 확인
+ * @returns {Promise<boolean>} 동기화 가능 여부
  */
 async function canSync() {
   if (!state.enabled || !authManager) {
-    logger.info('Synchronization disabled or no authentication manager, sync not possible');
+    logger.info('동기화가 비활성화되었거나 인증 관리자가 없어 동기화할 수 없습니다');
     return false;
   }
 
@@ -79,70 +77,70 @@ async function canSync() {
       configStore,
     });
   } catch (error) {
-    logger.error('Error checking synchronization availability:', error);
+    logger.error('동기화 가능 여부 확인 중 오류 발생:', error);
     return false;
   }
 }
 
 /**
- * Start periodic settings synchronization
+ * 주기적 설정 동기화 시작
  */
 function startPeriodicSync() {
   stopPeriodicSync();
 
   state.timers.sync = setInterval(async () => {
     if (await canSync()) {
-      logger.info('Performing periodic settings synchronization');
+      logger.info('주기적 설정 동기화 수행 중');
       await downloadSettings();
     }
   }, SYNC_INTERVAL_MS);
 
   logger.info(
-    `Periodic synchronization started (${Math.floor(SYNC_INTERVAL_MS / 60000)}-minute interval)`,
+    `주기적 동기화 시작됨 (${Math.floor(SYNC_INTERVAL_MS / 60000)}분 간격)`,
   );
 }
 
 /**
- * Stop periodic settings synchronization
+ * 주기적 설정 동기화 중지
  */
 function stopPeriodicSync() {
   if (state.timers.sync) {
     clearInterval(state.timers.sync);
     state.timers.sync = null;
-    logger.info('Periodic synchronization stopped');
+    logger.info('주기적 동기화 중지됨');
   }
 }
 
 /**
- * Schedule synchronization when settings change
- * @param {string} changeType - Change type (e.g., 'Page added', 'Button modified', etc.)
+ * 설정 변경 시 동기화 예약
+ * @param {string} changeType - 변경 유형 (예: '페이지 추가됨', '버튼 수정됨' 등)
  */
 function scheduleSync(changeType) {
   state.lastChangeType = changeType;
 
-  // Cancel previously scheduled synchronization
+  // 이전에 예약된 동기화 취소
   if (state.timers.debounce) {
     clearTimeout(state.timers.debounce);
   }
 
-  // Schedule new synchronization
+  // 새로운 동기화 예약
   state.timers.debounce = setTimeout(async () => {
-    logger.info(`Starting settings upload for change type '${changeType}'`);
-    state.retryCount = 0; // Reset retry count
+    logger.info(`'${changeType}' 변경에 대한 설정 업로드 시작`);
+    state.retryCount = 0; // 재시도 횟수 초기화
     await uploadSettingsWithRetry();
   }, SYNC_DEBOUNCE_MS);
 
   logger.info(
-    `${changeType} change detected, synchronization scheduled in ${SYNC_DEBOUNCE_MS / 1000} seconds`,
+    `${changeType} 변경 감지됨, ${SYNC_DEBOUNCE_MS / 1000}초 후 동기화 예약됨`,
   );
 }
 
 /**
- * Upload settings to server with retry logic
+ * 재시도 로직이 포함된 설정 업로드
  */
 async function uploadSettingsWithRetry() {
   if (state.isSyncing) {
-    logger.info('Already syncing, request ignored');
+    logger.info('이미 동기화 중, 요청 무시됨');
     return;
   }
 
@@ -151,45 +149,45 @@ async function uploadSettingsWithRetry() {
     const result = await uploadSettings();
 
     if (result.success) {
-      logger.info(`Cloud sync successful for '${state.lastChangeType}' change`);
+      logger.info(`'${state.lastChangeType}' 변경에 대한 클라우드 동기화 성공`);
       state.retryCount = 0;
       state.pendingSync = false;
     } else {
       state.retryCount++;
 
-      logger.info(`Sync failed reason: ${result.error}`);
+      logger.info(`동기화 실패 이유: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
         logger.info(
-          `Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`,
+          `업로드 실패, 재시도 ${state.retryCount}/${MAX_RETRY_COUNT} ${RETRY_DELAY_MS / 1000}초 후 예약됨`,
         );
 
-        // Schedule retry
+        // 재시도 예약
         setTimeout(() => {
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
       } else {
         logger.error(
-          `Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload failed: ${result.error}`,
+          `최대 재시도 횟수(${MAX_RETRY_COUNT})를 초과했습니다, 업로드 실패: ${result.error}`,
         );
         state.retryCount = 0;
       }
     }
   } catch (error) {
-    logger.error('Error during settings upload:', error);
+    logger.error('설정 업로드 중 오류 발생:', error);
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
       logger.info(
-        `Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`,
+        `예외로 인한 업로드 실패, 재시도 ${state.retryCount}/${MAX_RETRY_COUNT} ${RETRY_DELAY_MS / 1000}초 후 예약됨`,
       );
 
-      // Schedule retry
+      // 재시도 예약
       setTimeout(() => {
         uploadSettingsWithRetry();
       }, RETRY_DELAY_MS);
     } else {
-      logger.error(`Exceeded maximum retry count (${MAX_RETRY_COUNT}), upload aborted`);
+      logger.error(`최대 재시도 횟수(${MAX_RETRY_COUNT})를 초과했습니다, 업로드 중단됨`);
       state.retryCount = 0;
     }
   } finally {
@@ -198,44 +196,44 @@ async function uploadSettingsWithRetry() {
 }
 
 /**
- * Upload current settings to server
- * @returns {Promise<Object>} Upload result
+ * 현재 설정을 서버에 업로드
+ * @returns {Promise<Object>} 업로드 결과
  */
 async function uploadSettings() {
-  logger.info('Starting settings upload');
+  logger.info('설정 업로드 시작');
 
-  // Check sync state
+  // 동기화 상태 확인
   if (!state.enabled) {
-    logger.info('Cloud sync disabled, skipping upload');
-    return { success: false, error: 'Cloud sync disabled' };
+    logger.info('클라우드 동기화가 비활성화되어 업로드를 건너뜁니다');
+    return { success: false, error: '클라우드 동기화 비활성화됨' };
   }
 
-  // Verify sync capability
+  // 동기화 가능 여부 확인
   if (!(await canSync())) {
-    return { success: false, error: 'Cloud sync not enabled' };
+    return { success: false, error: '클라우드 동기화가 활성화되지 않음' };
   }
 
   if (state.isSyncing) {
-    logger.info('Already syncing, skipping upload');
-    return { success: false, error: 'Already syncing' };
+    logger.info('이미 동기화 중, 업로드 건너뜀');
+    return { success: false, error: '이미 동기화 중' };
   }
 
   try {
     state.isSyncing = true;
 
-    // Extract data directly from configStore (single source of truth)
+    // ConfigStore에서 직접 데이터 추출 (단일 소스)
     const advanced = configStore.get('advanced');
     const appearance = configStore.get('appearance');
     const pages = configStore.get('pages') || [];
 
     if (pages.length === 0) {
-      logger.warn('No page data to upload');
+      logger.warn('업로드할 페이지 데이터가 없습니다');
     }
 
-    // Update timestamp
+    // 타임스탬프 업데이트
     const timestamp = getCurrentTimestamp();
 
-    // Prepare upload data - expose pages array directly to support multiple formats
+    // 업로드 데이터 준비 - 다양한 형식 지원을 위해 pages 배열 직접 노출
     const uploadData = {
       advanced,
       appearance,
@@ -244,9 +242,9 @@ async function uploadSettings() {
       pages,
     };
 
-    logger.info(`Uploading settings with ${pages.length} pages to server`);
+    logger.info(`${pages.length}개의 페이지가 포함된 설정을 서버에 업로드 중`);
 
-    // API call
+    // API 호출
     const result = await apiSync.uploadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
@@ -254,25 +252,25 @@ async function uploadSettings() {
       directData: uploadData,
     });
 
-    // Update last sync time on success
+    // 성공 시 마지막 동기화 시간 업데이트
     if (result.success) {
       state.lastSyncTime = timestamp;
 
-      // Update sync metadata only
+      // 동기화 메타데이터만 업데이트
       userDataManager.updateSyncMetadata({
         lastSyncedAt: timestamp,
         lastSyncedDevice: state.deviceId,
       });
 
-      logger.info('Settings upload successful and sync metadata updated');
+      logger.info('설정 업로드 성공 및 동기화 메타데이터 업데이트됨');
     }
 
     return result;
   } catch (error) {
-    logger.error('Settings upload error:', error);
+    logger.error('설정 업로드 오류:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
   } finally {
     state.isSyncing = false;
@@ -280,57 +278,57 @@ async function uploadSettings() {
 }
 
 /**
- * Download settings from server
- * @returns {Promise<Object>} Download result
+ * 서버에서 설정 다운로드
+ * @returns {Promise<Object>} 다운로드 결과
  */
 async function downloadSettings() {
-  logger.info('Starting settings download');
+  logger.info('설정 다운로드 시작');
 
-  // Check sync state
+  // 동기화 상태 확인
   if (!state.enabled) {
-    logger.info('Cloud sync disabled, skipping download');
-    return { success: false, error: 'Cloud sync disabled' };
+    logger.info('클라우드 동기화가 비활성화되어 다운로드를 건너뜁니다');
+    return { success: false, error: '클라우드 동기화 비활성화됨' };
   }
 
-  // Verify sync capability
+  // 동기화 가능 여부 확인
   if (!(await canSync())) {
-    return { success: false, error: 'Cloud sync not enabled' };
+    return { success: false, error: '클라우드 동기화가 활성화되지 않음' };
   }
 
   if (state.isSyncing) {
-    logger.info('Already syncing, skipping download');
-    return { success: false, error: 'Already syncing' };
+    logger.info('이미 동기화 중, 다운로드 건너뜀');
+    return { success: false, error: '이미 동기화 중' };
   }
 
   try {
     state.isSyncing = true;
 
-    // Pass empty object to maintain consistent data format
+    // 일관된 데이터 형식 유지를 위해 빈 객체 전달
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
       configStore,
-      directData: {}, // Empty object is ignored in GET request
+      directData: {}, // GET 요청에서는 무시됨
     });
 
     if (result.success) {
-      // 서버에서 받은 메타데이터가 있는 경우 활용
+      // 서버에서 받은 메타데이터 활용
       let syncMetadata = {};
 
       if (result.syncMetadata) {
-        logger.info('Using sync metadata from server response');
+        logger.info('서버 응답에서 동기화 메타데이터 사용');
         syncMetadata = {
           lastSyncedAt: result.syncMetadata.lastSyncedAt || getCurrentTimestamp(),
           lastSyncedDevice: state.deviceId,
         };
 
-        // 서버에서 마지막 수정 정보가 있으면 그대로 사용
+        // 서버에 마지막 수정 정보가 있으면 그대로 사용
         if (result.syncMetadata.lastModifiedAt) {
           syncMetadata.lastModifiedAt = result.syncMetadata.lastModifiedAt;
           syncMetadata.lastModifiedDevice = result.syncMetadata.lastModifiedDevice || 'server';
         }
       } else {
-        logger.info('No sync metadata in server response, using current timestamp');
+        logger.info('서버 응답에 메타데이터가 없어 현재 타임스탬프 사용');
         // 서버 응답에 메타데이터가 없는 경우 현재 시간으로 설정
         const timestamp = getCurrentTimestamp();
         syncMetadata = {
@@ -347,7 +345,7 @@ async function downloadSettings() {
       // 메타데이터 업데이트
       userDataManager.updateSyncMetadata(syncMetadata);
 
-      logger.info('Settings download successful and sync metadata updated:', syncMetadata);
+      logger.info('설정 다운로드 성공 및 동기화 메타데이터 업데이트됨:', syncMetadata);
 
       // 인증 관리자를 통해 UI 업데이트 알림 전송
       if (authManager && typeof authManager.notifySettingsSynced === 'function') {
@@ -360,18 +358,18 @@ async function downloadSettings() {
         };
 
         authManager.notifySettingsSynced(configData);
-        logger.info('UI update notification sent to toast window');
+        logger.info('토스트 창에 UI 업데이트 알림 전송됨');
       }
     } else {
-      logger.error('Settings download failed:', result.error);
+      logger.error('설정 다운로드 실패:', result.error);
     }
 
     return result;
   } catch (error) {
-    logger.error('Settings download error:', error);
+    logger.error('설정 다운로드 오류:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
   } finally {
     state.isSyncing = false;
@@ -379,20 +377,12 @@ async function downloadSettings() {
 }
 
 /**
- * Resolve settings conflicts and synchronize
- * @param {string} action - Synchronization action ('upload', 'download', 'resolve')
- * @returns {Promise<Object>} Synchronization result
+ * 설정 충돌 해결 및 동기화
+ * @param {string} action - 동기화 동작 ('upload', 'download', 'resolve')
+ * @returns {Promise<Object>} 동기화 결과
  */
 async function syncSettings(action = 'resolve') {
-  logger.info(`Manual synchronization request: ${action}`);
-
-  // // Additional debugging information
-  // const syncCheckResult = await canSync();
-  // logger.debug('Manual sync canSync result:', syncCheckResult);
-
-  // if (!syncCheckResult) {
-  //   return { success: false, error: 'Cloud sync not enabled' };
-  // }
+  logger.info(`수동 동기화 요청: ${action}`);
 
   try {
     if (action === 'upload') {
@@ -400,69 +390,69 @@ async function syncSettings(action = 'resolve') {
     } else if (action === 'download') {
       return await downloadSettings();
     } else {
-      // Conflict resolution (timestamp-based)
+      // 충돌 해결 (타임스탬프 기반)
 
-      // 1. Get current local settings
+      // 1. 현재 로컬 설정 가져오기
       const localSettings = await userDataManager.getUserSettings();
 
-      // 2. Download server settings - standardize as data object format
+      // 2. 서버 설정 다운로드
       const serverResult = await apiSync.downloadSettings({
         hasValidToken: authManager.hasValidToken,
         onUnauthorized: authManager.refreshAccessToken,
         configStore,
-        directData: {}, // Empty object is ignored in GET request
+        directData: {}, // GET 요청에서는 무시됨
       });
 
       if (!serverResult.success) {
-        logger.error('Server settings download failed:', serverResult.error);
+        logger.error('서버 설정 다운로드 실패:', serverResult.error);
         return serverResult;
       }
 
-      // 3. Merge settings
+      // 3. 설정 병합
       const serverSettings = serverResult.data;
       const mergedSettings = mergeSettings(localSettings, serverSettings);
 
-      // 4. Save merged settings
+      // 4. 병합된 설정 저장
       userDataManager.updateSettings(mergedSettings);
 
-      // 5. Upload merged settings if needed
+      // 5. 필요한 경우 병합된 설정 업로드
       if (localSettings && localSettings.lastModifiedAt > (serverSettings?.lastModifiedAt || 0)) {
-        logger.info('Local settings are more recent. Uploading merged settings to server.');
+        logger.info('로컬 설정이 더 최신입니다. 병합된 설정을 서버에 업로드합니다.');
         await uploadSettings();
       }
 
-      return { success: true, message: 'Settings synchronization complete' };
+      return { success: true, message: '설정 동기화 완료' };
     }
   } catch (error) {
-    logger.error('Manual synchronization error:', error);
+    logger.error('수동 동기화 오류:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
   }
 }
 
 /**
- * Resolve conflicts and merge settings
- * @param {Object} localSettings - Local settings
- * @param {Object} serverSettings - Server settings
- * @returns {Object} Merged settings
+ * 충돌 해결 및 설정 병합
+ * @param {Object} localSettings - 로컬 설정
+ * @param {Object} serverSettings - 서버 설정
+ * @returns {Object} 병합된 설정
  */
 function mergeSettings(localSettings, serverSettings) {
   if (!localSettings) return serverSettings;
   if (!serverSettings) return localSettings;
 
-  // Timestamp-based conflict resolution
+  // 타임스탬프 기반 충돌 해결
   const localTime = localSettings.lastModifiedAt || 0;
   const serverTime = serverSettings.lastModifiedAt || 0;
 
   logger.info(
-    `Settings merge: Local(${new Date(localTime).toISOString()}) vs Server(${new Date(serverTime).toISOString()})`,
+    `설정 병합: 로컬(${new Date(localTime).toISOString()}) 대 서버(${new Date(serverTime).toISOString()})`,
   );
 
-  // If server settings are more recent
+  // 서버 설정이 더 최신인 경우
   if (serverTime > localTime) {
-    logger.info('Server settings are more recent. Applying server settings with priority');
+    logger.info('서버 설정이 더 최신입니다. 서버 설정을 우선 적용합니다');
     return {
       ...localSettings,
       ...serverSettings,
@@ -470,8 +460,8 @@ function mergeSettings(localSettings, serverSettings) {
     };
   }
 
-  // If local settings are more recent
-  logger.info('Local settings are more recent. Applying local settings with priority');
+  // 로컬 설정이 더 최신인 경우
+  logger.info('로컬 설정이 더 최신입니다. 로컬 설정을 우선 적용합니다');
   return {
     ...serverSettings,
     ...localSettings,
@@ -480,12 +470,12 @@ function mergeSettings(localSettings, serverSettings) {
 }
 
 /**
- * Enable/disable synchronization feature
- * @param {boolean} enabled - Whether to enable
+ * 동기화 기능 활성화/비활성화
+ * @param {boolean} enabled - 활성화 여부
  */
 function setEnabled(enabled) {
   state.enabled = enabled;
-  logger.info(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
+  logger.info(`클라우드 동기화 ${enabled ? '활성화됨' : '비활성화됨'}`);
 
   if (enabled) {
     startPeriodicSync();
@@ -495,124 +485,124 @@ function setEnabled(enabled) {
 }
 
 /**
- * Register event listeners for config changes
+ * 설정 변경에 대한 이벤트 리스너 등록
  */
 function setupConfigListeners() {
-  // Page settings change detection
+  // 페이지 설정 변경 감지
   configStore.onDidChange('pages', async (newValue, oldValue) => {
-    // Skip synchronization if disabled or not logged in
+    // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 건너뛰기
     if (!state.enabled || !(await canSync())) {
       return;
     }
 
-    // Detect change type
-    let changeType = 'Unknown change';
+    // 변경 유형 감지
+    let changeType = '알 수 없는 변경';
 
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
       if (newValue.length > oldValue.length) {
-        changeType = 'Page added';
+        changeType = '페이지 추가됨';
       } else if (newValue.length < oldValue.length) {
-        changeType = 'Page deleted';
+        changeType = '페이지 삭제됨';
       } else {
-        changeType = 'Button modified';
+        changeType = '버튼 수정됨';
       }
     }
 
-    logger.info(`Page settings change detected (${changeType})`);
+    logger.info(`페이지 설정 변경 감지됨 (${changeType})`);
 
-    // Update metadata only
+    // 메타데이터만 업데이트
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId,
     });
 
-    logger.info('Settings file metadata update complete');
+    logger.info('설정 파일 메타데이터 업데이트 완료');
 
-    // Schedule synchronization
+    // 동기화 예약
     scheduleSync(changeType);
   });
 
-  // Appearance settings change detection
+  // 외관 설정 변경 감지
   configStore.onDidChange('appearance', async (newValue, oldValue) => {
     if (!state.enabled || !(await canSync())) {
       return;
     }
 
-    logger.info('Appearance settings change detected');
+    logger.info('외관 설정 변경 감지됨');
 
-    // Update metadata only
+    // 메타데이터만 업데이트
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId,
     });
 
-    logger.info('Settings file metadata update complete');
+    logger.info('설정 파일 메타데이터 업데이트 완료');
 
-    // Schedule synchronization
-    scheduleSync('Appearance change');
+    // 동기화 예약
+    scheduleSync('외관 변경');
   });
 
-  // Advanced settings change detection
+  // 고급 설정 변경 감지
   configStore.onDidChange('advanced', async (newValue, oldValue) => {
     if (!state.enabled || !(await canSync())) {
       return;
     }
 
-    logger.info('Advanced settings change detected');
+    logger.info('고급 설정 변경 감지됨');
 
-    // Update metadata only
+    // 메타데이터만 업데이트
     const timestamp = getCurrentTimestamp();
     userDataManager.updateSyncMetadata({
       lastModifiedAt: timestamp,
       lastModifiedDevice: state.deviceId,
     });
 
-    logger.info('Settings file metadata update complete');
+    logger.info('설정 파일 메타데이터 업데이트 완료');
 
-    // Schedule synchronization
-    scheduleSync('Advanced settings change');
+    // 동기화 예약
+    scheduleSync('고급 설정 변경');
   });
 }
 
 /**
- * Initialize cloud synchronization
- * @returns {Object} Synchronization manager object
+ * 클라우드 동기화 초기화
+ * @returns {Object} 동기화 관리자 객체
  */
-function initCloudSync(authManager, userDataManager) {
-  logger.info('Starting cloud synchronization initialization');
+function initCloudSync(authManagerInstance, userDataManagerInstance) {
+  logger.info('클라우드 동기화 초기화 시작');
 
-  // Set authentication manager reference
-  setAuthManager(authManager);
+  // 인증 관리자 참조 설정
+  setAuthManager(authManagerInstance);
 
-  // Set user data manager reference
-  setUserDataManager(userDataManager);
+  // 사용자 데이터 관리자 참조 설정
+  setUserDataManager(userDataManagerInstance);
 
-  // Create configuration store
+  // 설정 저장소 생성
   configStore = createConfigStore();
 
-  // Initialize device information
+  // 장치 정보 초기화
   state.deviceId = getDeviceIdentifier();
-  logger.info(`Device ID: ${state.deviceId}`);
+  logger.info(`장치 ID: ${state.deviceId}`);
 
-  // Register settings change detection events
+  // 설정 변경 감지 이벤트 등록
   setupConfigListeners();
 
-  // Create interface object
+  // 인터페이스 객체 생성
   const syncManager = {
-    // Basic interface
+    // 기본 인터페이스
     unsubscribe: () => {
-      // Stop timer
+      // 타이머 중지
       stopPeriodicSync();
 
-      // Cancel debounce timer
+      // 디바운스 타이머 취소
       if (state.timers.debounce) {
         clearTimeout(state.timers.debounce);
         state.timers.debounce = null;
       }
 
-      logger.info('Cloud synchronization unsubscribed');
+      logger.info('클라우드 동기화 구독 해제됨');
     },
     enable: () => {
       setEnabled(true);
@@ -625,14 +615,14 @@ function initCloudSync(authManager, userDataManager) {
       timestamp: state.lastSyncTime,
     }),
     syncAfterLogin: async () => {
-      logger.info('Performing cloud synchronization after login');
+      logger.info('로그인 후 클라우드 동기화 수행 중');
 
-      // Prioritize download after login
+      // 로그인 후 다운로드 우선
       const result = await downloadSettings();
 
-      // 다운로드 성공 후 추가적인 UI 업데이트를 위한 처리
+      // 다운로드 성공 후 추가 UI 업데이트
       if (result.success) {
-        // settings-window에 현재 설정을 전달하여 UI 업데이트
+        // settings-window에 현재 설정 전달하여 UI 업데이트
         if (authManager && typeof authManager.notifySettingsSynced === 'function') {
           // 현재 설정 데이터 수집
           const configData = {
@@ -642,13 +632,13 @@ function initCloudSync(authManager, userDataManager) {
             subscription: configStore.get('subscription'),
           };
 
-          // UI에 알림 전송 - 이것은 토스트 창의 버튼/페이지를 업데이트하기 위함
+          // UI에 알림 전송 - 토스트 창의 버튼/페이지 업데이트 위함
           authManager.notifySettingsSynced(configData);
-          logger.info('Login sync: UI update notification sent for current settings');
+          logger.info('로그인 동기화: 현재 설정에 대한 UI 업데이트 알림 전송됨');
         }
       }
 
-      // Enable synchronization
+      // 동기화 활성화
       if (state.enabled) {
         startPeriodicSync();
       }
@@ -659,7 +649,7 @@ function initCloudSync(authManager, userDataManager) {
       return await syncSettings(action);
     },
 
-    // Additional interface
+    // 추가 인터페이스
     startPeriodicSync,
     stopPeriodicSync,
     getCurrentStatus: () => ({
@@ -674,26 +664,26 @@ function initCloudSync(authManager, userDataManager) {
 }
 
 /**
- * Set authentication manager reference
- * @param {Object} manager - Authentication manager instance
+ * 인증 관리자 참조 설정
+ * @param {Object} manager - 인증 관리자 인스턴스
  */
 function setAuthManager(manager) {
   authManager = manager;
-  logger.info('Authentication manager reference setup complete');
+  logger.info('인증 관리자 참조 설정 완료');
 }
 
 /**
- * Set user data manager reference
- * @param {Object} manager - User data manager instance
+ * 사용자 데이터 관리자 참조 설정
+ * @param {Object} manager - 사용자 데이터 관리자 인스턴스
  */
 function setUserDataManager(manager) {
   userDataManager = manager;
-  logger.info('User data manager reference setup complete');
+  logger.info('사용자 데이터 관리자 참조 설정 완료');
 }
 
 /**
- * Update cloud synchronization settings (maintain compatibility with previous versions)
- * @param {boolean} enabled - Whether to enable synchronization
+ * 클라우드 동기화 설정 업데이트 (이전 버전과의 호환성 유지)
+ * @param {boolean} enabled - 활성화 여부
  */
 function updateCloudSyncSettings(enabled) {
   setEnabled(enabled);
