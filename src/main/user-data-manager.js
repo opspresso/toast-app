@@ -1,8 +1,8 @@
 /**
- * Toast - User Data Manager Module
+ * Toast - 사용자 데이터 관리 모듈
  *
- * Provides functionality to save and retrieve user profiles, subscription information, and settings as files.
- * Handles periodic data updates and file management.
+ * 사용자 프로필, 구독 정보, 설정 등을 파일로 저장하고 검색하는 기능을 제공합니다.
+ * 클라우드 동기화를 위한 메타데이터 관리에 중점을 둡니다.
  */
 
 const { app } = require('electron');
@@ -14,149 +14,149 @@ const { DEFAULT_ANONYMOUS } = require('./constants');
 // 모듈별 로거 생성
 const logger = createLogger('UserDataManager');
 
-// Define file path constants
+// 파일 경로 상수 정의
 const USER_DATA_PATH = app.getPath('userData');
 const PROFILE_FILE_PATH = path.join(USER_DATA_PATH, 'user-profile.json');
 const SETTINGS_FILE_PATH = path.join(USER_DATA_PATH, 'user-settings.json');
 
-// Periodic refresh settings
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // Refresh every 30 minutes
+// 주기적 새로고침 설정
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30분마다 새로고침
 let profileRefreshTimer = null;
 let settingsRefreshTimer = null;
 
-// Store API references
+// API 참조 저장
 let apiClientRef = null;
 let authManagerRef = null;
 
 /**
- * Check if file exists
- * @param {string} filePath - Path of file to check
- * @returns {boolean} Whether file exists
+ * 파일 존재 여부 확인
+ * @param {string} filePath - 확인할 파일 경로
+ * @returns {boolean} 파일 존재 여부
  */
 function fileExists(filePath) {
   try {
     return fs.existsSync(filePath);
   } catch (error) {
-    logger.error(`Error checking file existence (${filePath}):`, error);
+    logger.error(`파일 존재 여부 확인 중 오류 (${filePath}):`, error);
     return false;
   }
 }
 
 /**
- * Read data from file
- * @param {string} filePath - Path of file to read
- * @returns {Object|null} File content or null if failed
+ * 파일에서 데이터 읽기
+ * @param {string} filePath - 읽을 파일 경로
+ * @returns {Object|null} 파일 내용 또는 실패 시 null
  */
 function readFromFile(filePath) {
   try {
     if (!fileExists(filePath)) {
-      logger.info(`File does not exist: ${filePath}`);
+      logger.info(`파일이 존재하지 않음: ${filePath}`);
       return null;
     }
 
     const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    logger.error(`Error reading file (${filePath}):`, error);
+    logger.error(`파일 읽기 오류 (${filePath}):`, error);
     return null;
   }
 }
 
 /**
- * Save data to file
- * @param {string} filePath - Path of file to save
- * @param {Object} data - Data to save
- * @returns {boolean} Whether save was successful
+ * 데이터를 파일에 저장
+ * @param {string} filePath - 저장할 파일 경로
+ * @param {Object} data - 저장할 데이터
+ * @returns {boolean} 저장 성공 여부
  */
 function writeToFile(filePath, data) {
   try {
     const dirPath = path.dirname(filePath);
 
-    // Create directory if it doesn't exist
+    // 디렉토리가 없으면 생성
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    // Save to file in JSON format
+    // JSON 형식으로 파일에 저장
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-    logger.info(`File saved successfully: ${filePath}`);
+    logger.info(`파일 저장 성공: ${filePath}`);
     return true;
   } catch (error) {
-    logger.error(`Error saving file (${filePath}):`, error);
+    logger.error(`파일 저장 오류 (${filePath}):`, error);
     return false;
   }
 }
 
 /**
- * Delete file
- * @param {string} filePath - Path of file to delete
- * @returns {boolean} Whether deletion was successful
+ * 파일 삭제
+ * @param {string} filePath - 삭제할 파일 경로
+ * @returns {boolean} 삭제 성공 여부
  */
 function deleteFile(filePath) {
   try {
     if (fileExists(filePath)) {
       fs.unlinkSync(filePath);
-      logger.info(`File deleted successfully: ${filePath}`);
+      logger.info(`파일 삭제 성공: ${filePath}`);
       return true;
     }
     return false;
   } catch (error) {
-    logger.error(`Error deleting file (${filePath}):`, error);
+    logger.error(`파일 삭제 오류 (${filePath}):`, error);
     return false;
   }
 }
 
 /**
- * Get user profile and subscription information
- * @param {boolean} forceRefresh - Whether to force refresh (true: API call, false: file first)
- * @param {Object} [profileDataInput] - Profile information already obtained (to prevent duplicate API calls)
- * @returns {Promise<Object>} User profile and subscription information
+ * 사용자 프로필 및 구독 정보 가져오기
+ * @param {boolean} forceRefresh - 강제 새로고침 여부 (true: API 호출, false: 파일 우선)
+ * @param {Object} [profileDataInput] - 이미 얻은 프로필 정보 (중복 API 호출 방지용)
+ * @returns {Promise<Object>} 사용자 프로필 및 구독 정보
  */
 async function getUserProfile(forceRefresh = false, profileDataInput = null) {
   try {
-    logger.info(`Getting user profile information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`);
+    logger.info(`사용자 프로필 정보 가져오기 (강제 새로고침: ${forceRefresh ? '예' : '아니오'})`);
 
-    // Check authentication state
+    // 인증 상태 확인
     if (!authManagerRef) {
-      logger.error('Authentication manager not initialized');
+      logger.error('인증 관리자가 초기화되지 않음');
       return null;
     }
 
     const hasToken = await authManagerRef.hasValidToken();
     if (!hasToken) {
-      logger.info('No valid token, returning anonymous profile');
+      logger.info('유효한 토큰 없음, 익명 프로필 반환');
       return DEFAULT_ANONYMOUS;
     }
 
-    // 1. If profile information is provided (prevent duplicate API calls)
+    // 1. 프로필 정보가 제공된 경우 (중복 API 호출 방지)
     if (profileDataInput && !profileDataInput.error) {
-      logger.info('Using provided profile information (preventing duplicate API calls)');
+      logger.info('제공된 프로필 정보 사용 (중복 API 호출 방지)');
 
-      // Add authentication state
+      // 인증 상태 추가
       profileDataInput.is_authenticated = true;
       profileDataInput.isAuthenticated = true;
 
-      // Add logs
-      logger.info('Processing profile information:', {
-        name: profileDataInput.name || 'No name',
-        email: profileDataInput.email || 'No email',
+      // 로그 추가
+      logger.info('프로필 정보 처리 중:', {
+        name: profileDataInput.name || '이름 없음',
+        email: profileDataInput.email || '이메일 없음',
         hasSubscription:
           profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
         plan: profileDataInput.subscription?.plan || 'free',
       });
 
-      // Save to file
+      // 파일에 저장
       writeToFile(PROFILE_FILE_PATH, profileDataInput);
-      logger.info('Profile information saved to file');
+      logger.info('프로필 정보 파일에 저장됨');
 
       return profileDataInput;
     }
 
-    // 2. Check local file (if not force refresh)
+    // 2. 로컬 파일 확인 (강제 새로고침이 아닌 경우)
     if (!forceRefresh && fileExists(PROFILE_FILE_PATH)) {
       const profileData = readFromFile(PROFILE_FILE_PATH);
       if (profileData) {
-        // Add authentication state if missing in local file
+        // 로컬 파일에 인증 상태가 없는 경우 추가
         if (
           profileData.is_authenticated === undefined ||
           profileData.isAuthenticated === undefined
@@ -164,18 +164,18 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
           profileData.is_authenticated = true;
           profileData.isAuthenticated = true;
           writeToFile(PROFILE_FILE_PATH, profileData);
-          logger.info('Added authentication state to profile loaded from file');
+          logger.info('파일에서 로드된 프로필에 인증 상태 추가됨');
         }
-        logger.info('Successfully loaded profile information from file');
+        logger.info('파일에서 프로필 정보 로드 성공');
 
-        // Log subscription information
+        // 구독 정보 로그
         if (profileData.subscription) {
           const plan = profileData.subscription.plan || 'free';
           const isSubscribed =
             profileData.subscription.active || profileData.subscription.is_subscribed || false;
-          const pageGroups = profileData.subscription.features.page_groups || 1;
+          const pageGroups = profileData.subscription.features?.page_groups || 1;
           logger.info(
-            `Loaded subscription info: plan=${plan}, subscription status=${isSubscribed ? 'active' : 'inactive'}, pages=${pageGroups}`,
+            `로드된 구독 정보: 플랜=${plan}, 구독 상태=${isSubscribed ? '활성' : '비활성'}, 페이지=${pageGroups}`,
           );
         }
 
@@ -183,52 +183,52 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       }
     }
 
-    // 3. Get profile from API
-    logger.info('Getting profile information from API...');
+    // 3. API에서 프로필 가져오기
+    logger.info('API에서 프로필 정보 가져오는 중...');
     const profileData = await authManagerRef.fetchUserProfile();
 
-    // Try from file if API response has error
+    // API 응답에 오류가 있는 경우 파일에서 시도
     if (profileData?.error) {
-      logger.error('API profile query error:', profileData.error);
+      logger.error('API 프로필 쿼리 오류:', profileData.error);
 
-      // Try to return existing data saved in file
+      // 파일에 저장된 기존 데이터 반환 시도
       const savedProfileData = readFromFile(PROFILE_FILE_PATH);
       if (savedProfileData) {
-        logger.info('Returning previously saved profile information');
+        logger.info('이전에 저장된 프로필 정보 반환');
         return savedProfileData;
       }
 
       return null;
     }
 
-    // 4. Add authentication state explicitly and save to file if query successful
+    // 4. 쿼리 성공 시 인증 상태 명시적 추가 및 파일에 저장
     if (profileData && !profileData.error) {
-      // Add authentication state (set both is_authenticated and isAuthenticated)
+      // 인증 상태 추가 (is_authenticated와 isAuthenticated 둘 다 설정)
       profileData.is_authenticated = true;
       profileData.isAuthenticated = true;
 
-      // Add logs
-      logger.info('Profile information from API:', {
-        name: profileData.name || 'No name',
-        email: profileData.email || 'No email',
+      // 로그 추가
+      logger.info('API에서 가져온, 프로필 정보:', {
+        name: profileData.name || '이름 없음',
+        email: profileData.email || '이메일 없음',
         hasSubscription:
           profileData.subscription?.active || profileData.subscription?.is_subscribed,
         plan: profileData.subscription?.plan || 'free',
       });
 
-      // Save to file
+      // 파일에 저장
       writeToFile(PROFILE_FILE_PATH, profileData);
-      logger.info('Profile information saved to file');
+      logger.info('프로필 정보 파일에 저장됨');
     }
 
     return profileData;
   } catch (error) {
-    logger.error('Error getting profile information:', error);
+    logger.error('프로필 정보 가져오기 오류:', error);
 
-    // Try from file in case of error
+    // 오류 발생 시 파일에서 시도
     const savedProfileData = readFromFile(PROFILE_FILE_PATH);
     if (savedProfileData) {
-      logger.info('Returning previously saved profile information');
+      logger.info('이전에 저장된 프로필 정보 반환');
       return savedProfileData;
     }
 
@@ -237,33 +237,33 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
 }
 
 /**
- * Get user settings information
- * @param {boolean} forceRefresh - Whether to force refresh (true: API call, false: file first)
- * @returns {Promise<Object>} User settings information
+ * 사용자 설정 정보 가져오기
+ * @param {boolean} forceRefresh - 강제 새로고침 여부 (true: API 호출, false: 파일 우선)
+ * @returns {Promise<Object>} 사용자 설정 정보
  */
 async function getUserSettings(forceRefresh = false) {
   try {
     logger.info(
-      `Getting user settings information (Force refresh: ${forceRefresh ? 'Yes' : 'No'})`,
+      `사용자 설정 정보 가져오기 (강제 새로고침: ${forceRefresh ? '예' : '아니오'})`,
     );
 
-    // Check authentication state
+    // 인증 상태 확인
     if (!authManagerRef) {
-      logger.error('Authentication manager not initialized');
+      logger.error('인증 관리자가 초기화되지 않음');
       return null;
     }
 
     const hasToken = await authManagerRef.hasValidToken();
     if (!hasToken) {
-      logger.info('No valid token, returning default settings');
+      logger.info('유효한 토큰 없음, 기본 설정 반환');
       return { isAuthenticated: false };
     }
 
-    // 1. Check local file first (if not force refresh)
+    // 1. 로컬 파일 우선 확인 (강제 새로고침이 아닌 경우)
     if (!forceRefresh && fileExists(SETTINGS_FILE_PATH)) {
       const settingsData = readFromFile(SETTINGS_FILE_PATH);
       if (settingsData) {
-        // Add authentication state if missing in local file
+        // 로컬 파일에 인증 상태가 없는 경우 추가
         if (
           settingsData.is_authenticated === undefined ||
           settingsData.isAuthenticated === undefined
@@ -271,11 +271,11 @@ async function getUserSettings(forceRefresh = false) {
           settingsData.is_authenticated = true;
           settingsData.isAuthenticated = true;
           writeToFile(SETTINGS_FILE_PATH, settingsData);
-          logger.info('Added authentication state to settings loaded from file');
+          logger.info('파일에서 로드된 설정에 인증 상태 추가됨');
         }
 
-        // Add logs
-        logger.info('Successfully loaded settings from file:', {
+        // 로그 추가
+        logger.info('파일에서 설정 로드 성공:', {
           dataFields: Object.keys(settingsData),
           timestamp: new Date().toISOString(),
         });
@@ -284,22 +284,22 @@ async function getUserSettings(forceRefresh = false) {
       }
     }
 
-    // 2. Check API reference
+    // 2. API 참조 확인
     if (!apiClientRef) {
-      logger.error('API client not initialized');
+      logger.error('API 클라이언트가 초기화되지 않음');
       return null;
     }
 
-    // 3. Get settings from API
-    logger.info('Getting settings information from API...');
+    // 3. API에서 설정 가져오기
+    logger.info('API에서 설정 정보 가져오는 중...');
     const token = await authManagerRef.getAccessToken();
 
     if (!token) {
-      logger.error('No valid access token');
+      logger.error('유효한 액세스 토큰 없음');
       return { isAuthenticated: false };
     }
 
-    // API request
+    // API 요청
     const headers = { Authorization: `Bearer ${token}` };
     const apiClient = apiClientRef.createApiClient();
     const response = await apiClient.get(apiClientRef.ENDPOINTS.SETTINGS, { headers });
@@ -307,16 +307,16 @@ async function getUserSettings(forceRefresh = false) {
     if (response.data) {
       const settingsData = response.data.data || response.data;
 
-      // Add authentication state explicitly
+      // 인증 상태 명시적 추가
       if (settingsData) {
-        // Set is_authenticated to true if missing or false
+        // 없거나 false인 경우 is_authenticated를 true로 설정
         settingsData.is_authenticated = true;
         settingsData.isAuthenticated = true;
 
         writeToFile(SETTINGS_FILE_PATH, settingsData);
 
-        // Add logs
-        logger.info('Successfully retrieved and saved settings from API:', {
+        // 로그 추가
+        logger.info('API에서 가져오고 저장한 설정:', {
           dataFields: Object.keys(settingsData),
           timestamp: new Date().toISOString(),
         });
@@ -325,309 +325,309 @@ async function getUserSettings(forceRefresh = false) {
       return settingsData;
     }
 
-    logger.info('Failed to get settings from API, returning default settings');
+    logger.info('API에서 설정을 가져오지 못함, 기본 설정 반환');
     return { isAuthenticated: false };
   } catch (error) {
-    logger.error('Error getting settings information:', error);
+    logger.error('설정 정보 가져오기 오류:', error);
 
-    // Try from file in case of error
+    // 오류 발생 시 파일에서 시도
     const savedSettingsData = readFromFile(SETTINGS_FILE_PATH);
     if (savedSettingsData) {
-      logger.info('Returning previously saved settings information');
+      logger.info('이전에 저장된 설정 정보 반환');
       return savedSettingsData;
     }
 
-    logger.info('No saved settings information either, returning default settings');
+    logger.info('저장된 설정 정보도 없음, 기본 설정 반환');
     return { isAuthenticated: false };
   }
 }
 
 /**
- * Update settings with improved error handling and atomic file operations
- * @param {Object} settings - Settings to save
- * @returns {boolean} Whether update was successful
+ * 개선된 오류 처리와 원자적 파일 작업을 통한 설정 업데이트
+ * @param {Object} settings - 저장할 설정
+ * @returns {boolean} 업데이트 성공 여부
  */
 function updateSettings(settings) {
   try {
     if (!settings) {
-      logger.error('No settings to update');
+      logger.error('업데이트할 설정 없음');
       return false;
     }
 
-    // Create a temporary file path
+    // 임시 파일 경로 생성
     const tempFilePath = `${SETTINGS_FILE_PATH}.temp`;
 
     try {
-      // First write to a temporary file
+      // 먼저 임시 파일에 작성
       fs.writeFileSync(tempFilePath, JSON.stringify(settings, null, 2), 'utf8');
 
-      // Verify the written data is valid
+      // 작성된 데이터 검증
       try {
         const verifyData = fs.readFileSync(tempFilePath, 'utf8');
-        JSON.parse(verifyData); // Ensure it's valid JSON
+        JSON.parse(verifyData); // 유효한 JSON인지 확인
       } catch (verifyError) {
-        logger.error('Error verifying written settings data:', verifyError);
-        // Clean up corrupted temp file
+        logger.error('작성된 설정 데이터 검증 오류:', verifyError);
+        // 손상된 임시 파일 정리
         try {
           fs.unlinkSync(tempFilePath);
         } catch (cleanupError) {
-          logger.error('Error cleaning up temporary file:', cleanupError);
+          logger.error('임시 파일 정리 오류:', cleanupError);
         }
         return false;
       }
 
-      // Use atomic rename operation
+      // 원자적 이름 변경 작업 사용
       if (fs.existsSync(SETTINGS_FILE_PATH)) {
-        // On Windows, need to unlink existing file first
+        // Windows에서는 먼저 기존 파일 제거 필요
         if (process.platform === 'win32') {
           try {
             fs.unlinkSync(SETTINGS_FILE_PATH);
           } catch (unlinkError) {
-            logger.error('Error removing existing settings file:', unlinkError);
+            logger.error('기존 설정 파일 제거 오류:', unlinkError);
           }
         }
       }
 
       fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
-      logger.info('Settings file updated successfully using atomic operation');
+      logger.info('원자적 작업을 통해 설정 파일 업데이트 성공');
       return true;
     } catch (fileError) {
-      logger.error('File operation error during settings update:', fileError);
+      logger.error('설정 업데이트 중 파일 작업 오류:', fileError);
       return false;
     }
   } catch (error) {
-    logger.error('Settings update error:', error);
+    logger.error('설정 업데이트 오류:', error);
     return false;
   }
 }
 
 /**
- * Update synchronization metadata with improved validation and error recovery
- * @param {Object} metadata - Metadata to update
- * @returns {boolean} Whether update was successful
+ * 개선된 유효성 검사 및 오류 복구를 통한 동기화 메타데이터 업데이트
+ * @param {Object} metadata - 업데이트할 메타데이터
+ * @returns {boolean} 업데이트 성공 여부
  */
 function updateSyncMetadata(metadata) {
   try {
     if (!metadata) {
-      logger.error('No metadata to update');
+      logger.error('업데이트할 메타데이터 없음');
       return false;
     }
 
-    // Read current settings file
+    // 현재 설정 파일 읽기
     const currentSettings = readFromFile(SETTINGS_FILE_PATH);
 
-    // If current settings file doesn't exist or is corrupted, create a new minimal one
+    // 현재 설정 파일이 없거나 손상된 경우 새로운 최소 파일 생성
     if (!currentSettings) {
-      logger.warn('Current settings file missing or corrupted, creating new baseline');
+      logger.warn('현재 설정 파일이 없거나 손상됨, 새 기본 파일 생성');
 
-      // Create minimal settings structure
+      // 최소 설정 구조 생성
       const newSettings = {
         lastSyncedAt: metadata.lastSyncedAt || Date.now(),
         lastModifiedAt: metadata.lastModifiedAt || Date.now(),
-        lastSyncedDevice: metadata.lastSyncedDevice || 'unknown',
-        lastModifiedDevice: metadata.lastModifiedDevice || 'unknown',
+        lastSyncedDevice: metadata.lastSyncedDevice || '알 수 없음',
+        lastModifiedDevice: metadata.lastModifiedDevice || '알 수 없음',
       };
 
-      // Save new baseline settings
+      // 새 기본 설정 저장
       return updateSettings(newSettings);
     }
 
-    // Prepare updated settings with metadata
+    // 메타데이터를 포함한 업데이트된 설정 준비
     const updatedSettings = {
       ...currentSettings,
-      // Update timestamp information
+      // 타임스탬프 정보 업데이트
       lastSyncedAt: metadata.lastSyncedAt || currentSettings.lastSyncedAt,
       lastModifiedAt: metadata.lastModifiedAt || currentSettings.lastModifiedAt,
       lastSyncedDevice: metadata.lastSyncedDevice || currentSettings.lastSyncedDevice,
       lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice,
     };
 
-    // Save using atomic file operation
+    // 원자적 파일 작업을 통해 저장
     const result = updateSettings(updatedSettings);
 
     if (result) {
-      logger.info('Sync metadata updated successfully');
+      logger.info('동기화 메타데이터 업데이트 성공');
       return true;
     } else {
-      logger.error('Failed to update sync metadata');
+      logger.error('동기화 메타데이터 업데이트 실패');
       return false;
     }
   } catch (error) {
-    logger.error('Error updating sync metadata:', error);
+    logger.error('동기화 메타데이터 업데이트 오류:', error);
     return false;
   }
 }
 
 /**
- * Start periodic profile refresh
+ * 주기적 프로필 새로고침 시작
  */
 function startProfileRefresh() {
-  // Stop existing timer if running
+  // 실행 중인 타이머가 있으면 중지
   stopProfileRefresh();
 
   logger.info(
-    `Starting periodic profile refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`,
+    `주기적 프로필 새로고침 시작 (${Math.floor(REFRESH_INTERVAL_MS / 60000)}분 간격)`,
   );
 
-  // Run once immediately before starting timer
+  // 타이머 시작 전 즉시 한 번 실행
   getUserProfile(true).then(profile => {
     if (profile) {
-      logger.info('Initial profile refresh complete');
+      logger.info('초기 프로필 새로고침 완료');
     }
   });
 
-  // Set up periodic refresh timer
+  // 주기적 새로고침 타이머 설정
   profileRefreshTimer = setInterval(async () => {
     try {
       const profile = await getUserProfile(true);
       if (profile) {
-        logger.info('Periodic profile refresh complete');
+        logger.info('주기적 프로필 새로고침 완료');
       }
     } catch (error) {
-      logger.error('Periodic profile refresh error:', error);
+      logger.error('주기적 프로필 새로고침 오류:', error);
     }
   }, REFRESH_INTERVAL_MS);
 }
 
 /**
- * Stop periodic profile refresh
+ * 주기적 프로필 새로고침 중지
  */
 function stopProfileRefresh() {
   if (profileRefreshTimer) {
     clearInterval(profileRefreshTimer);
     profileRefreshTimer = null;
-    logger.info('Periodic profile refresh stopped');
+    logger.info('주기적 프로필 새로고침 중지됨');
   }
 }
 
 /**
- * Start periodic settings refresh
+ * 주기적 설정 새로고침 시작
  */
 function startSettingsRefresh() {
-  // Stop existing timer if running
+  // 실행 중인 타이머가 있으면 중지
   stopSettingsRefresh();
 
   logger.info(
-    `Starting periodic settings refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)}-minute interval)`,
+    `주기적 설정 새로고침 시작 (${Math.floor(REFRESH_INTERVAL_MS / 60000)}분 간격)`,
   );
 
-  // Run once immediately before starting timer
+  // 타이머 시작 전 즉시 한 번 실행
   getUserSettings(true).then(settings => {
     if (settings) {
-      logger.info('Initial settings refresh complete');
+      logger.info('초기 설정 새로고침 완료');
     }
   });
 
-  // Set up periodic refresh timer
+  // 주기적 새로고침 타이머 설정
   settingsRefreshTimer = setInterval(async () => {
     try {
       const settings = await getUserSettings(true);
       if (settings) {
-        logger.info('Periodic settings refresh complete');
+        logger.info('주기적 설정 새로고침 완료');
       }
     } catch (error) {
-      logger.error('Periodic settings refresh error:', error);
+      logger.error('주기적 설정 새로고침 오류:', error);
     }
   }, REFRESH_INTERVAL_MS);
 }
 
 /**
- * Stop periodic settings refresh
+ * 주기적 설정 새로고침 중지
  */
 function stopSettingsRefresh() {
   if (settingsRefreshTimer) {
     clearInterval(settingsRefreshTimer);
     settingsRefreshTimer = null;
-    logger.info('Periodic settings refresh stopped');
+    logger.info('주기적 설정 새로고침 중지됨');
   }
 }
 
 /**
- * Initialize user data manager
- * @param {Object} apiClient - API client reference
- * @param {Object} authManager - Authentication manager reference
+ * 사용자 데이터 관리자 초기화
+ * @param {Object} apiClient - API 클라이언트 참조
+ * @param {Object} authManager - 인증 관리자 참조
  */
 function initialize(apiClient, authManager) {
   apiClientRef = apiClient;
   authManagerRef = authManager;
 
-  logger.info('User data manager initialization complete');
+  logger.info('사용자 데이터 관리자 초기화 완료');
 }
 
 /**
- * Start data synchronization and periodic refresh after successful login
+ * 로그인 후 데이터 동기화 및 주기적 새로고침 시작
  */
 async function syncAfterLogin() {
   try {
-    logger.info('Starting user data synchronization after login');
+    logger.info('로그인 후 사용자 데이터 동기화 시작');
 
-    // Update profile and settings information
+    // 프로필 및 설정 정보 업데이트
     const profile = await getUserProfile(true);
     const settings = await getUserSettings(true);
 
     if (profile) {
-      logger.info('Profile update after login successful');
+      logger.info('로그인 후 프로필 업데이트 성공');
     }
 
     if (settings) {
-      logger.info('Settings update after login successful');
+      logger.info('로그인 후 설정 업데이트 성공');
     }
 
-    // Start periodic refresh
+    // 주기적 새로고침 시작
     startProfileRefresh();
     startSettingsRefresh();
 
     return { profile, settings };
   } catch (error) {
-    logger.error('Error synchronizing data after login:', error);
+    logger.error('로그인 후 데이터 동기화 오류:', error);
     return { error: error.message };
   }
 }
 
 /**
- * Clean up data on logout
- * @returns {boolean} Whether cleanup was successful
+ * 로그아웃 시 데이터 정리
+ * @returns {boolean} 정리 성공 여부
  */
 function cleanupOnLogout() {
   try {
-    logger.info('Logout: Starting user data cleanup');
+    logger.info('로그아웃: 사용자 데이터 정리 시작');
 
-    // 1. Check current state before deleting files
+    // 1. 정리 전 현재 상태 확인
     const profileExists = fileExists(PROFILE_FILE_PATH);
     const settingsExists = fileExists(SETTINGS_FILE_PATH);
 
-    logger.info('Current state:', {
+    logger.info('현재 상태:', {
       profileFileExists: profileExists,
       settingsFileExists: settingsExists,
       profileRefreshActive: !!profileRefreshTimer,
       settingsRefreshActive: !!settingsRefreshTimer,
     });
 
-    // 2. Stop periodic refresh
+    // 2. 주기적 새로고침 중지
     stopProfileRefresh();
     stopSettingsRefresh();
-    logger.info('Periodic refresh timers stopped');
+    logger.info('주기적 새로고침 타이머 중지됨');
 
-    // 3. Delete profile file only (preserve settings)
+    // 3. 프로필 파일만 삭제 (설정은 보존)
     const profileDeleted = deleteFile(PROFILE_FILE_PATH);
 
-    logger.info('File deletion results:', {
-      profileDeleted: profileDeleted ? 'Success' : 'Failed or file not found',
-      settingsPreserved: 'Settings file preserved as requested',
+    logger.info('파일 삭제 결과:', {
+      profileDeleted: profileDeleted ? '성공' : '실패 또는 파일 없음',
+      settingsPreserved: '요청된 대로 설정 파일 보존됨',
     });
 
-    // 4. Final result report
+    // 4. 최종 결과 보고
     const finalCheck = {
       profileFileExists: fileExists(PROFILE_FILE_PATH),
       settingsFileExists: fileExists(SETTINGS_FILE_PATH),
       profileDataCleared: !fileExists(PROFILE_FILE_PATH),
     };
 
-    logger.info('User data cleanup completion status:', finalCheck);
+    logger.info('사용자 데이터 정리 완료 상태:', finalCheck);
 
     return finalCheck.profileDataCleared;
   } catch (error) {
-    logger.error('Error cleaning up data on logout:', error);
+    logger.error('로그아웃 시 데이터 정리 오류:', error);
     return false;
   }
 }

@@ -11,6 +11,86 @@ const { createLogger } = require('./logger');
 const logger = createLogger('Shortcuts');
 
 /**
+ * 단축키 형식을 Electron 형식으로 변환
+ * @param {string} hotkey - 사용자 정의 단축키
+ * @returns {string} Electron 형식 단축키
+ */
+function convertHotkeyToElectronFormat(hotkey) {
+  if (!hotkey) return '';
+
+  // 변환 전 원본 핫키 로깅
+  logger.info(`Converting hotkey format: "${hotkey}"`);
+
+  // 특수 케이스 처리 - 스페이스 키가 포함된 경우
+  if (hotkey.includes('+ ') || hotkey.endsWith('+ ')) {
+    // '+ '를 '+Space'로 변환
+    hotkey = hotkey.replace(/\+ (?=\+|$)/g, '+Space');
+    hotkey = hotkey.replace(/\+ $/g, '+Space');
+    logger.info(`스페이스 키 포함 감지, 변환된 형식: "${hotkey}"`);
+  }
+
+  // 또한 마지막 부분이 공백인 경우 ('Alt+'와 같은 경우) 이것도 확인
+  if (hotkey.endsWith('+')) {
+    // 유효하지 않은 핫키 형식
+    logger.warn(`유효하지 않은 핫키 형식 감지: "${hotkey}"`);
+    return '';
+  }
+
+  // 공백 제거 및 분할
+  const parts = hotkey.split('+').map(part => part.trim());
+
+  // 변환된 부분들을 보관할 배열
+  const convertedParts = [];
+
+  // 모디파이어 키와 일반 키 분리
+  const modifiers = [];
+  let mainKey = '';
+
+  for (const part of parts) {
+    if (!part) continue; // 빈 부분 건너뛰기
+
+    // 모디파이어 키 처리
+    if (part === 'Ctrl' || part === 'Control') {
+      modifiers.push('CommandOrControl');
+    } else if (part === 'Alt') {
+      modifiers.push('Alt');
+    } else if (part === 'Shift') {
+      modifiers.push('Shift');
+    } else if (part === 'Meta' || part === 'Command' || part === 'Super') {
+      modifiers.push('Super');
+    } else {
+      // 일반 키 처리 (소문자로 변환)
+      // Space 키는 그대로 space로 변환
+      if (part === 'Space') {
+        mainKey = 'space';
+      } else {
+        mainKey = part.toLowerCase();
+      }
+    }
+  }
+
+  // 모디파이어 키가 하나도 없거나 일반 키가 없는 경우 - 유효하지 않은 핫키
+  if (modifiers.length === 0 || !mainKey) {
+    logger.warn(`유효하지 않은 핫키 구성 감지: 모디파이어=${modifiers.join(',')}, 일반키=${mainKey}`);
+    return '';
+  }
+
+  // 모디파이어 키가 있으면 먼저 추가
+  convertedParts.push(...modifiers);
+
+  // 일반 키가 있으면 마지막에 추가
+  convertedParts.push(mainKey);
+
+  // 변환된 단축키 형식
+  const electronHotkey = convertedParts.join('+');
+
+  // 변환 결과 로깅
+  logger.info(`Converted hotkey: "${hotkey}" -> "${electronHotkey}"`);
+
+  return electronHotkey;
+}
+
+/**
  * Register global shortcuts
  * @param {Object} config - Configuration store
  * @param {Object} windows - Object containing application windows
@@ -22,24 +102,32 @@ function registerGlobalShortcuts(config, windows) {
     globalShortcut.unregisterAll();
 
     // Get the global hotkey from config
-    const globalHotkey = config.get('globalHotkey');
+    const originalHotkey = config.get('globalHotkey');
 
-    if (!globalHotkey) {
+    if (!originalHotkey) {
       logger.warn('No global hotkey configured');
       return false;
     }
 
+    // 핫키 형식 변환
+    const electronHotkey = convertHotkeyToElectronFormat(originalHotkey);
+
+    if (!electronHotkey) {
+      logger.warn(`Invalid hotkey format: ${originalHotkey}`);
+      return false;
+    }
+
     // Register the global hotkey
-    const registered = globalShortcut.register(globalHotkey, () => {
+    const registered = globalShortcut.register(electronHotkey, () => {
       toggleToastWindow(windows.toast, config);
     });
 
     if (!registered) {
-      logger.error(`Failed to register global hotkey: ${globalHotkey}`);
+      logger.error(`Failed to register global hotkey: ${originalHotkey} (converted: ${electronHotkey})`);
       return false;
     }
 
-    logger.info(`Registered global hotkey: ${globalHotkey}`);
+    logger.info(`Registered global hotkey: ${originalHotkey} (converted: ${electronHotkey})`);
     return true;
   } catch (error) {
     logger.error('Error registering global shortcuts:', error);
