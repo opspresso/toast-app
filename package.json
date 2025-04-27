@@ -81,10 +81,6 @@
       ]
     },
     "win": {
-      "signingHashAlgorithms": [
-        "sha256"
-      ],
-      "publisherName": "OpsPresso",
       "icon": "assets/icons/icon.ico",
       "target": [
         "nsis",
@@ -92,7 +88,10 @@
       ],
       "publish": [
         "github"
-      ]
+      ],
+      "signtoolOptions": {
+        "hashAlgorithm": "sha256"
+      }
     },
     "linux": {
       "target": [
