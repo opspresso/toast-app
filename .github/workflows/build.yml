@@ -234,8 +234,8 @@ jobs:
   cleanup:
     name: Delete Draft Releases
     runs-on: ubuntu-latest
-    # 항상 실행되도록 설정 (다른 job의 성공/실패와 무관)
-    if: always()
+    needs: [release]
+    if: always() # 다른 job이 실패해도 실행
     steps:
       - name: Delete existing draft releases 🧹
         run: |
