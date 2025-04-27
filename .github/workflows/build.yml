@@ -109,12 +109,6 @@ jobs:
         with:
           path: artifacts # Download all artifacts to artifacts directory
 
-      - name: Listup contents 🔍
-        run: |
-          echo "📂 Directory contents:"
-          ls -la
-          ls -la artifacts
-
       - name: Get Tag Message 📝
         id: tag_message
         run: |
