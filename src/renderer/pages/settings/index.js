@@ -171,6 +171,100 @@ function setupEventListeners() {
     clearHotkeyButton.addEventListener('click', clearHotkey);
   }
 
+  // 설정 변경 즉시 저장을 위한 이벤트 리스너
+  // 일반 설정
+  if (launchAtLoginCheckbox) {
+    launchAtLoginCheckbox.addEventListener('change', () => {
+      window.settings.log.info('로그인 시 실행 설정 변경:', launchAtLoginCheckbox.checked);
+      window.settings.setConfig('advanced.launchAtLogin', launchAtLoginCheckbox.checked);
+    });
+  }
+
+  // 모양 설정
+  if (themeSelect) {
+    themeSelect.addEventListener('change', () => {
+      window.settings.log.info('테마 설정 변경:', themeSelect.value);
+      window.settings.setConfig('appearance.theme', themeSelect.value);
+      applyTheme(themeSelect.value);
+    });
+  }
+
+  if (positionSelect) {
+    positionSelect.addEventListener('change', () => {
+      window.settings.log.info('창 위치 설정 변경:', positionSelect.value);
+      window.settings.setConfig('appearance.position', positionSelect.value);
+    });
+  }
+
+  if (sizeSelect) {
+    sizeSelect.addEventListener('change', () => {
+      window.settings.log.info('창 크기 설정 변경:', sizeSelect.value);
+      window.settings.setConfig('appearance.size', sizeSelect.value);
+    });
+  }
+
+  if (opacityRange) {
+    opacityRange.addEventListener('input', () => {
+      // 슬라이더 이동 중에 값 표시 업데이트
+      if (opacityValue) {
+        opacityValue.textContent = opacityRange.value;
+      }
+    });
+
+    opacityRange.addEventListener('change', () => {
+      // 슬라이더 변경 완료 시 설정 저장
+      window.settings.log.info('창 투명도 설정 변경:', opacityRange.value);
+      window.settings.setConfig('appearance.opacity', parseFloat(opacityRange.value));
+    });
+  }
+
+  // 고급 설정
+  if (hideAfterActionCheckbox) {
+    hideAfterActionCheckbox.addEventListener('change', () => {
+      window.settings.log.info('작업 후 숨기기 설정 변경:', hideAfterActionCheckbox.checked);
+      window.settings.setConfig('advanced.hideAfterAction', hideAfterActionCheckbox.checked);
+    });
+  }
+
+  if (hideOnBlurCheckbox) {
+    hideOnBlurCheckbox.addEventListener('change', () => {
+      window.settings.log.info('포커스 잃을 때 숨기기 설정 변경:', hideOnBlurCheckbox.checked);
+      window.settings.setConfig('advanced.hideOnBlur', hideOnBlurCheckbox.checked);
+    });
+  }
+
+  if (hideOnEscapeCheckbox) {
+    hideOnEscapeCheckbox.addEventListener('change', () => {
+      window.settings.log.info('ESC 키로 숨기기 설정 변경:', hideOnEscapeCheckbox.checked);
+      window.settings.setConfig('advanced.hideOnEscape', hideOnEscapeCheckbox.checked);
+    });
+  }
+
+  if (showInTaskbarCheckbox) {
+    showInTaskbarCheckbox.addEventListener('change', () => {
+      window.settings.log.info('작업 표시줄에 표시 설정 변경:', showInTaskbarCheckbox.checked);
+      window.settings.setConfig('advanced.showInTaskbar', showInTaskbarCheckbox.checked);
+    });
+  }
+
+  if (resetSettingsButton) {
+    resetSettingsButton.addEventListener('click', () => {
+      if (confirm('모든 설정을 기본값으로 초기화하시겠습니까?')) {
+        window.settings.resetToDefaults().then(() => {
+          // 설정 다시 로드
+          return window.settings.getConfig();
+        }).then(loadedConfig => {
+          config = loadedConfig;
+          initializeUI();
+          alert('설정이 초기화되었습니다.');
+        }).catch(error => {
+          window.settings.log.error('설정 초기화 오류:', error);
+          alert('설정 초기화 중 오류가 발생했습니다.');
+        });
+      }
+    });
+  }
+
   // 대체 업데이트 방법 관련 버튼
   if (copyBrewCommand) {
     copyBrewCommand.addEventListener('click', () => {
@@ -189,13 +283,18 @@ function setupEventListeners() {
     });
   }
 
-  // 저장 및 취소 버튼
+  // 저장 및 취소 버튼 (저장 버튼은 이제 "닫기" 버튼 역할)
   if (saveButton) {
-    saveButton.addEventListener('click', saveSettings);
+    saveButton.textContent = '닫기';
+    saveButton.addEventListener('click', () => {
+      window.settings.closeWindow();
+    });
   }
 
   if (cancelButton) {
-    cancelButton.addEventListener('click', confirmCancel);
+    cancelButton.addEventListener('click', () => {
+      window.settings.closeWindow();
+    });
   }
 
   // 계정 관련 버튼
@@ -383,6 +482,99 @@ function initializeUI() {
 
   // 모든 탭 콘텐츠 초기화 완료
   window.settings.log.info('모든 탭 콘텐츠가 초기화되었습니다.');
+}
+
+/**
+ * Initialize General Settings tab
+ */
+function initializeGeneralSettings() {
+  window.settings.log.info('initializeGeneralSettings 호출');
+
+  try {
+    // 전역 단축키 설정
+    if (globalHotkeyInput) {
+      globalHotkeyInput.value = config.globalHotkey || '';
+    }
+
+    // 로그인 시 실행 설정
+    if (launchAtLoginCheckbox) {
+      launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
+    }
+
+    window.settings.log.info('일반 설정 탭 초기화 완료');
+  } catch (error) {
+    window.settings.log.error('일반 설정 탭 초기화 중 오류 발생:', error);
+  }
+}
+
+/**
+ * Initialize Appearance Settings tab
+ */
+function initializeAppearanceSettings() {
+  window.settings.log.info('initializeAppearanceSettings 호출');
+
+  try {
+    // 테마 설정
+    if (themeSelect) {
+      themeSelect.value = config.appearance?.theme || 'system';
+    }
+
+    // 창 위치 설정
+    if (positionSelect) {
+      positionSelect.value = config.appearance?.position || 'center';
+    }
+
+    // 창 크기 설정
+    if (sizeSelect) {
+      sizeSelect.value = config.appearance?.size || 'medium';
+    }
+
+    // 창 투명도 설정
+    if (opacityRange) {
+      opacityRange.value = config.appearance?.opacity || 0.95;
+
+      if (opacityValue) {
+        opacityValue.textContent = opacityRange.value;
+      }
+    }
+
+    window.settings.log.info('모양 설정 탭 초기화 완료');
+  } catch (error) {
+    window.settings.log.error('모양 설정 탭 초기화 중 오류 발생:', error);
+  }
+}
+
+/**
+ * Initialize Advanced Settings tab
+ */
+function initializeAdvancedSettings() {
+  window.settings.log.info('initializeAdvancedSettings 호출');
+
+  try {
+    // 작업 후 숨기기 설정
+    if (hideAfterActionCheckbox) {
+      hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
+    }
+
+    // 포커스 잃을 때 숨기기 설정
+    if (hideOnBlurCheckbox) {
+      hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
+    }
+
+    // ESC 키로 숨기기 설정
+    if (hideOnEscapeCheckbox) {
+      hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
+    }
+
+    // 작업 표시줄에 표시 설정
+    if (showInTaskbarCheckbox) {
+      showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
+    }
+
+    window.settings.log.info('고급 설정 탭 초기화 완료');
+  } catch (error) {
+    window.settings.log.error('고급 설정 탭 초기화 중 오류 발생:', error);
+  }
 }
 
 /**
@@ -857,8 +1049,9 @@ function handleHotkeyRecording(event) {
   // 이벤트 기본 동작 방지
   event.preventDefault();
 
-  // 변경 사항 감지
-  markUnsavedChanges();
+  // 설정 즉시 저장
+  window.settings.setConfig('globalHotkey', hotkey);
+  window.settings.log.info('전역 단축키 설정 변경:', hotkey);
 }
 
 /**

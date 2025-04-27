@@ -110,6 +110,7 @@ function validateUpdateConfig() {
     // 릴리즈 모드일 때는 app-update.yml 파일 확인
     if (app.isPackaged) {
       const updateConfigPath = path.join(app.getAppPath(), 'app-update.yml');
+      logger.info(`updateConfigPath: ${updateConfigPath}`);
       if (fs.existsSync(updateConfigPath)) {
         updateConfig = require('yaml').parse(fs.readFileSync(updateConfigPath, 'utf8'));
         logger.info('Found app-update.yml configuration:', JSON.stringify(updateConfig));
@@ -120,6 +121,7 @@ function validateUpdateConfig() {
     // 개발 모드일 때는 dev-app-update.yml 파일 확인
     else {
       const devUpdateConfigPath = path.join(process.cwd(), 'dev-app-update.yml');
+      logger.info(`devUpdateConfigPath: ${devUpdateConfigPath}`);
       if (fs.existsSync(devUpdateConfigPath)) {
         updateConfig = require('yaml').parse(fs.readFileSync(devUpdateConfigPath, 'utf8'));
         logger.info('Found dev-app-update.yml configuration:', JSON.stringify(updateConfig));
@@ -267,11 +269,18 @@ function setupAutoUpdaterEvents() {
     updateCheckInProgress = false;
     updateDownloadInProgress = false;
 
+    // 특정 오류 코드에 대한 사용자 친화적인 메시지 생성
+    let userFriendlyMessage = err.message;
+    if (err.code === 'ERR_UPDATER_NO_PUBLISHED_VERSIONS') {
+      userFriendlyMessage = '현재 릴리스된 업데이트가 없습니다. 나중에 다시 확인해주세요.';
+      logger.info('Providing user-friendly message for no published versions error');
+    }
+
     sendStatusToWindows('update-error', {
       status: 'error',
       error: err.toString(),
       code: err.code,
-      details: err.message,
+      details: userFriendlyMessage,
     });
   });
 }
