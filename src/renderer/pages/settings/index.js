@@ -235,6 +235,25 @@ function setupEventListeners() {
     loadUserDataAndUpdateUI();
   });
 
+  // About 탭 관련 버튼
+  if (homepageButton) {
+    homepageButton.addEventListener('click', () => {
+      window.settings.openUrl('https://toast.sh');
+    });
+  }
+
+  if (checkUpdatesButton) {
+    checkUpdatesButton.addEventListener('click', handleCheckForUpdates);
+  }
+
+  if (downloadUpdateButton) {
+    downloadUpdateButton.addEventListener('click', handleDownloadUpdate);
+  }
+
+  if (installUpdateButton) {
+    installUpdateButton.addEventListener('click', handleInstallUpdate);
+  }
+
   window.settings.log.info('이벤트 리스너 설정 완료');
 }
 
@@ -365,10 +384,20 @@ function initializeAboutSettings() {
       });
     }
 
-    // 업데이트 상태 초기화
-    if (updateStatus) updateStatus.classList.add('hidden');
-    if (updateActions) updateActions.classList.add('hidden');
-    if (updateLoading) updateLoading.classList.add('hidden');
+  // 업데이트 상태 초기화
+  if (updateStatus) updateStatus.classList.add('hidden');
+  if (updateActions) updateActions.classList.add('hidden');
+  if (updateLoading) updateLoading.classList.add('hidden');
+
+  // 업데이트 버튼 초기 상태 설정
+  if (downloadUpdateButton) {
+    downloadUpdateButton.classList.add('hidden');
+    downloadUpdateButton.style.display = 'none';
+  }
+  if (installUpdateButton) {
+    installUpdateButton.classList.add('hidden');
+    installUpdateButton.style.display = 'none';
+  }
 
   } catch (error) {
     window.settings.log.error('정보 탭 초기화 중 오류 발생:', error);
@@ -1546,4 +1575,234 @@ function saveSubscriptionToConfig(subscription) {
   };
 
   window.settings.setConfig('subscription', subscriptionConfig);
+}
+
+/**
+ * Handle check for updates button click
+ */
+function handleCheckForUpdates() {
+  window.settings.log.info('업데이트 확인 시작');
+
+  try {
+    // 로딩 상태 및 UI 업데이트
+    if (updateLoading) setLoading(updateLoading, true);
+    if (checkUpdatesButton) checkUpdatesButton.disabled = true;
+    if (updateStatus) updateStatus.textContent = '업데이트 확인 중...';
+    if (updateStatus) updateStatus.classList.remove('hidden');
+    if (updateMessage) updateMessage.classList.remove('hidden');
+    if (updateActions) updateActions.classList.add('hidden');
+
+    // 업데이트 확인 요청
+    window.settings.checkForUpdates()
+      .then(result => {
+        window.settings.log.info('업데이트 확인 결과:', result);
+
+        // 업데이트 상태에 따라 UI 업데이트
+        if (result.hasUpdate) {
+          // 업데이트 가능
+          if (updateStatus) {
+            updateStatus.textContent = `업데이트 가능: ${result.versionInfo?.latest || result.updateInfo?.version || '새 버전'}`;
+            updateStatus.className = 'update-status-available';
+          }
+
+          if (updateMessage) {
+            let notes = '';
+            if (result.updateInfo?.releaseNotes) {
+              notes = result.updateInfo.releaseNotes;
+            } else if (result.releaseNotes) {
+              notes = result.releaseNotes;
+            }
+
+            updateMessage.textContent = notes
+              ? `릴리스 노트: ${notes}`
+              : `새 버전(${result.versionInfo?.latest || result.updateInfo?.version})이 사용 가능합니다.`;
+          }
+
+          if (updateActions) {
+            updateActions.classList.remove('hidden');
+            updateActions.style.display = 'block';
+            updateActions.style.visibility = 'visible';
+            updateActions.setAttribute('style', 'display: block !important; visibility: visible !important;');
+          }
+
+          if (downloadUpdateButton) {
+            downloadUpdateButton.classList.remove('hidden');
+            downloadUpdateButton.style.display = 'inline-block';
+            downloadUpdateButton.style.visibility = 'visible';
+            downloadUpdateButton.setAttribute('style', 'display: inline-block !important; visibility: visible !important;');
+          }
+
+          // 모든 부모 요소도 보이도록 설정
+          if (updateMessage && updateMessage.parentElement) {
+            updateMessage.parentElement.style.display = 'block';
+            updateMessage.parentElement.style.visibility = 'visible';
+          }
+          if (installUpdateButton) installUpdateButton.classList.add('hidden');
+        } else if (result.updateDownloaded || result.downloaded) {
+          // 업데이트 다운로드 완료
+          if (updateStatus) {
+            updateStatus.textContent = `업데이트 다운로드 완료: ${result.version || '새 버전'}`;
+            updateStatus.className = 'update-status-ready';
+          }
+
+          if (updateMessage) {
+            updateMessage.textContent = '업데이트를 설치할 준비가 되었습니다.';
+          }
+
+          if (updateActions) updateActions.classList.remove('hidden');
+          if (downloadUpdateButton) downloadUpdateButton.classList.add('hidden');
+          if (installUpdateButton) installUpdateButton.classList.remove('hidden');
+        } else {
+          // 업데이트 없음
+          if (updateStatus) {
+            updateStatus.textContent = '현재 최신 버전을 사용 중입니다.';
+            updateStatus.className = 'update-status-uptodate';
+          }
+
+          if (updateMessage) {
+            updateMessage.textContent = '';
+          }
+
+          if (updateActions) updateActions.classList.add('hidden');
+        }
+      })
+      .catch(error => {
+        window.settings.log.error('업데이트 확인 오류:', error);
+
+        // 오류 메시지 표시
+        if (updateStatus) {
+          updateStatus.textContent = '업데이트 확인 오류';
+          updateStatus.className = 'update-status-error';
+        }
+
+        if (updateMessage) {
+          updateMessage.textContent = error.message || '업데이트를 확인하는 중 오류가 발생했습니다.';
+        }
+      })
+      .finally(() => {
+        // 상태 복원
+        if (updateLoading) setLoading(updateLoading, false);
+        if (checkUpdatesButton) checkUpdatesButton.disabled = false;
+      });
+  } catch (error) {
+    window.settings.log.error('업데이트 확인 중 예외 발생:', error);
+
+    // 오류 상태 표시
+    if (updateLoading) setLoading(updateLoading, false);
+    if (checkUpdatesButton) checkUpdatesButton.disabled = false;
+
+    if (updateStatus) {
+      updateStatus.textContent = '업데이트 확인 중 오류 발생';
+      updateStatus.className = 'update-status-error';
+      updateStatus.classList.remove('hidden');
+    }
+  }
+}
+
+/**
+ * Handle download update button click
+ */
+function handleDownloadUpdate() {
+  window.settings.log.info('업데이트 다운로드 시작');
+
+  try {
+    // 로딩 상태 및 UI 업데이트
+    if (updateLoading) setLoading(updateLoading, true);
+    if (downloadUpdateButton) downloadUpdateButton.disabled = true;
+    if (updateStatus) updateStatus.textContent = '업데이트 다운로드 중...';
+
+    // 업데이트 다운로드 요청
+    window.settings.downloadUpdate()
+      .then(result => {
+        window.settings.log.info('업데이트 다운로드 결과:', result);
+
+        if (result.success) {
+          // 다운로드 성공
+          if (updateStatus) {
+            updateStatus.textContent = '업데이트 다운로드 완료';
+            updateStatus.className = 'update-status-ready';
+          }
+
+          if (updateMessage) {
+            updateMessage.textContent = '재시작하여 업데이트를 설치하세요.';
+          }
+
+          // 다운로드 버튼 숨기고 설치 버튼 표시
+          if (downloadUpdateButton) downloadUpdateButton.classList.add('hidden');
+          if (installUpdateButton) installUpdateButton.classList.remove('hidden');
+        } else {
+          // 다운로드 실패
+          throw new Error(result.error || '알 수 없는 오류');
+        }
+      })
+      .catch(error => {
+        window.settings.log.error('업데이트 다운로드 오류:', error);
+
+        // 오류 메시지 표시
+        if (updateStatus) {
+          updateStatus.textContent = '업데이트 다운로드 오류';
+          updateStatus.className = 'update-status-error';
+        }
+
+        if (updateMessage) {
+          updateMessage.textContent = error.message || '업데이트를 다운로드하는 중 오류가 발생했습니다.';
+        }
+      })
+      .finally(() => {
+        // 상태 복원
+        if (updateLoading) setLoading(updateLoading, false);
+        if (downloadUpdateButton) downloadUpdateButton.disabled = false;
+      });
+  } catch (error) {
+    window.settings.log.error('업데이트 다운로드 중 예외 발생:', error);
+
+    // 오류 상태 표시
+    if (updateLoading) setLoading(updateLoading, false);
+    if (downloadUpdateButton) downloadUpdateButton.disabled = false;
+
+    if (updateStatus) {
+      updateStatus.textContent = '업데이트 다운로드 중 오류 발생';
+      updateStatus.className = 'update-status-error';
+    }
+  }
+}
+
+/**
+ * Handle install update button click
+ */
+function handleInstallUpdate() {
+  window.settings.log.info('업데이트 설치 시작');
+
+  try {
+    if (confirm('업데이트를 설치하려면 애플리케이션을 재시작해야 합니다. 계속하시겠습니까?')) {
+      // 설치 요청 (애플리케이션 재시작)
+      window.settings.installUpdate()
+        .catch(error => {
+          window.settings.log.error('업데이트 설치 오류:', error);
+
+          // 오류 메시지 표시
+          if (updateStatus) {
+            updateStatus.textContent = '업데이트 설치 오류';
+            updateStatus.className = 'update-status-error';
+          }
+
+          if (updateMessage) {
+            updateMessage.textContent = error.message || '업데이트를 설치하는 중 오류가 발생했습니다.';
+          }
+
+          if (updateLoading) setLoading(updateLoading, false);
+          if (installUpdateButton) installUpdateButton.disabled = false;
+        });
+    }
+  } catch (error) {
+    window.settings.log.error('업데이트 설치 중 예외 발생:', error);
+
+    // 오류 상태 표시
+    if (updateStatus) {
+      updateStatus.textContent = '업데이트 설치 중 오류 발생';
+      updateStatus.className = 'update-status-error';
+    }
+
+    if (installUpdateButton) installUpdateButton.disabled = false;
+  }
 }
