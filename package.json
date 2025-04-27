@@ -98,7 +98,8 @@
       "repo": "toast-dist",
       "releaseType": "release",
       "publishAutoUpdate": true,
-      "updaterCacheDirName": "toast-app-updater"
+      "updaterCacheDirName": "toast-app-updater",
+      "timeout": 600000
     }
   ]
 }
