@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.5.42",
+  "version": "0.5.43",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "main": "src/index.js",
   "scripts": {
