@@ -99,6 +99,7 @@ jobs:
 
   # Release job: Attach built artifacts to GitHub release
   release:
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code 🛎️
@@ -190,10 +191,9 @@ jobs:
 
   # Cleanup job: Delete existing draft releases
   cleanup:
-    name: Delete Draft Releases
-    runs-on: ubuntu-latest
     needs: [release]
-    if: always() # 다른 job이 실패해도 실행
+    if: always()
+    runs-on: ubuntu-latest
     steps:
       - name: Delete existing draft releases 🧹
         run: |
