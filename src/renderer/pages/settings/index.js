@@ -445,53 +445,8 @@ function initializeCloudSyncUI() {
   );
 
   try {
-    // premium 구독 사용자는 항상 Cloud Sync 기능 활성화
-    if (authState.subscription && authState.subscription.plan) {
-      const plan = authState.subscription.plan.toLowerCase();
-      if (plan.includes('premium') || plan.includes('pro')) {
-        // 구독 상태일 경우 항상 체크박스 활성화
-        window.settings.log.info('Premium/Pro 구독 감지 - Cloud Sync 활성화');
-        enableCloudSyncCheckbox.disabled = false;
-
-        // authState.subscription.features가 없으면 생성
-        if (!authState.subscription.features) {
-          authState.subscription.features = {};
-        }
-        // cloud_sync 기능 활성화
-        authState.subscription.features.cloud_sync = true;
-
-        // 저장 - authState에 cloud_sync 기능 추가
-        if (authState.subscription.additionalFeatures) {
-          authState.subscription.additionalFeatures.cloudSync = true;
-        } else {
-          authState.subscription.additionalFeatures = { cloudSync: true };
-        }
-
-        // 구성에 구독 정보 저장
-        window.settings.setConfig('subscription', authState.subscription);
-      }
-    }
-
-    // VIP 사용자 확인
-    if (authState.subscription && (authState.subscription.isVip || authState.subscription.vip)) {
-      window.settings.log.info('VIP 사용자 감지 - Cloud Sync 활성화');
-      enableCloudSyncCheckbox.disabled = false;
-    }
-
-    // Cloud Sync enabled/disabled
-    const cloudSyncEnabled = config.cloudSync?.enabled !== false;
-    enableCloudSyncCheckbox.checked = cloudSyncEnabled;
-
-    // Get current sync status
-    window.settings
-      .getSyncStatus()
-      .then(status => {
-        window.settings.log.info('getSyncStatus 호출 결과:', status);
-        updateSyncStatusUI(status);
-      })
-      .catch(error => {
-        window.settings.log.error('Error getting sync status:', error);
-      });
+    // cloud-sync.js의 초기화 함수 호출
+    window.cloudSyncUI.initializeCloudSyncUI(config, authState, window.settings.log);
   } catch (error) {
     window.settings.log.error('Error initializing Cloud Sync UI:', error);
   }
@@ -538,7 +493,9 @@ function updateAuthStateUI(isLoggedIn) {
     window.settings
       .getSyncStatus()
       .then(status => {
-        updateSyncStatusUI(status);
+        if (window.cloudSyncUI) {
+          window.cloudSyncUI.updateSyncStatusUI(status, authState, window.settings.log);
+        }
       })
       .catch(error => {
         window.settings.log.error('Error getting sync status:', error);
@@ -560,7 +517,9 @@ function updateAuthStateUI(isLoggedIn) {
     subscriptionFeatures.textContent = '-';
 
     // Disable Cloud Sync UI
-    disableCloudSyncUI();
+    if (window.cloudSyncUI) {
+      window.cloudSyncUI.disableCloudSyncUI(window.settings.log);
+    }
   }
 }
 
