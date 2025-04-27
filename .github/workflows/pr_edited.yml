@@ -38,6 +38,11 @@ jobs:
           # Save PR message to file
           echo "$PR_MESSAGE" > .github/temp/PR_MESSAGE.md
 
+          # Setup git user
+          echo "👤 Setting up git user for commit"
+          git config --local user.name "nalbam-bot"
+          git config --local user.email "bot@nalbam.com"
+
           # Commit PR message file
           git add .github/temp/PR_MESSAGE.md
 
