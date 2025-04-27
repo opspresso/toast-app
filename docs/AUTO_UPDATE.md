@@ -948,6 +948,69 @@ Object.keys(autoUpdater.listenerCount).forEach(event => {
 });
 ```
 
+### API 호환성 문제
+
+1. **electron-log API 변경 오류**
+   - 오류 메시지:
+   ```
+   electron-log.transports.file: resolvePath is deprecated. Use resolvePathFn instead
+   ```
+   - 원인: 최신 버전의 electron-log에서 `resolvePath` 속성이 deprecated(사용 중단 예정)됨
+   - 해결 방법: `src/main/logger.js` 파일에서 다음과 같이 변경
+   ```javascript
+   // 이전 코드 (deprecated)
+   electronLog.transports.file.resolvePath = () => path.join(userDataPath, 'logs/toast-app.log');
+
+   // 새로운 코드
+   electronLog.transports.file.resolvePathFn = () => path.join(userDataPath, 'logs/toast-app.log');
+   ```
+
+2. **electron-updater 함수 호환성 오류**
+   - 오류 메시지:
+   ```
+   TypeError: autoUpdater.downloadUpdateInfo is not a function
+   ```
+   - 원인: electron-updater v6에서는 `downloadUpdateInfo` 함수를 더 이상 지원하지 않음
+   - 해결 방법: `src/main/updater.js` 파일에서 해당 함수 호출 부분 제거
+   ```javascript
+   // 기존 코드 (오류 발생)
+   const updateFileInfo = await autoUpdater.downloadUpdateInfo();
+
+   // 수정된 코드
+   // 다운로드 정보 로깅 - electron-updater 버전 6에서는 downloadUpdateInfo 함수가 지원되지 않음
+   logger.info('Preparing to download update package');
+   ```
+
+3. **누락된 의존성 모듈 문제**
+   - 오류 메시지:
+   ```
+   Error: Cannot find module 'yaml'
+   ```
+   - 원인: YAML 파일을 파싱하기 위해 필요한 `yaml` 모듈이 설치되어 있지 않음
+   - 해결 방법: `yaml` 모듈 설치
+   ```bash
+   npm install yaml --save
+   ```
+   - 사용 예:
+   ```javascript
+   // YAML 파일 파싱 예시
+   if (fs.existsSync(updateConfigPath)) {
+     updateConfig = require('yaml').parse(fs.readFileSync(updateConfigPath, 'utf8'));
+     logger.info('Found app-update.yml configuration:', JSON.stringify(updateConfig));
+   }
+   ```
+   - 주의사항: package.json 파일에 필요한 모든 의존성이 포함되어 있는지 정기적으로 확인하세요.
+
+### 라이브러리 버전 업데이트 관련 권장사항
+
+라이브러리 버전 업데이트 시 다음 사항을 확인하세요:
+
+1. **변경 로그(Changelog) 확인**: 주요 API 변경 사항이 있는지 확인
+2. **API 호환성 검토**: 사용 중인 API가 새 버전에서도 지원되는지 확인
+3. **단계적 업데이트**: 메이저 버전 간 업데이트 시 점진적으로 진행
+4. **테스트 환경에서 먼저 검증**: 프로덕션 환경에 적용하기 전 테스트 환경에서 충분히 테스트
+5. **리팩토링 계획 수립**: API 변경이 필요한 경우, 적절한 리팩토링 계획 수립
+
 ## 플랫폼별 고려사항
 
 자동 업데이트 구현 시 각 플랫폼별로 고려해야 할 사항이 있습니다.
