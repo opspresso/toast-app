@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     # PR 본문이 변경되었을 때만 워크플로우 실행
-    if: ${{ github.event.changes.body.from != github.event.changes.body.to }}
+    if: ${{ github.event.changes.body != null }}
     runs-on: ubuntu-latest
 
     steps:

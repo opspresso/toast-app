@@ -58,9 +58,15 @@ function getTrayIconPath() {
  * @param {Object} windows - Object containing application windows
  */
 function updateTrayMenu(tray, windows) {
+  // 현재 구성된 Global Hotkey 가져오기
+  const { createConfigStore } = require('./config');
+  const config = createConfigStore();
+  const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // 기본값 사용
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Toast',
+      accelerator: configuredHotkey,
       click: () => {
         if (windows.toast) {
           windows.toast.show();
@@ -77,15 +83,18 @@ function updateTrayMenu(tray, windows) {
         ipcMain.emit('show-settings', null);
       },
     },
-    { type: 'separator' },
     {
-      label: 'About Toast',
+      label: 'About',
       click: () => {
         const { ipcMain } = require('electron');
         // 설정 창을 열고 about 탭을 선택하도록 이벤트 발생
         // 두 번째 인자는 이벤트 객체, 세 번째 인자부터 추가 데이터
         ipcMain.emit('show-settings-tab', null, 'about');
       },
+    },
+    {
+      label: `Version: ${app.getVersion()}`,
+      enabled: false,
     },
     { type: 'separator' },
     {
