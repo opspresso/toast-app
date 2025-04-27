@@ -74,12 +74,12 @@ jobs:
               echo "📝 Retrieved PR title (no body found)"
             fi
 
-            # Get first paragraph or first line for PR_MESSAGE
-            # This avoids issues with multiline messages in git commands
-            PR_MESSAGE=$(echo "$PR_TITLE" | head -n 1)
-
             # Save combined message to a file
             echo "$PR_BODY_JSON" > pr_combined.txt
+
+            # Use combined title and body for PR_MESSAGE
+            # This ensures both title and body are included in the tag message
+            PR_MESSAGE="$PR_BODY_JSON"
           fi
 
           # Use default message if we couldn't get PR message

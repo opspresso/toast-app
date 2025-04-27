@@ -286,7 +286,7 @@ function setupEventListeners() {
         window.settings.log.info('ESC 키 감지 - 창 닫기 시도');
 
         if (unsavedChanges) {
-          if (confirm('저장되지 않은 변경사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+          if (confirm('You have unsaved changes. Do you want to close without saving?')) {
             window.settings.closeWindow();
           }
         } else {
@@ -400,17 +400,17 @@ function setupEventListeners() {
 
   if (resetSettingsButton) {
     resetSettingsButton.addEventListener('click', () => {
-      if (confirm('모든 설정을 기본값으로 초기화하시겠습니까?')) {
+      if (confirm('Do you want to reset all settings to default values?')) {
         window.settings.resetToDefaults().then(() => {
           // 설정 다시 로드
           return window.settings.getConfig();
         }).then(loadedConfig => {
           config = loadedConfig;
           initializeUI();
-          alert('설정이 초기화되었습니다.');
+          alert('Settings have been reset.');
         }).catch(error => {
           window.settings.log.error('설정 초기화 오류:', error);
-          alert('설정 초기화 중 오류가 발생했습니다.');
+          alert('An error occurred while resetting settings.');
         });
       }
     });
@@ -1203,7 +1203,7 @@ function startRecordingHotkey() {
 
   isRecordingHotkey = true;
   if (globalHotkeyInput) {
-    globalHotkeyInput.value = '단축키 입력 대기 중...';
+    globalHotkeyInput.value = 'Waiting for hotkey input...';
     globalHotkeyInput.classList.add('recording');
   }
 
@@ -1462,7 +1462,7 @@ function confirmCancel() {
   window.settings.log.info('설정 취소');
 
   if (unsavedChanges) {
-    if (confirm('변경사항이 있습니다. 저장하지 않고 닫으시겠습니까?')) {
+    if (confirm('You have unsaved changes. Do you want to close without saving?')) {
       window.settings.closeWindow();
     }
   } else {
@@ -1488,7 +1488,7 @@ function handleRefreshSubscription() {
     // 버튼 비활성화 및 로딩 표시
     if (refreshSubscriptionButton) {
       refreshSubscriptionButton.disabled = true;
-      refreshSubscriptionButton.textContent = '갱신 중...';
+      refreshSubscriptionButton.textContent = 'Refreshing...';
     }
 
     if (subscriptionLoading) setLoading(subscriptionLoading, true);
@@ -1498,9 +1498,9 @@ function handleRefreshSubscription() {
       .then(() => {
         // 성공 메시지 표시
         if (refreshSubscriptionButton) {
-          refreshSubscriptionButton.textContent = '갱신 완료!';
+          refreshSubscriptionButton.textContent = 'Refresh Complete!';
           setTimeout(() => {
-            refreshSubscriptionButton.textContent = '구독 정보 새로고침';
+            refreshSubscriptionButton.textContent = 'Refresh Subscription Info';
             refreshSubscriptionButton.disabled = false;
           }, 1500);
         }
@@ -1510,9 +1510,9 @@ function handleRefreshSubscription() {
 
         // 오류 메시지 표시
         if (refreshSubscriptionButton) {
-          refreshSubscriptionButton.textContent = '갱신 실패';
+          refreshSubscriptionButton.textContent = 'Refresh Failed';
           setTimeout(() => {
-            refreshSubscriptionButton.textContent = '구독 정보 새로고침';
+            refreshSubscriptionButton.textContent = 'Refresh Subscription Info';
             refreshSubscriptionButton.disabled = false;
           }, 1500);
         }
@@ -1523,7 +1523,7 @@ function handleRefreshSubscription() {
     // 오류 시 버튼 및 로딩 상태 복원
     if (subscriptionLoading) setLoading(subscriptionLoading, false);
     if (refreshSubscriptionButton) {
-      refreshSubscriptionButton.textContent = '구독 정보 새로고침';
+      refreshSubscriptionButton.textContent = 'Refresh Subscription Info';
       refreshSubscriptionButton.disabled = false;
     }
   }
@@ -1598,7 +1598,7 @@ function handleManualSyncUpload() {
         if (result.success) {
           // 성공 메시지
           if (manualSyncUploadButton) {
-            manualSyncUploadButton.textContent = '업로드 완료!';
+            manualSyncUploadButton.textContent = 'Upload Complete!';
           }
         } else {
           throw new Error(result.error || '알 수 없는 오류');
@@ -1609,7 +1609,7 @@ function handleManualSyncUpload() {
 
         // 오류 메시지
         if (manualSyncUploadButton) {
-          manualSyncUploadButton.textContent = '업로드 실패';
+          manualSyncUploadButton.textContent = 'Upload Failed';
         }
       })
       .finally(() => {
@@ -1618,7 +1618,7 @@ function handleManualSyncUpload() {
 
         setTimeout(() => {
           if (manualSyncUploadButton) {
-            manualSyncUploadButton.textContent = '서버에 업로드';
+            manualSyncUploadButton.textContent = 'Upload to Server';
             manualSyncUploadButton.disabled = false;
           }
           if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
@@ -1644,7 +1644,7 @@ function handleManualSyncDownload() {
 
   try {
     // 확인 대화상자
-    if (!confirm('서버에서 설정을 다운로드하면 로컬 설정을 덮어씁니다. 계속하시겠습니까?')) {
+    if (!confirm('Downloading settings from the server will overwrite your local settings. Do you want to continue?')) {
       return;
     }
 
@@ -1660,7 +1660,7 @@ function handleManualSyncDownload() {
         if (result.success) {
           // 성공 메시지
           if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.textContent = '다운로드 완료!';
+            manualSyncDownloadButton.textContent = 'Download Complete!';
           }
 
           // 설정 다시 로드
@@ -1678,7 +1678,7 @@ function handleManualSyncDownload() {
 
         // 오류 메시지
         if (manualSyncDownloadButton) {
-          manualSyncDownloadButton.textContent = '다운로드 실패';
+            manualSyncDownloadButton.textContent = 'Download Failed';
         }
       })
       .finally(() => {
@@ -1687,7 +1687,7 @@ function handleManualSyncDownload() {
 
         setTimeout(() => {
           if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.textContent = '서버에서 다운로드';
+            manualSyncDownloadButton.textContent = 'Download from Server';
             manualSyncDownloadButton.disabled = false;
           }
           if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
@@ -1713,7 +1713,7 @@ function handleManualSyncResolve() {
 
   try {
     // 확인 대화상자
-    if (!confirm('로컬 설정과 서버 설정 간의 충돌을 해결합니다. 타임스탬프가 더 최신인 설정이 적용됩니다. 계속하시겠습니까?')) {
+    if (!confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')) {
       return;
     }
 
@@ -1729,7 +1729,7 @@ function handleManualSyncResolve() {
         if (result.success) {
           // 성공 메시지
           if (manualSyncResolveButton) {
-            manualSyncResolveButton.textContent = '충돌 해결 완료!';
+            manualSyncResolveButton.textContent = 'Conflict Resolution Complete!';
           }
 
           // 설정 다시 로드
@@ -1747,7 +1747,7 @@ function handleManualSyncResolve() {
 
         // 오류 메시지
         if (manualSyncResolveButton) {
-          manualSyncResolveButton.textContent = '충돌 해결 실패';
+          manualSyncResolveButton.textContent = 'Conflict Resolution Failed';
         }
       })
       .finally(() => {
@@ -1756,7 +1756,7 @@ function handleManualSyncResolve() {
 
         setTimeout(() => {
           if (manualSyncResolveButton) {
-            manualSyncResolveButton.textContent = '충돌 해결';
+            manualSyncResolveButton.textContent = 'Resolve Conflicts';
             manualSyncResolveButton.disabled = false;
           }
           if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
@@ -2159,14 +2159,14 @@ function handleCheckForUpdates() {
         // 다운로드 버튼 표시
         if (downloadUpdateButton) {
           downloadUpdateButton.style.display = 'inline-block';
-          downloadUpdateButton.textContent = '업데이트 다운로드';
+          downloadUpdateButton.textContent = 'Download Update';
         }
 
         // 파일 정보가 있다면 표시
         if (result.files && Array.isArray(result.files) && result.files.length > 0) {
           const fileInfo = document.createElement('p');
           fileInfo.className = 'update-file-info';
-          fileInfo.textContent = `업데이트 크기: ${formatFileSize(result.files[0].size || 0)}`;
+          fileInfo.textContent = `Update size: ${formatFileSize(result.files[0].size || 0)}`;
           updateMessage.appendChild(fileInfo);
         }
       } else {
@@ -2226,12 +2226,12 @@ function handleDownloadUpdate() {
   // 버튼 비활성화
   if (downloadUpdateButton) {
     downloadUpdateButton.disabled = true;
-    downloadUpdateButton.textContent = '다운로드 중...';
+    downloadUpdateButton.textContent = 'Downloading...';
   }
 
   // 메시지 업데이트
   if (updateMessage) {
-    updateMessage.textContent = '업데이트 다운로드 중...';
+    updateMessage.textContent = 'Downloading update...';
   }
 
   // 진행 상태 표시를 위한 요소 추가
@@ -2277,7 +2277,7 @@ function handleDownloadUpdate() {
             progressElement.parentNode.removeChild(progressElement);
           }
 
-          updateMessage.textContent = `업데이트 다운로드 완료 (${result.version || '새 버전'}). 재시작하여 설치하세요.`;
+          updateMessage.textContent = `Update download complete (${result.version || 'new version'}). Restart to install.`;
         }
 
         // 다운로드 버튼을 숨기고 설치 버튼 표시
@@ -2288,7 +2288,7 @@ function handleDownloadUpdate() {
         // 설치(재시작) 버튼 표시
         if (installUpdateButton) {
           installUpdateButton.style.display = 'inline-block';
-          installUpdateButton.textContent = '재시작하여 설치';
+          installUpdateButton.textContent = 'Restart to Install';
           installUpdateButton.disabled = false;
         }
       } else {
@@ -2306,12 +2306,12 @@ function handleDownloadUpdate() {
           progressElement.parentNode.removeChild(progressElement);
         }
 
-        updateMessage.textContent = '업데이트 다운로드 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류');
+        updateMessage.textContent = 'Error occurred while downloading update: ' + (error.message || 'Unknown error');
       }
 
       // 다운로드 버튼 상태 복원
       if (downloadUpdateButton) {
-        downloadUpdateButton.textContent = '다시 시도';
+        downloadUpdateButton.textContent = 'Try Again';
         downloadUpdateButton.disabled = false;
       }
     })
@@ -2333,15 +2333,15 @@ function handleInstallUpdate() {
   window.settings.log.info('업데이트 설치 시작 (재시작)');
 
   // 사용자에게 확인
-  if (!confirm('앱이 종료되고 업데이트 후 자동으로 재시작됩니다. 지금 진행하시겠습니까?')) {
-    window.settings.log.info('사용자가 업데이트 설치를 취소했습니다.');
+  if (!confirm('The app will close and restart automatically after the update. Do you want to proceed now?')) {
+    window.settings.log.info('User canceled the update installation.');
     return;
   }
 
   // 설치 버튼 비활성화
   if (installUpdateButton) {
     installUpdateButton.disabled = true;
-    installUpdateButton.textContent = '재시작 중...';
+    installUpdateButton.textContent = 'Restarting...';
   }
 
   // 로딩 표시
@@ -2351,13 +2351,13 @@ function handleInstallUpdate() {
 
   // 메시지 업데이트
   if (updateMessage) {
-    updateMessage.textContent = '업데이트를 설치하기 위해 재시작합니다...';
+    updateMessage.textContent = 'Restarting to install update...';
   }
 
   // 앱 종료 알림 표시
   const closingMessage = document.createElement('div');
   closingMessage.className = 'update-closing-message';
-  closingMessage.textContent = '5초 후 자동으로 앱이 종료됩니다...';
+  closingMessage.textContent = 'App will close automatically in 5 seconds...';
   if (updateMessage.parentNode) {
     updateMessage.parentNode.appendChild(closingMessage);
   }
@@ -2381,7 +2381,7 @@ function handleInstallUpdate() {
         handleInstallError(error);
       }
     } else {
-      closingMessage.textContent = `${countdown}초 후 자동으로 앱이 종료됩니다...`;
+      closingMessage.textContent = `App will close automatically in ${countdown} seconds...`;
     }
   }, 1000);
 }
@@ -2396,12 +2396,12 @@ function handleInstallError(error) {
     const originalContent = updateMessage.textContent;
 
     // 오류 메시지 설정
-    updateMessage.innerHTML = `<span class="error-message">업데이트 설치 중 오류가 발생했습니다:</span> ${error.message || '알 수 없는 오류'}`;
+    updateMessage.innerHTML = `<span class="error-message">Error occurred while installing update:</span> ${error.message || 'Unknown error'}`;
 
     // 추가 도움말 표시
     const helpText = document.createElement('p');
     helpText.className = 'error-help-text';
-    helpText.textContent = '앱을 수동으로 종료한 후 다시 시작해보세요.';
+    helpText.textContent = 'Try closing the app manually and restart it.';
     updateMessage.appendChild(helpText);
 
     // 기술적 오류 정보 표시 (개발자용)
@@ -2410,7 +2410,7 @@ function handleInstallError(error) {
       techDetails.className = 'error-technical-details';
 
       const summary = document.createElement('summary');
-      summary.textContent = '기술적 오류 정보 (개발자용)';
+      summary.textContent = 'Technical error details (for developers)';
       techDetails.appendChild(summary);
 
       const pre = document.createElement('pre');
@@ -2423,14 +2423,14 @@ function handleInstallError(error) {
 
   // 설치 버튼 상태 복원
   if (installUpdateButton) {
-    installUpdateButton.textContent = '재시작하여 설치';
+    installUpdateButton.textContent = 'Restart to Install';
     installUpdateButton.disabled = false;
   }
 
   // 다운로드 버튼도 다시 표시하여 재시도 가능하게 함
   if (downloadUpdateButton) {
     downloadUpdateButton.style.display = 'inline-block';
-    downloadUpdateButton.textContent = '업데이트 다시 다운로드';
+    downloadUpdateButton.textContent = 'Download Update Again';
     downloadUpdateButton.disabled = false;
   }
 
