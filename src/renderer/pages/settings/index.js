@@ -259,7 +259,7 @@ function setupEventListeners() {
   // About 탭 관련 버튼
   if (homepageButton) {
     homepageButton.addEventListener('click', () => {
-      window.settings.openUrl('https://toast.sh');
+      window.settings.openUrl('https://app.toast.sh');
     });
   }
 
