@@ -1,7 +1,8 @@
 /**
- * Toast API - Settings Synchronization API Module
+ * Toast API - 설정 동기화 API 모듈
  *
- * Synchronizes Toast-App settings (pages and button information, etc.) with the Toast-Web server.
+ * Toast-App 설정(페이지 및 버튼 정보 등)을 Toast-Web 서버와 동기화합니다.
+ * 단일 데이터 소스 원칙을 따라 ConfigStore를 직접 업데이트합니다.
  */
 
 const os = require('os');
@@ -11,7 +12,7 @@ const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = req
 // 모듈별 로거 생성
 const logger = createLogger('ApiSync');
 
-// Synchronization state management
+// 동기화 상태 관리
 const state = {
   lastSyncTime: 0,
   isSyncing: false,
@@ -23,15 +24,15 @@ const state = {
 };
 
 /**
- * Check if cloud synchronization is possible
- * @param {Object} params - Synchronization possibility parameters
- * @param {Function} params.hasValidToken - Function to check for valid token
- * @param {Object} params.configStore - Configuration store
- * @returns {Promise<boolean>} Whether synchronization is possible
+ * 클라우드 동기화 가능 여부 확인
+ * @param {Object} params - 동기화 가능 여부 매개변수
+ * @param {Function} params.hasValidToken - 유효한 토큰 확인 함수
+ * @param {Object} params.configStore - 설정 저장소
+ * @returns {Promise<boolean>} 동기화 가능 여부
  */
 async function isCloudSyncEnabled({ hasValidToken, configStore }) {
   try {
-    // 로그에 함수 호출 기록
+    // 함수 호출 로깅
     logger.info('isCloudSyncEnabled: 클라우드 동기화 가능 여부 확인 중');
 
     // 인증 상태 확인
@@ -103,35 +104,35 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
     logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`);
     return hasSyncFeature;
   } catch (error) {
-    logger.error('Error checking synchronization availability:', error);
+    logger.error('동기화 가능 여부 확인 중 오류 발생:', error);
     return false;
   }
 }
 
 /**
- * Upload current settings to server
- * @param {Object} params - Upload parameters
- * @param {Function} params.hasValidToken - Function to check for valid token
- * @param {Function} params.onUnauthorized - Callback function for authentication failure
- * @param {Object} params.configStore - Configuration store
- * @param {Object} [params.directData] - Data to upload directly to server
- * @returns {Promise<Object>} Upload result
+ * 현재 설정을 서버에 업로드
+ * @param {Object} params - 업로드 매개변수
+ * @param {Function} params.hasValidToken - 유효한 토큰 확인 함수
+ * @param {Function} params.onUnauthorized - 인증 실패 시 콜백 함수
+ * @param {Object} params.configStore - 설정 저장소
+ * @param {Object} [params.directData] - 서버에 직접 업로드할 데이터
+ * @returns {Promise<Object>} 업로드 결과
  */
 async function uploadSettings({ hasValidToken, onUnauthorized, configStore, directData }) {
-  // Skip if already syncing
+  // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
-    return { success: false, error: 'Already syncing' };
+    return { success: false, error: '이미 동기화 중' };
   }
 
   state.isSyncing = true;
 
   try {
-    // Check for valid data
+    // 유효한 데이터 확인
     if (!directData) {
-      throw new Error('Invalid data');
+      throw new Error('유효하지 않은 데이터');
     }
 
-    // API request
+    // API 요청
     return await authenticatedRequest(
       async () => {
         const headers = getAuthHeaders();
@@ -139,7 +140,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
 
         const response = await apiClient.put(ENDPOINTS.SETTINGS, directData, { headers });
 
-        // Record synchronization completion time
+        // 동기화 완료 시간 기록
         state.lastSyncTime = Date.now();
         state.lastSyncStatus = {
           success: true,
@@ -152,17 +153,17 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
       { onUnauthorized },
     );
   } catch (error) {
-    logger.error('Settings upload error:', error);
+    logger.error('설정 업로드 오류:', error);
 
     state.lastSyncStatus = {
       success: false,
       timestamp: Date.now(),
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
 
     return {
       success: false,
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
   } finally {
     state.isSyncing = false;
@@ -170,23 +171,23 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
 }
 
 /**
- * Download settings from server
- * @param {Object} params - Download parameters
- * @param {Function} params.hasValidToken - Function to check for valid token
- * @param {Function} params.onUnauthorized - Callback function for authentication failure
- * @param {Object} params.configStore - Configuration store
- * @returns {Promise<Object>} Download result
+ * 서버에서 설정 다운로드
+ * @param {Object} params - 다운로드 매개변수
+ * @param {Function} params.hasValidToken - 유효한 토큰 확인 함수
+ * @param {Function} params.onUnauthorized - 인증 실패 시 콜백 함수
+ * @param {Object} params.configStore - 설정 저장소
+ * @returns {Promise<Object>} 다운로드 결과
  */
 async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) {
-  // Skip if already syncing
+  // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
-    return { success: false, error: 'Already syncing' };
+    return { success: false, error: '이미 동기화 중' };
   }
 
   state.isSyncing = true;
 
   try {
-    // API request
+    // API 요청
     return await authenticatedRequest(
       async () => {
         const headers = getAuthHeaders();
@@ -198,18 +199,18 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         // 상세 디버깅 로그
         logger.info(
-          'Cloud sync - Downloaded settings structure:',
+          '클라우드 동기화 - 다운로드된 설정 구조:',
           Object.keys(settings || {}).length > 0
-            ? `Contains keys: ${Object.keys(settings).join(', ')}`
-            : 'Empty or invalid response',
+            ? `다음 키 포함: ${Object.keys(settings).join(', ')}`
+            : '빈 응답 또는 유효하지 않은 응답',
         );
 
-        // Validation check
+        // 유효성 검사
         if (!settings) {
-          throw new Error('Invalid settings data: Response is empty');
+          throw new Error('유효하지 않은 설정 데이터: 응답이 비어 있습니다');
         }
 
-        // 표준화된 데이터 추출 시도
+        // 표준화된 데이터 추출
         let pagesData = null;
         let appearanceData = null;
         let advancedData = null;
@@ -221,7 +222,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         // 1. 서버 응답 데이터 구조 파싱
         // 1.1 표준 구조 확인 (최신 API 형식)
         if (settings.pages && Array.isArray(settings.pages)) {
-          logger.info('Found standard pages structure');
+          logger.info('표준 페이지 구조 발견');
           pagesData = settings.pages;
           appearanceData = settings.appearance || null;
           advancedData = settings.advanced || null;
@@ -235,7 +236,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         }
         // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
         else if (settings.data) {
-          logger.info('Found nested data structure');
+          logger.info('중첩된 데이터 구조 발견');
           const data = settings.data;
 
           if (Array.isArray(data.pages)) {
@@ -255,12 +256,12 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         }
         // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
         else if (Array.isArray(settings)) {
-          logger.info('Found array-only structure');
+          logger.info('배열 전용 구조 발견');
           pagesData = settings;
         }
         // 1.4 기타 구조 - 모든 배열 필드 검색
         else {
-          logger.info('Searching for page array in unknown structure');
+          logger.info('알 수 없는 구조에서 페이지 배열 검색 중');
           const arrayFields = Object.entries(settings)
             .filter(([key, value]) => Array.isArray(value))
             .map(([key, value]) => ({ key, value }));
@@ -274,7 +275,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
                   (field.value.length > 0 && field.value[0].name && field.value[0].buttons),
               ) || arrayFields[0];
 
-            logger.info(`Using array field '${pagesField.key}' as pages data`);
+            logger.info(`페이지 데이터로 '${pagesField.key}' 배열 필드 사용`);
             pagesData = pagesField.value;
           }
 
@@ -290,9 +291,9 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         // 페이지 데이터 검증
         if (!pagesData) {
-          logger.error('Page data not found in response:', JSON.stringify(settings));
+          logger.error('응답에서 페이지 데이터를 찾을 수 없음:', JSON.stringify(settings));
           throw new Error(
-            'Invalid settings data: No page information found in any expected format',
+            '유효하지 않은 설정 데이터: 예상되는 어떤 형식으로도 페이지 정보를 찾을 수 없습니다',
           );
         }
 
@@ -307,26 +308,26 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           );
 
         if (!isValidPageData) {
-          logger.error('Invalid page data structure:', JSON.stringify(pagesData.slice(0, 2)));
-          throw new Error('Invalid settings data: Page structure is not in expected format');
+          logger.error('유효하지 않은 페이지 데이터 구조:', JSON.stringify(pagesData.slice(0, 2)));
+          throw new Error('유효하지 않은 설정 데이터: 페이지 구조가 예상 형식이 아닙니다');
         }
 
-        logger.info(`Found ${pagesData.length} pages in sync data`);
+        logger.info(`동기화 데이터에서 ${pagesData.length}개의 페이지 발견`);
 
-        // configStore에 데이터 저장
+        // ConfigStore에 직접 데이터 저장 (단일 소스 원칙)
         configStore.set('pages', pagesData);
-        logger.info('Pages data saved to config store');
+        logger.info('페이지 데이터를 ConfigStore에 저장 완료');
 
         // appearance 설정 저장 (있는 경우)
         if (appearanceData) {
           configStore.set('appearance', appearanceData);
-          logger.info('Appearance settings saved to config store');
+          logger.info('외관 설정을 ConfigStore에 저장 완료');
         }
 
         // advanced 설정 저장 (있는 경우)
         if (advancedData) {
           configStore.set('advanced', advancedData);
-          logger.info('Advanced settings saved to config store');
+          logger.info('고급 설정을 ConfigStore에 저장 완료');
         }
 
         // 동기화 상태 업데이트
@@ -337,7 +338,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           error: null,
         };
 
-        logger.info('Settings download completed successfully');
+        logger.info('설정 다운로드가 성공적으로 완료되었습니다');
 
         // 서버 응답과 메타데이터를 함께 반환
         return {
@@ -349,17 +350,17 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
       { onUnauthorized },
     );
   } catch (error) {
-    logger.error('Settings download error:', error);
+    logger.error('설정 다운로드 오류:', error);
 
     state.lastSyncStatus = {
       success: false,
       timestamp: Date.now(),
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
 
     return {
       success: false,
-      error: error.message || 'Unknown error',
+      error: error.message || '알 수 없는 오류',
     };
   } finally {
     state.isSyncing = false;
@@ -367,16 +368,16 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 }
 
 /**
- * Get last synchronization status
- * @returns {Object} Last synchronization status
+ * 마지막 동기화 상태 가져오기
+ * @returns {Object} 마지막 동기화 상태
  */
 function getLastSyncStatus() {
   return { ...state.lastSyncStatus };
 }
 
 /**
- * Get current device information
- * @returns {string} Device information string
+ * 현재 장치 정보 가져오기
+ * @returns {string} 장치 정보 문자열
  */
 function getDeviceInfo() {
   const platform = process.platform;
