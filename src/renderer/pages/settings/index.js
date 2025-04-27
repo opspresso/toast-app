@@ -1713,7 +1713,7 @@ function handleDownloadUpdate() {
       if (result.success) {
         // 다운로드 성공
         if (updateMessage) {
-          updateMessage.textContent = '업데이트 다운로드 완료. 재시작하여 설치하세요.';
+          updateMessage.textContent = `업데이트 다운로드 완료 (${result.version || '새 버전'}). 재시작하여 설치하세요.`;
         }
 
         // 다운로드 버튼을 숨기고 설치 버튼 표시
@@ -1740,7 +1740,7 @@ function handleDownloadUpdate() {
         updateMessage.textContent = '업데이트 다운로드 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류');
       }
 
-      // 버튼 상태 복원
+      // 다운로드 버튼 상태 복원
       if (downloadUpdateButton) {
         downloadUpdateButton.textContent = '다시 시도';
         downloadUpdateButton.disabled = false;
@@ -1766,24 +1766,54 @@ function handleInstallUpdate() {
     installUpdateButton.textContent = '재시작 중...';
   }
 
+  // 로딩 표시
+  if (updateLoading) {
+    updateLoading.className = 'loading-indicator';
+  }
+
   // 메시지 업데이트
   if (updateMessage) {
     updateMessage.textContent = '업데이트를 설치하기 위해 재시작합니다...';
   }
 
-  // 업데이트 설치 (앱 재시작)
-  window.settings.installUpdate()
-    .catch(error => {
-      window.settings.log.error('업데이트 설치 오류:', error);
+  try {
+    // 업데이트 설치 (앱 재시작)
+    window.settings.installUpdate()
+      .catch(error => {
+        window.settings.log.error('업데이트 설치 오류:', error);
+        handleInstallError(error);
+      });
+  } catch (error) {
+    window.settings.log.error('업데이트 설치 과정에서 예외 발생:', error);
+    handleInstallError(error);
+  }
+}
 
-      if (updateMessage) {
-        updateMessage.textContent = '업데이트 설치 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류');
-      }
+/**
+ * 업데이트 설치 오류 처리
+ */
+function handleInstallError(error) {
+  // 오류 메시지 표시
+  if (updateMessage) {
+    updateMessage.textContent = '업데이트 설치 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류');
+    updateMessage.style.color = 'red';
+  }
 
-      // 설치 버튼 상태 복원
-      if (installUpdateButton) {
-        installUpdateButton.textContent = '재시작하여 설치';
-        installUpdateButton.disabled = false;
-      }
-    });
+  // 설치 버튼 상태 복원
+  if (installUpdateButton) {
+    installUpdateButton.textContent = '재시작하여 설치';
+    installUpdateButton.disabled = false;
+  }
+
+  // 다운로드 버튼도 다시 표시하여 재시도 가능하게 함
+  if (downloadUpdateButton) {
+    downloadUpdateButton.style.display = 'inline-block';
+    downloadUpdateButton.textContent = '업데이트 다시 다운로드';
+    downloadUpdateButton.disabled = false;
+  }
+
+  // 로딩 숨기기
+  if (updateLoading) {
+    updateLoading.className = 'loading-indicator hidden';
+  }
 }
