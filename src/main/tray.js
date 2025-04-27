@@ -58,10 +58,18 @@ function getTrayIconPath() {
  * @param {Object} windows - Object containing application windows
  */
 function updateTrayMenu(tray, windows) {
+  // 현재 구성된 Global Hotkey 가져오기
+  const { createConfigStore } = require('./config');
+  const config = createConfigStore();
+  const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // 기본값 사용
+
+  // Global Hotkey 값 로그에 출력
+  console.log('현재 설정된 Global Hotkey:', configuredHotkey);
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Toast',
-      accelerator: 'CommandOrControl+Shift+Space', // 단축키 표시
+      accelerator: configuredHotkey, // 설정에서 가져온 글로벌 핫키 사용
       click: () => {
         if (windows.toast) {
           windows.toast.show();
