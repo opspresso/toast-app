@@ -427,7 +427,7 @@ function setupEventListeners() {
 
   // Keyboard page switching (1-9 key events)
   document.addEventListener('keydown', event => {
-    // 모달이 열려 있으면 키보드 페이징 작동하지 않음
+    // Keyboard paging does not work when a modal is open
     if (
       buttonEditModal.classList.contains('show') ||
       profileModal.classList.contains('show') ||
