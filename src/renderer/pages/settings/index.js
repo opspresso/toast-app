@@ -213,7 +213,7 @@ function setupEventListeners() {
       }
 
       // 이벤트 위임 방식으로 이벤트 리스너 등록
-      newNav.addEventListener('click', function(event) {
+      newNav.addEventListener('click', function (event) {
         // li 요소 또는 li의 자식 요소를 클릭했는지 확인
         let targetLi = event.target;
         while (targetLi && targetLi !== newNav) {
@@ -1311,7 +1311,7 @@ function handleHotkeyRecording(event) {
 
   // 유효한 핫키인지 검증
   if (hotkey.includes('Alt+Alt') || hotkey.includes('Shift+Shift') ||
-      hotkey.includes('Ctrl+Ctrl') || hotkey.includes('Meta+Meta')) {
+    hotkey.includes('Ctrl+Ctrl') || hotkey.includes('Meta+Meta')) {
     window.settings.log.warn('유효하지 않은 핫키 조합 감지:', hotkey);
     return;
   }
@@ -1601,7 +1601,16 @@ function handleManualSyncUpload() {
             manualSyncUploadButton.textContent = 'Upload Complete!';
           }
         } else {
-          throw new Error(result.error || '알 수 없는 오류');
+          // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+          let errorMessage = '알 수 없는 오류';
+          if (result.error) {
+            if (typeof result.error === 'object') {
+              errorMessage = result.error.message || JSON.stringify(result.error);
+            } else {
+              errorMessage = result.error;
+            }
+          }
+          throw new Error(errorMessage);
         }
       })
       .catch(error => {
@@ -1666,7 +1675,16 @@ function handleManualSyncDownload() {
           // 설정 다시 로드
           return window.settings.getConfig();
         } else {
-          throw new Error(result.error || '알 수 없는 오류');
+          // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+          let errorMessage = '알 수 없는 오류';
+          if (result.error) {
+            if (typeof result.error === 'object') {
+              errorMessage = result.error.message || JSON.stringify(result.error);
+            } else {
+              errorMessage = result.error;
+            }
+          }
+          throw new Error(errorMessage);
         }
       })
       .then(loadedConfig => {
@@ -1678,7 +1696,7 @@ function handleManualSyncDownload() {
 
         // 오류 메시지
         if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.textContent = 'Download Failed';
+          manualSyncDownloadButton.textContent = 'Download Failed';
         }
       })
       .finally(() => {
@@ -1735,7 +1753,16 @@ function handleManualSyncResolve() {
           // 설정 다시 로드
           return window.settings.getConfig();
         } else {
-          throw new Error(result.error || '알 수 없는 오류');
+          // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+          let errorMessage = '알 수 없는 오류';
+          if (result.error) {
+            if (typeof result.error === 'object') {
+              errorMessage = result.error.message || JSON.stringify(result.error);
+            } else {
+              errorMessage = result.error;
+            }
+          }
+          throw new Error(errorMessage);
         }
       })
       .then(loadedConfig => {
@@ -2293,7 +2320,16 @@ function handleDownloadUpdate() {
         }
       } else {
         // 다운로드 실패
-        throw new Error(result.error || '업데이트 다운로드 실패');
+        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        let errorMessage = '업데이트 다운로드 실패';
+        if (result.error) {
+          if (typeof result.error === 'object') {
+            errorMessage = result.error.message || JSON.stringify(result.error);
+          } else {
+            errorMessage = result.error;
+          }
+        }
+        throw new Error(errorMessage);
       }
     })
     .catch(error => {
