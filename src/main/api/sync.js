@@ -161,9 +161,38 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
       error: error.message || '알 수 없는 오류',
     };
 
+    // 오류 객체를 더 자세히 처리
+    let errorMessage = error.message || '알 수 없는 오류';
+    let errorDetails = null;
+
+    // 응답 오류 처리
+    if (error.response) {
+      if (error.response.data) {
+        if (typeof error.response.data === 'object') {
+          errorDetails = JSON.stringify(error.response.data);
+          if (error.response.data.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          }
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+      }
+      errorMessage = `${errorMessage} (HTTP ${error.response.status || 'Error'})`;
+    }
+
+    logger.error('설정 업로드 오류 상세 정보:', {
+      message: errorMessage,
+      details: errorDetails,
+      status: error.response?.status
+    });
+
     return {
       success: false,
-      error: error.message || '알 수 없는 오류',
+      error: errorMessage,
+      errorDetails: errorDetails,
+      statusCode: error.response?.status
     };
   } finally {
     state.isSyncing = false;
@@ -358,9 +387,38 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
       error: error.message || '알 수 없는 오류',
     };
 
+    // 오류 객체를 더 자세히 처리
+    let errorMessage = error.message || '알 수 없는 오류';
+    let errorDetails = null;
+
+    // 응답 오류 처리
+    if (error.response) {
+      if (error.response.data) {
+        if (typeof error.response.data === 'object') {
+          errorDetails = JSON.stringify(error.response.data);
+          if (error.response.data.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          }
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+      }
+      errorMessage = `${errorMessage} (HTTP ${error.response.status || 'Error'})`;
+    }
+
+    logger.error('설정 다운로드 오류 상세 정보:', {
+      message: errorMessage,
+      details: errorDetails,
+      status: error.response?.status
+    });
+
     return {
       success: false,
-      error: error.message || '알 수 없는 오류',
+      error: errorMessage,
+      errorDetails: errorDetails,
+      statusCode: error.response?.status
     };
   } finally {
     state.isSyncing = false;

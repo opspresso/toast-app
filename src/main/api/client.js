@@ -191,28 +191,52 @@ async function authenticatedRequest(apiCall, options = {}) {
         const refreshResult = await onUnauthorized();
 
         if (refreshResult && refreshResult.success) {
-          try {
-            // Increment counter for requests after refresh
-            tokenRefreshTracking.requestsAfterRefresh++;
+          // 스로틀링된 요청이지만 토큰이 여전히 유효한 경우 특별 처리
+          if (refreshResult.throttled && refreshResult.tokenValid) {
+            try {
+              // 토큰이 여전히 유효하므로 API 호출 재시도
+              const result = await apiCall();
+              return result;
+            } catch (retryError) {
+              // 여전히 실패하면 오류 반환
+              if (allowUnauthenticated && defaultValue) {
+                return defaultValue;
+              }
 
-            const result = await apiCall();
-
-            // Reset counter after successful request
-            tokenRefreshTracking.requestsAfterRefresh = 0;
-
-            return result;
-          } catch (retryError) {
-            if (allowUnauthenticated && defaultValue) {
-              return defaultValue;
+              return {
+                error: {
+                  code: 'API_ERROR_WITH_VALID_TOKEN',
+                  message: 'API request failed with a valid token. Please try again later.',
+                  statusCode: retryError.response?.status,
+                  originalError: retryError.message
+                },
+              };
             }
+          } else {
+            try {
+              // 일반적인 토큰 갱신 성공 케이스
+              // Increment counter for requests after refresh
+              tokenRefreshTracking.requestsAfterRefresh++;
 
-            return {
-              error: {
-                code: 'AUTH_REFRESH_FAILED',
-                message: 'Authentication failed even after token refresh. Please log in again.',
-                requireRelogin: true,
-              },
-            };
+              const result = await apiCall();
+
+              // Reset counter after successful request
+              tokenRefreshTracking.requestsAfterRefresh = 0;
+
+              return result;
+            } catch (retryError) {
+              if (allowUnauthenticated && defaultValue) {
+                return defaultValue;
+              }
+
+              return {
+                error: {
+                  code: 'AUTH_REFRESH_FAILED',
+                  message: 'Authentication failed even after token refresh. Please log in again.',
+                  requireRelogin: true,
+                },
+              };
+            }
           }
         } else {
           // Reset tokens on refresh failure
