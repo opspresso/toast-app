@@ -449,7 +449,16 @@ function handleManualSyncUpload(logger) {
         DOM.manualSyncUploadButton.textContent = 'Upload Complete!';
       } else {
         logger.error('Settings upload failed:', result.error);
-        throw new Error(result.error || 'Unknown error');
+        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        let errorMessage = 'Unknown error';
+        if (result.error) {
+          if (typeof result.error === 'object') {
+            errorMessage = result.error.message || JSON.stringify(result.error);
+          } else {
+            errorMessage = result.error;
+          }
+        }
+        throw new Error(errorMessage);
       }
     })
     .catch(error => {
@@ -494,7 +503,16 @@ function handleManualSyncDownload(logger) {
         return window.settings.getConfig();
       } else {
         logger.error('Settings download failed:', result.error);
-        throw new Error(result.error || 'Unknown error');
+        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        let errorMessage = 'Unknown error';
+        if (result.error) {
+          if (typeof result.error === 'object') {
+            errorMessage = result.error.message || JSON.stringify(result.error);
+          } else {
+            errorMessage = result.error;
+          }
+        }
+        throw new Error(errorMessage);
       }
     })
     .then(loadedConfig => {
@@ -544,7 +562,16 @@ function handleManualSyncResolve(logger) {
         return window.settings.getConfig();
       } else {
         logger.error('Settings conflict resolution failed:', result.error);
-        throw new Error(result.error || 'Unknown error');
+        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        let errorMessage = 'Unknown error';
+        if (result.error) {
+          if (typeof result.error === 'object') {
+            errorMessage = result.error.message || JSON.stringify(result.error);
+          } else {
+            errorMessage = result.error;
+          }
+        }
+        throw new Error(errorMessage);
       }
     })
     .then(loadedConfig => {

@@ -522,7 +522,23 @@ async function refreshAccessToken() {
       logger.info(
         `Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`,
       );
-      return { success: true, throttled: true };
+
+      // 현재 토큰이 여전히 유효한지 확인
+      const isExpired = await isTokenExpired();
+      if (!isExpired) {
+        // 토큰이 유효하면 성공으로 처리
+        logger.info('Current token is still valid. Returning success.');
+        return { success: true, throttled: true, tokenValid: true };
+      } else {
+        // 토큰이 만료되었지만 스로틀링 중이면 오류 반환
+        logger.warn('Token is expired but refresh is throttled. Returning error.');
+        return {
+          success: false,
+          throttled: true,
+          error: 'Token refresh is throttled. Please try again later.',
+          code: 'REFRESH_THROTTLED'
+        };
+      }
     }
 
     // If already refreshing, return the ongoing refresh promise instead of starting a new one
