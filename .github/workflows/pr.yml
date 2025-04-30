@@ -11,6 +11,10 @@ on:
   pull_request:
     types: [opened]
 
+env:
+  GITHUB_USER: nalbam-bot
+  GITHUB_EMAIL: bot@nalbam.com
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -96,8 +100,8 @@ jobs:
 
           # Setup git user
           echo "👤 Setting up git user for commit"
-          git config --local user.name "nalbam-bot"
-          git config --local user.email "bot@nalbam.com"
+          git config --local user.name "$GITHUB_USER"
+          git config --local user.email "$GITHUB_EMAIL"
 
           # Commit and push only if there are staged changes
           if ! git diff --cached --quiet; then

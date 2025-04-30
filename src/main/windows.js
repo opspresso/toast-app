@@ -64,6 +64,16 @@ function createToastWindow(config) {
     skipTaskbar: !showInTaskbar,
     show: false,
     alwaysOnTop: true,
+    // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
+    alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
+    type: 'panel', // 'panel' 또는 'utility' 타입은 전체 화면 위에 floating window로 표시됨
+    hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
+    thickFrame: false, // Windows에서 기본 창 프레임 비활성화
+    fullscreen: false,
+    fullscreenable: false,
+    visibleOnAllWorkspaces: true,
+    simpleFullscreen: false, // macOS 전용 속성
+    kiosk: false,
     webPreferences: {
       preload: path.join(__dirname, '../renderer/preload/toast.js'),
       nodeIntegration: false,
@@ -191,6 +201,17 @@ function createSettingsWindow(config) {
     minWidth: 600,
     minHeight: 400,
     show: false,
+    alwaysOnTop: true,
+    // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
+    alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
+    type: 'panel', // 'panel' 또는 'utility' 타입은 전체 화면 위에 floating window로 표시됨
+    hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
+    thickFrame: false, // Windows에서 기본 창 프레임 비활성화
+    fullscreen: false,
+    fullscreenable: false,
+    visibleOnAllWorkspaces: true,
+    simpleFullscreen: false, // macOS 전용 속성
+    kiosk: false,
     webPreferences: {
       preload: path.join(__dirname, '../renderer/preload/settings.js'),
       nodeIntegration: false,
@@ -252,8 +273,40 @@ function showToastWindow(config) {
     createToastWindow(config);
   }
 
+  // 현재 포커스된 창이 있는지 확인하고 전체 화면 상태를 저장
+  const { BrowserWindow } = require('electron');
+  const focusedWindow = BrowserWindow.getFocusedWindow();
+  const isFullScreen = focusedWindow && focusedWindow.isFullScreen();
+
+  logger.info(`Showing toast window. Focused window is fullscreen: ${isFullScreen}`);
+
   // Position the window
   positionToastWindow(windows.toast, config);
+
+  // 전체 화면 모드 위에서도 토스트 창이 올바르게 표시되도록 설정
+  if (isFullScreen) {
+    windows.toast.setAlwaysOnTop(true, 'screen-saver');
+
+    // 전체 화면 모드에서 토스트 창을 모든 작업 공간에 표시
+    if (process.platform === 'darwin') { // macOS 전용
+      windows.toast.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    } else if (process.platform === 'win32') { // Windows 전용
+      // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
+      windows.toast.setAlwaysOnTop(true, 'screen-saver', 1);
+    } else if (process.platform === 'linux') { // Linux 전용
+      // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
+      // 다양한 윈도우 매니저에 따라 다르게 동작할 수 있음
+      try {
+        windows.toast.setAlwaysOnTop(true, 'screen-saver', 1);
+        const win = windows.toast.getNativeWindowHandle();
+        if (win) {
+          logger.info('Setting special window type for Linux fullscreen');
+        }
+      } catch (error) {
+        logger.error('Error setting Linux fullscreen behavior:', error);
+      }
+    }
+  }
 
   // Show and focus the window
   windows.toast.show();
@@ -341,6 +394,37 @@ function showSettingsWindow(config, tabName) {
     }
   } else {
     settingsWindow = windows.settings;
+
+    // 현재 포커스된 창이 있는지 확인하고 전체 화면 상태를 저장
+    const { BrowserWindow } = require('electron');
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    const isFullScreen = focusedWindow && focusedWindow.isFullScreen();
+
+    logger.info(`Showing settings window. Focused window is fullscreen: ${isFullScreen}`);
+
+    // 전체 화면 모드 위에서도 설정 창이 올바르게 표시되도록 설정
+    if (isFullScreen) {
+      settingsWindow.setAlwaysOnTop(true, 'screen-saver');
+
+      // 전체 화면 모드에서 창을 모든 작업 공간에 표시
+      if (process.platform === 'darwin') { // macOS 전용
+        settingsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      } else if (process.platform === 'win32') { // Windows 전용
+        // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
+        settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      } else if (process.platform === 'linux') { // Linux 전용
+        // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
+        try {
+          settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+          const win = settingsWindow.getNativeWindowHandle();
+          if (win) {
+            logger.info('Setting special window type for Linux fullscreen');
+          }
+        } catch (error) {
+          logger.error('Error setting Linux fullscreen behavior for settings window:', error);
+        }
+      }
+    }
 
     // Position the settings window on the same display as the toast window
     positionSettingsWindowOnToastDisplay(windows.settings);
