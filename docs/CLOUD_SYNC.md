@@ -15,6 +15,7 @@
 - [오류 처리 전략](#오류-처리-전략)
 - [충돌 해결 전략](#충돌-해결-전략)
 - [보안 고려사항](#보안-고려사항)
+- [문제 해결 가이드](#문제-해결-가이드)
 
 ## 개요
 
@@ -753,3 +754,304 @@ function handleCloudSyncToggle() {
 ```
 
 ## 로컬 데이터 관리
+
+클라우드 동기화 시스템은 로컬 설정 파일을 효율적으로 관리합니다:
+
+### 데이터 저장소 구조
+
+1. **ConfigStore**:
+   - `electron-store`를 사용하여 사용자 설정을 저장하는 주요 저장소
+   - 페이지, 버튼, 외관 및 고급 설정과 같은 모든 앱 데이터를 포함
+   - 앱이 실행 중일 때 메모리와 디스크에서 모두 사용 가능
+
+2. **UserDataManager**:
+   - 로컬 설정 파일을 관리하는 모듈
+   - 단일 데이터 소스 원칙에 따라 메타데이터만 관리
+   - 파일 시스템 작업 추상화 및 오류 처리
+
+### 중요 파일 경로
+
+동기화 관련 파일은 Electron의 표준 경로에 저장됩니다:
+
+```javascript
+// 파일 경로 예시
+const SETTINGS_DIR = app.getPath('userData');
+const SETTINGS_FILE_PATH = path.join(SETTINGS_DIR, 'user-settings.json');
+const CONFIG_STORE_PATH = path.join(SETTINGS_DIR, 'config.json');
+```
+
+### 데이터 저장 최적화
+
+데이터 저장은 다음과 같이 최적화되어 있습니다:
+
+1. **부분 업데이트**: 전체 데이터가 아닌 변경된 부분만 업데이트
+2. **디바운싱**: 짧은 시간 내 여러 변경 사항을 하나의 업데이트로 그룹화
+3. **비동기 저장**: 파일 쓰기 작업을 백그라운드에서 수행하여 UI 응답성 보장
+
+## 오류 처리 전략
+
+클라우드 동기화 시스템은 다양한 오류 상황에 대응합니다:
+
+### 네트워크 관련 오류
+
+1. **연결 오류**:
+   - 오류 로깅 및 사용자 알림
+   - 자동 재시도 메커니즘 (`MAX_RETRY_COUNT`까지)
+   - 다음 동기화 시도까지 동기화 상태 저장
+
+   ```javascript
+   // 재시도 로직 예시
+   if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+     state.retryCount++;
+     logger.info(`네트워크 오류, 재시도 ${state.retryCount}/${MAX_RETRY_COUNT}`);
+
+     if (state.retryCount <= MAX_RETRY_COUNT) {
+       setTimeout(() => {
+         uploadSettingsWithRetry();
+       }, RETRY_DELAY_MS);
+     }
+   }
+   ```
+
+2. **타임아웃 오류**:
+   - 요청 중단 및 더 긴 대기 시간으로 재시도
+   - 로컬에서 작업 가능하도록 사용자에게 오프라인 모드 제안
+
+### 서버 관련 오류
+
+1. **4xx 오류**:
+   - 인증 관련 오류 (401/403): 토큰 새로고침 시도 및 실패 시 재로그인 요청
+   - 데이터 형식 오류 (400): 오류 세부 정보 로깅 및 개발팀에 보고
+   - 리소스 없음 (404): 새 계정 설정으로 처리
+
+   ```javascript
+   // 서버 오류 처리 예시
+   if (error.response) {
+     const status = error.response.status;
+
+     if (status === 401 || status === 403) {
+       // 토큰 새로고침 시도
+       return authManager.refreshAccessToken().then(() => {
+         return uploadSettings();
+       }).catch(() => {
+         // 실패 시 사용자에게 재로그인 요청
+         return { success: false, error: 'Authentication required', requireRelogin: true };
+       });
+     } else if (status === 404) {
+       // 서버에 설정이 없는 경우 새로 생성
+       return createInitialServerSettings();
+     }
+   }
+   ```
+
+2. **5xx 오류**:
+   - 일시적인 오류로 간주하고 점진적 백오프로 재시도
+   - 지속적인 오류의 경우 나중에 재시도하도록 동기화 일시 중지
+
+### 데이터 관련 오류
+
+1. **데이터 형식 오류**:
+   - 다양한 서버 응답 형식 처리 (정규화 로직)
+   - 응답 데이터 구조 검증 및 오류 복구
+
+   ```javascript
+   // 데이터 검증 예시
+   if (!pagesData || !Array.isArray(pagesData)) {
+     logger.error('유효하지 않은 페이지 데이터 형식');
+
+     // 마지막으로 알려진 유효한 데이터 사용
+     const lastKnownPages = configStore.get('pages') || [];
+     if (lastKnownPages.length > 0) {
+       logger.info('마지막으로 알려진 설정 복원 중');
+       return { success: true, recovered: true };
+     }
+   }
+   ```
+
+2. **병합 충돌**:
+   - 타임스탬프 기반 충돌 감지 및 해결
+   - 필요한 경우 수동 해결 옵션 제공
+
+## 충돌 해결 전략
+
+동기화 과정에서 발생할 수 있는 충돌을 해결하기 위한 전략:
+
+### 자동 충돌 감지
+
+1. **타임스탬프 비교**:
+   - 로컬 및 서버 데이터의 `lastModifiedAt` 타임스탬프 비교
+   - 더 최신 타임스탬프를 가진 데이터를 우선 처리
+
+   ```javascript
+   // 타임스탬프 기반 충돌 감지 예시
+   function detectConflict(localMeta, serverMeta) {
+     // 동일한 장치에서 마지막 수정 및 동기화가 이루어진 경우 충돌 없음
+     if (localMeta.lastModifiedDevice === serverMeta.lastModifiedDevice &&
+         localMeta.lastSyncedDevice === serverMeta.lastSyncedDevice) {
+       return false;
+     }
+
+     // 로컬 수정 후 서버 수정이 있었는지 확인
+     const localModified = localMeta.lastModifiedAt || 0;
+     const serverModified = serverMeta.lastModifiedAt || 0;
+     const lastSynced = localMeta.lastSyncedAt || 0;
+
+     // 마지막 동기화 이후 로컬과 서버 모두 수정된 경우 충돌 존재
+     return localModified > lastSynced && serverModified > lastSynced;
+   }
+   ```
+
+2. **장치 ID 활용**:
+   - 각 장치의 고유 ID를 통해 여러 장치 간의 변경 사항 추적
+   - 동일 장치의 연속 수정은 충돌로 간주하지 않음
+
+### 충돌 해결 방법
+
+1. **자동 병합**:
+   - 타임스탬프 기반 우선순위 적용: 가장 최근에 수정된 데이터 사용
+   - 다른 장치에서 동시 수정된 경우 서버 데이터 우선
+
+   ```javascript
+   // 충돌 자동 해결 예시
+   function mergeSettings(localSettings, serverSettings) {
+     if (!localSettings) return serverSettings;
+     if (!serverSettings) return localSettings;
+
+     const localTime = localSettings.lastModifiedAt || 0;
+     const serverTime = serverSettings.lastModifiedAt || 0;
+
+     logger.info(`설정 병합: 로컬(${new Date(localTime).toISOString()}) vs 서버(${new Date(serverTime).toISOString()})`);
+
+     // 서버 설정이 더 최신인 경우 서버 데이터 사용
+     if (serverTime > localTime) {
+       logger.info('서버 설정이 더 최신. 서버 설정 우선 적용.');
+       return {
+         ...serverSettings,
+         lastSyncedAt: getCurrentTimestamp(),
+       };
+     }
+
+     // 로컬 설정이 더 최신인 경우 로컬 데이터 사용
+     logger.info('로컬 설정이 더 최신. 로컬 설정 우선 적용.');
+     return {
+       ...localSettings,
+       lastSyncedAt: getCurrentTimestamp(),
+     };
+   }
+   ```
+
+2. **수동 충돌 해결**:
+   - 심각한 충돌 감지 시 사용자에게 옵션 제시:
+     - 로컬 설정 유지 및 업로드
+     - 서버 설정 다운로드 및 적용
+     - 내장된 충돌 해결 알고리즘 신뢰
+
+## 보안 고려사항
+
+클라우드 동기화 기능 사용 시 고려해야 할 보안 측면:
+
+### 데이터 전송 보안
+
+1. **HTTPS 전용**:
+   - 모든 API 통신은 TLS/SSL을 통한 암호화된 연결 사용
+   - 자체 서명 인증서 또는 불안전한 연결 거부
+
+   ```javascript
+   // 안전한 API 클라이언트 생성 예시
+   function createApiClient() {
+     return axios.create({
+       baseURL: API_BASE_URL,
+       timeout: 10000,
+       headers: {
+         'Content-Type': 'application/json',
+         'Accept': 'application/json'
+       },
+       httpsAgent: new https.Agent({
+         rejectUnauthorized: true // 자체 서명 인증서 거부
+       })
+     });
+   }
+   ```
+
+2. **토큰 관리**:
+   - JWT 기반 인증 시스템 사용
+   - 토큰은 메모리에 저장되며 필요한 경우에만 보안 저장소에 보관
+   - 만료된 토큰 자동 새로고침 및 무효한 토큰 감지
+
+### 사용자 데이터 보호
+
+1. **최소 권한 원칙**:
+   - 동기화에 필요한 데이터만 서버로 전송
+   - 민감한 로컬 설정은 제외하고 동기화
+
+   ```javascript
+   // 민감한 정보 필터링 예시
+   function prepareUploadData(configData) {
+     // 깊은 복사로 원본 데이터 보존
+     const uploadData = JSON.parse(JSON.stringify(configData));
+
+     // 민감한 로컬 경로 제거
+     if (uploadData.advanced && uploadData.advanced.localPaths) {
+       delete uploadData.advanced.localPaths;
+     }
+
+     // 자격 증명 정보 제거
+     if (uploadData.credentials) {
+       delete uploadData.credentials;
+     }
+
+     return uploadData;
+   }
+   ```
+
+2. **사용자 인증 연계**:
+   - 동기화는 성공적인 사용자 인증 후에만 활성화
+   - 로그아웃 시 동기화 자동 비활성화 및 메모리 내 데이터 정리
+
+## 문제 해결 가이드
+
+클라우드 동기화 문제를 해결하기 위한 단계별 안내:
+
+### 일반적인 문제 해결 단계
+
+1. **동기화가 작동하지 않을 때**:
+   - 구독 상태 확인: 프리미엄/프로 구독이 활성 상태인지 확인
+   - 로그인 상태 확인: 유효한 세션으로 로그인되어 있는지 확인
+   - 인터넷 연결 확인: 앱이 인터넷에 연결되어 있는지 확인
+   - 동기화 토글 확인: 설정에서 클라우드 동기화가 활성화되어 있는지 확인
+
+2. **설정이 일치하지 않을 때**:
+   - 마지막 동기화 시간 확인: 일부 설정이 동기화되지 않았을 수 있음
+   - 수동 동기화 시도: "Resolve Conflicts" 버튼을 클릭하여 수동 동기화 시도
+   - 강제 동기화: 문제가 지속되면 "Download from Server" 또는 "Upload to Server" 사용
+
+### 로그 확인 방법
+
+개발자가 문제를 진단할 수 있도록 로그 수집:
+
+1. **로그 파일 위치**:
+   - macOS: `~/Library/Logs/Toast-App/main.log`
+   - Windows: `%USERPROFILE%\AppData\Roaming\Toast-App\logs\main.log`
+   - Linux: `~/.config/Toast-App/logs/main.log`
+
+2. **관련 로그 항목 필터링**:
+   - CloudSync, ApiSync, UserDataManager 태그가 있는 로그 항목 찾기
+   - 오류 및 경고 메시지 식별하기
+
+   ```bash
+   # macOS/Linux 로그 필터링 예시
+   grep -E "CloudSync|ApiSync|UserDataManager" ~/Library/Logs/Toast-App/main.log | grep -E "ERROR|WARN"
+   ```
+
+### 일반적인 오류 메시지 및 해결 방법
+
+| 오류 메시지 | 가능한 원인 | 해결 방법 |
+|------------|------------|----------|
+| "Cloud sync disabled" | 클라우드 동기화 기능이 꺼져 있음 | 설정 창에서 클라우드 동기화 활성화 |
+| "Cloud sync not enabled" | 구독이 없거나 만료됨 | 프리미엄 구독 확인 및 갱신 |
+| "Authentication required" | 인증 토큰 만료 또는 유효하지 않음 | 로그아웃 후 다시 로그인 |
+| "Invalid settings data" | 서버 응답 데이터 형식 불일치 | "Resolve Conflicts" 버튼으로 수동 해결 시도 |
+| "Network error" | 인터넷 연결 문제 | 네트워크 연결 확인 및 나중에 다시 시도 |
+| "Sync already in progress" | 다른 동기화 작업이 진행 중 | 현재 동기화가 완료될 때까지 대기 |
+
+이 문제 해결 가이드는 대부분의 일반적인 동기화 문제를 해결하는 데 도움이 됩니다. 문제가 지속되면 지원팀에 로그 파일과 함께 문의하세요.
