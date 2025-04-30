@@ -2,7 +2,7 @@
   "name": "toast-app",
   "version": "0.5.50",
   "description": "A customizable shortcut launcher for macOS and Windows",
-  "author": "nalbam <me@nalbam.com>, bruce <bruce@daangn.com>",
+  "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
   "homepage": "https://github.com/opspresso/toast-app#readme",
   "keywords": [
