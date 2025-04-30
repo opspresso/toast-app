@@ -66,6 +66,9 @@ function createToastWindow(config) {
     alwaysOnTop: true,
     // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
     alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
+    type: 'panel', // 'panel' 또는 'utility' 타입은 전체 화면 위에 floating window로 표시됨
+    hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
+    thickFrame: false, // Windows에서 기본 창 프레임 비활성화
     fullscreen: false,
     fullscreenable: false,
     visibleOnAllWorkspaces: true,
@@ -201,6 +204,9 @@ function createSettingsWindow(config) {
     alwaysOnTop: true,
     // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
     alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
+    type: 'panel', // 'panel' 또는 'utility' 타입은 전체 화면 위에 floating window로 표시됨
+    hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
+    thickFrame: false, // Windows에서 기본 창 프레임 비활성화
     fullscreen: false,
     fullscreenable: false,
     visibleOnAllWorkspaces: true,
