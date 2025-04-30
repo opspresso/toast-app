@@ -2,6 +2,24 @@
   "name": "toast-app",
   "version": "0.5.50",
   "description": "A customizable shortcut launcher for macOS and Windows",
+  "author": "nalbam <me@nalbam.com>, bruce <bruce@daangn.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/opspresso/toast-app#readme",
+  "keywords": [
+    "electron",
+    "shortcut",
+    "launcher",
+    "productivity",
+    "desktop",
+    "utility"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opspresso/toast-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/opspresso/toast-app/issues"
+  },
   "main": "src/index.js",
   "scripts": {
     "start": "electron .",
@@ -14,24 +32,6 @@
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,html}\""
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/opspresso/toast-app.git"
-  },
-  "keywords": [
-    "electron",
-    "shortcut",
-    "launcher",
-    "productivity",
-    "desktop",
-    "utility"
-  ],
-  "author": "nalbam <me@nalbam.com>, bruce <bruce@daangn.com>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/opspresso/toast-app/issues"
-  },
-  "homepage": "https://github.com/opspresso/toast-app#readme",
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
     "axios": "^1.8.4",
