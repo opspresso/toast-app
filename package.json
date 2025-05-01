@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.5.52",
+  "version": "0.5.53",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
@@ -55,7 +55,6 @@
   "build": {
     "appId": "com.opspresso.toast-app",
     "productName": "Toast",
-    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "directories": {
       "output": "dist"
     },
