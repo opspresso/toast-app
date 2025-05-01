@@ -1,172 +1,69 @@
-Toast
+# Project Documentation Structure
 
-이 문서는 Toast 앱의 문서 구조 및 각 문서의 목적을 설명합니다.
+This document outlines the structure and purpose of documentation in the Toast App project.
 
-## 문서 구조 개요
+## Documentation Standards
 
-Toast 앱의 문서는 프로젝트 루트 디렉토리와 `docs/` 디렉토리에 있습니다. 각 문서는 특정 주제와 대상 사용자를 위해 설계되었습니다.
+All documentation should be kept up to date and version-controlled. Each document should serve a clear purpose.
+When adding new documents, place them under the docs/ directory.
 
-### 프로젝트 루트 문서
+### `README.md`
+- Project overview and purpose
+- Setup and installation steps
+- Usage instructions or examples
 
-프로젝트 루트 디렉토리에 위치한 주요 문서:
+### `ARCHITECTURE.md`
+- High-level system design
+- Major components and their responsibilities
+- Data flow and integration points
 
-| 문서 | 설명 | 대상 사용자 |
-|------|------|------------|
-| `README.md` | 프로젝트 개요, 주요 기능, 설치 및 기본 사용법 | 모든 사용자 |
-| `ARCHITECTURE.md` | 시스템 아키텍처, 구성 요소 및 데이터 흐름 | 개발자 |
-| `PAGES.md` | 페이지 레이아웃, 구성 요소 및 네비게이션 구조 | 개발자 및 디자이너 |
-| `SCENARIOS.md` | 사용자 시나리오 및 워크플로우 | 제품 관리자, 디자이너, 개발자 |
-| `CONTRIBUTING.md` | 프로젝트 기여 가이드라인 | 기여자 |
-| `LICENSE` | 라이센스 정보 | 모든 사용자 |
+### `DATABASE.md`
+- Database schema and relationships
+- Key entities and fields
+- Indexing or optimization notes (if applicable)
 
-### docs/ 디렉토리 문서
+### `PAGES.md`
+- Page layout and navigation structure
+- Key components per page
+- User interactions and rendering logic
 
-`docs/` 디렉토리는 보다 세부적인 문서를 포함합니다:
+### `SCENARIOS.md`
+- Representative user journeys
+- System behavior under different conditions (e.g. error states, edge cases)
 
-| 문서 | 설명 | 대상 사용자 |
-|------|------|------------|
-| `docs/API_DOCUMENTATION.md` | 내부 API 및 확장 지점 | 개발자 |
-| `docs/AUTO_UPDATE.md` | 자동 업데이트 시스템 및 사용자 경험 | 개발자 및 최종 사용자 |
-| `docs/BACKUP_RESTORE.md` | 설정 백업 및 복원 프로세스 | 최종 사용자 및 지원 담당자 |
-| `docs/BUTTON_ACTIONS.md` | 지원되는 버튼 액션 유형 | 개발자 및 고급 사용자 |
-| `docs/CLOUD_SYNC.md` | 클라우드 동기화 구현 및 사용자 가이드 | 개발자 및 최종 사용자 |
-| `docs/CONFIG_SCHEMA.md` | 구성 옵션 및 스키마 참조 | 개발자 및 고급 사용자 |
-| `docs/DATA_STORAGE.md` | 데이터 저장 모델, 파일 구조 및 관리 | 개발자 |
-| `docs/DEPENDENCY_MANAGEMENT.md` | 외부 의존성 관리 정책 및 호환성 | 개발자 및 기여자 |
-| `docs/DEVELOPMENT.md` | 개발 환경 설정 및 워크플로우 | 개발자 |
-| `docs/INTEGRATION.md` | 외부 서비스 및 시스템과의 통합 | 개발자 |
-| `docs/PLATFORM_SPECIFIC.md` | 플랫폼별 기능 및 개발 고려사항 | 개발자 |
-| `docs/SECURITY.md` | 보안 모델, 데이터 보호 및 인증 시스템 | 개발자 및 보안 검토자 |
-| `docs/SCRIPTS.md` | 사용자 정의 스크립트 작성 및 보안 모델 | 개발자 및 고급 사용자 |
-| `docs/TESTING.md` | 테스팅 전략 및 프로세스 | 개발자 및 QA |
-| `docs/USER_GUIDE.md` | 상세 사용자 가이드 | 최종 사용자 |
-| `docs/WINDOW_VISIBILITY.md` | 윈도우 가시성 관리 | 개발자 |
+## Documentation in docs/ Directory
 
-## 주요 문서 설명
+The `docs/` directory contains more detailed documentation:
 
-### README.md
+| Document | Description | Target Users |
+|----------|-------------|--------------|
+| `docs/API_DOCUMENTATION.md` | Internal APIs and extension points | Developers |
+| `docs/AUTO_UPDATE.md` | Automatic update system and user experience | Developers & End Users |
+| `docs/BACKUP_RESTORE.md` | Configuration backup and restore process | End Users & Support |
+| `docs/BUTTON_ACTIONS.md` | Supported button action types | Developers & Power Users |
+| `docs/CLOUD_SYNC.md` | Cloud synchronization implementation and user guide | Developers & End Users |
+| `docs/CONFIG_SCHEMA.md` | Configuration options and schema reference | Developers & Power Users |
+| `docs/DATA_STORAGE.md` | Data storage model, file structure, and management | Developers |
+| `docs/DEPENDENCY_MANAGEMENT.md` | External dependency management policies and compatibility | Developers & Contributors |
+| `docs/DEVELOPMENT.md` | Development environment setup and workflow | Developers |
+| `docs/INTEGRATION.md` | Integration with external services and systems | Developers |
+| `docs/PLATFORM_SPECIFIC.md` | Platform-specific features and development considerations | Developers |
+| `docs/SECURITY.md` | Security model, data protection, and authentication system | Developers & Security Reviewers |
+| `docs/SCRIPTS.md` | Custom script writing and security model | Developers & Power Users |
+| `docs/SETTINGS.md` | Settings management and configuration | Developers & End Users |
+| `docs/TESTING.md` | Testing strategies and processes | Developers & QA |
+| `docs/USER_GUIDE.md` | Detailed user guide | End Users |
+| `docs/WINDOW_VISIBILITY.md` | Window visibility management | Developers |
 
-프로젝트의 메인 문서로, 다음 내용을 포함합니다:
-- 프로젝트 개요 및 목적
-- 주요 기능 요약
-- 설치 지침
-- 기본 사용법
-- 라이센스 정보
-- 문서 목록에 대한 링크
+## Documentation Management Guidelines
 
-### ARCHITECTURE.md
-
-시스템 아키텍처와 설계 결정에 대한 문서로, 다음 내용을 포함합니다:
-- 시스템 개요
-- 고수준 아키텍처
-- 메인 프로세스와 렌더러 프로세스 아키텍처
-- 페이지 아키텍처
-- 인증 시스템
-- 클라우드 동기화 시스템
-- 데이터 흐름
-
-### PAGES.md
-
-애플리케이션의 UI 구조와 네비게이션에 대한 문서로, 다음 내용을 포함합니다:
-- 페이지 레이아웃 설명
-- UI 컴포넌트 상세
-- 네비게이션 패턴
-- 반응형 동작
-- 접근성 고려 사항
-
-### SCENARIOS.md
-
-사용자 시나리오와 워크플로우를 설명하는 문서로, 다음 내용을 포함합니다:
-- 일반적인 사용자 시나리오
-- 단계별 워크플로우
-- 예상 결과
-- 시나리오별 스크린샷 또는 다이어그램
-
-### docs/DEVELOPMENT.md
-
-개발 환경 및 프로세스에 대한 상세 문서로, 다음 내용을 포함합니다:
-- 개발 환경 설정
-- 프로젝트 구조
-- 빌드 프로세스
-- 개발 워크플로우
-- 디버깅 방법
-- 코드 작성 가이드라인
-- 플랫폼별 특수 고려사항
-
-### docs/CONFIG_SCHEMA.md
-
-구성 옵션 및 스키마에 대한 참조 문서로, 다음 내용을 포함합니다:
-- 구성 파일 위치
-- 구성 옵션 및 기본값
-- 구성 예시
-- 프로그래매틱 액세스 방법
-- 구성 마이그레이션
-
-### docs/USER_GUIDE.md
-
-최종 사용자를 위한 상세 가이드로, 다음 내용을 포함합니다:
-- 기능별 사용 지침
-- 고급 사용법
-- 접근성 기능 및 키보드 네비게이션
-- 백업 및 복원 방법
-- 문제 해결
-- 자주 묻는 질문
-- 예시 및 튜토리얼
-
-### docs/TESTING.md
-
-테스팅 전략 및 프로세스에 대한 문서로, 다음 내용을 포함합니다:
-- 테스트 유형 및 범위
-- 테스트 환경 설정
-- 테스트 실행 방법
-- 테스트 작성 가이드라인
-- 지속적 통합
-
-### docs/DATA_STORAGE.md
-
-데이터 저장 모델 및 관리에 대한 문서로, 다음 내용을 포함합니다:
-- 데이터 저장 구조
-- 파일 형식 및 위치
-- 데이터 액세스 패턴
-- 캐싱 및 성능 최적화
-- 데이터 마이그레이션 전략
-
-### docs/SECURITY.md
-
-보안 모델 및 데이터 보호에 대한 문서로, 다음 내용을 포함합니다:
-- 인증 및 권한 부여 모델
-- 토큰 관리 및 저장
-- 암호화 전략
-- 보안 베스트 프랙티스
-- 취약점 관리 및 보고
-
-### docs/CLOUD_SYNC.md
-
-클라우드 동기화에 대한 문서로, 다음 내용을 포함합니다:
-- 동기화 아키텍처
-- 동기화 프로세스
-- 충돌 해결 전략
-- 사용자 데이터 보호
-- 문제 해결 가이드
-
-### docs/AUTO_UPDATE.md
-
-자동 업데이트 시스템에 대한 문서로, 다음 내용을 포함합니다:
-- 업데이트 검사 및 알림
-- 다운로드 및 설치 프로세스
-- 사용자 인터페이스 요소
-- 오류 처리 및 복구
-- 업데이트 구성 옵션
-
-## 문서 관리 지침
-
-1. **중앙 집중식 포맷팅**: 모든 문서는 Markdown 형식을 사용합니다.
-2. **명확한 목차**: 각 문서는 목차와 명확한 섹션 제목을 포함해야 합니다.
-3. **한국어 문서**: 모든 문서는 한국어로 작성되어야 합니다.
-4. **코드 예시**: 코드 블록에는 적절한 언어 태그를 사용해야 합니다.
-5. **다이어그램**: 필요한 경우 다이어그램을 포함하여 설명을 명확히 합니다.
-6. **최신성 유지**: 코드 변경 시 관련 문서도 함께 업데이트해야 합니다.
-7. **새 문서**: 새 문서를 추가할 때는 이 문서 목록에도 추가해야 합니다.
-8. **코드-문서 일치**: 문서의 예제 코드는 실제 코드베이스와 일치해야 합니다.
-9. **오류 수정**: 문서에서 발견된 오류나 불일치는 즉시 수정해야 합니다.
-10. **접근성**: 모든 문서는 스크린 리더와 같은 보조 기술로 접근 가능해야 합니다.
+1. **Consistent Formatting**: All documentation uses Markdown format.
+2. **Clear Table of Contents**: Each document should include a table of contents and clear section headings.
+3. **Language Standard**: All code and UI messages should be written in English. Logs and comments can be in English or Korean.
+4. **Code Examples**: Use appropriate language tags for code blocks.
+5. **Diagrams**: Include diagrams where needed to clarify explanations.
+6. **Keep Updated**: When code changes, related documentation should be updated together.
+7. **New Documents**: When adding new documents, also add them to this document list.
+8. **Code-Documentation Alignment**: Example code in documentation should match the actual codebase.
+9. **Error Correction**: Errors or inconsistencies found in documentation should be fixed immediately.
+10. **Accessibility**: All documentation should be accessible with assistive technologies like screen readers.
