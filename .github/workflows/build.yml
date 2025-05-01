@@ -80,11 +80,6 @@ jobs:
           CSC_LINK: ${{ secrets.WINDOWS_CERTS }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
-      - name: Listup artifacts 🔍
-        run: |
-          echo "📂 Artifacts directory contents:"
-          ls -la dist
-
       - name: Upload artifacts 🚚
         uses: actions/upload-artifact@v4
         with:
