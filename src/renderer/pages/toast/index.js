@@ -930,7 +930,7 @@ function updateProfileDisplay() {
     // Subscription plan
     const planName = (userSubscription.plan || 'free').toUpperCase();
     subscriptionPlan.textContent = planName;
-    if (planName === 'PREMIUM' || planName === 'PRO') {
+    if (planName === 'PREMIUM' || planName === 'VIP') {
       subscriptionPlan.classList.add('subscription-plan-premium');
     }
 
