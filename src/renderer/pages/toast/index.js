@@ -224,6 +224,99 @@ let userSubscription = null; // User subscription information
 let isLoggingIn = false; // Login progress status
 let isRecordingKeyShortcut = false; // Key shortcut recording state
 
+/**
+ * Creates a standardized no-results element with usage instructions and shortcuts
+ * @returns {HTMLElement} - The created no-results element with instructions
+ */
+function createNoResultsElement() {
+  const container = document.createElement('div');
+  container.className = 'no-results';
+
+  // 아이콘 추가 (빈 상태 표시용)
+  const icon = document.createElement('div');
+  icon.className = 'empty-icon';
+  icon.innerHTML = '📋'; // 문서/목록 관련 이모지
+  container.appendChild(icon);
+
+  // 메인 메시지
+  const mainMessage = document.createElement('div');
+  mainMessage.className = 'empty-title';
+  mainMessage.textContent = 'No pages found';
+  container.appendChild(mainMessage);
+
+  // 부가 설명
+  const subMessage = document.createElement('div');
+  subMessage.className = 'empty-subtitle';
+  subMessage.textContent = 'Press the + button to add a new page';
+  container.appendChild(subMessage);
+
+  // 구분선
+  const divider = document.createElement('div');
+  divider.className = 'empty-divider';
+  container.appendChild(divider);
+
+  // 단축키 섹션 - 앱 디자인 스타일에 맞게 구성
+  const shortcutsContainer = document.createElement('div');
+  shortcutsContainer.className = 'shortcuts-container';
+
+  // 간결한 단축키 그리드 형태로 표시
+  const shortcuts = [
+    { key: 'Alt+Space', desc: '토스트 창 열기', icon: '🔍' },
+    { key: 'ESC', desc: '창 닫기', icon: '✖️' },
+    { key: '+', desc: '페이지 추가', icon: '➕' },
+    { key: '-', desc: '페이지 삭제', icon: '➖' },
+    { key: '1-9', desc: '페이지 전환', icon: '📄' },
+    { key: 'qwert', desc: '액션 실행', icon: '🚀' },
+    { key: ',', desc: '설정 모드 전환', icon: '📝' },
+    { key: 'Cmd+,', desc: '설정 창 열기', icon: '⚙️' },
+  ];
+
+  // 2x3 그리드 형태로 배치
+  const shortcutsGrid = document.createElement('div');
+  shortcutsGrid.className = 'shortcuts-grid';
+
+  shortcuts.forEach(item => {
+    const shortcutItem = document.createElement('div');
+    shortcutItem.className = 'shortcut-item';
+
+    const itemIcon = document.createElement('span');
+    itemIcon.className = 'shortcut-icon';
+    itemIcon.textContent = item.icon;
+
+    const itemContent = document.createElement('div');
+    itemContent.className = 'shortcut-content';
+
+    const keySpan = document.createElement('div');
+    keySpan.className = 'shortcut-key';
+    keySpan.textContent = item.key;
+
+    const descSpan = document.createElement('div');
+    descSpan.className = 'shortcut-desc';
+    descSpan.textContent = item.desc;
+
+    itemContent.appendChild(keySpan);
+    itemContent.appendChild(descSpan);
+
+    shortcutItem.appendChild(itemIcon);
+    shortcutItem.appendChild(itemContent);
+    shortcutsGrid.appendChild(shortcutItem);
+  });
+
+  shortcutsContainer.appendChild(shortcutsGrid);
+  container.appendChild(shortcutsContainer);
+
+  // 컨테이너에 스타일 추가
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.padding = '20px';
+  container.style.textAlign = 'center';
+  container.style.height = '100%';
+
+  return container;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   // Load configuration
@@ -462,10 +555,8 @@ function setupEventListeners() {
         buttonsContainer.innerHTML = '';
 
         // Display guidance message
-        const emptyMessage = document.createElement('div');
-        emptyMessage.className = 'no-results';
-        emptyMessage.textContent = 'No pages found. Press the + button to add a new page.';
-        buttonsContainer.appendChild(emptyMessage);
+        const noResults = createNoResultsElement();
+        buttonsContainer.appendChild(noResults);
 
         // Reset filtered buttons array
         filteredButtons = [];
@@ -1161,10 +1252,8 @@ function showCurrentPageButtons() {
     buttonsContainer.innerHTML = '';
 
     // Show message instructing to add a page
-    const emptyMessage = document.createElement('div');
-    emptyMessage.className = 'no-results';
-    emptyMessage.textContent = 'No pages found. Press the + button to add a new page.';
-    buttonsContainer.appendChild(emptyMessage);
+    const noResults = createNoResultsElement();
+    buttonsContainer.appendChild(noResults);
 
     // Reset filtered buttons array
     filteredButtons = [];
@@ -1510,9 +1599,7 @@ function renderButtons(buttons) {
 
   // Show empty state if no buttons
   if (filteredButtons.length === 0) {
-    const noResults = document.createElement('div');
-    noResults.className = 'no-results';
-    noResults.textContent = 'No buttons available';
+    const noResults = createNoResultsElement();
     buttonsContainer.appendChild(noResults);
   }
 }
@@ -2265,10 +2352,8 @@ function removePage() {
     filteredButtons = [];
 
     // Display message to add a page
-    const emptyMessage = document.createElement('div');
-    emptyMessage.className = 'no-results';
-    emptyMessage.textContent = 'No pages found. Press the + button to add a new page.';
-    buttonsContainer.appendChild(emptyMessage);
+    const noResults = createNoResultsElement();
+    buttonsContainer.appendChild(noResults);
 
     showStatus(`All pages have been deleted. Press the + button to add a new page.`, 'info');
     return;
