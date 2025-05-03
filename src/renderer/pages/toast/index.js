@@ -243,7 +243,7 @@ function createNoResultsElement() {
     { key: '+', desc: '페이지 추가', icon: '➕' },
     { key: '-', desc: '페이지 삭제', icon: '➖' },
     { key: '1-9', desc: '페이지 전환', icon: '📄' },
-    { key: 'qwert', desc: '액션 실행', icon: '🚀' },
+    { key: 'qwert asdfg zxcvb', desc: '액션 실행', icon: '🚀' },
     { key: ',', desc: '설정 모드 전환', icon: '📝' },
     { key: 'Cmd+,', desc: '설정 창 열기', icon: '⚙️' },
   ];
@@ -289,7 +289,7 @@ function createNoResultsElement() {
   container.style.justifyContent = 'center';
   container.style.padding = '20px';
   container.style.textAlign = 'center';
-  container.style.height = '300px';
+  container.style.height = '310px';
 
   return container;
 }
