@@ -638,7 +638,7 @@ function setupEventListeners() {
 
     if (command === 'confetti' || command === '꽃가루') {
       // 꽃가루 애니메이션 실행
-      showStatus('🎉 꽃가루 효과 실행!', 'success');
+      showStatus('🎉 Let it go!', 'success');
       window.confetti.start({
         duration: 5,  // 5초 동안 실행
         density: 100  // 꽃가루 밀도
@@ -1729,7 +1729,7 @@ function executeButton(button) {
   // 특별 명령어 처리 (꽃가루 애니메이션)
   if (button.action === 'script' && button.scriptType === 'special' && button.script === 'confetti') {
     // 꽃가루 애니메이션 실행
-    showStatus('🎉 꽃가루 효과 실행!', 'success');
+    showStatus('🎉 Let it go!', 'success');
     window.confetti.start({
       duration: 5,  // 5초 동안 실행
       density: 100  // 꽃가루 밀도

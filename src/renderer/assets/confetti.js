@@ -1,6 +1,6 @@
 /**
  * 꽃가루 애니메이션 효과
- * Toast 앱 특별 효과
+ * Toast 앱 특별 효과 - 전체 화면 버전
  */
 
 // 컨테이너를 한 번만 생성하기 위한 변수
@@ -9,11 +9,17 @@ let confettiContainer = null;
 // 애니메이션 진행 중인지 추적
 let isAnimationActive = false;
 
-// 꽃가루 색상 배열
-const COLORS = ['red', 'blue', 'green', 'yellow', 'pink', 'purple', 'orange'];
+// 꽃가루 색상 배열 - 더 화려한 색상으로 확장
+const COLORS = [
+  'red', 'blue', 'green', 'yellow', 'pink', 'purple', 'orange',
+  'cyan', 'magenta', 'lime', 'gold', 'violet', 'coral', 'turquoise'
+];
 
 // 꽃가루 크기 배열
-const SIZES = ['small', 'medium', 'large'];
+const SIZES = ['small', 'medium', 'large', 'xlarge'];
+
+// 꽃가루 모양 배열
+const SHAPES = ['circle', 'square', 'triangle', 'heart', 'star', 'petal'];
 
 /**
  * 꽃가루 컨테이너 생성 및 초기화
@@ -29,6 +35,17 @@ function createConfettiContainer() {
   // 새로 생성
   confettiContainer = document.createElement('div');
   confettiContainer.className = 'confetti-container';
+
+  // 전체 화면을 덮기 위한 설정
+  confettiContainer.style.position = 'fixed';
+  confettiContainer.style.top = '0';
+  confettiContainer.style.left = '0';
+  confettiContainer.style.width = '100vw';
+  confettiContainer.style.height = '100vh';
+  confettiContainer.style.zIndex = '9999';
+  confettiContainer.style.pointerEvents = 'none';
+  confettiContainer.style.overflow = 'hidden';
+
   document.body.appendChild(confettiContainer);
 
   return confettiContainer;
@@ -55,41 +72,95 @@ function randomInt(min, max) {
 }
 
 /**
+ * 랜덤한 항목 가져오기
+ * @param {Array} array 배열
+ * @returns {*} 배열에서 랜덤하게 선택된 항목
+ */
+function randomItem(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+/**
+ * 특별한 모양의 꽃가루 생성
+ * @param {string} shape 모양 이름
+ * @returns {string} CSS 클래스 이름
+ */
+function createShapeClass(shape) {
+  switch(shape) {
+    case 'circle':
+      return 'circle';
+    case 'square':
+      return 'square';
+    case 'triangle':
+      return 'triangle';
+    case 'heart':
+      return 'heart';
+    case 'star':
+      return 'star';
+    case 'petal':
+      return 'petal';
+    default:
+      return 'circle';
+  }
+}
+
+/**
  * 꽃가루 요소 생성
  * @param {HTMLElement} container 부모 컨테이너 요소
+ * @param {Object} position 시작 위치 (옵션)
  */
-function createConfetti(container) {
+function createConfetti(container, position = null) {
   // 꽃가루 요소 생성
   const confetti = document.createElement('div');
   confetti.className = 'confetti';
 
   // 랜덤한 속성 지정
-  const size = SIZES[randomInt(0, SIZES.length)];
-  const color = COLORS[randomInt(0, COLORS.length)];
-  const isFlower = Math.random() > 0.5; // 50% 확률로 꽃잎 모양
+  const size = randomItem(SIZES);
+  const color = randomItem(COLORS);
+  const shape = randomItem(SHAPES);
 
   // 클래스 추가
   confetti.classList.add(`size-${size}`);
   confetti.classList.add(`color-${color}`);
-  if (isFlower) {
-    confetti.classList.add('petal');
+  confetti.classList.add(createShapeClass(shape));
+
+  // 랜덤한 시작 위치
+  let left;
+  if (position) {
+    left = position.x;
+  } else {
+    // 전체 화면에 고르게 분포
+    left = `${random(0, 100)}%`;
   }
 
-  // 랜덤한 위치와 속도 설정
-  const left = random(0, 100); // 0-100% 화면 너비
-  const initialDelay = random(0, 3); // 0-3초 초기 딜레이
-  const fallDuration = random(3, 10); // 3-10초 낙하 시간
+  // 랜덤한 시작 높이 (화면 상단에서 시작)
+  const startY = position ? position.y : -20;
+
+  // 랜덤한 애니메이션 속성
+  const initialDelay = random(0, 4); // 0-4초 초기 딜레이
+  const fallDuration = random(4, 12); // 4-12초 낙하 시간 (더 길게)
 
   // 스타일 지정
-  confetti.style.left = `${left}%`;
+  confetti.style.left = left;
+  confetti.style.top = `${startY}px`;
   confetti.style.animationDelay = `${initialDelay}s`;
   confetti.style.animationDuration = `${fallDuration}s`;
 
-  // 약간의 회전 추가
+  // 회전 및 흔들림 추가
   const rotate = random(0, 360);
-  const swing = random(-30, 30);
-  confetti.style.transform = `rotate(${rotate}deg)`;
-  confetti.style.transform += ` translateX(${swing}px)`;
+  const swing = random(-50, 50); // 더 큰 흔들림 범위
+  const scale = random(0.8, 1.5); // 크기 변화 추가
+
+  confetti.style.transform = `
+    rotate(${rotate}deg)
+    translateX(${swing}px)
+    scale(${scale})
+  `;
+
+  // 애니메이션 종류 랜덤 지정
+  const animationTypes = ['fall', 'fallSpin', 'fallSwing'];
+  const animation = randomItem(animationTypes);
+  confetti.style.animationName = animation;
 
   // 컨테이너에 추가
   container.appendChild(confetti);
@@ -103,7 +174,7 @@ function createConfetti(container) {
 }
 
 /**
- * 꽃가루 애니메이션 시작
+ * 꽃가루 애니메이션 시작 - 전체 화면
  * @param {Object} options 애니메이션 옵션
  * @param {number} options.duration 지속 시간 (초)
  * @param {number} options.density 밀도 (갯수)
@@ -113,25 +184,44 @@ function startConfetti(options = {}) {
   // 이미 실행 중이면 무시
   if (isAnimationActive) return;
 
-  // 옵션 기본값 설정
-  const duration = options.duration || 5; // 기본 5초
-  const density = options.density || 50; // 기본 밀도
+  // 옵션 기본값 설정 - 전체 화면용으로 더 많은 밀도와 더 긴 지속 시간
+  const duration = options.duration || 8; // 기본 8초로 연장
+  const density = options.density || 200; // 기본 밀도 대폭 증가
   const onComplete = options.onComplete || (() => {});
 
   // 컨테이너 생성
   const container = createConfettiContainer();
   isAnimationActive = true;
 
-  // 꽃가루 생성 간격
-  const interval = 3000 / density; // 3초 동안 밀도에 맞게 생성
+  // 화면 전체에 골고루 꽃가루가 나타나도록 여러 위치에서 시작
+  const startPositions = [];
+  for (let i = 0; i < 9; i++) {
+    startPositions.push({
+      x: `${i * 12}%`,
+      y: -20
+    });
+  }
+
+  // 추가적인 랜덤 위치
+  for (let i = 0; i < 6; i++) {
+    startPositions.push({
+      x: `${random(0, 100)}%`,
+      y: -20
+    });
+  }
+
+  // 꽃가루 생성 간격 - 더 짧게 설정하여 한꺼번에 많이 생성
+  const interval = 1000 / (density / 5); // 1초 동안 밀도/5 만큼 생성
   let count = 0;
 
   // 주기적으로 꽃가루 생성
   const generator = setInterval(() => {
-    count++;
-
-    // 하나의 꽃가루 생성
-    createConfetti(container);
+    // 한 번에 여러 개의 꽃가루 생성 (더 풍성한 효과)
+    for (let i = 0; i < 5; i++) {
+      const position = randomItem(startPositions);
+      createConfetti(container, position);
+      count++;
+    }
 
     // 밀도에 도달하면 생성 중단
     if (count >= density) {
@@ -151,7 +241,7 @@ function startConfetti(options = {}) {
 
       // 완료 콜백 호출
       onComplete();
-    }, 10000); // 10초 추가 대기 (가장 느린 꽃가루가 떨어질 시간)
+    }, 13000); // 13초 추가 대기 (가장 느린 꽃가루가 떨어질 시간)
   }, duration * 1000);
 }
 
