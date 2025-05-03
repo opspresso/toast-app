@@ -238,14 +238,14 @@ function createNoResultsElement() {
 
   // 간결한 단축키 그리드 형태로 표시
   const shortcuts = [
-    { key: 'Alt+Space', desc: '토스트 창 열기', icon: '🔍' },
-    { key: 'ESC', desc: '창 닫기', icon: '✖️' },
-    { key: '+', desc: '페이지 추가', icon: '➕' },
-    { key: '-', desc: '페이지 삭제', icon: '➖' },
-    { key: '1-9', desc: '페이지 전환', icon: '📄' },
-    { key: 'qwert asdfg zxcvb', desc: '액션 실행', icon: '🚀' },
-    { key: ',', desc: '설정 모드 전환', icon: '📝' },
-    { key: 'Cmd+,', desc: '설정 창 열기', icon: '⚙️' },
+    { key: 'Alt+Space', desc: 'Open Toast window', icon: '🔍' },
+    { key: 'ESC', desc: 'Close window', icon: '✖️' },
+    { key: '+', desc: 'Add page', icon: '➕' },
+    { key: '-', desc: 'Delete page', icon: '➖' },
+    { key: '1-9', desc: 'Switch page', icon: '📄' },
+    { key: 'qwert asdfg zxcvb', desc: 'Execute action', icon: '🚀' },
+    { key: ',', desc: 'Toggle settings mode', icon: '📝' },
+    { key: 'Cmd+,', desc: 'Open settings window', icon: '⚙️' },
   ];
 
   // 2x4 그리드 형태로 배치
