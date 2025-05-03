@@ -2105,10 +2105,10 @@ function closeButtonEditModal() {
  */
 function showActionFields(actionType) {
   // Hide all input field groups
+  applicationInputGroup.style.display = 'none';
   commandInputGroup.style.display = 'none';
   urlInputGroup.style.display = 'none';
   scriptInputGroup.style.display = 'none';
-  applicationInputGroup.style.display = 'none';
   chainInputGroup.style.display = 'none';
 
   // Update icon field hint
@@ -2117,8 +2117,6 @@ function showActionFields(actionType) {
     // Show custom hint based on type
     if (actionType === 'open') {
       iconHint.textContent = 'Use emoji or leave empty to automatically use URL favicon';
-    } else if (actionType === 'application') {
-      iconHint.textContent = 'Use emoji or leave empty to use default app icon';
     } else {
       iconHint.textContent = 'Use emoji (e.g. 🚀) or an image URL (https://...)';
     }
@@ -2126,6 +2124,9 @@ function showActionFields(actionType) {
 
   // Show corresponding input field group based on selected action type
   switch (actionType) {
+    case 'application':
+      applicationInputGroup.style.display = 'block';
+      break;
     case 'exec':
       commandInputGroup.style.display = 'block';
       break;
@@ -2137,9 +2138,6 @@ function showActionFields(actionType) {
       break;
     case 'shortcut':
       shortcutInputGroup.style.display = 'block';
-      break;
-    case 'application':
-      applicationInputGroup.style.display = 'block';
       break;
     case 'chain':
       chainInputGroup.style.display = 'block';
