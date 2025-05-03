@@ -95,25 +95,26 @@ const defaultButtons = [
     url: 'https://app.toast.sh',
   },
   {
-    name: '',
+    name: 'How to Use',
     shortcut: 'W',
-    icon: '',
-    action: 'exec',
-    command: '',
+    icon: 'FlatColorIcons.questions',
+    action: 'open',
+    url: 'https://app.toast.sh/how-to-use',
   },
   {
-    name: '',
+    name: 'Subscribe',
     shortcut: 'E',
-    icon: '',
-    action: 'exec',
-    command: '',
+    icon: 'FlatColorIcons.synchronize',
+    action: 'open',
+    url: 'https://app.toast.sh/subscription',
   },
   {
-    name: '',
+    name: 'Confetti',
     shortcut: 'R',
-    icon: '',
-    action: 'exec',
-    command: '',
+    icon: '🎉',
+    action: 'script',
+    script: 'confetti',
+    scriptType: 'special',
   },
   {
     name: 'iTerm',
@@ -150,7 +151,7 @@ const defaultButtons = [
     shortcut: 'F',
     icon: '🔍',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open .' : 'explorer .',
+    command: window.toast?.platform === 'darwin' ? 'open ~' : 'explorer ~',
   },
   {
     name: 'GitHub',
@@ -630,6 +631,23 @@ function setupEventListeners() {
       toggleSettingsMode();
     }
   });
+
+  // 특별 명령어 처리 (꽃가루 애니메이션 등)
+  window.toast.onSpecialCommand = function (command) {
+    console.log('Special command received:', command);
+
+    if (command === 'confetti' || command === '꽃가루') {
+      // 꽃가루 애니메이션 실행
+      showStatus('🎉 Let it go!', 'success');
+      window.confetti.start({
+        duration: 5,  // 5초 동안 실행
+        density: 100  // 꽃가루 밀도
+      });
+      return true; // 명령 처리 완료
+    }
+
+    return false; // 처리할 수 없는 명령
+  };
 }
 
 /**
@@ -825,10 +843,10 @@ function updateUserButton() {
     'Current user profile status:',
     userProfile
       ? {
-          name: userProfile.name || userProfile.display_name,
-          hasImage: !!(userProfile.profile_image || userProfile.avatar || userProfile.image),
-          isAuthenticated: userProfile.is_authenticated !== false,
-        }
+        name: userProfile.name || userProfile.display_name,
+        hasImage: !!(userProfile.profile_image || userProfile.avatar || userProfile.image),
+        isAuthenticated: userProfile.is_authenticated !== false,
+      }
       : 'No userProfile',
   );
 
@@ -1454,8 +1472,8 @@ function navigateButtons(direction) {
       newIndex =
         direction === 'up'
           ? filteredButtons.length -
-            (filteredButtons.length % buttonsPerRow || buttonsPerRow) +
-            (selectedButtonIndex % buttonsPerRow)
+          (filteredButtons.length % buttonsPerRow || buttonsPerRow) +
+          (selectedButtonIndex % buttonsPerRow)
           : direction === 'left'
             ? selectedButtonIndex + buttonsPerRow - 1
             : 0;
@@ -1707,6 +1725,17 @@ function executeButton(button) {
 
   // Execute button action in normal mode
   showStatus('Executing...', 'info');
+
+  // 특별 명령어 처리 (꽃가루 애니메이션)
+  if (button.action === 'script' && button.scriptType === 'special' && button.script === 'confetti') {
+    // 꽃가루 애니메이션 실행
+    showStatus('🎉 Let it go!', 'success');
+    window.confetti.start({
+      duration: 5,  // 5초 동안 실행
+      density: 100  // 꽃가루 밀도
+    });
+    return;
+  }
 
   // Create action object
   const action = {
@@ -2172,8 +2201,21 @@ function saveButtonSettings() {
       break;
 
     case 'script':
-      updatedButton.script = editButtonScriptInput.value.trim();
-      updatedButton.scriptType = editButtonScriptTypeSelect.value;
+      // 특별 명령어 처리 (꽃가루 애니메이션)
+      if (
+        editButtonScriptInput.value.trim().includes('confetti.start') ||
+        editButtonScriptInput.value.trim() === 'confetti' ||
+        editButtonScriptInput.value.trim() === '꽃가루'
+      ) {
+        // 특별 명령어로 변환
+        updatedButton.script = 'confetti';
+        updatedButton.scriptType = 'special';
+        showStatus('꽃가루 효과가 버튼에 추가되었습니다!', 'success');
+      } else {
+        // 일반 스크립트 처리
+        updatedButton.script = editButtonScriptInput.value.trim();
+        updatedButton.scriptType = editButtonScriptTypeSelect.value;
+      }
 
       // Add script parameters (parse as JSON format)
       if (editButtonScriptParamsInput.value.trim()) {
