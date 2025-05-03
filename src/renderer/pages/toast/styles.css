@@ -936,6 +936,59 @@ body {
   border: 1px solid var(--border-color);
 }
 
+.shortcuts-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 12px;
+  margin-top: 12px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 6px;
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  transition: background-color 0.2s;
+}
+
+.shortcut-item:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+}
+
+.shortcut-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  margin-right: 10px;
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  border-radius: 4px;
+}
+
+.shortcut-content {
+  flex: 1;
+  text-align: left;
+}
+
+.shortcut-key {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+}
+
+.shortcut-desc {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
 /* 아이콘 입력 컨테이너 */
 .icon-input-container {
   display: flex;
