@@ -232,29 +232,6 @@ function createNoResultsElement() {
   const container = document.createElement('div');
   container.className = 'no-results';
 
-  // 아이콘 추가 (빈 상태 표시용)
-  const icon = document.createElement('div');
-  icon.className = 'empty-icon';
-  icon.innerHTML = '📋'; // 문서/목록 관련 이모지
-  container.appendChild(icon);
-
-  // 메인 메시지
-  const mainMessage = document.createElement('div');
-  mainMessage.className = 'empty-title';
-  mainMessage.textContent = 'No pages found';
-  container.appendChild(mainMessage);
-
-  // 부가 설명
-  const subMessage = document.createElement('div');
-  subMessage.className = 'empty-subtitle';
-  subMessage.textContent = 'Press the + button to add a new page';
-  container.appendChild(subMessage);
-
-  // 구분선
-  const divider = document.createElement('div');
-  divider.className = 'empty-divider';
-  container.appendChild(divider);
-
   // 단축키 섹션 - 앱 디자인 스타일에 맞게 구성
   const shortcutsContainer = document.createElement('div');
   shortcutsContainer.className = 'shortcuts-container';
@@ -271,7 +248,7 @@ function createNoResultsElement() {
     { key: 'Cmd+,', desc: '설정 창 열기', icon: '⚙️' },
   ];
 
-  // 2x3 그리드 형태로 배치
+  // 2x4 그리드 형태로 배치
   const shortcutsGrid = document.createElement('div');
   shortcutsGrid.className = 'shortcuts-grid';
 
@@ -312,7 +289,7 @@ function createNoResultsElement() {
   container.style.justifyContent = 'center';
   container.style.padding = '20px';
   container.style.textAlign = 'center';
-  container.style.height = '100%';
+  container.style.height = '300px';
 
   return container;
 }
