@@ -95,11 +95,11 @@ const defaultButtons = [
     url: 'https://app.toast.sh',
   },
   {
-    name: '',
+    name: 'How to Use',
     shortcut: 'W',
-    icon: '',
-    action: 'application',
-    command: '',
+    icon: 'FlatColorIcons.questions',
+    action: 'open',
+    url: 'https://app.toast.sh/how-to-use',
   },
   {
     name: '',
