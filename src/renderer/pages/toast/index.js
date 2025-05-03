@@ -98,21 +98,21 @@ const defaultButtons = [
     name: '',
     shortcut: 'W',
     icon: '',
-    action: 'exec',
+    action: 'application',
     command: '',
   },
   {
     name: '',
     shortcut: 'E',
     icon: '',
-    action: 'exec',
+    action: 'application',
     command: '',
   },
   {
     name: '',
     shortcut: 'R',
     icon: '',
-    action: 'exec',
+    action: 'application',
     command: '',
   },
   {
@@ -150,7 +150,7 @@ const defaultButtons = [
     shortcut: 'F',
     icon: '🔍',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open .' : 'explorer .',
+    command: window.toast?.platform === 'darwin' ? 'open ~' : 'explorer ~',
   },
   {
     name: 'GitHub',
