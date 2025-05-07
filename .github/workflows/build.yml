@@ -151,6 +151,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
         with:
+          repository: opspresso/toast # Also create release in distribution repository
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body_path: release_notes.md
+          files: | # List of files to attach to the release
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.dmg
+            artifacts/**/*.exe
+            artifacts/**/*.zip
+            artifacts/**/*-mac.yml
+            artifacts/**/*-linux.yml
+            artifacts/**/latest.yml
+
+      - name: Create Release in Releases Repo 🚀
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+        with:
           repository: opspresso/toast-dist # Also create release in distribution repository
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
@@ -174,16 +195,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
           GITOPS_REPO: "opspresso/homebrew-tap"
-          PROJECT: "toast"
-          VERSION: ${{ github.ref_name }}
-
-      - name: Trigger for Toast-dist 🚀
-        uses: opspresso/action-builder@master
-        with:
-          args: --dispatch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-          GITOPS_REPO: "opspresso/toast-dist"
           PROJECT: "toast"
           VERSION: ${{ github.ref_name }}
 
