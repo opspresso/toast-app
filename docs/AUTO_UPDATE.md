@@ -149,7 +149,7 @@ Toast 앱은 다음과 같은 시점에 업데이트를 확인합니다:
 
 자동 업데이트가 실패하는 경우 수동 업데이트를 수행할 수 있습니다:
 
-1. [GitHub Releases](https://github.com/opspresso/toast-dist/releases)에서 최신 버전 다운로드
+1. [GitHub Releases](https://github.com/opspresso/toast/releases)에서 최신 버전 다운로드
 2. 현재 설치된 Toast 앱 종료
 3. 다운로드한 설치 파일 실행:
    - **Windows**: `.exe` 파일 실행

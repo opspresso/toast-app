@@ -35,7 +35,7 @@ Toast 앱은 사용자가 커스텀 단축키와 액션을 정의할 수 있는 
 
 ### 다운로드
 
-[GitHub Releases](https://github.com/opspresso/toast-dist/releases) 페이지에서 Toast 앱의 최신 버전을 다운로드할 수 있습니다.
+[GitHub Releases](https://github.com/opspresso/toast/releases) 페이지에서 Toast 앱의 최신 버전을 다운로드할 수 있습니다.
 
 최신 릴리스 페이지에서 각 운영체제에 맞는 설치 파일을 다운로드할 수 있습니다:
 
