@@ -2100,8 +2100,11 @@ function closeButtonEditModal() {
 }
 
 /**
- * Show/hide input fields based on action type
- * @param {string} actionType - Action type
+ * Displays the relevant input fields for editing a button based on the selected action type.
+ *
+ * Hides all action-specific input groups, then shows only the input group corresponding to the provided {@link actionType}. Also updates the icon field hint to match the action context.
+ *
+ * @param {string} actionType - The type of action selected for the button (e.g., 'application', 'exec', 'open', 'script', 'shortcut', 'chain').
  */
 function showActionFields(actionType) {
   // Hide all input field groups
@@ -2146,7 +2149,11 @@ function showActionFields(actionType) {
 }
 
 /**
- * Save button settings
+ * Saves the current button's edited settings to the active page and updates the configuration.
+ *
+ * Updates the button's properties based on the selected action type and input values, then persists the changes and refreshes the UI. Displays status messages for success or error.
+ *
+ * @remark If script parameters are provided but not valid JSON, an error is shown and an empty object is used instead.
  */
 function saveButtonSettings() {
   if (!currentEditingButton) return;
