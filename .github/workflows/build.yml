@@ -3,7 +3,7 @@
 # 1. Verifies that the tag version matches the version in package.json
 # 2. Builds the app on macOS and Windows
 # 3. Attaches built artifacts to the GitHub release
-# 4. Creates a release in the opspresso/toast-dist repository
+# 4. Creates a release in the opspresso/toast repository
 # 5. Triggers an update to the Homebrew tap
 # This workflow is triggered by tags created in the push.yml workflow
 

@@ -94,7 +94,7 @@
     {
       "provider": "github",
       "owner": "opspresso",
-      "repo": "toast-dist",
+      "repo": "toast",
       "releaseType": "release",
       "publishAutoUpdate": true,
       "updaterCacheDirName": "toast-app-updater",
