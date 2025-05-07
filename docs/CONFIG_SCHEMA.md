@@ -64,7 +64,9 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 | `name` | 문자열 | 예 | 버튼의 표시 이름 |
 | `shortcut` | 문자열 | 예 | 버튼 액션을 트리거하는 단축키 (A-Z) |
 | `icon` | 문자열 | 아니오 | 버튼에 표시할 이모지 또는 아이콘 |
-| `action` | 문자열 | 예 | 액션 유형 (`exec`, `open`, `shortcut`, `script`, `chain`) |
+| `action` | 문자열 | 예 | 액션 유형 (`application`, `exec`, `open`, `shortcut`, `script`, `chain`) |
+| `application` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 경로 |
+| `applicationParameters` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 매개변수 |
 | `command` | 문자열 | 조건부 | `exec` 액션 유형에 필요한 명령 |
 | `url` | 문자열 | 조건부 | `open` 액션 유형에 필요한 URL 또는 파일 경로 |
 | `keys` | 문자열 | 조건부 | `shortcut` 액션 유형에 필요한 키 조합 |
@@ -76,7 +78,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 ```json
 "pages": [
   {
-    "name": "Applications",
+    "name": "Page 1",
     "shortcut": "1",
     "buttons": [
       {

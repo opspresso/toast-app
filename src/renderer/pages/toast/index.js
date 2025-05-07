@@ -207,8 +207,9 @@ const emptyButtons = Array(15)
       name: ``,
       shortcut: rowLetters[index],
       icon: '',
-      action: 'exec',
-      command: '',
+      action: 'application',
+      application: '',
+      applicationParameters: '',
     };
   });
 
@@ -2104,10 +2105,10 @@ function closeButtonEditModal() {
  */
 function showActionFields(actionType) {
   // Hide all input field groups
+  applicationInputGroup.style.display = 'none';
   commandInputGroup.style.display = 'none';
   urlInputGroup.style.display = 'none';
   scriptInputGroup.style.display = 'none';
-  applicationInputGroup.style.display = 'none';
   chainInputGroup.style.display = 'none';
 
   // Update icon field hint
@@ -2116,8 +2117,6 @@ function showActionFields(actionType) {
     // Show custom hint based on type
     if (actionType === 'open') {
       iconHint.textContent = 'Use emoji or leave empty to automatically use URL favicon';
-    } else if (actionType === 'application') {
-      iconHint.textContent = 'Use emoji or leave empty to use default app icon';
     } else {
       iconHint.textContent = 'Use emoji (e.g. 🚀) or an image URL (https://...)';
     }
@@ -2125,6 +2124,9 @@ function showActionFields(actionType) {
 
   // Show corresponding input field group based on selected action type
   switch (actionType) {
+    case 'application':
+      applicationInputGroup.style.display = 'block';
+      break;
     case 'exec':
       commandInputGroup.style.display = 'block';
       break;
@@ -2136,9 +2138,6 @@ function showActionFields(actionType) {
       break;
     case 'shortcut':
       shortcutInputGroup.style.display = 'block';
-      break;
-    case 'application':
-      applicationInputGroup.style.display = 'block';
       break;
     case 'chain':
       chainInputGroup.style.display = 'block';
@@ -2174,6 +2173,15 @@ function saveButtonSettings() {
 
   // Set additional properties based on action type
   switch (action) {
+    case 'application':
+      updatedButton.applicationPath = editButtonApplicationInput.value.trim();
+
+      // Add application parameters (optional)
+      if (editButtonApplicationParametersInput.value.trim()) {
+        updatedButton.applicationParameters = editButtonApplicationParametersInput.value.trim();
+      }
+      break;
+
     case 'exec':
       updatedButton.command = editButtonCommandInput.value.trim();
 
@@ -2201,21 +2209,8 @@ function saveButtonSettings() {
       break;
 
     case 'script':
-      // 특별 명령어 처리 (꽃가루 애니메이션)
-      if (
-        editButtonScriptInput.value.trim().includes('confetti.start') ||
-        editButtonScriptInput.value.trim() === 'confetti' ||
-        editButtonScriptInput.value.trim() === '꽃가루'
-      ) {
-        // 특별 명령어로 변환
-        updatedButton.script = 'confetti';
-        updatedButton.scriptType = 'special';
-        showStatus('꽃가루 효과가 버튼에 추가되었습니다!', 'success');
-      } else {
-        // 일반 스크립트 처리
-        updatedButton.script = editButtonScriptInput.value.trim();
-        updatedButton.scriptType = editButtonScriptTypeSelect.value;
-      }
+      updatedButton.script = editButtonScriptInput.value.trim();
+      updatedButton.scriptType = editButtonScriptTypeSelect.value;
 
       // Add script parameters (parse as JSON format)
       if (editButtonScriptParamsInput.value.trim()) {
@@ -2225,15 +2220,6 @@ function saveButtonSettings() {
           showStatus('Script parameter JSON format is invalid. Using an empty object.', 'error');
           updatedButton.scriptParams = {};
         }
-      }
-      break;
-
-    case 'application':
-      updatedButton.applicationPath = editButtonApplicationInput.value.trim();
-
-      // Add application parameters (optional)
-      if (editButtonApplicationParametersInput.value.trim()) {
-        updatedButton.applicationParameters = editButtonApplicationParametersInput.value.trim();
       }
       break;
 
