@@ -1,6 +1,6 @@
 provider: github
 owner: opspresso
-repo: toast-dist
+repo: toast
 updaterCacheDirName: toast-app-updater
 publisherName: OpsPresso
 appId: com.opspresso.toast-app

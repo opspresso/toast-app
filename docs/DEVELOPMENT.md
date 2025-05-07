@@ -341,7 +341,7 @@ Toast 앱은 `electron-updater` 패키지를 사용하여 GitHub 릴리스 기�
 "publish": {
   "provider": "github",
   "owner": "opspresso",
-  "repo": "toast-dist",
+  "repo": "toast",
   "releaseType": "release",
   "publishAutoUpdate": true
 }
