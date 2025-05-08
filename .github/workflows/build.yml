@@ -188,6 +188,26 @@ jobs:
             artifacts/**/*-linux.yml
             artifacts/**/latest.yml
 
+      - name: Calculate DMG SHA256 🔐
+        id: sha256
+        run: |
+          # 아티팩트 디렉토리에서 DMG 파일 찾기
+          DMG_FILE=$(find ./artifacts -name "*.dmg" | head -n 1)
+
+          if [ -z "$DMG_FILE" ]; then
+            echo "⚠️ DMG 파일을 찾을 수 없습니다."
+            exit 1
+          fi
+
+          echo "📦 찾은 DMG 파일: $DMG_FILE"
+
+          # DMG 파일의 SHA256 해시 계산
+          DMG_SHA256=$(shasum -a 256 "$DMG_FILE" | awk '{print $1}')
+          echo "🔑 DMG SHA256: $DMG_SHA256"
+
+          # 출력으로 SHA256 값 설정
+          echo "sha256=$DMG_SHA256" >> $GITHUB_OUTPUT
+
       - name: Trigger for Homebrew 🚀
         uses: opspresso/action-builder@master
         with:
@@ -197,6 +217,7 @@ jobs:
           GITOPS_REPO: "opspresso/homebrew-tap"
           PROJECT: "toast"
           VERSION: ${{ github.ref_name }}
+          SHA256: ${{ steps.sha256.outputs.sha256 }}
 
   # Cleanup job: Delete existing draft releases
   cleanup:
