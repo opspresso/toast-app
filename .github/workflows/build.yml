@@ -209,15 +209,42 @@ jobs:
           echo "sha256=$DMG_SHA256" >> $GITHUB_OUTPUT
 
       - name: Trigger for Homebrew 🚀
-        uses: opspresso/action-builder@master
-        with:
-          args: --dispatch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-          GITOPS_REPO: "opspresso/homebrew-tap"
-          PROJECT: "toast"
-          VERSION: ${{ github.ref_name }}
-          SHA256: ${{ steps.sha256.outputs.sha256 }}
+        run: |
+          echo "🚀 Triggering Homebrew tap update..."
+
+          # 변수 설정
+          GITOPS_REPO="opspresso/homebrew-tap"
+          PROJECT="toast"
+          VERSION="${{ github.ref_name }}"
+          SHA256="${{ steps.sha256.outputs.sha256 }}"
+
+          echo "📋 Parameters:"
+          echo "  Project: $PROJECT"
+          echo "  Version: $VERSION"
+          echo "  SHA256: $SHA256"
+
+          # repository_dispatch 이벤트 트리거를 위한 JSON 페이로드 생성
+          PAYLOAD=$(cat <<EOF
+          {
+            "event_type": "gitops",
+            "client_payload": {
+              "project": "$PROJECT",
+              "version": "$VERSION",
+              "sha256": "$SHA256"
+            }
+          }
+          EOF
+          )
+
+          # GitHub API를 통해 repository_dispatch 이벤트 트리거
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD" \
+            "https://api.github.com/repos/$GITOPS_REPO/dispatches"
+
+          echo "✅ Homebrew tap update triggered"
 
   # Cleanup job: Delete existing draft releases
   cleanup:
