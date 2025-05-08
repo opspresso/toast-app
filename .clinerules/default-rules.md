@@ -1,6 +1,6 @@
 # Project Code Guidelines
 
-**Important: Before writing new code, search for similar existing code and maintain consistent logic and style patterns.**
+**Important: Before writing new code, search for similar existing code and maintain consistent logic and style patterns. Always refer to the main development documentation and documents in the `docs/` directory.**
 
 ## Core Principles
 
@@ -14,18 +14,23 @@
 - **Keep dependencies shallow**: Minimize tight coupling between modules. Maintain clear boundaries.
 - **Fail fast and visibly**: Surface errors early with meaningful messages or logs.
 - **Automate where practical**: Use automation for formatting, testing, and deployment to reduce manual effort and error.
+- **Maintain file size limits**: Keep files under 500 lines to improve readability, maintainability, and collaboration.
 
-## Language Standard
+## File Size Guidelines
 
-- **Important: Write code and UI messages in English.**
-- Write logs and comments in English or Korean.
-- Variable and function names: Use descriptive English terms following the project's naming conventions.
+- **Maximum file length**: Limit all source code files to under 500 lines.
+- **Split large components**: Break down large components into smaller, reusable pieces.
+- **Organize by responsibility**: Separate files by logical function or domain.
+- **Extract utilities**: Move reusable helper functions to dedicated utility files.
+- **Use composition**: Compose functionality through smaller, focused modules rather than large monolithic files.
+- **Refactor when approaching limits**: Consider refactoring when files approach 400+ lines.
 
 ## Documentation Standards
 
 - Keep all documentation up to date and version-controlled.
-- Each document should serve a clear purpose.
-- When adding new documents, place them under the docs/ directory.
+- Always check the existing documentation in the `docs/` directory for reference before creating new content.
+- New team members should thoroughly review all documentation in the `docs/` directory as part of onboarding.
+- Each document should serve a clear purpose:
 
 ### `README.md`
 - Project overview and purpose
