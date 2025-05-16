@@ -46,9 +46,9 @@ async function openItem(action) {
  */
 async function openUrl(url) {
   try {
-    // Validate URL format
-    if (!url.match(/^https?:\/\//i) && !url.match(/^file:\/\//i)) {
-      // Add http:// prefix if missing
+    // Validate URL format - check if URL already has any protocol
+    if (!url.match(/^[a-zA-Z0-9.+-]+:\/\//i)) {
+      // Add http:// prefix only if no protocol is present
       url = 'http://' + url;
     }
 
