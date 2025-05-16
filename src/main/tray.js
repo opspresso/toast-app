@@ -4,8 +4,9 @@
  * This module handles the system tray icon and menu.
  */
 
-const { Tray, Menu, app } = require('electron');
+const { Tray, Menu, app, shell } = require('electron');
 const path = require('path');
+const { createConfigStore } = require('./config');
 
 let trayInstance = null;
 
@@ -59,7 +60,6 @@ function getTrayIconPath() {
  */
 function updateTrayMenu(tray, windows) {
   // 현재 구성된 Global Hotkey 가져오기
-  const { createConfigStore } = require('./config');
   const config = createConfigStore();
   const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // 기본값 사용
 
@@ -72,6 +72,25 @@ function updateTrayMenu(tray, windows) {
           windows.toast.show();
           windows.toast.focus();
         }
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'How to use',
+      click: () => {
+        shell.openExternal('https://toast.sh/how-to-use');
+      },
+    },
+    {
+      label: 'Dashboard',
+      click: () => {
+        shell.openExternal('https://toast.sh/dashboard');
+      },
+    },
+    {
+      label: 'Subscription',
+      click: () => {
+        shell.openExternal('https://toast.sh/subscription');
       },
     },
     { type: 'separator' },
