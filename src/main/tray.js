@@ -96,6 +96,7 @@ function updateTrayMenu(tray, windows) {
     { type: 'separator' },
     {
       label: 'Settings...',
+      accelerator: 'Cmd+,',
       click: () => {
         const { ipcMain } = require('electron');
         // 두 번째 인자는 이벤트 객체
