@@ -63,10 +63,6 @@ function updateTrayMenu(tray, windows) {
   const config = createConfigStore();
   const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // 기본값 사용
 
-  // 사용자 구독 상태 확인
-  const subscription = config.get('subscription') || {};
-  const isSubscribed = subscription.isSubscribed || false;
-
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Toast',
@@ -86,9 +82,15 @@ function updateTrayMenu(tray, windows) {
       },
     },
     {
-      label: isSubscribed ? 'Dashboard' : 'Subscription',
+      label: 'Dashboard',
       click: () => {
-        shell.openExternal(isSubscribed ? 'https://toast.sh/dashboard' : 'https://toast.sh/subscription');
+        shell.openExternal('https://toast.sh/dashboard');
+      },
+    },
+    {
+      label: 'Subscription',
+      click: () => {
+        shell.openExternal('https://toast.sh/subscription');
       },
     },
     { type: 'separator' },
