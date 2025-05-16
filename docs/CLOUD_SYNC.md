@@ -162,7 +162,7 @@ configStore.onDidChange('pages', async (newValue, oldValue) => {
 
 ```http
 GET /api/users/settings HTTP/1.1
-Host: app.toast.sh
+Host: toast.sh
 Authorization: Bearer ACCESS_TOKEN
 ```
 
@@ -184,7 +184,7 @@ Authorization: Bearer ACCESS_TOKEN
 
 ```http
 PUT /api/users/settings HTTP/1.1
-Host: app.toast.sh
+Host: toast.sh
 Authorization: Bearer ACCESS_TOKEN
 Content-Type: application/json
 
