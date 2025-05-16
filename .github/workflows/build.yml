@@ -167,27 +167,6 @@ jobs:
             artifacts/**/*-linux.yml
             artifacts/**/latest.yml
 
-      - name: Create Release in Releases Repo 🚀
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-        with:
-          repository: opspresso/toast-dist # Also create release in distribution repository
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          body_path: release_notes.md
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
-            artifacts/**/*.zip
-            artifacts/**/*-mac.yml
-            artifacts/**/*-linux.yml
-            artifacts/**/latest.yml
-
       - name: Calculate DMG SHA256 🔐
         id: sha256
         run: |
