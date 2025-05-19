@@ -1425,9 +1425,14 @@ function handleKeyDown(event) {
       break;
     default:
       // Check if key matches a button shortcut
-      const upperKey = event.key.toUpperCase();
+      // Use event.code to get physical key location instead of event.key
+      const keyCode = event.code;
+      // Extract the relevant part from the code (e.g., 'KeyQ' -> 'Q')
+      const keyValue = keyCode.startsWith('Key') ? keyCode.slice(3) :
+                      keyCode.startsWith('Digit') ? keyCode.slice(5) : keyCode;
+
       const buttonIndex = filteredButtons.findIndex(
-        button => button.shortcut && button.shortcut.toUpperCase() === upperKey,
+        button => button.shortcut && button.shortcut.toUpperCase() === keyValue,
       );
 
       if (buttonIndex >= 0) {
