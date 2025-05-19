@@ -1,10 +1,10 @@
 # Mac App Store Metadata (English)
 
 ## App Name (30 characters limit)
-> Toast - Smart Shortcut Launcher
+> Toast - The Magical Launcher
 
 ## Subtitle (30 characters limit)
-> Boost productivity with one click
+> Boost productivity
 
 ## Category
 > Productivity
