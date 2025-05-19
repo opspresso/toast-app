@@ -5,7 +5,7 @@
 	<key>method</key>
 	<string>app-store</string>
 	<key>teamID</key>
-	<string>YOUR_TEAM_ID</string>
+	<string>3TMN29X5ES</string>
 	<key>uploadSymbols</key>
 	<true/>
 	<key>uploadBitcode</key>
@@ -17,7 +17,7 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.opspresso.toast-app</key>
-		<string>YOUR_PROVISIONING_PROFILE_NAME</string>
+		<string>Jungyoul Yu</string>
 	</dict>
 	<key>destination</key>
 	<string>upload</string>
