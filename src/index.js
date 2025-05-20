@@ -285,10 +285,14 @@ app.on('window-all-closed', () => {
   }
 });
 
-// On macOS, re-create the window when the dock icon is clicked
+// On macOS, re-create the window when the dock icon is clicked or show it if already created
 app.on('activate', () => {
   if (!windows.toast || windows.toast.isDestroyed()) {
     createToastWindow(config);
+  } else {
+    // 이미 창이 존재하면 표시하고 포커스를 줌
+    const { showToastWindow } = require('./main/windows');
+    showToastWindow(config);
   }
 });
 
