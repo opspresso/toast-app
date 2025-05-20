@@ -83,6 +83,13 @@ jobs:
 
           # Update new version to package.json (only if changed)
           if [[ "$(jq -r .version package.json)" != "$NEW_VERSION" ]]; then
+            # Update Info.plist - GitHub Actions는 Ubuntu 환경에서 실행됩니다
+            echo "📝 Updating Info.plist version to $NEW_VERSION"
+            # CFBundleShortVersionString 업데이트
+            sed -i "s/<key>CFBundleShortVersionString<\/key>\\s*<string>[^<]*<\/string>/<key>CFBundleShortVersionString<\/key>\\n\\t<string>$NEW_VERSION<\/string>/g" Info.plist
+            # CFBundleVersion 업데이트
+            sed -i "s/<key>CFBundleVersion<\/key>\\s*<string>[^<]*<\/string>/<key>CFBundleVersion<\/key>\\n\\t<string>$NEW_VERSION<\/string>/g" Info.plist
+
             # Update package.json
             echo "📝 Updating package.json version to $NEW_VERSION"
             jq --arg version "$NEW_VERSION" '.version = $version' package.json > tmp.json && mv tmp.json package.json
@@ -90,6 +97,7 @@ jobs:
             echo "🔄 Updated package-lock.json"
             npm install --package-lock-only
 
+            git add Info.plist
             git add package.json
             git add package-lock.json
 

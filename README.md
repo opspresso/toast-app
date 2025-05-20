@@ -1,7 +1,7 @@
 # Toast 앱
 
 <p align="center">
-  <img src="assets/icons/icon.png" alt="Toast 앱 로고" width="128" height="128">
+  <img src="https://toast.sh/logo192.png" alt="Toast 앱 로고" width="192" height="192">
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
 Toast 앱은 사용자가 커스텀 단축키와 액션을 정의할 수 있는 생산성 도구입니다. 글로벌 단축키로 호출하면 Toast는 사용자 정의 버튼이 있는 팝업을 표시합니다. 각 버튼에는 실행할 특정 액션이나 명령을 할당할 수 있습니다.
 
 <p align="center">
-  <img src="docs/images/toast-app-screenshot.png" alt="Toast 앱 스크린샷" width="500">
+  <img src="https://toast.sh/images/toast-screenshot-light.png" alt="Toast 앱 스크린샷" width="500">
 </p>
 
 ## 주요 기능

@@ -162,6 +162,7 @@ npm run build
 # 특정 플랫폼용 빌드
 npm run build:mac    # macOS용
 npm run build:win    # Windows용
+npm run build:mas    # macOS App Store용
 ```
 
 빌드된 애플리케이션은 `dist/` 디렉토리에 생성됩니다.
@@ -203,45 +204,45 @@ npm run format
 Toast 앱은 기능 브랜치 워크플로우를 따릅니다:
 
 1. **최신 메인 브랜치에서 시작**:
-   ```bash
-   git checkout main
-   git pull
-   ```
+```bash
+git checkout main
+git pull
+```
 
 2. **기능 브랜치 생성**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-   또는 버그 수정의 경우:
-   ```bash
-   git checkout -b fix/issue-number-description
-   ```
+```bash
+git checkout -b feature/your-feature-name
+```
+또는 버그 수정의 경우:
+```bash
+git checkout -b fix/issue-number-description
+```
 
 3. **개발 및 테스트**:
-   - 코드 작성 및 수정
-   - 테스트 작성 및 실행
-   - 로컬에서 애플리케이션 테스트
+- 코드 작성 및 수정
+- 테스트 작성 및 실행
+- 로컬에서 애플리케이션 테스트
 
 4. **변경 사항 커밋**:
-   ```bash
-   git add .
-   git commit -m "feat: add new button type for custom scripts"
-   ```
+```bash
+git add .
+git commit -m "feat: add new button type for custom scripts"
+```
 
-   Conventional Commits 형식을 사용:
-   - `feat`: 새 기능
-   - `fix`: 버그 수정
-   - `docs`: 문서 변경
-   - `style`: 코드 스타일 변경 (포맷팅)
-   - `refactor`: 기능 변경 없는 코드 개선
-   - `test`: 테스트 추가 또는 수정
-   - `chore`: 빌드 프로세스 변경
+Conventional Commits 형식을 사용:
+- `feat`: 새 기능
+- `fix`: 버그 수정
+- `docs`: 문서 변경
+- `style`: 코드 스타일 변경 (포맷팅)
+- `refactor`: 기능 변경 없는 코드 개선
+- `test`: 테스트 추가 또는 수정
+- `chore`: 빌드 프로세스 변경
 
 5. **푸시 및 풀 리퀘스트**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-   그런 다음 GitHub에서 풀 리퀘스트 생성
+```bash
+git push origin feature/your-feature-name
+```
+그런 다음 GitHub에서 풀 리퀘스트 생성
 
 ## 로깅 시스템
 

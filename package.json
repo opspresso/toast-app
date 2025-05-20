@@ -1,10 +1,10 @@
 {
   "name": "toast-app",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
-  "homepage": "https://github.com/opspresso/toast-app#readme",
+  "homepage": "https://toast.sh",
   "keywords": [
     "electron",
     "shortcut",
@@ -15,10 +15,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/opspresso/toast-app.git"
+    "url": "git+https://github.com/opspresso/toast.git"
   },
   "bugs": {
-    "url": "https://github.com/opspresso/toast-app/issues"
+    "url": "https://github.com/opspresso/toast/issues"
   },
   "main": "src/index.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
+    "build:mas": "electron-builder --mac mas",
     "test": "jest",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,html}\""
@@ -74,6 +75,13 @@
         "dmg",
         "zip"
       ]
+    },
+    "mas": {
+      "category": "public.app-category.productivity",
+      "entitlements": "entitlements.mac.mas.plist",
+      "entitlementsInherit": "entitlements.mac.mas.plist",
+      "hardenedRuntime": true,
+      "icon": "assets/icons/icon.icns"
     },
     "win": {
       "icon": "assets/icons/icon.ico",
