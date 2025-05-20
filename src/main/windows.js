@@ -327,6 +327,7 @@ function hideToastWindow() {
 
   if (windows.toast && !windows.toast.isDestroyed() && windows.toast.isVisible()) {
     windows.toast.hide();
+    // app.hide();
   }
 }
 
