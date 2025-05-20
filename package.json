@@ -80,7 +80,7 @@
       "category": "public.app-category.productivity",
       "entitlements": "entitlements.mac.mas.plist",
       "entitlementsInherit": "entitlements.mac.mas.plist",
-      "hardenedRuntime": false,
+      "hardenedRuntime": true,
       "icon": "assets/icons/icon.icns"
     },
     "win": {
