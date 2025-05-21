@@ -125,7 +125,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 
 | 옵션 | 유형 | 기본값 | 설명 |
 |------|------|--------|------|
-| `advanced.launchAtLogin` | 불리언 | `true` | 로그인 시 앱 자동 시작 여부 |
+| `advanced.launchAtLogin` | 불리언 | `false` | 로그인 시 앱 자동 시작 여부 |
 | `advanced.hideAfterAction` | 불리언 | `true` | 액션 실행 후 Toast 팝업 자동 숨김 여부 |
 | `advanced.hideOnBlur` | 불리언 | `true` | 포커스 상실 시 Toast 팝업 숨김 여부 |
 | `advanced.hideOnEscape` | 불리언 | `true` | Escape 키 누를 때 Toast 팝업 숨김 여부 |
