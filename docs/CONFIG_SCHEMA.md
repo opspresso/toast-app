@@ -146,32 +146,24 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 
 | 옵션 | 유형 | 기본값 | 설명 |
 |------|------|--------|------|
+| `subscription.isSubscribed` | 불리언 | `false` | 사용자가 구독 중인지 여부 |
 | `subscription.isAuthenticated` | 불리언 | `false` | 사용자 인증 상태 |
-| `subscription.level` | 문자열 | `"free"` | 구독 수준 (`"free"`, `"basic"`, `"premium"`) |
-| `subscription.pageGroups` | 숫자 | 사용자 타입별 | 사용자가 생성할 수 있는 페이지 그룹의 최대 수 |
-| `subscription.features` | 객체 | `{}` | 활성화된 기능 플래그 |
-| `subscription.email` | 문자열 | `null` | 인증된 사용자 이메일 |
-| `subscription.expiresAt` | 문자열 | `null` | 구독 만료 날짜 (ISO 문자열) |
+| `subscription.expiresAt` | 문자열 | `""` | 구독 만료 날짜 (ISO 문자열) |
+| `subscription.pageGroups` | 숫자 | `1` | 사용자가 생성할 수 있는 페이지 그룹의 최대 수 (무료 사용자: 1, 인증된 사용자: 3, 구독자: 9) |
 
 **예시**:
 ```json
 "subscription": {
-  "isAuthenticated": true,
-  "level": "premium",
-  "pageGroups": 9,
-  "features": {
-    "cloud_sync": true,
-    "advanced_actions": true
-  },
-  "email": "user@example.com",
-  "expiresAt": "2023-12-31T23:59:59Z"
+  "isSubscribed": false,
+  "isAuthenticated": false,
+  "expiresAt": "",
+  "pageGroups": 1
 }
 ```
 
-**pageGroups 기본값**:
-- 익명 사용자: 1
-- 인증된 일반 사용자: 3
-- 프리미엄 사용자: 9
+**pageGroups 기본값 및 설명**:
+- `pageGroups`의 기본값은 `1`입니다.
+- 실제 적용되는 페이지 그룹 수는 사용자의 인증 상태 및 구독 여부에 따라 `src/main/auth.js`의 `updatePageGroupSettings` 함수 등에서 동적으로 결정될 수 있습니다. (예: 무료 사용자: 1, 인증된 사용자: 3, 프리미엄 구독자: 9)
 
 ## 구성 예시
 

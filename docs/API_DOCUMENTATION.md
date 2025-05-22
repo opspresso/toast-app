@@ -43,97 +43,124 @@ function exportConfig(config, filePath)
 #### 구성 스키마
 
 ```javascript
-// 기본 구성 스키마
+// 기본 구성 스키마 (src/main/config.js 기준)
 const schema = {
   globalHotkey: {
-    type: 'string'
-    default: 'Alt+Space'
-  }
+    type: 'string',
+    default: 'Alt+Space',
+  },
   pages: {
-    type: 'array'
-    default: []
-  }
+    type: 'array',
+    default: [],
+  },
   appearance: {
-    type: 'object'
+    type: 'object',
     properties: {
       theme: {
-        type: 'string'
-        enum: ['light' 'dark' 'system']
-        default: 'system'
-      }
+        type: 'string',
+        enum: ['light', 'dark', 'system'],
+        default: 'system',
+      },
       position: {
-        type: 'string'
-        enum: ['center' 'top' 'bottom' 'cursor']
-        default: 'center'
-      }
+        type: 'string',
+        enum: ['center', 'top', 'bottom', 'cursor'],
+        default: 'center',
+      },
+      monitorPositions: {
+        type: 'object',
+        default: {},
+        description: 'Saved window positions for each monitor',
+      },
       size: {
-        type: 'string'
-        enum: ['small' 'medium' 'large']
-        default: 'medium'
-      }
+        type: 'string',
+        enum: ['small', 'medium', 'large'],
+        default: 'medium',
+      },
       opacity: {
-        type: 'number'
-        minimum: 0.1
-        maximum: 1.0
-        default: 0.95
-      }
+        type: 'number',
+        minimum: 0.1,
+        maximum: 1.0,
+        default: 0.95,
+      },
       buttonLayout: {
-        type: 'string'
-        enum: ['grid' 'list']
-        default: 'grid'
-      }
-    }
-    default: {...}
-  }
+        type: 'string',
+        enum: ['grid', 'list'],
+        default: 'grid',
+      },
+    },
+    default: {
+      theme: 'system',
+      position: 'center',
+      size: 'medium',
+      opacity: 0.95,
+      buttonLayout: 'grid',
+    },
+  },
   advanced: {
-    type: 'object'
+    type: 'object',
     properties: {
       launchAtLogin: {
-        type: 'boolean'
-        default: false
-      }
+        type: 'boolean',
+        default: false,
+      },
       hideAfterAction: {
-        type: 'boolean'
-        default: true
-      }
+        type: 'boolean',
+        default: true,
+      },
       hideOnBlur: {
-        type: 'boolean'
-        default: true
-      }
+        type: 'boolean',
+        default: true,
+      },
       hideOnEscape: {
-        type: 'boolean'
-        default: true
-      }
+        type: 'boolean',
+        default: true,
+      },
       showInTaskbar: {
-        type: 'boolean'
-        default: false
-      }
-    }
-    default: {...}
-  }
+        type: 'boolean',
+        default: false,
+      },
+    },
+    default: {
+      launchAtLogin: false,
+      hideAfterAction: true,
+      hideOnBlur: true,
+      hideOnEscape: true,
+      showInTaskbar: false,
+    },
+  },
   subscription: {
-    type: 'object'
-    /* 참고: 구독 정보는 이제 /users/profile API에서 통합적으로 제공됩니다. */
+    type: 'object',
     properties: {
-      isSubscribed: {
-        type: 'boolean'
-        default: false
-      }
-      subscribedUntil: {
-        type: 'string'
-        default: ''
-      }
-      pageGroups: {
-        type: 'number'
-        default: 1
-      }
-    }
-    default: {...}
-  }
+      isSubscribed: { // 사용자가 구독 중인지 여부
+        type: 'boolean',
+        default: false,
+      },
+      isAuthenticated: { // 사용자 인증 상태
+        type: 'boolean',
+        default: false,
+      },
+      expiresAt: { // 구독 만료 날짜 (ISO 문자열)
+        type: 'string',
+        default: '',
+      },
+      pageGroups: { // 사용자가 생성할 수 있는 페이지 그룹의 최대 수
+        type: 'number',
+        default: 1,
+        description:
+          'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
+      },
+    },
+    default: {
+      isSubscribed: false,
+      isAuthenticated: false,
+      expiresAt: '',
+      pageGroups: 1,
+    },
+  },
   firstLaunchCompleted: {
-    type: 'boolean'
-    default: false
-  }
+    type: 'boolean',
+    default: false,
+  },
 };
 ```
 
