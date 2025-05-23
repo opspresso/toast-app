@@ -41,15 +41,19 @@ Toast 앱은 electron-store 라이브러리를 사용하여 데이터를 유지�
   "globalHotkey": "Alt+Space",
   "pages": [
     {
+      "id": "page1",
       "name": "Applications",
       "shortcut": "1",
       "buttons": [
         {
+          "id": "button1",
           "name": "Terminal",
           "shortcut": "T",
           "icon": "⌨️",
-          "action": "exec",
-          "command": "open -a Terminal"
+          "actionType": "exec",
+          "actionParams": {
+            "command": "open -a Terminal"
+          }
         },
         // 더 많은 버튼...
       ]
@@ -61,22 +65,23 @@ Toast 앱은 electron-store 라이브러리를 사용하여 데이터를 유지�
     "position": "center",
     "size": "medium",
     "opacity": 0.95,
-    "buttonLayout": "grid"
+    "buttonLayout": "grid",
+    "monitorPositions": {
+      "12345": { "x": 100, "y": 200 }
+    }
   },
   "advanced": {
-    "launchAtLogin": true,
+    "launchAtLogin": false,
     "hideAfterAction": true,
     "hideOnBlur": true,
     "hideOnEscape": true,
     "showInTaskbar": false
   },
   "subscription": {
+    "isSubscribed": false,
     "isAuthenticated": false,
-    "level": "free",
-    "pageGroups": 1,
-    "features": {},
-    "email": null,
-    "expiresAt": null
+    "expiresAt": "",
+    "pageGroups": 1
   },
   "firstLaunchCompleted": true
 }

@@ -76,6 +76,11 @@ const schema = {
         enum: ['center', 'top', 'bottom', 'cursor'],
         default: 'center',
       },
+      monitorPositions: {
+        type: 'object',
+        default: {},
+        description: 'Saved window positions for each monitor',
+      },
       size: {
         type: 'string',
         enum: ['small', 'medium', 'large'],
@@ -93,7 +98,13 @@ const schema = {
         default: 'grid',
       },
     },
-    default: { ... },
+    default: {
+      theme: 'system',
+      position: 'center',
+      size: 'medium',
+      opacity: 0.95,
+      buttonLayout: 'grid',
+    },
   },
   advanced: {
     type: 'object',
@@ -119,7 +130,13 @@ const schema = {
         default: false,
       },
     },
-    default: { ... },
+    default: {
+      launchAtLogin: false,
+      hideAfterAction: true,
+      hideOnBlur: true,
+      hideOnEscape: true,
+      showInTaskbar: false,
+    },
   },
   subscription: {
     type: 'object',
@@ -142,7 +159,12 @@ const schema = {
         description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
       },
     },
-    default: { ... },
+    default: {
+      isSubscribed: false,
+      isAuthenticated: false,
+      expiresAt: '',
+      pageGroups: 1,
+    },
   },
   firstLaunchCompleted: {
     type: 'boolean',

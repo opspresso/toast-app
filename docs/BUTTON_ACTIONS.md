@@ -4,13 +4,14 @@
 
 ## 액션 유형 개요
 
-Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
+Toast 앱은 다음과 같은 6가지 버튼 액션 유형을 지원합니다:
 
 1. **exec** - 셸 명령어 실행
 2. **open** - URL, 파일 또는 폴더 열기
 3. **script** - 다양한 언어의 스크립트 실행
-4. **chain** - 여러 액션 순차적 실행
-5. **application** - 애플리케이션 실행
+4. **shortcut** - 키보드 단축키 시뮬레이션
+5. **chain** - 여러 액션 순차적 실행
+6. **application** - 애플리케이션 실행
 
 각 액션 유형에 대한 상세 설명은 아래와 같습니다.
 
@@ -100,9 +101,11 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Hello World Script",
   "shortcut": "H",
   "icon": "👋",
-  "action": "script",
-  "script": "console.log('Hello, World!'); return { message: 'Hello from JavaScript!' };",
-  "scriptType": "javascript"
+  "actionType": "script",
+  "actionParams": {
+    "script": "console.log('Hello, World!'); return { message: 'Hello from JavaScript!' };",
+    "scriptType": "javascript"
+  }
 }
 ```
 
@@ -111,11 +114,41 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "System Information",
   "shortcut": "I",
   "icon": "💻",
-  "action": "script",
-  "script": "Get-ComputerInfo | Format-List",
-  "scriptType": "powershell"
+  "actionType": "script",
+  "actionParams": {
+    "script": "Get-ComputerInfo | Format-List",
+    "scriptType": "powershell"
+  }
 }
 ```
+
+## 4. shortcut (키보드 단축키 실행)
+
+### 설명
+키보드 단축키를 시뮬레이션하는 액션입니다.
+
+### 속성
+| 속성 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `keys` | string | 예 | 시뮬레이션할 키 조합 (예: "Ctrl+C", "Alt+Tab") |
+
+### 예시
+```json
+{
+  "name": "Copy",
+  "shortcut": "C",
+  "icon": "📋",
+  "actionType": "shortcut",
+  "actionParams": {
+    "keys": "Ctrl+C"
+  }
+}
+```
+
+### 플랫폼별 차이점
+- **macOS**: `Command` 키는 `Meta` 또는 `Cmd`로 표기
+- **Windows & Linux**: `Control` 키는 `Ctrl`로 표기
+- 플랫폼 간 자동 변환 지원 (예: Windows에서 `Cmd+C`는 `Ctrl+C`로 자동 변환)
 
 ### 플랫폼 제한
 - **JavaScript**: 모든 플랫폼 지원
@@ -127,7 +160,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - JavaScript 스크립트는 샌드박스 환경에서 실행되어 제한된 API에만 접근 가능
 - 외부 스크립트는 임시 파일로 작성된 후 실행되며, 실행 후 임시 파일 삭제
 
-## 4. chain (연쇄 실행)
+## 5. chain (연쇄 실행)
 
 ### 설명
 여러 액션을 순차적으로 실행하는 복합 액션입니다.
@@ -144,24 +177,32 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Development Setup",
   "shortcut": "D",
   "icon": "🔗",
-  "action": "chain",
-  "actions": [
-    {
-      "action": "exec",
-      "command": "cd ~/projects/my-app && git pull"
-    },
-    {
-      "action": "exec",
-      "command": "cd ~/projects/my-app && npm install",
-      "runInTerminal": true
-    },
-    {
-      "action": "open",
-      "path": "~/projects/my-app",
-      "application": "Visual Studio Code"
-    }
-  ],
-  "stopOnError": true
+  "actionType": "chain",
+  "actionParams": {
+    "actions": [
+      {
+        "actionType": "exec",
+        "actionParams": {
+          "command": "cd ~/projects/my-app && git pull"
+        }
+      },
+      {
+        "actionType": "exec",
+        "actionParams": {
+          "command": "cd ~/projects/my-app && npm install",
+          "runInTerminal": true
+        }
+      },
+      {
+        "actionType": "open",
+        "actionParams": {
+          "path": "~/projects/my-app",
+          "application": "Visual Studio Code"
+        }
+      }
+    ],
+    "stopOnError": true
+  }
 }
 ```
 
@@ -170,7 +211,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - `stopOnError`가 `true`이면 액션 중 하나라도 실패할 경우 연쇄 실행이 중단됩니다.
 - 모든 액션 유형(exec, open, shortcut, script, application)을 연쇄 실행에 포함할 수 있습니다.
 
-## 5. application (애플리케이션 실행)
+## 6. application (애플리케이션 실행)
 
 ### 설명
 지정된 경로의 애플리케이션을 실행하는 액션입니다.
@@ -187,8 +228,11 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Photoshop",
   "shortcut": "P",
   "icon": "🎨",
-  "action": "application",
-  "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app"
+  "actionType": "application",
+  "actionParams": {
+    "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
+    "applicationParameters": "--new-document"
+  }
 }
 ```
 
