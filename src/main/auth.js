@@ -24,7 +24,8 @@ const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
 const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
-const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '3600'), 10); // Default 1 hour, can be overridden in environment variables
+// 토큰 만료 시간을 무기한으로 설정 (매우 긴 시간으로 설정)
+const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '31536000'), 10); // Default 1 year (365 days), can be overridden in environment variables
 const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
 
 // Set token storage file path
@@ -207,6 +208,12 @@ async function isTokenExpired() {
       return true;
     }
 
+    // 무기한 토큰인 경우 (매우 먼 미래 날짜) 만료되지 않은 것으로 처리
+    if (expiresAt >= 8640000000000000) {
+      logger.info('Token is set to unlimited expiration');
+      return false;
+    }
+
     // Compare with current time to check expiration
     const now = Date.now();
     const isExpired = now >= expiresAt;
@@ -238,7 +245,7 @@ async function isTokenExpired() {
  * @param {number} expiresIn - Token expiration time in seconds
  * @returns {Promise<void>}
  */
-async function storeToken(token, expiresIn = 3600) {
+async function storeToken(token, expiresIn = 31536000) {
   try {
     // Set token in client
     client.setAccessToken(token);
@@ -468,10 +475,10 @@ async function exchangeCodeForToken(code) {
     const { access_token, refresh_token, expires_in } = tokenResult;
 
     // Store token and expiration time in secure storage
-    // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
-    await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
+    // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 1 year
+    await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 31536000);
     logger.info(
-      `Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`,
+      `Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 86400 + ' days' : expires_in ? expires_in / 86400 + ' days' : '1 year'})`,
     );
 
     // Store refresh token (if available)
@@ -604,10 +611,10 @@ async function refreshAccessToken() {
         // On success, store new tokens
         const { access_token, refresh_token, expires_in } = refreshResult;
 
-        // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 3600 (1 hour)
-        await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 3600);
+        // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 1 year
+        await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 31536000);
         logger.info(
-          `New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 3600 + ' hours' : expires_in ? expires_in / 3600 + ' hours' : '1 hour'})`,
+          `New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 86400 + ' days' : expires_in ? expires_in / 86400 + ' days' : '1 year'})`,
         );
 
         // Store new refresh token (if available)
