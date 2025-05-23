@@ -54,19 +54,7 @@ The config store contains the core application configuration and is structured a
 ```json
 {
   "version": "0.5.54",
-  "settings": {
-    "globalShortcut": "Alt+Space",
-    "launchOnLogin": true,
-    "theme": "system",
-    "position": "center",
-    "size": "medium",
-    "opacity": 0.95,
-    "buttonLayout": "grid",
-    "hideAfterAction": true,
-    "hideOnBlur": true,
-    "hideOnEscape": true,
-    "showInTaskbar": false
-  },
+  "globalHotkey": "Alt+Space",
   "pages": [
     {
       "id": "page1",
@@ -88,9 +76,28 @@ The config store contains the core application configuration and is structured a
     },
     // Additional pages...
   ],
-  "migrations": {
-    "lastMigration": "0.5.0"
-  }
+  "appearance": {
+    "theme": "system",
+    "position": "center",
+    "size": "medium",
+    "opacity": 0.95,
+    "buttonLayout": "grid",
+    "monitorPositions": {}
+  },
+  "advanced": {
+    "launchAtLogin": false,
+    "hideAfterAction": true,
+    "hideOnBlur": true,
+    "hideOnEscape": true,
+    "showInTaskbar": false
+  },
+  "subscription": {
+    "isSubscribed": false,
+    "isAuthenticated": false,
+    "expiresAt": "",
+    "pageGroups": 1
+  },
+  "firstLaunchCompleted": false
 }
 ```
 
@@ -152,9 +159,9 @@ The primary entities in Toast App have the following relationships:
 
 ### Global Settings
 
-Global settings control the application's behavior and appearance. The settings object includes:
+Global settings control the application's behavior and appearance. These include:
 
-- Global shortcut configuration
+- Global hotkey configuration
 - UI preferences (theme, position, size, opacity)
 - Window management behavior
 - Startup configuration
@@ -208,17 +215,17 @@ Sync metadata tracks information about cloud synchronization:
 
 | Field | Type | Description | Default |
 |-------|------|-------------|---------|
-| globalShortcut | String | Global keyboard shortcut to open Toast window | "Alt+Space" |
-| launchOnLogin | Boolean | Whether to launch the app on system login | true |
-| theme | String | UI theme ("light", "dark", or "system") | "system" |
-| position | String | Toast window position ("center", "top", "topRight", etc.) | "center" |
-| size | String | Toast window size ("small", "medium", "large") | "medium" |
-| opacity | Number | Toast window opacity (0.0-1.0) | 0.95 |
-| buttonLayout | String | Button layout style ("grid" or "list") | "grid" |
-| hideAfterAction | Boolean | Whether to hide window after action execution | true |
-| hideOnBlur | Boolean | Whether to hide window when it loses focus | true |
-| hideOnEscape | Boolean | Whether to hide window when Escape is pressed | true |
-| showInTaskbar | Boolean | Whether to show window in taskbar/dock | false |
+| globalHotkey | String | Global keyboard shortcut to open Toast window | "Alt+Space" |
+| appearance.theme | String | UI theme ("light", "dark", or "system") | "system" |
+| appearance.position | String | Toast window position ("center", "top", "bottom", "cursor") | "center" |
+| appearance.size | String | Toast window size ("small", "medium", "large") | "medium" |
+| appearance.opacity | Number | Toast window opacity (0.0-1.0) | 0.95 |
+| appearance.buttonLayout | String | Button layout style ("grid" or "list") | "grid" |
+| advanced.launchAtLogin | Boolean | Whether to launch the app on system login | false |
+| advanced.hideAfterAction | Boolean | Whether to hide window after action execution | true |
+| advanced.hideOnBlur | Boolean | Whether to hide window when it loses focus | true |
+| advanced.hideOnEscape | Boolean | Whether to hide window when Escape is pressed | true |
+| advanced.showInTaskbar | Boolean | Whether to show window in taskbar/dock | false |
 
 ### Page Fields
 
