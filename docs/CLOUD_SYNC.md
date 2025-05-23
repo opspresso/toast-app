@@ -5,6 +5,7 @@
 ## 목차
 
 - [개요](#개요)
+- [인증 및 토큰 관리](#인증-및-토큰-관리)
 - [기본 동기화 흐름](#기본-동기화-흐름)
 - [동기화 API](#동기화-api)
 - [구현 방법](#구현-방법)
@@ -18,6 +19,110 @@ Toast App의 클라우드 동기화는 REST API 통신을 통해 설정 데이�
 - 여러 기기에서 동일한 설정 사용
 - 새 기기 설치 시 설정 복원 (충돌 해결 로직에 따라 최신 또는 병합된 설정 적용)
 - 변경 사항 반영 (양방향 동기화)
+- 무기한 토큰으로 지속적인 동기화 보장
+
+## 인증 및 토큰 관리
+
+클라우드 동기화를 위해서는 안정적인 인증 시스템이 필요합니다. Toast App은 OAuth 2.0 기반의 토큰 인증을 사용하며, 동기화 중단을 방지하기 위해 토큰 만료를 무기한으로 설정했습니다.
+
+### 토큰 만료 설정
+
+**서버 측 (toast-web):**
+- **액세스 토큰**: 1년 (365일)
+- **리프레시 토큰**: 10년
+- 실질적으로 무기한에 가까운 긴 시간으로 설정
+
+**클라이언트 측 (toast-app):**
+- **기본 토큰 만료 시간**: 1년 (31,536,000초)
+- **무기한 토큰 처리**: JavaScript 최대 날짜값(8640000000000000) 사용
+- **환경 변수 지원**: `TOKEN_EXPIRES_IN` 환경 변수로 커스터마이징 가능
+
+### 토큰 만료 처리 로직
+
+```javascript
+// 토큰 만료 확인 (무기한 토큰 지원)
+async function isTokenExpired() {
+  try {
+    const expiresAt = await getStoredTokenExpiry();
+
+    if (!expiresAt) {
+      return true; // 만료 시간이 없으면 만료된 것으로 처리
+    }
+
+    // 무기한 토큰인 경우 (매우 먼 미래 날짜) 만료되지 않은 것으로 처리
+    if (expiresAt >= 8640000000000000) {
+      logger.info('Token is set to unlimited expiration');
+      return false;
+    }
+
+    // 일반 토큰의 경우 현재 시간과 비교
+    const now = Date.now();
+    const safetyMargin = 30 * 1000; // 30초 안전 마진
+    const isNearExpiry = now >= expiresAt - safetyMargin;
+
+    if (isNearExpiry) {
+      logger.info('Token is about to expire or already expired');
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    logger.error('Error checking token expiration:', error);
+    return true; // 오류 발생 시 안전을 위해 만료된 것으로 처리
+  }
+}
+
+// 토큰 저장 (무기한 지원)
+async function storeToken(token, expiresIn = 31536000) {
+  try {
+    let expiresAt;
+    if (expiresIn <= 0) {
+      // 0 이하 값은 무기한으로 처리
+      expiresAt = 8640000000000000; // JavaScript 최대 날짜값
+      logger.info('Token expiration time set to unlimited.');
+    } else {
+      expiresAt = Date.now() + expiresIn * 1000;
+    }
+
+    // 토큰과 만료 시간 저장
+    const tokenData = readTokenFile() || {};
+    tokenData[TOKEN_KEY] = token;
+    tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
+
+    if (!writeTokenFile(tokenData)) {
+      throw new Error('Failed to save token file');
+    }
+
+    logger.info(`Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`);
+  } catch (error) {
+    logger.error('Failed to save token:', error);
+    throw error;
+  }
+}
+```
+
+### 환경 변수 설정
+
+토큰 만료 시간은 환경 변수로 커스터마이징할 수 있습니다:
+
+```bash
+# 1년 (기본값)
+TOKEN_EXPIRES_IN=31536000
+
+# 무기한 (0 이하 값)
+TOKEN_EXPIRES_IN=0
+
+# 커스텀 시간 (초 단위)
+TOKEN_EXPIRES_IN=86400  # 1일
+```
+
+### 토큰 관리 모범 사례
+
+1. **무기한 토큰 사용**: 동기화 중단 방지를 위해 토큰을 무기한으로 설정
+2. **안전한 저장**: 토큰을 암호화된 로컬 파일에 저장
+3. **원자적 쓰기**: 파일 손상 방지를 위한 임시 파일 사용
+4. **오류 처리**: 토큰 관련 오류 시 적절한 로깅 및 복구 로직
+5. **보안 고려**: 토큰 파일 접근 권한 제한
 
 ## 기본 동기화 흐름
 
@@ -34,7 +139,7 @@ sequenceDiagram
 
 ## 동기화 API
 
-동기화 API는 서버(Toast Web)에서 제공하며, 클라이언트는 이 API를 통해 설정을 주고받습니다.
+동기화 API는 서버(Toast Web)에서 제공하며, 클라이언트는 이 API를 통해 설정을 주고받습니다. 모든 API 요청에는 Bearer 토큰이 필요합니다.
 
 ### 설정 가져오기
 
@@ -162,7 +267,6 @@ async function downloadSettingsFromServer() {
       configStore.set('pages', mergedSettings.pages);
       // 관련 메타데이터 업데이트 (예: serverLastUpdatedAt)
       updateLocalMetadata(mergedSettings);
-
 
       return { success: true, data: mergedSettings };
     } else {
@@ -324,11 +428,55 @@ async function onLogin() {
 |------|-----------|
 | 동기화 실패 | 인터넷 연결 확인, 재로그인 시도. 서버 API 응답 코드(4xx, 5xx) 및 오류 메시지 확인. |
 | 설정 불일치 | 수동 동기화 실행 (예: `await downloadSettingsFromServer()` 후 필요한 경우 `await uploadSettingsToServer()`). 충돌 해결 로직 점검. |
-| 인증 오류 (401) | 토큰 갱신 또는 재로그인. `getAccessToken()` 함수 및 토큰 저장/관리 로직 확인. |
+| 인증 오류 (401) | 토큰 갱신 또는 재로그인. `getAccessToken()` 함수 및 토큰 저장/관리 로직 확인. 무기한 토큰 설정 확인. |
+| 토큰 만료 | 무기한 토큰 설정이 적용되었는지 확인. 환경 변수 `TOKEN_EXPIRES_IN` 값 점검. |
 | 잘못된 요청 (400) | 업로드하는 데이터의 형식 및 내용이 서버 API 요구사항과 일치하는지 확인. |
 | 서버 오류 (5xx) | 서버 측 문제일 가능성이 높음. 잠시 후 재시도 또는 관리자에게 문의. |
+
+### 토큰 관련 문제 해결
+
+**토큰 파일 확인:**
+- macOS: `~/Library/Application Support/Toast-App/auth-tokens.json`
+- Windows: `%APPDATA%\Toast-App\auth-tokens.json`
+
+**토큰 상태 확인:**
+```javascript
+// 토큰 만료 시간 확인
+const expiresAt = await getStoredTokenExpiry();
+console.log('Token expires at:', new Date(expiresAt));
+
+// 무기한 토큰 여부 확인
+if (expiresAt >= 8640000000000000) {
+  console.log('Token is set to unlimited expiration');
+}
+```
 
 **로그 확인:**
 - macOS: `~/Library/Logs/Toast-App/main.log`
 - Windows: `%USERPROFILE%\AppData\Roaming\Toast-App\logs\main.log`
 - 개발자 도구 콘솔에서도 네트워크 요청/응답 및 로그 확인 가능.
+
+### 동기화 상태 모니터링
+
+정기적으로 동기화 상태를 모니터링하여 문제를 조기에 발견할 수 있습니다:
+
+```javascript
+// 동기화 상태 확인
+async function checkSyncStatus() {
+  const hasValidToken = await hasValidToken();
+  const lastSync = configStore.get('lastSyncTime');
+  const syncEnabled = configStore.get('cloudSyncEnabled', true);
+
+  return {
+    authenticated: hasValidToken,
+    lastSync: lastSync ? new Date(lastSync) : null,
+    syncEnabled,
+    tokenUnlimited: await isTokenUnlimited()
+  };
+}
+
+// 무기한 토큰 여부 확인
+async function isTokenUnlimited() {
+  const expiresAt = await getStoredTokenExpiry();
+  return expiresAt >= 8640000000000000;
+}
