@@ -2,6 +2,8 @@
 
 이 문서는 Toast 앱에서 지원하는 모든 버튼 액션 유형을 설명합니다.
 
+버튼 구성 스키마에 대한 자세한 내용은 [CONFIG_SCHEMA.md](./CONFIG_SCHEMA.md)를 참조하세요.
+
 ## 액션 유형 개요
 
 Toast 앱은 다음과 같은 6가지 버튼 액션 유형을 지원합니다:
@@ -118,6 +120,16 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 }
 ```
 
+### 플랫폼 제한
+- **JavaScript**: 모든 플랫폼 지원
+- **AppleScript**: macOS에서만 지원
+- **PowerShell**: Windows에서만 지원
+- **Bash**: macOS 및 Linux에서만 지원
+
+### 보안 고려사항
+- JavaScript 스크립트는 샌드박스 환경에서 실행되어 제한된 API에만 접근 가능
+- 외부 스크립트는 임시 파일로 작성된 후 실행되며, 실행 후 임시 파일 삭제
+
 ## 4. shortcut (키보드 단축키 실행)
 
 ### 설명
@@ -143,16 +155,6 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - **macOS**: `Command` 키는 `Meta` 또는 `Cmd`로 표기
 - **Windows & Linux**: `Control` 키는 `Ctrl`로 표기
 - 플랫폼 간 자동 변환 지원 (예: Windows에서 `Cmd+C`는 `Ctrl+C`로 자동 변환)
-
-### 플랫폼 제한
-- **JavaScript**: 모든 플랫폼 지원
-- **AppleScript**: macOS에서만 지원
-- **PowerShell**: Windows에서만 지원
-- **Bash**: macOS 및 Linux에서만 지원
-
-### 보안 고려사항
-- JavaScript 스크립트는 샌드박스 환경에서 실행되어 제한된 API에만 접근 가능
-- 외부 스크립트는 임시 파일로 작성된 후 실행되며, 실행 후 임시 파일 삭제
 
 ## 5. chain (연쇄 실행)
 

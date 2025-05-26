@@ -48,6 +48,7 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 | [`DATA_STORAGE.md`](./DATA_STORAGE.md) | 데이터 저장 모델, 파일 구조 및 관리 | 개발자 |
 | [`DEPENDENCY_MANAGEMENT.md`](./DEPENDENCY_MANAGEMENT.md) | 외부 종속성 관리 정책 및 호환성 | 개발자 & 기여자 |
 | [`DEVELOPMENT.md`](./DEVELOPMENT.md) | 개발 환경 설정 및 워크플로우 | 개발자 |
+| [`ENVIRONMENT_VARIABLES.md`](./ENVIRONMENT_VARIABLES.md) | 환경 변수 설정 및 관리 | 개발자 & 시스템 관리자 |
 | [`INTEGRATION.md`](./INTEGRATION.md) | 외부 서비스 및 시스템과의 통합 | 개발자 |
 | [`PLATFORM_SPECIFIC.md`](./PLATFORM_SPECIFIC.md) | 플랫폼별 기능 및 개발 고려사항 | 개발자 |
 | [`SCRIPTS.md`](./SCRIPTS.md) | 사용자 정의 스크립트 작성 및 보안 모델 | 개발자 & 파워 사용자 |

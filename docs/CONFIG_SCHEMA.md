@@ -2,6 +2,8 @@
 
 이 문서는 Toast 앱의 구성 옵션과 스키마를 설명합니다. 구성 파일 위치, 형식, 사용 가능한 옵션 및 예시를 제공합니다.
 
+버튼 액션 유형에 대한 자세한 설명은 [BUTTON_ACTIONS.md](./BUTTON_ACTIONS.md)를 참조하세요.
+
 ## 목차
 
 - [구성 파일 위치](#구성-파일-위치)
@@ -11,6 +13,7 @@
   - [외관](#외관)
   - [고급 설정](#고급-설정)
   - [인증 및 구독](#인증-및-구독)
+  - [클라우드 동기화 메타데이터](#클라우드-동기화-메타데이터)
 - [구성 예시](#구성-예시)
 - [프로그래매틱 액세스](#프로그래매틱-액세스)
 - [구성 마이그레이션](#구성-마이그레이션)
@@ -64,15 +67,15 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 | `name` | 문자열 | 예 | 버튼의 표시 이름 |
 | `shortcut` | 문자열 | 예 | 버튼 액션을 트리거하는 단축키 (A-Z) |
 | `icon` | 문자열 | 아니오 | 버튼에 표시할 이모지 또는 아이콘 |
-| `action` | 문자열 | 예 | 액션 유형 (`application`, `exec`, `open`, `shortcut`, `script`, `chain`) |
-| `application` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 경로 |
-| `applicationParameters` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 매개변수 |
+| `action` | 문자열 | 예 | 액션 유형 (`exec`, `open`, `script`, `shortcut`, `chain`, `application`) |
 | `command` | 문자열 | 조건부 | `exec` 액션 유형에 필요한 명령 |
 | `url` | 문자열 | 조건부 | `open` 액션 유형에 필요한 URL 또는 파일 경로 |
-| `keys` | 문자열 | 조건부 | `shortcut` 액션 유형에 필요한 키 조합 |
 | `script` | 문자열 | 조건부 | `script` 액션 유형에 필요한 스크립트 코드 |
 | `scriptType` | 문자열 | 조건부 | `script` 액션의 스크립트 유형 (`javascript`, `applescript`, `powershell`, `bash`) |
+| `keys` | 문자열 | 조건부 | `shortcut` 액션 유형에 필요한 키 조합 |
 | `actions` | 배열 | 조건부 | `chain` 액션 유형에 필요한, 순차적으로 실행할 액션 배열 |
+| `applicationPath` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 경로 |
+| `applicationParameters` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 매개변수 |
 
 **예시**:
 ```json
@@ -146,10 +149,10 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 
 | 옵션 | 유형 | 기본값 | 설명 |
 |------|------|--------|------|
-| `subscription.isSubscribed` | 불리언 | `false` | 사용자가 구독 중인지 여부 |
+| `subscription.isSubscribed` | 불리언 | `false` | 사용자가 프리미엄 구독 중인지 여부 |
 | `subscription.isAuthenticated` | 불리언 | `false` | 사용자 인증 상태 |
 | `subscription.expiresAt` | 문자열 | `""` | 구독 만료 날짜 (ISO 문자열) |
-| `subscription.pageGroups` | 숫자 | `1` | 사용자가 생성할 수 있는 페이지 그룹의 최대 수 (무료 사용자: 1, 인증된 사용자: 3, 구독자: 9) |
+| `subscription.pageGroups` | 숫자 | `1` | 사용자가 생성할 수 있는 페이지 그룹의 최대 수 |
 
 **예시**:
 ```json
@@ -161,9 +164,33 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 }
 ```
 
-**pageGroups 기본값 및 설명**:
-- `pageGroups`의 기본값은 `1`입니다.
-- 실제 적용되는 페이지 그룹 수는 사용자의 인증 상태 및 구독 여부에 따라 `src/main/auth.js`의 `updatePageGroupSettings` 함수 등에서 동적으로 결정될 수 있습니다. (예: 무료 사용자: 1, 인증된 사용자: 3, 프리미엄 구독자: 9)
+**페이지 제한 정책**:
+- **무료 사용자**: 1 페이지
+- **인증된 사용자**: 최대 3 페이지
+- **프리미엄 구독자**: 최대 9 페이지
+
+실제 적용되는 페이지 그룹 수는 사용자의 인증 상태 및 구독 여부에 따라 `src/main/auth.js`의 `updatePageGroupSettings` 함수 등에서 동적으로 결정됩니다.
+
+### 클라우드 동기화 메타데이터
+
+클라우드 동기화 기능 사용 시 자동으로 관리되는 메타데이터 필드들입니다. 이 필드들은 사용자가 직접 수정하지 않으며, 동기화 시스템에서 자동으로 설정됩니다.
+
+클라우드 동기화에 대한 자세한 내용은 [CLOUD_SYNC.md](./CLOUD_SYNC.md)를 참조하세요.
+
+| 필드 | 유형 | 설명 |
+|------|------|------|
+| `clientLastModifiedAt` | 숫자 | 클라이언트에서 마지막으로 수정된 시간 (타임스탬프) |
+| `clientLastModifiedDevice` | 문자열 | 마지막으로 수정한 기기 ID |
+| `serverLastUpdatedAt` | 숫자 | 서버에서 마지막으로 업데이트된 시간 (타임스탬프) |
+
+**예시**:
+```json
+{
+  "clientLastModifiedAt": 1682932768123,
+  "clientLastModifiedDevice": "device-id-1",
+  "serverLastUpdatedAt": 1682932769000
+}
+```
 
 ## 구성 예시
 
@@ -234,7 +261,10 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
     "expiresAt": "",
     "pageGroups": 1
   },
-  "firstLaunchCompleted": true
+  "firstLaunchCompleted": true,
+  "clientLastModifiedAt": 1682932768123,
+  "clientLastModifiedDevice": "device-id-1",
+  "serverLastUpdatedAt": 1682932769000
 }
 ```
 
