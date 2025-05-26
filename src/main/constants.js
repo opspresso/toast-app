@@ -7,7 +7,7 @@
 // 앱 기본 정보 (package.json 정보를 읽을 수 없을 때 사용)
 const APP_DEFAULT_INFO = {
   author: 'nalbam <me@nalbam.com>, bruce <bruce@daangn.com>',
-  homepage: 'https://toast.sh',
+  homepage: 'https://toastapp.io',
   description: 'A customizable shortcut launcher for macOS and Windows',
   license: 'MIT',
   version: 'v0.0.0', // 버전을 가져오지 못할 때 기본값
@@ -46,7 +46,7 @@ const DEFAULT_ANONYMOUS = {
   id: 'anonymous',
   email: 'anonymous@user.com',
   name: 'Guest User',
-  image: 'https://toast.sh/logo192.png',
+  image: 'https://toastapp.io/logo192.png',
   slug: 'guest',
   is_authenticated: false,
   created_at: new Date().toISOString(),
