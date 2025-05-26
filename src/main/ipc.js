@@ -408,6 +408,21 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // Show window (handle for renderer calls)
+  ipcMain.handle('show-window', () => {
+    try {
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        windows.toast.show();
+        windows.toast.focus();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      logger.error('Error showing window:', error);
+      return false;
+    }
+  });
+
   // Hide toast window
   ipcMain.on('hide-toast', () => {
     if (windows.toast && windows.toast.isVisible()) {
@@ -679,14 +694,13 @@ function setupIpcHandlers(windows) {
   // Show open dialog
   ipcMain.handle('show-open-dialog', async (event, options) => {
     try {
-      // Add modal: true to options to display as modal
+      // Set modal and parent to ensure dialog appears above toast window
       const modalOptions = {
         ...options,
         modal: true,
-        // Set toast window as parent to always display above toast window
         parent: windows.toast,
       };
-      return await dialog.showOpenDialog(modalOptions);
+      return await dialog.showOpenDialog(windows.toast, modalOptions);
     } catch (error) {
       logger.error('Error showing open dialog:', error);
       return { canceled: true, error: error.toString() };
