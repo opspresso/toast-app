@@ -4,7 +4,7 @@
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
-  "homepage": "https://toast.sh",
+  "homepage": "https://toastapp.io",
   "keywords": [
     "electron",
     "shortcut",
