@@ -490,7 +490,7 @@ function setupEventListeners() {
   // About 탭 관련 버튼
   if (homepageButton) {
     homepageButton.addEventListener('click', () => {
-      window.settings.openUrl('https://toast.sh');
+      window.settings.openUrl('https://toastapp.io');
     });
   }
 
@@ -1475,7 +1475,7 @@ function confirmCancel() {
  */
 function handleManageSubscription() {
   window.settings.log.info('구독 관리 페이지 열기');
-  window.settings.openUrl('https://toast.sh/subscription');
+  window.settings.openUrl('https://toastapp.io/subscription');
 }
 
 /**

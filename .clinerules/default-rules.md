@@ -21,6 +21,14 @@
 - **Use Realistic Data**: Avoid using placeholder or dummy data in development and testing environments where possible. Strive to use data that accurately reflects real-world scenarios to ensure robustness and identify potential issues early. (Sensitive production data should never be used directly in non-production environments without proper anonymization and security measures.)
 - **Maintain file size limits**: Keep files under 500 lines to improve readability, maintainability, and collaboration. 가독성, 유지보수성, 협업 효율성을 위해 소스 코드 파일은 500줄 미만으로 유지합니다. (세부 내용은 'File Size Guidelines' 참조)
 
+## SOLID Principles
+
+- **Single Responsibility Principle (SRP)**: Each class or module should have only one reason to change. 각 클래스나 모듈은 단 하나의 변경 이유만을 가져야 합니다.
+- **Open/Closed Principle (OCP)**: Software entities should be open for extension but closed for modification. 소프트웨어 엔티티는 확장에는 열려있고 수정에는 닫혀있어야 합니다.
+- **Liskov Substitution Principle (LSP)**: Objects of a superclass should be replaceable with objects of its subclasses without breaking the application. 상위 클래스의 객체는 하위 클래스의 객체로 대체 가능해야 합니다.
+- **Interface Segregation Principle (ISP)**: Clients should not be forced to depend on interfaces they do not use. 클라이언트는 사용하지 않는 인터페이스에 의존하도록 강요받지 않아야 합니다.
+- **Dependency Inversion Principle (DIP)**: High-level modules should not depend on low-level modules. Both should depend on abstractions. 고수준 모듈은 저수준 모듈에 의존하지 않아야 하며, 둘 다 추상화에 의존해야 합니다.
+
 ## File Size Guidelines
 
 - **Maximum file length**: Limit all source code files to under 500 lines.
