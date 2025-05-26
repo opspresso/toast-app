@@ -15,10 +15,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/opspresso/toast.git"
+    "url": "git+https://github.com/opspresso/toast-app.git"
   },
   "bugs": {
-    "url": "https://github.com/opspresso/toast/issues"
+    "url": "https://github.com/opspresso/toast-app/issues"
   },
   "main": "src/index.js",
   "scripts": {
