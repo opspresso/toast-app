@@ -231,13 +231,15 @@ export async function removePage() {
  */
 export function initializePages(configPages) {
   if (configPages) {
+    const previousPageIndex = currentPageIndex;
     pages = configPages;
 
     // Initialize paging buttons
     renderPagingButtons();
 
-    // Show first page
-    changePage(0);
+    // Stay on current page if it exists, otherwise go to first page
+    const targetPageIndex = previousPageIndex < pages.length ? previousPageIndex : 0;
+    changePage(targetPageIndex);
   }
 }
 

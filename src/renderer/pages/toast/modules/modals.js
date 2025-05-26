@@ -533,7 +533,7 @@ function saveButtonSettings() {
       // Close modal
       closeButtonEditModal();
 
-      // Update UI
+      // Update UI - stay on current page
       import('./buttons.js').then(({ showCurrentPageButtons }) => {
         showCurrentPageButtons();
       });
