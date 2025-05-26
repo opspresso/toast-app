@@ -101,11 +101,9 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Hello World Script",
   "shortcut": "H",
   "icon": "👋",
-  "actionType": "script",
-  "actionParams": {
-    "script": "console.log('Hello, World!'); return { message: 'Hello from JavaScript!' };",
-    "scriptType": "javascript"
-  }
+  "action": "script",
+  "script": "console.log('Hello, World!'); return { message: 'Hello from JavaScript!' };",
+  "scriptType": "javascript"
 }
 ```
 
@@ -114,11 +112,9 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "System Information",
   "shortcut": "I",
   "icon": "💻",
-  "actionType": "script",
-  "actionParams": {
-    "script": "Get-ComputerInfo | Format-List",
-    "scriptType": "powershell"
-  }
+  "action": "script",
+  "script": "Get-ComputerInfo | Format-List",
+  "scriptType": "powershell"
 }
 ```
 
@@ -138,10 +134,8 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Copy",
   "shortcut": "C",
   "icon": "📋",
-  "actionType": "shortcut",
-  "actionParams": {
-    "keys": "Ctrl+C"
-  }
+  "action": "shortcut",
+  "keys": "Ctrl+C"
 }
 ```
 
@@ -177,32 +171,24 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Development Setup",
   "shortcut": "D",
   "icon": "🔗",
-  "actionType": "chain",
-  "actionParams": {
-    "actions": [
-      {
-        "actionType": "exec",
-        "actionParams": {
-          "command": "cd ~/projects/my-app && git pull"
-        }
-      },
-      {
-        "actionType": "exec",
-        "actionParams": {
-          "command": "cd ~/projects/my-app && npm install",
-          "runInTerminal": true
-        }
-      },
-      {
-        "actionType": "open",
-        "actionParams": {
-          "path": "~/projects/my-app",
-          "application": "Visual Studio Code"
-        }
-      }
-    ],
-    "stopOnError": true
-  }
+  "action": "chain",
+  "actions": [
+    {
+      "action": "exec",
+      "command": "cd ~/projects/my-app && git pull"
+    },
+    {
+      "action": "exec",
+      "command": "cd ~/projects/my-app && npm install",
+      "runInTerminal": true
+    },
+    {
+      "action": "open",
+      "path": "~/projects/my-app",
+      "application": "Visual Studio Code"
+    }
+  ],
+  "stopOnError": true
 }
 ```
 
@@ -228,11 +214,9 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "name": "Photoshop",
   "shortcut": "P",
   "icon": "🎨",
-  "actionType": "application",
-  "actionParams": {
-    "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
-    "applicationParameters": "--new-document"
-  }
+  "action": "application",
+  "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
+  "applicationParameters": "--new-document"
 }
 ```
 
