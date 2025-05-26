@@ -2,20 +2,49 @@
 
 이 문서는 Toast 앱에서 지원하는 모든 버튼 액션 유형을 설명합니다.
 
+버튼 구성 스키마에 대한 자세한 내용은 [CONFIG_SCHEMA.md](./CONFIG_SCHEMA.md)를 참조하세요.
+
 ## 액션 유형 개요
 
-Toast 앱은 다음과 같은 6가지 버튼 액션 유형을 지원합니다:
+Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 
-1. **exec** - 셸 명령어 실행
-2. **open** - URL, 파일 또는 폴더 열기
-3. **script** - 다양한 언어의 스크립트 실행
-4. **shortcut** - 키보드 단축키 시뮬레이션
+1. **application** - 애플리케이션 실행
+2. **exec** - 셸 명령어 실행
+3. **open** - URL, 파일 또는 폴더 열기
+4. **script** - 다양한 언어의 스크립트 실행
 5. **chain** - 여러 액션 순차적 실행
-6. **application** - 애플리케이션 실행
 
 각 액션 유형에 대한 상세 설명은 아래와 같습니다.
 
-## 1. exec (명령어 실행)
+## 1. application (애플리케이션 실행)
+
+### 설명
+지정된 경로의 애플리케이션을 실행하는 액션입니다.
+
+### 속성
+| 속성 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `applicationPath` | string | 예 | 실행할 애플리케이션의 경로 |
+| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터 |
+
+### 예시
+```json
+{
+  "name": "Photoshop",
+  "shortcut": "P",
+  "icon": "🎨",
+  "action": "application",
+  "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
+  "applicationParameters": "--new-document"
+}
+```
+
+### 플랫폼별 구현
+- **macOS**: `open` 명령 사용
+- **Windows**: 직접 애플리케이션 경로 실행
+- **Linux**: `xdg-open` 명령 사용
+
+## 2. exec (명령어 실행)
 
 ### 설명
 셸 명령어를 실행하는 액션입니다.
@@ -45,7 +74,7 @@ Toast 앱은 다음과 같은 6가지 버튼 액션 유형을 지원합니다:
 - **Windows**: cmd.exe를 사용하여 명령어 실행
 - **Linux**: 시스템에서 감지된 터미널 애플리케이션을 사용
 
-## 2. open (파일/URL 열기)
+## 3. open (파일/URL 열기)
 
 ### 설명
 URL, 파일 또는 폴더를 여는 액션입니다.
@@ -83,7 +112,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - URL이 `http://` 또는 `https://`로 시작하지 않으면 자동으로 `http://`가 추가됩니다.
 - 기본 애플리케이션을 사용하거나 지정된 애플리케이션으로 파일을 열 수 있습니다.
 
-## 3. script (스크립트 실행)
+## 4. script (스크립트 실행)
 
 ### 설명
 다양한 언어로 작성된 사용자 정의 스크립트를 실행하는 액션입니다.
@@ -117,32 +146,6 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "scriptType": "powershell"
 }
 ```
-
-## 4. shortcut (키보드 단축키 실행)
-
-### 설명
-키보드 단축키를 시뮬레이션하는 액션입니다.
-
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `keys` | string | 예 | 시뮬레이션할 키 조합 (예: "Ctrl+C", "Alt+Tab") |
-
-### 예시
-```json
-{
-  "name": "Copy",
-  "shortcut": "C",
-  "icon": "📋",
-  "action": "shortcut",
-  "keys": "Ctrl+C"
-}
-```
-
-### 플랫폼별 차이점
-- **macOS**: `Command` 키는 `Meta` 또는 `Cmd`로 표기
-- **Windows & Linux**: `Control` 키는 `Ctrl`로 표기
-- 플랫폼 간 자동 변환 지원 (예: Windows에서 `Cmd+C`는 `Ctrl+C`로 자동 변환)
 
 ### 플랫폼 제한
 - **JavaScript**: 모든 플랫폼 지원
@@ -195,70 +198,8 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ### 특이사항
 - 각 액션은 이전 액션이 완료된 후에 실행됩니다.
 - `stopOnError`가 `true`이면 액션 중 하나라도 실패할 경우 연쇄 실행이 중단됩니다.
-- 모든 액션 유형(exec, open, shortcut, script, application)을 연쇄 실행에 포함할 수 있습니다.
+- 모든 액션 유형(application, exec, open, script, chain)을 연쇄 실행에 포함할 수 있습니다.
 
-## 6. application (애플리케이션 실행)
-
-### 설명
-지정된 경로의 애플리케이션을 실행하는 액션입니다.
-
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `applicationPath` | string | 예 | 실행할 애플리케이션의 경로 |
-| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터 |
-
-### 예시
-```json
-{
-  "name": "Photoshop",
-  "shortcut": "P",
-  "icon": "🎨",
-  "action": "application",
-  "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
-  "applicationParameters": "--new-document"
-}
-```
-
-### 플랫폼별 구현
-- **macOS**: `open` 명령 사용
-- **Windows**: 직접 애플리케이션 경로 실행
-- **Linux**: `xdg-open` 명령 사용
-
-## 키보드 입력 처리 방식
-
-Toast 앱은 사용자가 키보드로 단축키를 입력할 때 일관된 동작을 보장하기 위해 다음과 같은 처리 방식을 사용합니다:
-
-### 물리적 키 위치 기반 처리
-
-- Toast 앱은 `event.code`를 사용하여 키보드의 물리적 위치를 기준으로 단축키를 처리합니다.
-- 이 방식은 다양한 키보드 레이아웃이나 언어 설정에서도 일관된 사용자 경험을 제공합니다.
-- 예: 한글 입력 상태에서도 QWERTY 키보드의 Q 위치에 있는 키를 누르면 Q에 해당하는 단축키가 실행됩니다.
-
-### 코드 구현
-
-`src/renderer/pages/toast/index.js`의 `handleKeyDown` 함수에서 키보드 입력을 처리할 때:
-
-```javascript
-// 키보드 입력 처리 예시
-const keyCode = event.code;
-// 'KeyQ' -> 'Q', 'Digit1' -> '1'과 같이 필요한 부분만 추출
-const keyValue = keyCode.startsWith('Key') ? keyCode.slice(3) :
-                keyCode.startsWith('Digit') ? keyCode.slice(5) : keyCode;
-
-// 추출된 키 값과 버튼의 단축키 비교
-const buttonIndex = filteredButtons.findIndex(
-  button => button.shortcut && button.shortcut.toUpperCase() === keyValue
-);
-```
-
-### 지원되는 키 코드
-
-- **알파벳 키**: `KeyA`부터 `KeyZ`까지 - 'A'부터 'Z'로 변환됨
-- **숫자 키**: `Digit0`부터 `Digit9`까지 - '0'부터 '9'로 변환됨
-- **특수 키**: 원래 코드 사용 (예: `Minus`, `Equal`, `Comma` 등)
-
-이 방식을 통해 사용자는 키보드 언어나 입력 모드에 관계없이 일관된 단축키 경험을 얻을 수 있습니다.
 
 ## 액션 실행 흐름
 
