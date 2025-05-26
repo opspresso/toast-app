@@ -9,29 +9,13 @@
 
 ## 프로젝트 루트 문서
 
-### `README.md`
-- 프로젝트 개요 및 목적
-- 설정 및 설치 단계
-- 사용 지침 또는 예제
-
-### `ARCHITECTURE.md`
-- 고수준 시스템 설계
-- 주요 구성 요소와 책임
-- 데이터 흐름 및 통합 지점
-
-### `DATABASE.md`
-- 데이터베이스 스키마 및 관계
-- 주요 엔티티 및 필드
-- 인덱싱 또는 최적화 참고사항 (해당하는 경우)
-
-### `PAGES.md`
-- 페이지 레이아웃 및 네비게이션 구조
-- 페이지별 주요 구성 요소
-- 사용자 상호작용 및 렌더링 로직
-
-### `SCENARIOS.md`
-- 대표적인 사용자 여정
-- 다양한 조건에서의 시스템 동작 (예: 오류 상태, 엣지 케이스)
+| 문서 | 설명 |
+|------|------|
+| [`README.md`](../README.md) | 프로젝트 개요, 설치 및 기본 사용법 |
+| [`ARCHITECTURE.md`](../ARCHITECTURE.md) | 시스템 아키텍처 및 구성 요소 |
+| [`DATABASE.md`](../DATABASE.md) | 데이터 스키마 및 엔티티 관계 |
+| [`PAGES.md`](../PAGES.md) | UI 레이아웃 및 네비게이션 구조 |
+| [`SCENARIOS.md`](../SCENARIOS.md) | 사용자 시나리오 및 워크플로우 |
 
 ## docs/ 디렉토리 문서 인덱스
 
@@ -39,15 +23,18 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 
 | 문서 | 설명 | 대상 사용자 |
 |------|------|-------------|
-| [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) | 내부 API 및 확장 지점 | 개발자 |
+| [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) | API 문서 개요 및 빠른 참조 | 개발자 |
+| [`API_MAIN_PROCESS.md`](./API_MAIN_PROCESS.md) | 메인 프로세스 모듈 API | 개발자 |
+| [`API_ACTIONS.md`](./API_ACTIONS.md) | 액션 모듈 API | 개발자 |
+| [`API_RENDERER.md`](./API_RENDERER.md) | 렌더러 프로세스 API | 개발자 |
 | [`AUTO_UPDATE.md`](./AUTO_UPDATE.md) | 자동 업데이트 시스템 및 사용자 경험 | 개발자 & 최종 사용자 |
-| [`BACKUP_RESTORE.md`](./BACKUP_RESTORE.md) | 구성 백업 및 복원 프로세스 | 최종 사용자 & 지원팀 |
 | [`BUTTON_ACTIONS.md`](./BUTTON_ACTIONS.md) | 지원되는 버튼 액션 유형 | 개발자 & 파워 사용자 |
 | [`CLOUD_SYNC.md`](./CLOUD_SYNC.md) | 클라우드 동기화 구현 및 사용자 가이드 | 개발자 & 최종 사용자 |
 | [`CONFIG_SCHEMA.md`](./CONFIG_SCHEMA.md) | 구성 옵션 및 스키마 참조 | 개발자 & 파워 사용자 |
 | [`DATA_STORAGE.md`](./DATA_STORAGE.md) | 데이터 저장 모델, 파일 구조 및 관리 | 개발자 |
 | [`DEPENDENCY_MANAGEMENT.md`](./DEPENDENCY_MANAGEMENT.md) | 외부 종속성 관리 정책 및 호환성 | 개발자 & 기여자 |
 | [`DEVELOPMENT.md`](./DEVELOPMENT.md) | 개발 환경 설정 및 워크플로우 | 개발자 |
+| [`ENVIRONMENT_VARIABLES.md`](./ENVIRONMENT_VARIABLES.md) | 환경 변수 설정 및 관리 | 개발자 & 시스템 관리자 |
 | [`INTEGRATION.md`](./INTEGRATION.md) | 외부 서비스 및 시스템과의 통합 | 개발자 |
 | [`PLATFORM_SPECIFIC.md`](./PLATFORM_SPECIFIC.md) | 플랫폼별 기능 및 개발 고려사항 | 개발자 |
 | [`SCRIPTS.md`](./SCRIPTS.md) | 사용자 정의 스크립트 작성 및 보안 모델 | 개발자 & 파워 사용자 |

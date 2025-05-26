@@ -58,12 +58,15 @@ npm run dev
 1. `src/main/config` 디렉토리에 `.env` 파일 생성
 2. 참조용으로 제공된 `.env.example` 파일을 기반으로 필요한 환경 변수 설정
 
-```
+```bash
 # .env 예시
-AUTH_API_URL=http://localhost:8080/api
-CLIENT_ID=local_development_client_id
-LOG_LEVEL=debug
+CLIENT_ID=your_client_id
+CLIENT_SECRET=your_client_secret
+TOAST_URL=https://toastapp.io
+TOKEN_EXPIRES_IN=2592000
 ```
+
+자세한 환경 변수 설정은 [환경 변수 문서](./ENVIRONMENT_VARIABLES.md)를 참조하세요.
 
 ## 프로젝트 구조
 
@@ -296,23 +299,6 @@ contextBridge.exposeInMainWorld('logger', {
 });
 ```
 
-### 로그 레벨 구성
-
-`package.json`이나 환경 변수를 통해 로그 레벨을 구성할 수 있습니다:
-
-```javascript
-// 환경 변수로 설정 (src/main/config/.env)
-LOG_LEVEL=debug
-```
-
-사용 가능한 로그 레벨:
-- **error**: 오류 메시지만
-- **warn**: 경고 및 오류
-- **info**: 정보, 경고 및 오류 (기본값)
-- **debug**: 디버그 정보 포함 (개발 환경 기본값)
-- **verbose**: 세부 정보 포함
-- **silly**: 가장 상세한 로깅 레벨
-
 ## 자동 업데이트
 
 Toast 앱은 `electron-updater` 패키지를 사용하여 GitHub 릴리스 기반 자동 업데이트를 구현합니다.
@@ -472,7 +458,7 @@ function installUpdate() {
 /**
  * 지정된 액션을 실행합니다.
  * @param {Object} action - 실행할 액션
- * @param {string} action.type - 액션 유형 (exec, open, shortcut, script)
+ * @param {string} action.type - 액션 유형 (application, exec, open, script, chain)
  * @param {Object} action.params - 액션별 매개변수
  * @returns {Promise<Object>} 액션 실행 결과
  */

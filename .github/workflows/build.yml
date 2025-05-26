@@ -81,7 +81,12 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
       - name: List dist directory contents 📂
-        run: ls -la dist # List contents of dist directory to verify build output
+        if: matrix.os == 'macos-latest'
+        run: ls -la dist
+
+      - name: List dist directory contents 📂
+        if: matrix.os == 'windows-latest'
+        run: dir dist
 
       - name: Upload artifacts 🚚
         uses: actions/upload-artifact@v4

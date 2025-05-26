@@ -64,12 +64,8 @@ brew install opspresso/tap/toast
 더 자세한 정보는 다음 문서를 참조하세요:
 
 - [📚 문서 인덱스](docs/README.md) - 전체 문서 구조 및 인덱스
-- [사용자 가이드](docs/USER_GUIDE.md) - 기능, UI, 사용 시나리오에 대한 상세 정보
-- [아키텍처](ARCHITECTURE.md) - 시스템 아키텍처 및 설계 결정
-- [구성 스키마](docs/CONFIG_SCHEMA.md) - 구성 옵션 및 스키마
-- [개발 가이드](docs/DEVELOPMENT.md) - 개발 환경 설정 및 프로젝트 구조
-- [테스팅](docs/TESTING.md) - 테스팅 전략 및 프로세스
-- [API 문서](docs/API_DOCUMENTATION.md) - 내부 API 및 확장 지점
+- [사용자 가이드](docs/USER_GUIDE.md) - 기능 및 사용법 상세 정보
+- [개발 가이드](docs/DEVELOPMENT.md) - 개발 환경 설정 및 워크플로우
 
 ## 개발
 
