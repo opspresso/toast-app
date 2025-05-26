@@ -12,8 +12,8 @@
 | 문서 | 설명 |
 |------|------|
 | [`README.md`](../README.md) | 프로젝트 개요, 설치 및 기본 사용법 |
-| [`ARCHITECTURE.md`](../ARCHITECTURE.md) | 시스템 아키텍처 및 구성 요소 |
-| [`DATABASE.md`](../DATABASE.md) | 데이터 스키마 및 엔티티 관계 |
+| [`ARCHITECTURE.md`](../ARCHITECTURE.md) | 시스템 아키텍처 및 구성 요소 개요 |
+| [`DATABASE.md`](../DATABASE.md) | 데이터 모델 및 엔티티 관계 |
 | [`PAGES.md`](../PAGES.md) | UI 레이아웃 및 네비게이션 구조 |
 | [`SCENARIOS.md`](../SCENARIOS.md) | 사용자 시나리오 및 워크플로우 |
 

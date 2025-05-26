@@ -200,40 +200,6 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - `stopOnError`가 `true`이면 액션 중 하나라도 실패할 경우 연쇄 실행이 중단됩니다.
 - 모든 액션 유형(application, exec, open, script, chain)을 연쇄 실행에 포함할 수 있습니다.
 
-## 키보드 입력 처리 방식
-
-Toast 앱은 사용자가 키보드로 단축키를 입력할 때 일관된 동작을 보장하기 위해 다음과 같은 처리 방식을 사용합니다:
-
-### 물리적 키 위치 기반 처리
-
-- Toast 앱은 `event.code`를 사용하여 키보드의 물리적 위치를 기준으로 단축키를 처리합니다.
-- 이 방식은 다양한 키보드 레이아웃이나 언어 설정에서도 일관된 사용자 경험을 제공합니다.
-- 예: 한글 입력 상태에서도 QWERTY 키보드의 Q 위치에 있는 키를 누르면 Q에 해당하는 단축키가 실행됩니다.
-
-### 코드 구현
-
-`src/renderer/pages/toast/index.js`의 `handleKeyDown` 함수에서 키보드 입력을 처리할 때:
-
-```javascript
-// 키보드 입력 처리 예시
-const keyCode = event.code;
-// 'KeyQ' -> 'Q', 'Digit1' -> '1'과 같이 필요한 부분만 추출
-const keyValue = keyCode.startsWith('Key') ? keyCode.slice(3) :
-                keyCode.startsWith('Digit') ? keyCode.slice(5) : keyCode;
-
-// 추출된 키 값과 버튼의 단축키 비교
-const buttonIndex = filteredButtons.findIndex(
-  button => button.shortcut && button.shortcut.toUpperCase() === keyValue
-);
-```
-
-### 지원되는 키 코드
-
-- **알파벳 키**: `KeyA`부터 `KeyZ`까지 - 'A'부터 'Z'로 변환됨
-- **숫자 키**: `Digit0`부터 `Digit9`까지 - '0'부터 '9'로 변환됨
-- **특수 키**: 원래 코드 사용 (예: `Minus`, `Equal`, `Comma` 등)
-
-이 방식을 통해 사용자는 키보드 언어나 입력 모드에 관계없이 일관된 단축키 경험을 얻을 수 있습니다.
 
 ## 액션 실행 흐름
 
