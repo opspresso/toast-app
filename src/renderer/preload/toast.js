@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('toast', {
   getWindowPosition: () => ipcRenderer.invoke('get-window-position'),
   hideWindowTemporarily: () => ipcRenderer.invoke('hide-window-temporarily'),
   showWindowAfterDialog: position => ipcRenderer.invoke('show-window-after-dialog', position),
+  showWindow: () => ipcRenderer.invoke('show-window'),
 
   // Configuration
   getConfig: key => ipcRenderer.invoke('get-config', key),

@@ -43,11 +43,17 @@ import { pages, currentPageIndex, updateCurrentPageButtons } from './pages.js';
 
 // State variables
 let currentEditingButton = null;
+let eventListenersSetup = false;
 
 /**
  * Initialize modal and set up event listeners
  */
 export function setupModalEventListeners() {
+  // Prevent duplicate event listener registration
+  if (eventListenersSetup) {
+    return;
+  }
+  eventListenersSetup = true;
   // Close button edit
   closeButtonEdit.addEventListener('click', () => {
     closeButtonEditModal();
@@ -85,29 +91,19 @@ export function setupModalEventListeners() {
               : [{ name: 'Executable Files', extensions: ['exe'] }],
         };
 
-        // Call ipcRenderer to save current toast window position
-        const windowPosition = await window.toast.getWindowPosition();
+        // Call file selection dialog directly without window manipulation
+        const result = await window.toast.showOpenDialog(options);
 
-        // Hide toast window (so file selection dialog appears in front)
-        await window.toast.hideWindowTemporarily();
-
-        try {
-          // Call file selection dialog
-          const result = await window.toast.showOpenDialog(options);
-
-          if (!result.canceled && result.filePaths.length > 0) {
-            // Set selected application path to input field
-            editButtonApplicationInput.value = result.filePaths[0];
-          }
-        } finally {
-          // Show toast window again after file selection dialog is closed
-          await window.toast.showWindowAfterDialog(windowPosition);
+        if (!result.canceled && result.filePaths.length > 0) {
+          // Set selected application path to input field
+          editButtonApplicationInput.value = result.filePaths[0];
+          showStatus('Application selected successfully.', 'success');
+        } else {
+          showStatus('Application selection canceled.', 'info');
         }
       } catch (error) {
         console.error('Error selecting application:', error);
         showStatus('An error occurred while selecting the application.', 'error');
-        // Restore alwaysOnTop property even if an error occurs
-        await window.toast.setAlwaysOnTop(true);
       }
     });
   }
@@ -123,29 +119,19 @@ export function setupModalEventListeners() {
           properties: ['openFile', 'openDirectory'], // Select file or folder
         };
 
-        // Call ipcRenderer to save current toast window position
-        const windowPosition = await window.toast.getWindowPosition();
+        // Call file selection dialog directly without window manipulation
+        const result = await window.toast.showOpenDialog(options);
 
-        // Hide toast window (so file selection dialog appears in front)
-        await window.toast.hideWindowTemporarily();
-
-        try {
-          // Call file selection dialog
-          const result = await window.toast.showOpenDialog(options);
-
-          if (!result.canceled && result.filePaths.length > 0) {
-            // Set selected path to input field
-            editButtonPathInput.value = result.filePaths[0];
-          }
-        } finally {
-          // Show toast window again after file selection dialog is closed
-          await window.toast.showWindowAfterDialog(windowPosition);
+        if (!result.canceled && result.filePaths.length > 0) {
+          // Set selected path to input field
+          editButtonPathInput.value = result.filePaths[0];
+          showStatus('File/folder selected successfully.', 'success');
+        } else {
+          showStatus('File/folder selection canceled.', 'info');
         }
       } catch (error) {
         console.error('Error selecting file or folder:', error);
         showStatus('An error occurred while selecting the file or folder.', 'error');
-        // Restore alwaysOnTop property even if an error occurs
-        await window.toast.setAlwaysOnTop(true);
       }
     });
   }
@@ -533,7 +519,7 @@ function saveButtonSettings() {
       // Close modal
       closeButtonEditModal();
 
-      // Update UI
+      // Update UI - stay on current page
       import('./buttons.js').then(({ showCurrentPageButtons }) => {
         showCurrentPageButtons();
       });
