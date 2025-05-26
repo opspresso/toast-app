@@ -172,18 +172,19 @@ npm run build:mas    # macOS App Store용
 ```bash
 # 모든 테스트 실행
 npm test
+```
 
-# 단위 테스트만 실행
-npm run test:unit
+**참고**: 현재 package.json에는 기본 `npm test` 스크립트만 정의되어 있습니다. 추가적인 테스트 스크립트가 필요한 경우 package.json에 다음과 같이 추가할 수 있습니다:
 
-# 통합 테스트만 실행
-npm run test:integration
-
-# 감시 모드에서 테스트 실행
-npm run test:watch
-
-# 코드 커버리지 보고서 생성
-npm run test:coverage
+```json
+{
+  "scripts": {
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  }
+}
 ```
 
 ### 린팅 및 포맷팅
