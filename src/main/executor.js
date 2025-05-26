@@ -9,7 +9,6 @@ const { executeApplication } = require('./actions/application');
 const { executeChainedActions } = require('./actions/chain');
 const { executeCommand } = require('./actions/exec');
 const { executeScript } = require('./actions/script');
-const { executeShortcut } = require('./actions/shortcut');
 const { openItem } = require('./actions/open');
 
 /**
@@ -36,8 +35,6 @@ async function executeAction(action) {
         return await executeCommand(action);
       case 'open':
         return await openItem(action);
-      case 'shortcut':
-        return await executeShortcut(action);
       case 'script':
         return await executeScript(action);
       case 'chain':
@@ -88,11 +85,6 @@ async function validateAction(action) {
       case 'open':
         if (!action.url && !action.path) {
           return { valid: false, message: 'URL or path is required for open action' };
-        }
-        break;
-      case 'shortcut':
-        if (!action.keys) {
-          return { valid: false, message: 'Keys are required for shortcut action' };
         }
         break;
       case 'script':

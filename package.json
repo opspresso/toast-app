@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
@@ -34,7 +34,6 @@
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,html}\""
   },
   "dependencies": {
-    "@nut-tree-fork/nut-js": "^4.2.6",
     "axios": "^1.8.4",
     "dotenv": "^16.5.0",
     "electron-log": "^5.3.4",
@@ -85,10 +84,26 @@
     },
     "win": {
       "icon": "assets/icons/icon.ico",
+      "artifactName": "${productName}-${version}.${ext}",
       "target": [
-        "nsis",
-        "portable"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "linux": {
       "category": "Utility",
