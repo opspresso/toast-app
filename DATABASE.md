@@ -1,80 +1,72 @@
-# Toast App Database Schema
+# Toast App 데이터 저장소 스키마
 
-This document outlines the database schema, relationships, and implementation details for the Toast App data storage system.
+이 문서는 Toast App의 데이터 저장소 스키마, 관계 및 구현 세부사항을 설명합니다.
 
-## Table of Contents
+## 목차
 
-- [Toast App Database Schema](#toast-app-database-schema)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Storage Implementation](#storage-implementation)
-  - [Schema Structure](#schema-structure)
-    - [Config Store](#config-store)
-    - [User Data Store](#user-data-store)
-    - [Cache Store](#cache-store)
-  - [Entity Relationships](#entity-relationships)
-  - [Key Entities](#key-entities)
-    - [Global Settings](#global-settings)
-    - [Pages](#pages)
-    - [Buttons](#buttons)
-    - [User Account](#user-account)
-    - [Sync Metadata](#sync-metadata)
-  - [Field Descriptions](#field-descriptions)
-    - [Global Settings Fields](#global-settings-fields)
-    - [Page Fields](#page-fields)
-    - [Button Fields](#button-fields)
-    - [User Account Fields](#user-account-fields)
-    - [Sync Metadata Fields](#sync-metadata-fields)
-  - [Indexing](#indexing)
-  - [Data Migration](#data-migration)
-  - [Backup and Recovery](#backup-and-recovery)
-  - [Performance Considerations](#performance-considerations)
-  - [Schema Versioning](#schema-versioning)
+- [Toast App 데이터 저장소 스키마](#toast-app-데이터-저장소-스키마)
+  - [목차](#목차)
+  - [개요](#개요)
+  - [저장소 구현](#저장소-구현)
+  - [스키마 구조](#스키마-구조)
+    - [메인 구성 저장소](#메인-구성-저장소)
+    - [사용자 데이터 관리](#사용자-데이터-관리)
+  - [엔티티 관계](#엔티티-관계)
+  - [주요 엔티티](#주요-엔티티)
+    - [전역 설정](#전역-설정)
+    - [페이지](#페이지)
+    - [버튼](#버튼)
+    - [사용자 계정](#사용자-계정)
+    - [동기화 메타데이터](#동기화-메타데이터)
+  - [필드 설명](#필드-설명)
+    - [전역 설정 필드](#전역-설정-필드)
+    - [페이지 필드](#페이지-필드)
+    - [버튼 필드](#버튼-필드)
+    - [사용자 계정 필드](#사용자-계정-필드)
+    - [동기화 메타데이터 필드](#동기화-메타데이터-필드)
+  - [인덱싱](#인덱싱)
+  - [데이터 마이그레이션](#데이터-마이그레이션)
+  - [백업 및 복구](#백업-및-복구)
+  - [성능 고려사항](#성능-고려사항)
+  - [스키마 버전 관리](#스키마-버전-관리)
 
-## Overview
+## 개요
 
-Toast App uses a file-based storage system rather than a traditional database. Data is stored in JSON format using the `electron-store` package, which provides a simple and efficient way to persist and retrieve application data.
+Toast App은 전통적인 데이터베이스 대신 파일 기반 저장소 시스템을 사용합니다. 데이터는 `electron-store` 패키지를 사용하여 JSON 형식으로 저장되며, 이는 애플리케이션 데이터를 지속적으로 저장하고 검색하는 간단하고 효율적인 방법을 제공합니다.
 
-## Storage Implementation
+## 저장소 구현
 
-The app uses the following storage components:
+앱은 다음과 같은 저장소 구성 요소를 사용합니다:
 
-1. **Config Store**: Handles application settings, button configurations, and page layouts
-2. **User Data Store**: Manages user account information and preferences
-3. **Cache Store**: Stores temporary data and application state
+1. **메인 구성 저장소**: 애플리케이션 설정, 버튼 구성 및 페이지 레이아웃을 처리하는 단일 `electron-store` 인스턴스
+2. **사용자 데이터 관리**: 사용자 계정 정보와 인증 토큰을 별도 파일로 관리
+3. **임시 데이터**: 메모리 내 캐싱 및 임시 상태 관리
 
-Each store is implemented as a separate instance of `electron-store` with its own configuration and schema validation.
+주요 저장소는 `src/main/config.js`에서 스키마 검증과 함께 단일 `electron-store` 인스턴스로 구현됩니다.
 
-## Schema Structure
+## 스키마 구조
 
-### Config Store
+### 메인 구성 저장소
 
-The config store contains the core application configuration and is structured as follows:
+메인 구성 저장소는 핵심 애플리케이션 구성을 포함하며 다음과 같이 구성됩니다:
 
 ```json
 {
-  "version": "0.5.54",
   "globalHotkey": "Alt+Space",
   "pages": [
     {
-      "id": "page1",
       "name": "Main",
       "shortcut": "1",
       "buttons": [
         {
-          "id": "button1",
           "name": "Files",
           "shortcut": "Q",
           "icon": "📁",
-          "actionType": "open",
-          "actionParams": {
-            "target": "/Users/username/Documents"
-          }
-        },
-        // Additional buttons...
+          "action": "open",
+          "url": "/Users/username/Documents"
+        }
       ]
-    },
-    // Additional pages...
+    }
   ],
   "appearance": {
     "theme": "system",
@@ -101,48 +93,29 @@ The config store contains the core application configuration and is structured a
 }
 ```
 
-### User Data Store
+### 사용자 데이터 관리
 
-The user data store contains user account information and is structured as follows:
+사용자 데이터는 별도 파일들로 관리되며 다음과 같은 구조를 가집니다:
 
+**인증 토큰 파일** (`user-data-manager.js`에서 관리):
 ```json
 {
-  "user": {
-    "id": "user_123456",
-    "email": "user@example.com",
-    "subscription": {
-      "level": "premium",
-      "expiresAt": "2023-12-31T23:59:59Z"
-    },
-    "lastLogin": "2023-06-15T10:30:45Z"
-  },
-  "auth": {
-    "accessToken": "encrypted_access_token",
-    "refreshToken": "encrypted_refresh_token",
-    "expiresAt": "2023-06-16T10:30:45Z"
-  }
+  "accessToken": "encrypted_access_token",
+  "refreshToken": "encrypted_refresh_token",
+  "expiresAt": "2024-06-16T10:30:45Z"
 }
 ```
 
-### Cache Store
-
-The cache store contains temporary data and is structured as follows:
-
+**사용자 프로필 데이터** (메모리 내 캐싱):
 ```json
 {
-  "syncState": {
-    "lastSync": "2023-06-15T10:35:22Z",
-    "status": "success",
-    "deviceId": "device_abc123"
+  "id": "user_123456",
+  "email": "user@example.com",
+  "subscription": {
+    "level": "premium",
+    "expiresAt": "2024-12-31T23:59:59Z"
   },
-  "recentActions": [
-    {
-      "buttonId": "button1",
-      "timestamp": "2023-06-15T10:40:12Z",
-      "success": true
-    },
-    // Additional recent actions...
-  ]
+  "lastLogin": "2024-06-15T10:30:45Z"
 }
 ```
 

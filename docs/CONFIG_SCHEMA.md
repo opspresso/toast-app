@@ -229,12 +229,10 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
     "showInTaskbar": false
   },
   "subscription": {
+    "isSubscribed": false,
     "isAuthenticated": false,
-    "level": "free",
-    "pageGroups": 1,
-    "features": {},
-    "email": null,
-    "expiresAt": null
+    "expiresAt": "",
+    "pageGroups": 1
   },
   "firstLaunchCompleted": true
 }
