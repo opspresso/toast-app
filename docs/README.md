@@ -41,7 +41,6 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 |------|------|-------------|
 | [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) | 내부 API 및 확장 지점 | 개발자 |
 | [`AUTO_UPDATE.md`](./AUTO_UPDATE.md) | 자동 업데이트 시스템 및 사용자 경험 | 개발자 & 최종 사용자 |
-| [`BACKUP_RESTORE.md`](./BACKUP_RESTORE.md) | 구성 백업 및 복원 프로세스 | 최종 사용자 & 지원팀 |
 | [`BUTTON_ACTIONS.md`](./BUTTON_ACTIONS.md) | 지원되는 버튼 액션 유형 | 개발자 & 파워 사용자 |
 | [`CLOUD_SYNC.md`](./CLOUD_SYNC.md) | 클라우드 동기화 구현 및 사용자 가이드 | 개발자 & 최종 사용자 |
 | [`CONFIG_SCHEMA.md`](./CONFIG_SCHEMA.md) | 구성 옵션 및 스키마 참조 | 개발자 & 파워 사용자 |
