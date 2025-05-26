@@ -56,6 +56,7 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 | [`TESTING.md`](./TESTING.md) | 테스트 전략 및 프로세스 | 개발자 & QA |
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | 상세한 사용자 가이드 | 최종 사용자 |
 | [`WINDOW_VISIBILITY.md`](./WINDOW_VISIBILITY.md) | 윈도우 가시성 관리 | 개발자 |
+| [`DRAG_DROP_FEATURE.md`](./DRAG_DROP_FEATURE.md) | 드래그 앤 드롭 기능 구현 가이드 | 개발자 & 기획자 |
 
 ## 문서 관리 가이드라인
 
