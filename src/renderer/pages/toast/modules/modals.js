@@ -29,7 +29,6 @@ import {
   commandInputGroup,
   urlInputGroup,
   scriptInputGroup,
-  shortcutInputGroup,
   applicationInputGroup,
   chainInputGroup,
   profileModal,
@@ -411,9 +410,6 @@ function showActionFields(actionType) {
       break;
     case 'script':
       scriptInputGroup.style.display = 'block';
-      break;
-    case 'shortcut':
-      shortcutInputGroup.style.display = 'block';
       break;
     case 'chain':
       chainInputGroup.style.display = 'block';

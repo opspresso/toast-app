@@ -103,6 +103,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 |------|------|--------|------|
 | `appearance.theme` | 문자열 | `"system"` | UI 테마 (`"light"`, `"dark"`, `"system"`) |
 | `appearance.position` | 문자열 | `"center"` | Toast 팝업 위치 (`"center"`, `"top"`, `"bottom"`, `"cursor"`) |
+| `appearance.monitorPositions` | 객체 | `{}` | 각 모니터별로 저장된 창 위치 정보 |
 | `appearance.size` | 문자열 | `"medium"` | Toast 팝업 크기 (`"small"`, `"medium"`, `"large"`) |
 | `appearance.opacity` | 숫자 | `0.95` | Toast 팝업 불투명도 (0.1 - 1.0) |
 | `appearance.buttonLayout` | 문자열 | `"grid"` | 버튼 레이아웃 (`"grid"`, `"list"`) |

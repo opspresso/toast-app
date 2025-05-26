@@ -75,6 +75,5 @@ export const editButtonStopOnErrorCheckbox = document.getElementById('edit-butto
 export const commandInputGroup = document.getElementById('command-input-group');
 export const urlInputGroup = document.getElementById('url-input-group');
 export const scriptInputGroup = document.getElementById('script-input-group');
-export const shortcutInputGroup = document.getElementById('shortcut-input-group');
 export const applicationInputGroup = document.getElementById('application-input-group');
 export const chainInputGroup = document.getElementById('chain-input-group');
