@@ -485,9 +485,9 @@ async function validateAction(action)
 
 #### 지원되는 액션 유형
 
+- `application`: 애플리케이션 실행
 - `exec`: 셸 명령 실행
 - `open`: URL, 파일 또는 폴더 열기
-- `shortcut`: 키보드 단축키 실행
 - `script`: 사용자 정의 스크립트 실행
 - `chain`: 일련의 액션을 순차적으로 실행
 
@@ -953,8 +953,8 @@ const chainResult = await executeAction({
       url: 'https://example.com'
     },
     {
-      action: 'shortcut',
-      keys: 'Ctrl+C'
+      action: 'application',
+      applicationPath: '/Applications/Calculator.app'
     }
   ],
   stopOnError: true
@@ -1221,16 +1221,17 @@ if (updateResult.hasUpdate) {
   name: "Terminal" // 버튼의 표시 이름
   shortcut: "T" // 키보드 단축키(단일 문자)
   icon: "⌨️" // 이모지 또는 아이콘
-  action: "exec" // 액션 유형(exec, open, shortcut, script, chain)
+  action: "exec" // 액션 유형(application, exec, open, script, chain)
 
   // 액션 유형에 따른 추가 속성:
   command: "open -a Terminal" // exec 액션용
   url: "https://example.com" // open 액션용
-  keys: "Ctrl+C" // shortcut 액션용
   script: "console.log('Hello');" // script 액션용
   scriptType: "javascript" // script 액션용
   actions: [] // chain 액션용(액션 배열)
   stopOnError: true // chain 액션용
+  applicationPath: "/Applications/Calculator.app" // application 액션용
+  applicationParameters: "--new-document" // application 액션용
 }
 ```
 

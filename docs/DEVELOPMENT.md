@@ -458,7 +458,7 @@ function installUpdate() {
 /**
  * 지정된 액션을 실행합니다.
  * @param {Object} action - 실행할 액션
- * @param {string} action.type - 액션 유형 (exec, open, shortcut, script)
+ * @param {string} action.type - 액션 유형 (application, exec, open, script, chain)
  * @param {Object} action.params - 액션별 매개변수
  * @returns {Promise<Object>} 액션 실행 결과
  */

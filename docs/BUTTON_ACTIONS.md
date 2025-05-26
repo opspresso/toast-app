@@ -6,18 +6,45 @@
 
 ## 액션 유형 개요
 
-Toast 앱은 다음과 같은 6가지 버튼 액션 유형을 지원합니다:
+Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 
-1. **exec** - 셸 명령어 실행
-2. **open** - URL, 파일 또는 폴더 열기
-3. **script** - 다양한 언어의 스크립트 실행
-4. **shortcut** - 키보드 단축키 시뮬레이션
+1. **application** - 애플리케이션 실행
+2. **exec** - 셸 명령어 실행
+3. **open** - URL, 파일 또는 폴더 열기
+4. **script** - 다양한 언어의 스크립트 실행
 5. **chain** - 여러 액션 순차적 실행
-6. **application** - 애플리케이션 실행
 
 각 액션 유형에 대한 상세 설명은 아래와 같습니다.
 
-## 1. exec (명령어 실행)
+## 1. application (애플리케이션 실행)
+
+### 설명
+지정된 경로의 애플리케이션을 실행하는 액션입니다.
+
+### 속성
+| 속성 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `applicationPath` | string | 예 | 실행할 애플리케이션의 경로 |
+| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터 |
+
+### 예시
+```json
+{
+  "name": "Photoshop",
+  "shortcut": "P",
+  "icon": "🎨",
+  "action": "application",
+  "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
+  "applicationParameters": "--new-document"
+}
+```
+
+### 플랫폼별 구현
+- **macOS**: `open` 명령 사용
+- **Windows**: 직접 애플리케이션 경로 실행
+- **Linux**: `xdg-open` 명령 사용
+
+## 2. exec (명령어 실행)
 
 ### 설명
 셸 명령어를 실행하는 액션입니다.
@@ -47,7 +74,7 @@ Toast 앱은 다음과 같은 6가지 버튼 액션 유형을 지원합니다:
 - **Windows**: cmd.exe를 사용하여 명령어 실행
 - **Linux**: 시스템에서 감지된 터미널 애플리케이션을 사용
 
-## 2. open (파일/URL 열기)
+## 3. open (파일/URL 열기)
 
 ### 설명
 URL, 파일 또는 폴더를 여는 액션입니다.
@@ -85,7 +112,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - URL이 `http://` 또는 `https://`로 시작하지 않으면 자동으로 `http://`가 추가됩니다.
 - 기본 애플리케이션을 사용하거나 지정된 애플리케이션으로 파일을 열 수 있습니다.
 
-## 3. script (스크립트 실행)
+## 4. script (스크립트 실행)
 
 ### 설명
 다양한 언어로 작성된 사용자 정의 스크립트를 실행하는 액션입니다.
@@ -130,32 +157,6 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - JavaScript 스크립트는 샌드박스 환경에서 실행되어 제한된 API에만 접근 가능
 - 외부 스크립트는 임시 파일로 작성된 후 실행되며, 실행 후 임시 파일 삭제
 
-## 4. shortcut (키보드 단축키 실행)
-
-### 설명
-키보드 단축키를 시뮬레이션하는 액션입니다.
-
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `keys` | string | 예 | 시뮬레이션할 키 조합 (예: "Ctrl+C", "Alt+Tab") |
-
-### 예시
-```json
-{
-  "name": "Copy",
-  "shortcut": "C",
-  "icon": "📋",
-  "action": "shortcut",
-  "keys": "Ctrl+C"
-}
-```
-
-### 플랫폼별 차이점
-- **macOS**: `Command` 키는 `Meta` 또는 `Cmd`로 표기
-- **Windows & Linux**: `Control` 키는 `Ctrl`로 표기
-- 플랫폼 간 자동 변환 지원 (예: Windows에서 `Cmd+C`는 `Ctrl+C`로 자동 변환)
-
 ## 5. chain (연쇄 실행)
 
 ### 설명
@@ -197,35 +198,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ### 특이사항
 - 각 액션은 이전 액션이 완료된 후에 실행됩니다.
 - `stopOnError`가 `true`이면 액션 중 하나라도 실패할 경우 연쇄 실행이 중단됩니다.
-- 모든 액션 유형(exec, open, shortcut, script, application)을 연쇄 실행에 포함할 수 있습니다.
-
-## 6. application (애플리케이션 실행)
-
-### 설명
-지정된 경로의 애플리케이션을 실행하는 액션입니다.
-
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `applicationPath` | string | 예 | 실행할 애플리케이션의 경로 |
-| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터 |
-
-### 예시
-```json
-{
-  "name": "Photoshop",
-  "shortcut": "P",
-  "icon": "🎨",
-  "action": "application",
-  "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
-  "applicationParameters": "--new-document"
-}
-```
-
-### 플랫폼별 구현
-- **macOS**: `open` 명령 사용
-- **Windows**: 직접 애플리케이션 경로 실행
-- **Linux**: `xdg-open` 명령 사용
+- 모든 액션 유형(application, exec, open, script, chain)을 연쇄 실행에 포함할 수 있습니다.
 
 ## 키보드 입력 처리 방식
 

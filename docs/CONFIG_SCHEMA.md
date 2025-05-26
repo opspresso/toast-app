@@ -67,12 +67,11 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 | `name` | 문자열 | 예 | 버튼의 표시 이름 |
 | `shortcut` | 문자열 | 예 | 버튼 액션을 트리거하는 단축키 (A-Z) |
 | `icon` | 문자열 | 아니오 | 버튼에 표시할 이모지 또는 아이콘 |
-| `action` | 문자열 | 예 | 액션 유형 (`exec`, `open`, `script`, `shortcut`, `chain`, `application`) |
+| `action` | 문자열 | 예 | 액션 유형 (`application`, `exec`, `open`, `script`, `chain`) |
 | `command` | 문자열 | 조건부 | `exec` 액션 유형에 필요한 명령 |
 | `url` | 문자열 | 조건부 | `open` 액션 유형에 필요한 URL 또는 파일 경로 |
 | `script` | 문자열 | 조건부 | `script` 액션 유형에 필요한 스크립트 코드 |
 | `scriptType` | 문자열 | 조건부 | `script` 액션의 스크립트 유형 (`javascript`, `applescript`, `powershell`, `bash`) |
-| `keys` | 문자열 | 조건부 | `shortcut` 액션 유형에 필요한 키 조합 |
 | `actions` | 배열 | 조건부 | `chain` 액션 유형에 필요한, 순차적으로 실행할 액션 배열 |
 | `applicationPath` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 경로 |
 | `applicationParameters` | 문자열 | 조건부 | `application` 액션 유형에 필요한 애플리케이션 매개변수 |
