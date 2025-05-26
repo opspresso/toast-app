@@ -42,8 +42,10 @@ async function hideToastWindow() {
   if (isSettingsMode) {
     toggleSettingsMode();
   }
-  // Hide toast window
-  window.toast.hideWindow();
+  // Hide toast window (only if window.toast exists)
+  if (window.toast && window.toast.hideWindow) {
+    window.toast.hideWindow();
+  }
 }
 
 /**
@@ -53,26 +55,40 @@ async function hideToastWindow() {
  */
 function setupEventListeners() {
   // Close button
-  closeButton.addEventListener('click', () => {
-    hideToastWindow();
-  });
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      hideToastWindow();
+    });
+  }
 
   // Settings mode toggle button
-  settingsModeToggle.addEventListener('click', toggleSettingsMode);
+  if (settingsModeToggle) {
+    settingsModeToggle.addEventListener('click', toggleSettingsMode);
+  }
 
   // Settings button - Open settings window
-  settingsButton.addEventListener('click', () => {
-    window.toast.showSettings();
-  });
+  if (settingsButton) {
+    settingsButton.addEventListener('click', () => {
+      if (window.toast && window.toast.showSettings) {
+        window.toast.showSettings();
+      }
+    });
+  }
 
   // User button - User information button
-  userButton.addEventListener('click', showUserProfile);
+  if (userButton) {
+    userButton.addEventListener('click', showUserProfile);
+  }
 
   // Add page button
-  addPageButton.addEventListener('click', addNewPage);
+  if (addPageButton) {
+    addPageButton.addEventListener('click', addNewPage);
+  }
 
   // Remove page button
-  removePageButton.addEventListener('click', removePage);
+  if (removePageButton) {
+    removePageButton.addEventListener('click', removePage);
+  }
 
   // Set up modal event listeners
   setupModalEventListeners();
@@ -80,8 +96,10 @@ function setupEventListeners() {
   // Set up keyboard event listeners
   setupKeyboardEventListeners();
 
-  // Set up authentication event handlers
-  setupAuthEventHandlers();
+  // Set up authentication event handlers (only if window.toast exists)
+  if (window.toast) {
+    setupAuthEventHandlers();
+  }
 
   // Process FlatColorIcons object programmatically instead of adding script to HTML
   if (window.IconsCatalog && window.AllIcons) {
@@ -96,109 +114,138 @@ function setupEventListeners() {
     console.log('FlatColorIcons object has been initialized.');
   }
 
-  // Listen for configuration updates
-  window.toast.onConfigUpdated(config => {
-    // Handle cases where config.pages is undefined, null, or empty array
-    if ('pages' in config) {
-      const configPages = config.pages || [];
-      initializePages(configPages);
+  // Listen for configuration updates (only if window.toast exists)
+  if (window.toast && window.toast.onConfigUpdated) {
+    window.toast.onConfigUpdated(config => {
+      // Handle cases where config.pages is undefined, null, or empty array
+      if ('pages' in config) {
+        const configPages = config.pages || [];
+        initializePages(configPages);
 
-      if (configPages.length === 0) {
-        // Display guidance message when no pages exist
-        showCurrentPageButtons();
+        if (configPages.length === 0) {
+          // Display guidance message when no pages exist
+          showCurrentPageButtons();
+        }
       }
-    }
 
-    if (config.appearance) {
-      applyAppearanceSettings(config.appearance);
-    }
+      if (config.appearance) {
+        applyAppearanceSettings(config.appearance);
+      }
 
-    if (config.subscription) {
-      // Update subscription status from auth module
-      import('./modules/auth.js').then(({ isSubscribed }) => {
-        isSubscribed = config.subscription.isSubscribed;
-      });
-    }
-  });
+      if (config.subscription) {
+        // Update subscription status from auth module
+        import('./modules/auth.js').then(({ isSubscribed }) => {
+          isSubscribed = config.subscription.isSubscribed;
+        });
+      }
+    });
+  }
 
-  // 특별 명령어 처리 (꽃가루 애니메이션 등)
-  window.toast.onSpecialCommand = function (command) {
-    console.log('Special command received:', command);
+  // 특별 명령어 처리 (꽃가루 애니메이션 등) - only if window.toast exists
+  if (window.toast) {
+    window.toast.onSpecialCommand = function (command) {
+      console.log('Special command received:', command);
 
-    if (command === 'confetti' || command === '꽃가루') {
-      // 꽃가루 애니메이션 실행
-      showStatus('🎉 Let it go!', 'success');
-      window.confetti.start({
-        duration: 5,  // 5초 동안 실행
-        density: 100  // 꽃가루 밀도
-      });
-      return true; // 명령 처리 완료
-    }
+      if (command === 'confetti' || command === '꽃가루') {
+        // 꽃가루 애니메이션 실행
+        showStatus('🎉 Let it go!', 'success');
+        if (window.confetti && window.confetti.start) {
+          window.confetti.start({
+            duration: 5,  // 5초 동안 실행
+            density: 100  // 꽃가루 밀도
+          });
+        }
+        return true; // 명령 처리 완료
+      }
 
-    return false; // 처리할 수 없는 명령
-  };
+      return false; // 처리할 수 없는 명령
+    };
+  }
 }
 
 /**
  * Initialize the application
  */
 function initializeApp() {
-  // Load configuration
-  window.addEventListener('config-loaded', event => {
-    const config = event.detail;
+  console.log('Initializing Toast application...');
 
-    // Page settings
-    if (config.pages) {
-      initializePages(config.pages);
-    } else {
-      // Create default page if no pages exist
-      const newPage = {
-        name: 'Page 1',
-        shortcut: '1',
-        buttons: [...defaultButtons],
-      };
+  // Always initialize clock first (independent of window.toast)
+  initClock();
 
-      const newPages = [newPage];
-      initializePages(newPages);
+  // Load configuration (only if window.toast exists)
+  if (window.toast) {
+    window.addEventListener('config-loaded', event => {
+      const config = event.detail;
 
-      // Save the default configuration
-      window.toast.saveConfig({ pages: newPages });
-    }
+      // Page settings
+      if (config.pages) {
+        initializePages(config.pages);
+      } else {
+        // Create default page if no pages exist
+        const newPage = {
+          name: 'Page 1',
+          shortcut: '1',
+          buttons: [...defaultButtons],
+        };
 
-    // Check subscription status
-    if (config.subscription) {
-      import('./modules/auth.js').then(({ isSubscribed }) => {
-        isSubscribed = config.subscription.isSubscribed;
-      });
-    }
+        const newPages = [newPage];
+        initializePages(newPages);
 
-    // Apply appearance settings
-    if (config.appearance) {
-      applyAppearanceSettings(config.appearance);
-    }
+        // Save the default configuration
+        if (window.toast.saveConfig) {
+          window.toast.saveConfig({ pages: newPages });
+        }
+      }
 
-    // Load user information when the app starts
-    fetchUserProfileAndSubscription()
-      .then(() => {
-        console.log('User information loading complete');
-        // Update user information UI
-        updateProfileDisplay();
-        updateUserButton();
-      })
-      .catch(error => {
-        console.error('Error loading user information:', error);
-        // Update UI anyway (display as anonymous user) even if error occurs
-        updateProfileDisplay();
-        updateUserButton();
-      });
-  });
+      // Check subscription status
+      if (config.subscription) {
+        import('./modules/auth.js').then(({ isSubscribed }) => {
+          isSubscribed = config.subscription.isSubscribed;
+        });
+      }
+
+      // Apply appearance settings
+      if (config.appearance) {
+        applyAppearanceSettings(config.appearance);
+      }
+
+      // Load user information when the app starts
+      fetchUserProfileAndSubscription()
+        .then(() => {
+          console.log('User information loading complete');
+          // Update user information UI
+          updateProfileDisplay();
+          updateUserButton();
+        })
+        .catch(error => {
+          console.error('Error loading user information:', error);
+          // Update UI anyway (display as anonymous user) even if error occurs
+          updateProfileDisplay();
+          updateUserButton();
+        });
+    });
+  } else {
+    // If window.toast doesn't exist, just show default buttons
+    console.log('window.toast not available, showing default buttons');
+    const newPage = {
+      name: 'Page 1',
+      shortcut: '1',
+      buttons: [...defaultButtons],
+    };
+    initializePages([newPage]);
+  }
 
   // Set up event listeners
   setupEventListeners();
-
-  // Initialize clock
-  initClock();
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Also try to initialize clock immediately in case DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+  // Document is still loading, wait for DOMContentLoaded
+} else {
+  // Document is already loaded, initialize immediately
+  initializeApp();
+}
