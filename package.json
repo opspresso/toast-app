@@ -84,10 +84,22 @@
     },
     "win": {
       "icon": "assets/icons/icon.ico",
+      "artifactName": "${productName}-${version}.${ext}",
       "target": [
-        "nsis",
-        "portable"
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
       ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "linux": {
       "category": "Utility",
