@@ -80,6 +80,9 @@ jobs:
           CSC_LINK: ${{ secrets.WINDOWS_CERTS }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
+      - name: List dist directory contents 📂
+        run: ls -la dist # List contents of dist directory to verify build output
+
       - name: Upload artifacts 🚚
         uses: actions/upload-artifact@v4
         with:
@@ -91,7 +94,6 @@ jobs:
             dist/*.exe
             dist/*.zip
             dist/*.yml
-            dist/*.yaml
           if-no-files-found: ignore # Don't fail if no files are found
 
   # Release job: Attach built artifacts to GitHub release
@@ -126,6 +128,26 @@ jobs:
           echo "$TAG_MESSAGE" > release_notes.md
           echo "✅ Saved tag message to release_notes.md"
 
+      - name: Create Release in Releases Repo 🚀
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
+        with:
+          repository: opspresso/toast
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body_path: release_notes.md
+          files: | # List of files to attach to the release
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.dmg
+            artifacts/**/*.exe
+            artifacts/**/*.zip
+            artifacts/**/latest-*.yml
+            artifacts/**/latest.yml
+
       - name: Create Release in This Repo 🚀
         uses: softprops/action-gh-release@v2
         env:
@@ -142,29 +164,7 @@ jobs:
             artifacts/**/*.dmg
             artifacts/**/*.exe
             artifacts/**/*.zip
-            artifacts/**/*-mac.yml
-            artifacts/**/*-linux.yml
-            artifacts/**/latest.yml
-
-      - name: Create Release in Releases Repo 🚀
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
-        with:
-          repository: opspresso/toast # Also create release in distribution repository
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          body_path: release_notes.md
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
-            artifacts/**/*.zip
-            artifacts/**/*-mac.yml
-            artifacts/**/*-linux.yml
+            artifacts/**/latest-*.yml
             artifacts/**/latest.yml
 
       - name: Calculate DMG SHA256 🔐
