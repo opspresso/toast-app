@@ -550,39 +550,45 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
     confirmMessage.textContent = message;
     confirmOkButton.textContent = okButtonText;
 
-    // Remove existing event listeners
-    const newCancelButton = confirmCancelButton.cloneNode(true);
-    const newOkButton = confirmOkButton.cloneNode(true);
-    confirmCancelButton.parentNode.replaceChild(newCancelButton, confirmCancelButton);
-    confirmOkButton.parentNode.replaceChild(newOkButton, confirmOkButton);
+    // Store event handlers for cleanup
+    let cancelHandler, okHandler, outsideClickHandler;
 
-    // Close on click outside modal
-    const handleOutsideClick = (event) => {
+    // Cleanup function to remove event listeners and close modal
+    const cleanup = () => {
+      if (cancelHandler) {
+        confirmCancelButton.removeEventListener('click', cancelHandler);
+      }
+      if (okHandler) {
+        confirmOkButton.removeEventListener('click', okHandler);
+      }
+      if (outsideClickHandler) {
+        confirmModal.removeEventListener('click', outsideClickHandler);
+      }
+      closeConfirmModal();
+    };
+
+    // Define event handlers
+    cancelHandler = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    okHandler = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    outsideClickHandler = (event) => {
       if (event.target === confirmModal) {
         cleanup();
         resolve(false);
       }
     };
 
-    // Cleanup function to remove event listener and close modal
-    const cleanup = () => {
-      confirmModal.removeEventListener('click', handleOutsideClick);
-      closeConfirmModal();
-    };
-
     // Add event listeners
-    newCancelButton.addEventListener('click', () => {
-      cleanup();
-      resolve(false);
-    });
-
-    newOkButton.addEventListener('click', () => {
-      cleanup();
-      resolve(true);
-    });
-
-    // Attach outside‐click handler
-    confirmModal.addEventListener('click', handleOutsideClick);
+    confirmCancelButton.addEventListener('click', cancelHandler);
+    confirmOkButton.addEventListener('click', okHandler);
+    confirmModal.addEventListener('click', outsideClickHandler);
 
     // Show modal
     confirmModal.classList.add('show');
@@ -590,10 +596,9 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
 
     // Focus on cancel button by default
     setTimeout(() => {
-      newCancelButton.focus();
+      confirmCancelButton.focus();
     }, 100);
   });
-}
 }
 
 /**
