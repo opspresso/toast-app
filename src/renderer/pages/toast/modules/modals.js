@@ -556,25 +556,32 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
     confirmCancelButton.parentNode.replaceChild(newCancelButton, confirmCancelButton);
     confirmOkButton.parentNode.replaceChild(newOkButton, confirmOkButton);
 
+    // Close on click outside modal
+    const handleOutsideClick = (event) => {
+      if (event.target === confirmModal) {
+        cleanup();
+        resolve(false);
+      }
+    };
+
+    // Cleanup function to remove event listener and close modal
+    const cleanup = () => {
+      confirmModal.removeEventListener('click', handleOutsideClick);
+      closeConfirmModal();
+    };
+
     // Add event listeners
     newCancelButton.addEventListener('click', () => {
-      closeConfirmModal();
+      cleanup();
       resolve(false);
     });
 
     newOkButton.addEventListener('click', () => {
-      closeConfirmModal();
+      cleanup();
       resolve(true);
     });
 
-    // Close on click outside modal
-    const handleOutsideClick = (event) => {
-      if (event.target === confirmModal) {
-        closeConfirmModal();
-        confirmModal.removeEventListener('click', handleOutsideClick);
-        resolve(false);
-      }
-    };
+    // Attach outside‐click handler
     confirmModal.addEventListener('click', handleOutsideClick);
 
     // Show modal
@@ -586,6 +593,7 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
       newCancelButton.focus();
     }, 100);
   });
+}
 }
 
 /**
