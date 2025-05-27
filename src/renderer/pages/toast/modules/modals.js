@@ -35,6 +35,11 @@ import {
   closeProfileModal,
   closeProfileButton,
   logoutButton,
+  confirmModal,
+  confirmTitle,
+  confirmMessage,
+  confirmCancelButton,
+  confirmOkButton,
 } from './dom-elements.js';
 import { showStatus } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
@@ -153,7 +158,10 @@ export function setupModalEventListeners() {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       // Close modals according to priority
-      if (iconSearchModal.classList.contains('show')) {
+      if (confirmModal.classList.contains('show')) {
+        closeConfirmModal();
+        event.stopPropagation();
+      } else if (iconSearchModal.classList.contains('show')) {
         closeIconSearchModal();
         event.stopPropagation();
       } else if (buttonEditModal.classList.contains('show')) {
@@ -526,4 +534,64 @@ function saveButtonSettings() {
     .catch(error => {
       showStatus(`Error saving settings: ${error}`, 'error');
     });
+}
+
+/**
+ * Show confirm modal
+ * @param {string} title - Modal title
+ * @param {string} message - Confirmation message
+ * @param {string} okButtonText - OK button text (default: 'Delete')
+ * @returns {Promise<boolean>} - Returns true if confirmed, false if canceled
+ */
+export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', okButtonText = 'Delete') {
+  return new Promise((resolve) => {
+    // Set modal content
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmOkButton.textContent = okButtonText;
+
+    // Remove existing event listeners
+    const newCancelButton = confirmCancelButton.cloneNode(true);
+    const newOkButton = confirmOkButton.cloneNode(true);
+    confirmCancelButton.parentNode.replaceChild(newCancelButton, confirmCancelButton);
+    confirmOkButton.parentNode.replaceChild(newOkButton, confirmOkButton);
+
+    // Add event listeners
+    newCancelButton.addEventListener('click', () => {
+      closeConfirmModal();
+      resolve(false);
+    });
+
+    newOkButton.addEventListener('click', () => {
+      closeConfirmModal();
+      resolve(true);
+    });
+
+    // Close on click outside modal
+    const handleOutsideClick = (event) => {
+      if (event.target === confirmModal) {
+        closeConfirmModal();
+        confirmModal.removeEventListener('click', handleOutsideClick);
+        resolve(false);
+      }
+    };
+    confirmModal.addEventListener('click', handleOutsideClick);
+
+    // Show modal
+    confirmModal.classList.add('show');
+    window.toast.setModalOpen(true);
+
+    // Focus on cancel button by default
+    setTimeout(() => {
+      newCancelButton.focus();
+    }, 100);
+  });
+}
+
+/**
+ * Close confirm modal
+ */
+export function closeConfirmModal() {
+  confirmModal.classList.remove('show');
+  window.toast.setModalOpen(false);
 }
