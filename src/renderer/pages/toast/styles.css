@@ -1391,6 +1391,39 @@ body {
   }
 }
 
+/* Confirm modal specific styles */
+.confirm-modal {
+  max-width: 400px;
+  width: 90%;
+}
+
+.confirm-modal .modal-body {
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.confirm-modal .modal-body p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.confirm-modal .modal-footer {
+  justify-content: center;
+  gap: 12px;
+}
+
+.primary-button.danger {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.primary-button.danger:hover {
+  background-color: var(--remove-button-hover-color);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+}
+
 /* Size variations */
 .size-small .toast-buttons {
   grid-template-columns: repeat(5, 1fr);

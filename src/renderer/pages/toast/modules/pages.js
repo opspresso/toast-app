@@ -167,8 +167,13 @@ export async function removePage() {
   // Save current page info
   const pageName = pages[currentPageIndex].name || `Page ${currentPageIndex + 1}`;
 
-  // Show deletion confirmation
-  const isConfirmed = confirm(`Are you sure you want to delete "${pageName}"?`);
+  // Show deletion confirmation using custom modal
+  const { showConfirmModal } = await import('./modals.js');
+  const isConfirmed = await showConfirmModal(
+    'Delete Page',
+    `Are you sure you want to delete "${pageName}"?`,
+    'Delete'
+  );
 
   if (!isConfirmed) {
     showStatus('Page deletion canceled.', 'info');

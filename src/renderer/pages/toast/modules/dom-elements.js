@@ -77,3 +77,10 @@ export const urlInputGroup = document.getElementById('url-input-group');
 export const scriptInputGroup = document.getElementById('script-input-group');
 export const applicationInputGroup = document.getElementById('application-input-group');
 export const chainInputGroup = document.getElementById('chain-input-group');
+
+// Confirm modal elements
+export const confirmModal = document.getElementById('confirm-modal');
+export const confirmTitle = document.getElementById('confirm-title');
+export const confirmMessage = document.getElementById('confirm-message');
+export const confirmCancelButton = document.getElementById('confirm-cancel-button');
+export const confirmOkButton = document.getElementById('confirm-ok-button');
