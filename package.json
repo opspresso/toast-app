@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
