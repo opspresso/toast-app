@@ -1,39 +1,131 @@
 # Toast 앱 아이콘 추출 유틸리티
 
-> **⚠️ 구현 상태**: 이 문서는 v0.8.0에서 구현 계획된 기능에 대한 설계 문서입니다.
-
 이 문서는 macOS 애플리케이션의 .icns 파일에서 PNG 아이콘을 추출하여 Toast 앱에서 사용하는 로컬 아이콘 추출 기능에 대해 설명합니다.
 
 ## 개요
 
-기존 Toast Icons API 대신 로컬에서 직접 애플리케이션의 아이콘을 추출하여 사용하는 기능입니다. macOS의 Applications 폴더에 설치된 앱들의 .icns 파일을 찾아 PNG 형식으로 변환하여 Toast 앱에서 활용할 수 있습니다.
+Toast 앱의 아이콘 추출 시스템은 로컬에서 직접 애플리케이션의 아이콘을 추출하여 사용하는 기능입니다. macOS의 Applications 폴더에 설치된 앱들의 .icns 파일을 찾아 PNG 형식으로 변환하여 Toast 앱에서 활용할 수 있습니다.
 
-## 기존 Toast Icons API와의 차이점
+### 주요 특징
 
-### Toast Icons API (기존)
-- 외부 웹 API 서버에서 아이콘 다운로드
-- 네트워크 연결 필요
-- 서버에 등록된 아이콘만 사용 가능
-- 온라인 의존성
+- **로컬 시스템에서 직접 아이콘 추출**: 네트워크 연결 불필요
+- **설치된 모든 앱 지원**: Applications 폴더의 모든 .app 번들
+- **오프라인 동작**: 인터넷 연결 없이도 작동
+- **실시간 미리보기**: 버튼 설정 시 즉시 아이콘 확인
+- **자동 감지**: `open -a AppName` 명령어에서 자동 아이콘 추출
+- **스마트 캐싱**: 한 번 추출한 아이콘은 캐시하여 재사용
 
-### App Icons 추출 (신규)
-- 로컬 시스템에서 직접 아이콘 추출
-- 네트워크 연결 불필요
-- 설치된 모든 앱의 아이콘 사용 가능
-- 오프라인 동작
+## 핵심 기능
 
-## 구현 방법
+### 1. 실시간 아이콘 미리보기
 
-### 1. 핵심 유틸리티 함수
+버튼 설정 모달에서 Toast 창 버튼과 동일한 스타일로 실시간 아이콘 미리보기를 제공합니다.
+
+```javascript
+function updateIconPreview() {
+  const iconValue = editButtonIconInput.value.trim();
+  const actionType = editButtonActionSelect.value;
+  const previewImg = document.getElementById('icon-preview-img');
+  const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
+
+  // FlatColorIcons 처리
+  if (iconValue && iconValue.startsWith('FlatColorIcons.')) {
+    const iconKey = iconValue.replace('FlatColorIcons.', '');
+    // 아이콘 카탈로그에서 검색하여 표시
+  }
+
+  // file:// URL 완벽 지원
+  else if (iconValue && iconValue.startsWith('file://')) {
+    previewImg.src = iconValue;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+  }
+}
+```
+
+### 2. Exec 액션에서 자동 아이콘 추출
+
+`open -a AppName` 패턴을 자동으로 감지하여 해당 애플리케이션의 아이콘을 추출합니다.
+
+```javascript
+// 지원되는 명령어 패턴
+const patterns = [
+  'open -a Mail',
+  'open -a "Visual Studio Code"',
+  'open -a zoom.us',
+  'open -a "Final Cut Pro"'
+];
+
+// 패턴 감지 정규식
+const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+if (openAppMatch) {
+  const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+  const appPath = `/Applications/${appName}.app`;
+  // 자동 아이콘 추출 실행
+}
+```
+
+### 3. 강화된 아이콘 리로드 기능
+
+🔄 버튼을 통해 Application 및 Exec 액션에서 아이콘을 강제로 새로고침할 수 있습니다.
+
+```javascript
+// Application 액션: 선택된 애플리케이션에서 아이콘 추출
+if (actionType === 'application') {
+  applicationPath = editButtonApplicationInput.value.trim();
+}
+// Exec 액션: open -a 명령어에서 앱 이름 추출
+else if (actionType === 'exec') {
+  const command = editButtonCommandInput.value.trim();
+  const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+  if (openAppMatch) {
+    const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+    applicationPath = `/Applications/${appName}.app`;
+  }
+}
+```
+
+### 4. 스마트한 favicon 지원
+
+Open 액션에서 아이콘이 비어있을 때 URL의 favicon을 자동으로 표시합니다.
+
+```javascript
+// open 액션이고 아이콘이 비어있지만 URL이 있는 경우 favicon 사용
+if (actionType === 'open' && (!iconValue || iconValue === '') && urlValue) {
+  const faviconUrl = getFaviconFromUrl(urlValue);
+  previewImg.src = faviconUrl;
+
+  // favicon 로딩 실패 시 기본 아이콘으로 대체
+  previewImg.onerror = function() {
+    placeholder.textContent = '🌐';
+  };
+}
+```
+
+### 5. 액션별 기본 아이콘
+
+각 액션 타입에 맞는 기본 아이콘을 제공합니다.
+
+```javascript
+switch (actionType) {
+  case 'exec': placeholder.textContent = '⚡'; break;
+  case 'application': placeholder.textContent = '🚀'; break;
+  case 'open': placeholder.textContent = '🌐'; break;
+  case 'script': placeholder.textContent = '📜'; break;
+  case 'chain': placeholder.textContent = '🔗'; break;
+  default: placeholder.textContent = '🖼️'; break;
+}
+```
+
+## 시스템 아키텍처
+
+### 메인 프로세스 (`src/main/utils/app-icon-extractor.js`)
 
 ```javascript
 /**
  * macOS 애플리케이션에서 아이콘을 추출하여 PNG로 변환
- * @param {string} appName - 애플리케이션 이름
- * @param {string} outputDir - 출력 디렉토리 경로
- * @returns {Promise<string|null>} - 추출된 PNG 파일 경로 또는 null
  */
-async function extractAppIcon(appName, outputDir = null) {
+async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
   if (process.platform !== 'darwin') {
     console.warn('⚠️ App icon extraction is only supported on macOS');
     return null;
@@ -53,9 +145,13 @@ async function extractAppIcon(appName, outputDir = null) {
 
     fs.mkdirSync(outputDir, { recursive: true });
 
-    const existingIcon = getExistingIconPath(appName, outputDir);
-    if (existingIcon) return existingIcon;
+    // 강제 새로고침이 아닌 경우 기존 아이콘 확인
+    if (!forceRefresh) {
+      const existingIcon = getExistingIconPath(appName, outputDir);
+      if (existingIcon) return existingIcon;
+    }
 
+    // .icns 파일 찾기
     const findCommand = `find "${appPath}" -name "*.icns" | head -n 1`;
     const icnsPath = execSync(findCommand, { encoding: 'utf8' }).trim();
 
@@ -64,6 +160,7 @@ async function extractAppIcon(appName, outputDir = null) {
       return null;
     }
 
+    // PNG로 변환
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const outputPath = path.join(outputDir, `${safeAppName}.png`);
     const convertCommand = `sips -s format png "${icnsPath}" --out "${outputPath}"`;
@@ -76,32 +173,120 @@ async function extractAppIcon(appName, outputDir = null) {
     return null;
   }
 }
+```
 
+### IPC 통신 (`src/main/ipc.js`)
+
+```javascript
+// 아이콘 추출 IPC 핸들러
+ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false) => {
+  try {
+    const appName = extractAppNameFromPath(applicationPath);
+    if (!appName) {
+      return { success: false, error: '앱 이름을 추출할 수 없습니다' };
+    }
+
+    const iconPath = await extractAppIcon(appName, null, forceRefresh);
+    if (!iconPath) {
+      return { success: false, error: '아이콘을 추출할 수 없습니다' };
+    }
+
+    return {
+      success: true,
+      iconUrl: `file://${iconPath}`,
+      iconPath,
+      appName
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: `아이콘 추출 중 오류 발생: ${err.message}`
+    };
+  }
+});
+```
+
+### 렌더러 프로세스 (`src/renderer/pages/toast/modules/local-icon-utils.js`)
+
+```javascript
 /**
- * 애플리케이션 경로에서 앱 이름 추출
- * @param {string} applicationPath - 애플리케이션 전체 경로
- * @returns {string|null} - 추출된 앱 이름 또는 null
+ * 핵심 기능: 애플리케이션에서 아이콘과 이름을 추출하여 UI 업데이트
  */
-function extractAppNameFromPath(applicationPath) {
-  if (!applicationPath) return null;
+async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInput = null, forceRefresh = false) {
+  if (!applicationPath || !iconInput) return false;
 
   try {
-    if (applicationPath.endsWith('.app')) {
-      return path.basename(applicationPath, '.app');
+    const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
+
+    if (result.success) {
+      // 1. 아이콘 입력 필드 업데이트
+      iconInput.value = result.iconUrl;
+
+      // 2. 버튼 이름 업데이트 (비어있을 때만)
+      if (nameInput && !nameInput.value.trim()) {
+        nameInput.value = result.appName;
+      }
+
+      // 3. input 이벤트 트리거 (미리보기 업데이트용)
+      iconInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      return true;
     }
-    return path.parse(path.basename(applicationPath)).name;
+    return false;
   } catch (err) {
-    console.error(`❌ 앱 이름 추출 오류: ${err.message}`);
-    return null;
+    console.error('아이콘 추출 오류:', err);
+    return false;
   }
 }
 
 /**
- * 기존에 추출된 아이콘이 있는지 확인
- * @param {string} appName - 애플리케이션 이름
- * @param {string} outputDir - 출력 디렉토리 경로
- * @returns {string|null} - 기존 아이콘 파일 경로 또는 null
+ * 로컬 아이콘 추출 지원 여부 확인
  */
+function isLocalIconExtractionSupported() {
+  return window.toast.platform === 'darwin' && typeof window.toast.extractAppIcon === 'function';
+}
+```
+
+## 사용자 워크플로우
+
+### Application 액션
+
+1. **애플리케이션 선택**: Browse 버튼으로 애플리케이션 선택
+2. **자동 아이콘 추출**: 선택과 동시에 아이콘 자동 추출 및 미리보기 표시
+3. **강제 새로고침**: 🔄 버튼으로 언제든지 아이콘 재추출 가능
+
+### Exec 액션
+
+1. **명령어 입력**: `open -a Mail` 형태의 명령어 입력
+2. **자동 감지**: 명령어 패턴 자동 감지 및 Mail.app 아이콘 추출
+3. **실시간 업데이트**: 명령어 변경 시 즉시 미리보기 업데이트
+4. **강제 새로고침**: 🔄 버튼으로 아이콘 재추출
+
+### Open 액션
+
+1. **URL 입력**: 웹사이트 URL 입력 (예: https://github.com)
+2. **Favicon 자동 표시**: 아이콘 필드를 비워두면 자동으로 favicon 표시
+3. **실시간 미리보기**: URL 변경 시 즉시 favicon 업데이트
+
+## 시스템 요구사항
+
+### macOS 지원
+- **필수**: macOS 10.12 (Sierra) 이상
+- **필수**: `sips` 명령어 (시스템 기본 제공)
+- **필수**: `find` 명령어 (시스템 기본 제공)
+- **권장**: Applications 폴더에 설치된 앱들
+
+### 지원 형식
+- **입력**: `.icns` (Apple Icon Image format)
+- **출력**: `.png` (Portable Network Graphics)
+- **애플리케이션**: `.app` 번들 (macOS 표준)
+
+## 성능 및 최적화
+
+### 캐싱 전략
+
+```javascript
+// 스마트 캐싱: 한 번 추출한 아이콘은 재사용
 function getExistingIconPath(appName, outputDir) {
   try {
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
@@ -113,11 +298,7 @@ function getExistingIconPath(appName, outputDir) {
   }
 }
 
-/**
- * 아이콘 캐시 디렉토리 정리
- * @param {string} iconsDir - 아이콘 디렉토리 경로
- * @param {number} maxAge - 최대 보관 기간 (밀리초)
- */
+// 오래된 아이콘 자동 정리 (30일)
 function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   try {
     if (!fs.existsSync(iconsDir)) return;
@@ -138,235 +319,38 @@ function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
     console.error(`❌ 아이콘 캐시 정리 오류: ${err.message}`);
   }
 }
-
-module.exports = {
-  extractAppIcon,
-  extractAppNameFromPath,
-  getExistingIconPath,
-  cleanupOldIcons
-};
 ```
 
-### 2. IPC 핸들러 추가
+### 비동기 처리
+
+- **UI 블로킹 방지**: 모든 아이콘 추출은 비동기로 처리
+- **백그라운드 작업**: 사용자 인터페이스에 영향 없이 처리
+- **진행 상태 표시**: 🔄 → ⏳ → 🔄 버튼 상태 변화로 진행 상황 표시
+
+## 오류 처리 및 보안
+
+### 오류 처리
 
 ```javascript
-// IPC 핸들러 추가
-ipcMain.handle('extract-app-icon', async (event, applicationPath) => {
-  try {
-    const appName = extractAppNameFromPath(applicationPath);
-    if (!appName) {
-      return { success: false, error: '앱 이름을 추출할 수 없습니다' };
-    }
-
-    const iconPath = await extractAppIcon(appName);
-    if (!iconPath) {
-      return { success: false, error: '아이콘을 추출할 수 없습니다' };
-    }
-
-    return {
-      success: true,
-      iconUrl: `file://${iconPath}`,
-      iconPath,
-      appName
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: `아이콘 추출 중 오류 발생: ${err.message}`
-    };
-  }
-});
-```
-
-### 3. Preload 스크립트 확장
-
-```javascript
-// Preload 스크립트 확장
-window.toast.extractAppIcon = (applicationPath) => {
-  return ipcRenderer.invoke('extract-app-icon', applicationPath);
-};
-```
-
-### 4. 렌더러 프로세스 유틸리티
-
-```javascript
-/**
- * 애플리케이션 경로에서 로컬 아이콘 추출
- * @param {string} applicationPath - 애플리케이션 파일 경로
- * @returns {Promise<string|null>} - 아이콘 URL 또는 null
- */
-async function extractLocalAppIcon(applicationPath) {
-  try {
-    if (!applicationPath) {
-      console.warn('⚠️ 애플리케이션 경로가 제공되지 않았습니다');
-      return null;
-    }
-
-    const result = await window.toast.extractAppIcon(applicationPath);
-
-    if (result.success) {
-      console.log(`✅ 로컬 아이콘 추출 성공: ${result.appName}`);
-      return result.iconUrl;
-    } else {
-      console.error(`❌ 로컬 아이콘 추출 실패: ${result.error}`);
-      return null;
-    }
-  } catch (err) {
-    console.error(`❌ 로컬 아이콘 추출 오류: ${err.message}`);
-    return null;
-  }
-}
-
-/**
- * 버튼 아이콘을 로컬에서 추출한 아이콘으로 업데이트
- * @param {string} applicationPath - 애플리케이션 파일 경로
- * @param {HTMLElement} iconInput - 아이콘 입력 필드 요소
- * @returns {Promise<boolean>} - 성공 여부
- */
-async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
-  try {
-    if (!applicationPath || !iconInput) {
-      console.warn('⚠️ 필수 매개변수가 누락되었습니다');
-      return false;
-    }
-
-    const originalPlaceholder = iconInput.placeholder;
-    iconInput.placeholder = '아이콘 추출 중...';
-    iconInput.disabled = true;
-
-    const iconUrl = await extractLocalAppIcon(applicationPath);
-
-    if (iconUrl) {
-      iconInput.value = iconUrl;
-      iconInput.placeholder = '아이콘이 설정되었습니다';
-
-      const previewElement = iconInput.parentElement.querySelector('.icon-preview');
-      if (previewElement) {
-        previewElement.style.backgroundImage = `url(${iconUrl})`;
-        previewElement.style.backgroundSize = 'contain';
-        previewElement.style.backgroundRepeat = 'no-repeat';
-        previewElement.style.backgroundPosition = 'center';
-      }
-
-      console.log('✅ 버튼 아이콘이 로컬에서 성공적으로 설정되었습니다');
-      return true;
-    } else {
-      iconInput.placeholder = originalPlaceholder;
-      console.log('❌ 로컬 아이콘을 찾을 수 없습니다');
-      return false;
-    }
-  } catch (err) {
-    console.error(`❌ 버튼 아이콘 업데이트 오류: ${err.message}`);
-    return false;
-  } finally {
-    iconInput.disabled = false;
-  }
-}
-
-export { extractLocalAppIcon, updateButtonIconFromLocalApp };
-```
-
-### 5. 버튼 설정 모달 통합
-
-```javascript
-// 애플리케이션 선택 시 아이콘 자동 설정
-applicationInput.addEventListener('change', async () => {
-  const applicationPath = applicationInput.value;
-  const iconInput = modal.querySelector('#icon');
-
-  if (applicationPath && iconInput) {
-    await window.localIconUtils.updateButtonIconFromLocalApp(applicationPath, iconInput);
-  }
-});
-```
-
-## 시스템 요구사항
-
-### macOS
-- **필수**: macOS 10.12 (Sierra) 이상
-- **필수**: `sips` 명령어 (시스템 기본 제공)
-- **필수**: `find` 명령어 (시스템 기본 제공)
-- **권장**: Applications 폴더에 설치된 앱들
-
-### 지원되는 애플리케이션 형식
-- `.app` 번들 (macOS 표준 애플리케이션)
-- 내부에 `.icns` 파일을 포함한 앱
-
-### 지원되는 아이콘 형식
-- **입력**: `.icns` (Apple Icon Image format)
-- **출력**: `.png` (Portable Network Graphics)
-
-## 사용 예시
-
-### 1. 기본 사용법
-
-```javascript
-// 애플리케이션 경로에서 아이콘 추출
-const applicationPath = '/Applications/Visual Studio Code.app';
-const iconUrl = await window.localIconUtils.extractLocalAppIcon(applicationPath);
-
-if (iconUrl) {
-  console.log('아이콘 추출 성공:', iconUrl);
-} else {
-  console.log('아이콘 추출 실패');
-}
-```
-
-### 2. 버튼 설정에서 자동 아이콘 설정
-
-```javascript
-// 버튼 설정 모달에서 애플리케이션 선택 시
-const applicationPath = '/Applications/Chrome.app';
-const iconInput = document.getElementById('icon-input');
-
-const success = await window.localIconUtils.updateButtonIconFromLocalApp(applicationPath, iconInput);
-if (success) {
-  console.log('아이콘이 자동으로 설정되었습니다');
-}
-```
-
-## 성능 특성
-
-### 장점
-- **빠른 속도**: 네트워크 지연 없음
-- **높은 가용성**: 오프라인에서도 동작
-- **완전한 커버리지**: 설치된 모든 앱 지원
-- **고품질**: 원본 해상도 유지
-
-### 제한사항
-- **플랫폼 의존성**: macOS만 지원
-- **시스템 명령어 의존**: `sips`, `find` 필요
-- **디스크 공간**: app data 디렉토리에 아이콘 파일 저장
-- **권한**: Applications 폴더 읽기 권한 필요
-
-## 오류 처리
-
-### 1. 플랫폼 미지원
-```javascript
+// 1. 플랫폼 미지원
 if (process.platform !== 'darwin') {
   console.warn('⚠️ App icon extraction is only supported on macOS');
   return null;
 }
-```
 
-### 2. 애플리케이션 없음
-```javascript
+// 2. 애플리케이션 없음
 if (!fs.existsSync(appPath)) {
   console.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
   return null;
 }
-```
 
-### 3. 아이콘 파일 없음
-```javascript
+// 3. 아이콘 파일 없음
 if (!icnsPath) {
   console.error(`❌ .icns 파일을 찾을 수 없습니다: ${appPath}`);
   return null;
 }
-```
 
-### 4. 변환 실패
-```javascript
+// 4. 변환 실패
 try {
   execSync(convertCommand, { stdio: 'pipe' });
 } catch (err) {
@@ -375,75 +359,18 @@ try {
 }
 ```
 
-## 보안 고려사항
+### 보안 고려사항
 
-### 1. 경로 검증
-- 애플리케이션 경로 유효성 검사
-- 디렉토리 트래버설 공격 방지
-- 안전한 파일명 생성
+- **경로 검증**: 애플리케이션 경로 유효성 검사
+- **안전한 파일명**: 특수 문자 제거 및 안전한 파일명 생성
+- **명령어 인젝션 방지**: 사용자 입력 이스케이핑
+- **권한 제한**: 최소 권한으로 실행
 
-### 2. 명령어 인젝션 방지
-- 사용자 입력 이스케이핑
-- 안전한 명령어 실행
-- 제한된 권한으로 실행
+## 테스트 및 검증
 
-### 3. 임시 파일 관리
-- 임시 파일 자동 정리
-- 안전한 임시 디렉토리 사용
-- 파일 권한 제한
+### 단위 테스트
 
-## 성능 최적화
-
-### 1. 캐싱 전략
 ```javascript
-const iconCache = new Map();
-
-async function extractAppIconWithCache(appName) {
-  if (iconCache.has(appName)) {
-    return iconCache.get(appName);
-  }
-
-  const iconUrl = await extractAppIcon(appName);
-  if (iconUrl) {
-    iconCache.set(appName, iconUrl);
-  }
-
-  return iconUrl;
-}
-```
-
-### 2. 비동기 처리
-- 모든 아이콘 추출은 비동기로 처리
-- UI 블로킹 방지
-- 백그라운드 작업
-
-### 3. 리소스 관리
-- 임시 파일 즉시 정리
-- 메모리 사용량 최적화
-- 동시 추출 작업 제한
-
-## 마이그레이션 가이드
-
-### Toast Icons API에서 로컬 추출로 전환
-
-#### 1. 기존 코드
-```javascript
-import { updateButtonIconFromApplication } from './icon-utils.js';
-await updateButtonIconFromApplication(applicationPath, iconInput);
-```
-
-#### 2. 새로운 코드
-```javascript
-import { updateButtonIconFromLocalApp } from './local-icon-utils.js';
-await updateButtonIconFromLocalApp(applicationPath, iconInput);
-```
-
-## 테스트 방법
-
-### 1. 단위 테스트
-```javascript
-const { extractAppIcon, extractAppNameFromPath } = require('../../src/main/utils/app-icon-extractor');
-
 describe('App Icon Extractor', () => {
   test('should extract app name from path', () => {
     const appName = extractAppNameFromPath('/Applications/Visual Studio Code.app');
@@ -455,10 +382,16 @@ describe('App Icon Extractor', () => {
     expect(iconPath).toBeTruthy();
     expect(iconPath).toMatch(/\.png$/);
   });
+
+  test('should handle non-existent app', async () => {
+    const iconPath = await extractAppIcon('NonExistentApp');
+    expect(iconPath).toBeNull();
+  });
 });
 ```
 
-### 2. 통합 테스트
+### 통합 테스트
+
 ```javascript
 const testApps = ['Finder', 'Safari', 'System Preferences', 'Terminal'];
 
@@ -470,63 +403,25 @@ for (const appName of testApps) {
 
 ## 문제 해결
 
-### 1. 아이콘이 추출되지 않는 경우
+### 일반적인 문제
 
-**증상**: `extractAppIcon` 함수가 null 반환
+1. **아이콘이 추출되지 않는 경우**
+   - Applications 폴더에 앱이 설치되어 있는지 확인
+   - 앱 이름의 대소문자 정확성 확인
+   - 앱 내부에 .icns 파일 존재 여부 확인
 
-**해결 방법**:
-1. 앱이 Applications 폴더에 설치되어 있는지 확인
-2. 앱 이름이 정확한지 확인 (대소문자 구분)
-3. 앱 내부에 .icns 파일이 있는지 확인
-4. 시스템 권한 확인
+2. **sips 명령어 오류**
+   - macOS 시스템 확인
+   - Xcode Command Line Tools 설치
+   - 시스템 PATH 환경변수 확인
 
-### 2. sips 명령어 오류
+3. **권한 오류**
+   - Applications 폴더 읽기 권한 확인
+   - 임시 디렉토리 쓰기 권한 확인
 
-**증상**: "command not found: sips"
-
-**해결 방법**:
-1. macOS 시스템인지 확인
-2. Xcode Command Line Tools 설치
-3. 시스템 PATH 환경변수 확인
-
-### 3. 권한 오류
-
-**증상**: "Permission denied"
-
-**해결 방법**:
-1. Applications 폴더 읽기 권한 확인
-2. 임시 디렉토리 쓰기 권한 확인
-3. 앱 실행 권한 확인
-
-### 4. 메모리 사용량 증가
-
-**증상**: 많은 아이콘 추출 후 메모리 사용량 증가
-
-**해결 방법**:
-1. 아이콘 캐시 크기 제한
-2. 임시 파일 정리 확인
-3. 가비지 컬렉션 강제 실행
-
-## 향후 개선 사항
-
-### 1. 다중 플랫폼 지원
-- Windows: .exe, .ico 파일 지원
-- Linux: .desktop, .svg 파일 지원
-
-### 2. 아이콘 크기 최적화
-- 다양한 해상도 지원 (16x16, 32x32, 64x64, 128x128)
-- 레티나 디스플레이 대응
-- 자동 크기 조정
-
-### 3. 고급 캐싱
-- 디스크 기반 영구 캐시
-- LRU 캐시 정책
-- 캐시 만료 시간 설정
-
-### 4. 배치 처리
-- 여러 앱 아이콘 동시 추출
-- 백그라운드 프리로딩
-- 진행률 표시
+4. **메모리 사용량 증가**
+   - 아이콘 캐시 크기 제한
+   - 임시 파일 정리 확인
 
 ## 관련 파일
 
@@ -535,12 +430,21 @@ for (const appName of testApps) {
 - `src/main/ipc.js` - IPC 핸들러 (extract-app-icon)
 - `src/renderer/preload/toast.js` - Preload 스크립트 확장
 - `src/renderer/pages/toast/modules/modals.js` - 버튼 설정 모달 통합
+- `src/renderer/pages/toast/styles.css` - 아이콘 미리보기 스타일
 
-## 버전 히스토리
+## 향후 개선 계획
 
-### v0.8.0 (계획됨)
-- 로컬 앱 아이콘 추출 기능 추가
-- macOS .icns → PNG 변환 지원
-- app data 디렉토리에 영구 저장
-- 스마트 캐싱 및 자동 정리
-- file:// URL 지원
+### 다중 플랫폼 지원
+- **Windows**: .exe, .ico 파일 지원
+- **Linux**: .desktop, .svg 파일 지원
+
+### 고급 기능
+- **다양한 해상도**: 16x16, 32x32, 64x64, 128x128 지원
+- **레티나 디스플레이**: 고해상도 디스플레이 대응
+- **배치 처리**: 여러 앱 아이콘 동시 추출
+- **진행률 표시**: 대량 처리 시 진행 상황 표시
+
+### 성능 최적화
+- **디스크 기반 캐시**: 영구 캐시 시스템
+- **LRU 캐시**: 메모리 효율적인 캐시 정책
+- **백그라운드 프리로딩**: 자주 사용되는 앱 아이콘 미리 로드
