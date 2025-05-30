@@ -73,17 +73,7 @@ export function setupModalEventListeners() {
 
   // Command input change event for exec action
   editButtonCommandInput.addEventListener('input', async () => {
-    if (editButtonActionSelect.value === 'exec' && editButtonCommandInput.value.trim()) {
-      try {
-        const { updateButtonIconFromCommand } = await import('./icon-utils.js');
-        await updateButtonIconFromCommand(
-          editButtonCommandInput.value.trim(),
-          editButtonIconInput
-        );
-      } catch (error) {
-        // Silently fail
-      }
-    }
+    // Command input handling without icon fetching
   });
 
   // Switch input fields based on action type
@@ -117,16 +107,8 @@ export function setupModalEventListeners() {
           // Set selected application path to input field
           editButtonApplicationInput.value = result.filePaths[0];
 
-          // Try to fetch application icon from Toast API
-          try {
-            const { updateButtonIconFromApplication } = await import('./icon-utils.js');
-            const iconUpdated = await updateButtonIconFromApplication(
-              result.filePaths[0],
-              editButtonIconInput
-            );
-          } catch (error) {
-            showStatus('Application selected successfully.', 'success');
-          }
+          // Application selected successfully
+          showStatus('Application selected successfully.', 'success');
         }
       } catch (error) {
         console.error('Error selecting application:', error);

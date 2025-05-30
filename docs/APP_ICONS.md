@@ -1,5 +1,7 @@
 # App Icons 추출 유틸리티
 
+> **⚠️ 구현 상태**: 이 문서는 v0.8.0에서 구현 계획된 기능에 대한 설계 문서입니다.
+
 이 문서는 macOS 애플리케이션의 .icns 파일에서 PNG 아이콘을 추출하여 Toast 앱에서 사용하는 로컬 아이콘 추출 기능에 대해 설명합니다.
 
 ## 개요
@@ -25,54 +27,35 @@
 ### 1. 핵심 유틸리티 함수
 
 ```javascript
-// src/main/utils/app-icon-extractor.js
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-
 /**
  * macOS 애플리케이션에서 아이콘을 추출하여 PNG로 변환
- * @param {string} appName - 애플리케이션 이름 (예: "Visual Studio Code")
- * @param {string} outputDir - 출력 디렉토리 경로 (기본값: app data 아이콘 폴더)
+ * @param {string} appName - 애플리케이션 이름
+ * @param {string} outputDir - 출력 디렉토리 경로
  * @returns {Promise<string|null>} - 추출된 PNG 파일 경로 또는 null
  */
 async function extractAppIcon(appName, outputDir = null) {
-  // 플랫폼 확인 (macOS만 지원)
   if (process.platform !== 'darwin') {
     console.warn('⚠️ App icon extraction is only supported on macOS');
     return null;
   }
 
   const appPath = `/Applications/${appName}.app`;
-
-  // 앱 경로 존재 여부 확인
   if (!fs.existsSync(appPath)) {
     console.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
     return null;
   }
 
   try {
-    // 출력 디렉토리 설정 (기본값: app data 아이콘 폴더)
     if (!outputDir) {
       const { app } = require('electron');
-      const userDataPath = app.getPath('userData');
-      outputDir = path.join(userDataPath, 'icons');
+      outputDir = path.join(app.getPath('userData'), 'icons');
     }
 
-    // 출력 디렉토리 생성
     fs.mkdirSync(outputDir, { recursive: true });
 
-    // 기존 아이콘이 있는지 확인 (캐시 활용)
     const existingIcon = getExistingIconPath(appName, outputDir);
-    if (existingIcon) {
-      return existingIcon;
-    }
+    if (existingIcon) return existingIcon;
 
-    // 오래된 아이콘 파일 정리 (백그라운드)
-    setTimeout(() => cleanupOldIcons(outputDir), 1000);
-
-    // .icns 파일 찾기
     const findCommand = `find "${appPath}" -name "*.icns" | head -n 1`;
     const icnsPath = execSync(findCommand, { encoding: 'utf8' }).trim();
 
@@ -81,22 +64,13 @@ async function extractAppIcon(appName, outputDir = null) {
       return null;
     }
 
-    // 안전한 파일명 생성 (특수문자 제거)
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const outputPath = path.join(outputDir, `${safeAppName}.png`);
-
-    // PNG로 변환 (sips 명령어 사용)
     const convertCommand = `sips -s format png "${icnsPath}" --out "${outputPath}"`;
+
     execSync(convertCommand, { stdio: 'pipe' });
 
-    // 파일 생성 확인
-    if (fs.existsSync(outputPath)) {
-      console.log(`✅ 아이콘 PNG 추출 완료: ${outputPath}`);
-      return outputPath;
-    } else {
-      console.error(`❌ PNG 파일 생성 실패: ${outputPath}`);
-      return null;
-    }
+    return fs.existsSync(outputPath) ? outputPath : null;
   } catch (err) {
     console.error(`❌ 아이콘 추출 오류: ${err.message}`);
     return null;
@@ -112,16 +86,10 @@ function extractAppNameFromPath(applicationPath) {
   if (!applicationPath) return null;
 
   try {
-    // macOS .app 번들 처리
     if (applicationPath.endsWith('.app')) {
-      const appName = path.basename(applicationPath, '.app');
-      return appName;
+      return path.basename(applicationPath, '.app');
     }
-
-    // 일반 실행 파일 처리
-    const baseName = path.basename(applicationPath);
-    const appName = path.parse(baseName).name;
-    return appName;
+    return path.parse(path.basename(applicationPath)).name;
   } catch (err) {
     console.error(`❌ 앱 이름 추출 오류: ${err.message}`);
     return null;
@@ -138,13 +106,7 @@ function getExistingIconPath(appName, outputDir) {
   try {
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const iconPath = path.join(outputDir, `${safeAppName}.png`);
-
-    if (fs.existsSync(iconPath)) {
-      console.log(`✅ 기존 아이콘 발견: ${iconPath}`);
-      return iconPath;
-    }
-
-    return null;
+    return fs.existsSync(iconPath) ? iconPath : null;
   } catch (err) {
     console.error(`❌ 기존 아이콘 확인 오류: ${err.message}`);
     return null;
@@ -152,9 +114,9 @@ function getExistingIconPath(appName, outputDir) {
 }
 
 /**
- * 아이콘 캐시 디렉토리 정리 (오래된 파일 삭제)
+ * 아이콘 캐시 디렉토리 정리
  * @param {string} iconsDir - 아이콘 디렉토리 경로
- * @param {number} maxAge - 최대 보관 기간 (밀리초, 기본값: 30일)
+ * @param {number} maxAge - 최대 보관 기간 (밀리초)
  */
 function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   try {
@@ -188,32 +150,24 @@ module.exports = {
 ### 2. IPC 핸들러 추가
 
 ```javascript
-// src/main/ipc.js에 추가
-const { extractAppIcon, extractAppNameFromPath, getExistingIconPath, cleanupOldIcons } = require('./utils/app-icon-extractor');
-
-// 앱 아이콘 추출 핸들러
+// IPC 핸들러 추가
 ipcMain.handle('extract-app-icon', async (event, applicationPath) => {
   try {
-    // 애플리케이션 경로에서 앱 이름 추출
     const appName = extractAppNameFromPath(applicationPath);
     if (!appName) {
       return { success: false, error: '앱 이름을 추출할 수 없습니다' };
     }
 
-    // 아이콘 추출
     const iconPath = await extractAppIcon(appName);
     if (!iconPath) {
       return { success: false, error: '아이콘을 추출할 수 없습니다' };
     }
 
-    // 파일 경로를 file:// URL로 변환 (영구 저장된 파일 사용)
-    const fileUrl = `file://${iconPath}`;
-
     return {
       success: true,
-      iconUrl: fileUrl,
-      iconPath: iconPath,
-      appName: appName
+      iconUrl: `file://${iconPath}`,
+      iconPath,
+      appName
     };
   } catch (err) {
     return {
@@ -227,7 +181,7 @@ ipcMain.handle('extract-app-icon', async (event, applicationPath) => {
 ### 3. Preload 스크립트 확장
 
 ```javascript
-// src/renderer/preload/toast.js에 추가
+// Preload 스크립트 확장
 window.toast.extractAppIcon = (applicationPath) => {
   return ipcRenderer.invoke('extract-app-icon', applicationPath);
 };
@@ -236,15 +190,10 @@ window.toast.extractAppIcon = (applicationPath) => {
 ### 4. 렌더러 프로세스 유틸리티
 
 ```javascript
-// src/renderer/pages/toast/modules/local-icon-utils.js
-/**
- * 로컬 앱 아이콘 추출 유틸리티
- */
-
 /**
  * 애플리케이션 경로에서 로컬 아이콘 추출
  * @param {string} applicationPath - 애플리케이션 파일 경로
- * @returns {Promise<string|null>} - 아이콘 데이터 URL 또는 null
+ * @returns {Promise<string|null>} - 아이콘 URL 또는 null
  */
 async function extractLocalAppIcon(applicationPath) {
   try {
@@ -253,7 +202,6 @@ async function extractLocalAppIcon(applicationPath) {
       return null;
     }
 
-    // 메인 프로세스에서 아이콘 추출
     const result = await window.toast.extractAppIcon(applicationPath);
 
     if (result.success) {
@@ -282,20 +230,16 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
       return false;
     }
 
-    // 로딩 상태 표시
     const originalPlaceholder = iconInput.placeholder;
     iconInput.placeholder = '아이콘 추출 중...';
     iconInput.disabled = true;
 
-    // 로컬에서 아이콘 추출
     const iconUrl = await extractLocalAppIcon(applicationPath);
 
     if (iconUrl) {
-      // 아이콘 설정
       iconInput.value = iconUrl;
       iconInput.placeholder = '아이콘이 설정되었습니다';
 
-      // 아이콘 미리보기 업데이트 (있는 경우)
       const previewElement = iconInput.parentElement.querySelector('.icon-preview');
       if (previewElement) {
         previewElement.style.backgroundImage = `url(${iconUrl})`;
@@ -307,7 +251,6 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
       console.log('✅ 버튼 아이콘이 로컬에서 성공적으로 설정되었습니다');
       return true;
     } else {
-      // 실패 시 원래 상태 복원
       iconInput.placeholder = originalPlaceholder;
       console.log('❌ 로컬 아이콘을 찾을 수 없습니다');
       return false;
@@ -316,36 +259,22 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
     console.error(`❌ 버튼 아이콘 업데이트 오류: ${err.message}`);
     return false;
   } finally {
-    // 로딩 상태 해제
     iconInput.disabled = false;
   }
 }
 
-// 전역 객체에 등록
-window.localIconUtils = {
-  extractLocalAppIcon,
-  updateButtonIconFromLocalApp
-};
-
-export {
-  extractLocalAppIcon,
-  updateButtonIconFromLocalApp
-};
+export { extractLocalAppIcon, updateButtonIconFromLocalApp };
 ```
 
 ### 5. 버튼 설정 모달 통합
 
 ```javascript
-// src/renderer/pages/toast/modules/modals.js 수정
-// 기존 Toast Icons API 호출 부분을 로컬 아이콘 추출로 대체
-
 // 애플리케이션 선택 시 아이콘 자동 설정
 applicationInput.addEventListener('change', async () => {
   const applicationPath = applicationInput.value;
   const iconInput = modal.querySelector('#icon');
 
   if (applicationPath && iconInput) {
-    // 로컬 아이콘 추출 시도
     await window.localIconUtils.updateButtonIconFromLocalApp(applicationPath, iconInput);
   }
 });
@@ -378,7 +307,6 @@ const iconUrl = await window.localIconUtils.extractLocalAppIcon(applicationPath)
 
 if (iconUrl) {
   console.log('아이콘 추출 성공:', iconUrl);
-  // iconUrl은 file:///path/to/icon.png 형식
 } else {
   console.log('아이콘 추출 실패');
 }
@@ -415,7 +343,6 @@ if (success) {
 
 ### 1. 플랫폼 미지원
 ```javascript
-// macOS가 아닌 경우
 if (process.platform !== 'darwin') {
   console.warn('⚠️ App icon extraction is only supported on macOS');
   return null;
@@ -424,7 +351,6 @@ if (process.platform !== 'darwin') {
 
 ### 2. 애플리케이션 없음
 ```javascript
-// 앱이 설치되지 않은 경우
 if (!fs.existsSync(appPath)) {
   console.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
   return null;
@@ -433,7 +359,6 @@ if (!fs.existsSync(appPath)) {
 
 ### 3. 아이콘 파일 없음
 ```javascript
-// .icns 파일을 찾을 수 없는 경우
 if (!icnsPath) {
   console.error(`❌ .icns 파일을 찾을 수 없습니다: ${appPath}`);
   return null;
@@ -442,7 +367,6 @@ if (!icnsPath) {
 
 ### 4. 변환 실패
 ```javascript
-// sips 명령어 실행 실패
 try {
   execSync(convertCommand, { stdio: 'pipe' });
 } catch (err) {
@@ -472,7 +396,6 @@ try {
 
 ### 1. 캐싱 전략
 ```javascript
-// 추출된 아이콘 메모리 캐싱
 const iconCache = new Map();
 
 async function extractAppIconWithCache(appName) {
@@ -505,14 +428,12 @@ async function extractAppIconWithCache(appName) {
 
 #### 1. 기존 코드
 ```javascript
-// 기존: Toast Icons API 사용
 import { updateButtonIconFromApplication } from './icon-utils.js';
 await updateButtonIconFromApplication(applicationPath, iconInput);
 ```
 
 #### 2. 새로운 코드
 ```javascript
-// 신규: 로컬 아이콘 추출 사용
 import { updateButtonIconFromLocalApp } from './local-icon-utils.js';
 await updateButtonIconFromLocalApp(applicationPath, iconInput);
 ```
@@ -521,7 +442,6 @@ await updateButtonIconFromLocalApp(applicationPath, iconInput);
 
 ### 1. 단위 테스트
 ```javascript
-// tests/unit/app-icon-extractor.test.js
 const { extractAppIcon, extractAppNameFromPath } = require('../../src/main/utils/app-icon-extractor');
 
 describe('App Icon Extractor', () => {
@@ -540,13 +460,7 @@ describe('App Icon Extractor', () => {
 
 ### 2. 통합 테스트
 ```javascript
-// 실제 애플리케이션으로 테스트
-const testApps = [
-  'Finder',
-  'Safari',
-  'System Preferences',
-  'Terminal'
-];
+const testApps = ['Finder', 'Safari', 'System Preferences', 'Terminal'];
 
 for (const appName of testApps) {
   const iconUrl = await extractLocalAppIcon(`/Applications/${appName}.app`);
@@ -624,7 +538,7 @@ for (const appName of testApps) {
 
 ## 버전 히스토리
 
-### v0.8.0 (예정)
+### v0.8.0 (계획됨)
 - 로컬 앱 아이콘 추출 기능 추가
 - macOS .icns → PNG 변환 지원
 - app data 디렉토리에 영구 저장
