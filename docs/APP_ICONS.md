@@ -321,49 +321,15 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
   }
 }
 
-/**
- * Toast Icons API와 로컬 아이콘 추출을 함께 시도
- * @param {string} applicationPath - 애플리케이션 파일 경로
- * @param {HTMLElement} iconInput - 아이콘 입력 필드 요소
- * @returns {Promise<boolean>} - 성공 여부
- */
-async function updateButtonIconWithFallback(applicationPath, iconInput) {
-  try {
-    // 1. 먼저 로컬 아이콘 추출 시도
-    const localSuccess = await updateButtonIconFromLocalApp(applicationPath, iconInput);
-    if (localSuccess) {
-      return true;
-    }
-
-    // 2. 로컬 실패 시 Toast Icons API 시도 (기존 기능)
-    if (window.iconUtils && window.iconUtils.updateButtonIconFromApplication) {
-      console.log('🔄 Toast Icons API로 폴백 시도...');
-      const apiSuccess = await window.iconUtils.updateButtonIconFromApplication(applicationPath, iconInput);
-      if (apiSuccess) {
-        console.log('✅ Toast Icons API에서 아이콘을 가져왔습니다');
-        return true;
-      }
-    }
-
-    console.log('❌ 모든 아이콘 소스에서 실패했습니다');
-    return false;
-  } catch (err) {
-    console.error(`❌ 아이콘 업데이트 폴백 오류: ${err.message}`);
-    return false;
-  }
-}
-
 // 전역 객체에 등록
 window.localIconUtils = {
   extractLocalAppIcon,
-  updateButtonIconFromLocalApp,
-  updateButtonIconWithFallback
+  updateButtonIconFromLocalApp
 };
 
 export {
   extractLocalAppIcon,
-  updateButtonIconFromLocalApp,
-  updateButtonIconWithFallback
+  updateButtonIconFromLocalApp
 };
 ```
 
@@ -379,8 +345,8 @@ applicationInput.addEventListener('change', async () => {
   const iconInput = modal.querySelector('#icon');
 
   if (applicationPath && iconInput) {
-    // 로컬 아이콘 추출 시도 (Toast Icons API 폴백 포함)
-    await window.localIconUtils.updateButtonIconWithFallback(applicationPath, iconInput);
+    // 로컬 아이콘 추출 시도
+    await window.localIconUtils.updateButtonIconFromLocalApp(applicationPath, iconInput);
   }
 });
 ```
@@ -429,17 +395,6 @@ const success = await window.localIconUtils.updateButtonIconFromLocalApp(applica
 if (success) {
   console.log('아이콘이 자동으로 설정되었습니다');
 }
-```
-
-### 3. 폴백 메커니즘 사용
-
-```javascript
-// 로컬 추출 실패 시 Toast Icons API로 폴백
-const applicationPath = '/Applications/SomeApp.app';
-const iconInput = document.getElementById('icon-input');
-
-const success = await window.localIconUtils.updateButtonIconWithFallback(applicationPath, iconInput);
-// 로컬 추출 → Toast Icons API → 실패 순으로 시도
 ```
 
 ## 성능 특성
@@ -562,32 +517,6 @@ import { updateButtonIconFromLocalApp } from './local-icon-utils.js';
 await updateButtonIconFromLocalApp(applicationPath, iconInput);
 ```
 
-#### 3. 폴백 포함 코드
-```javascript
-// 권장: 폴백 메커니즘 포함
-import { updateButtonIconWithFallback } from './local-icon-utils.js';
-await updateButtonIconWithFallback(applicationPath, iconInput);
-```
-
-### 설정 변경
-```javascript
-// 환경변수 또는 설정에서 아이콘 소스 선택
-const ICON_SOURCE = process.env.TOAST_ICON_SOURCE || 'local'; // 'local' | 'api' | 'fallback'
-
-switch (ICON_SOURCE) {
-  case 'local':
-    await updateButtonIconFromLocalApp(applicationPath, iconInput);
-    break;
-  case 'api':
-    await updateButtonIconFromApplication(applicationPath, iconInput);
-    break;
-  case 'fallback':
-  default:
-    await updateButtonIconWithFallback(applicationPath, iconInput);
-    break;
-}
-```
-
 ## 테스트 방법
 
 ### 1. 단위 테스트
@@ -698,6 +627,6 @@ for (const appName of testApps) {
 ### v0.8.0 (예정)
 - 로컬 앱 아이콘 추출 기능 추가
 - macOS .icns → PNG 변환 지원
-- Toast Icons API 폴백 메커니즘
-- 임시 파일 자동 정리
-- Base64 데이터 URL 지원
+- app data 디렉토리에 영구 저장
+- 스마트 캐싱 및 자동 정리
+- file:// URL 지원
