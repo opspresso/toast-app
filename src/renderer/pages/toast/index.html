@@ -127,7 +127,10 @@
         <div class="form-group">
           <label for="edit-button-icon">Icon</label>
           <div class="icon-input-container">
-            <div class="icon-preview" id="icon-preview"></div>
+            <div class="icon-preview" id="icon-preview">
+              <img id="icon-preview-img" style="display: none;" />
+              <span class="icon-preview-placeholder">🖼️</span>
+            </div>
             <input type="text" id="edit-button-icon" placeholder="Emoji or Image URL" />
             <button id="browse-icon-button" class="secondary-button icon-button" title="Find Icon">🔍</button>
             <button id="reload-icon-button" class="secondary-button icon-button" title="Reload Icon from Application">🔄</button>

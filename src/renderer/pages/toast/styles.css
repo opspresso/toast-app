@@ -1026,25 +1026,28 @@ body {
   border: 2px solid var(--border-color);
   border-radius: 6px;
   background-color: var(--search-bg);
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
   position: relative;
-  font-size: 16px;
+  overflow: hidden;
 }
 
-.icon-preview::before {
-  content: '🖼️';
+.icon-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.icon-preview-placeholder {
+  font-size: 16px;
   opacity: 0.5;
   display: block;
 }
 
-.icon-preview.has-icon::before {
+.icon-preview.has-icon .icon-preview-placeholder {
   display: none;
 }
 

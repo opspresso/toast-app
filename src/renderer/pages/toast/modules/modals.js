@@ -44,7 +44,7 @@ import {
   reloadIconButton,
   iconPreview,
 } from './dom-elements.js';
-import { showStatus } from './utils.js';
+import { showStatus, getFaviconFromUrl } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
 import { pages, currentPageIndex, updateCurrentPageButtons } from './pages.js';
 import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported } from './local-icon-utils.js';
@@ -83,6 +83,8 @@ export function setupModalEventListeners() {
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
     showActionFields(editButtonActionSelect.value);
+    // 액션 타입 변경 시 미리보기 업데이트
+    updateIconPreview();
   });
 
   // Browse button for application selection
@@ -256,6 +258,11 @@ export function setupModalEventListeners() {
     editButtonIconInput.addEventListener('input', updateIconPreview);
   }
 
+  // URL input change event listener for favicon preview
+  if (editButtonUrlInput) {
+    editButtonUrlInput.addEventListener('input', updateIconPreview);
+  }
+
   // Icon search modal event listeners
   setupIconSearchModal();
 }
@@ -375,6 +382,9 @@ function setupIconSearchModal() {
 
           // Set value to icon field
           editButtonIconInput.value = iconValue;
+
+          // Trigger input event to update preview
+          editButtonIconInput.dispatchEvent(new Event('input', { bubbles: true }));
 
           // Close modal
           closeIconSearchModal();
@@ -690,53 +700,102 @@ export function closeConfirmModal() {
 }
 
 /**
- * Update icon preview based on input value
+ * 아이콘 미리보기 업데이트 (toast 창 버튼과 동일한 로직 적용)
  */
 function updateIconPreview() {
   const iconValue = editButtonIconInput.value.trim();
+  const actionType = editButtonActionSelect.value;
+  const urlValue = editButtonUrlInput.value.trim();
+  const previewImg = document.getElementById('icon-preview-img');
+  const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
 
-  if (!iconValue) {
-    // Clear preview if no icon
-    iconPreview.style.backgroundImage = '';
+  // FlatColorIcons 처리
+  if (iconValue && iconValue.startsWith('FlatColorIcons.')) {
+    const iconKey = iconValue.replace('FlatColorIcons.', '');
+    let iconPath = null;
+
+    // 아이콘 카탈로그에서 검색
+    for (const categoryKey of Object.keys(window.IconsCatalog)) {
+      const category = window.IconsCatalog[categoryKey];
+      if (category.icons && category.icons[iconKey]) {
+        iconPath = category.icons[iconKey];
+        break;
+      }
+    }
+
+    if (iconPath) {
+      previewImg.src = iconPath;
+      previewImg.style.display = 'block';
+      placeholder.style.display = 'none';
+      iconPreview.classList.add('has-icon');
+      return;
+    }
+  }
+  // open 액션이고 아이콘이 비어있지만 URL이 있는 경우 favicon 사용
+  else if (actionType === 'open' && (!iconValue || iconValue === '') && urlValue) {
+    const faviconUrl = getFaviconFromUrl(urlValue);
+    previewImg.src = faviconUrl;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+    iconPreview.classList.add('has-icon');
+
+    // favicon 로딩 실패 시 기본 아이콘으로 대체
+    previewImg.onerror = function() {
+      previewImg.style.display = 'none';
+      placeholder.style.display = 'block';
+      placeholder.textContent = '🌐';
+      iconPreview.classList.remove('has-icon');
+    };
+    return;
+  }
+  // URL 형태의 아이콘 (file://, http://, https://)
+  else if (iconValue && (iconValue.startsWith('file://') || iconValue.startsWith('http://') || iconValue.startsWith('https://'))) {
+    previewImg.src = iconValue;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+    iconPreview.classList.add('has-icon');
+
+    // 이미지 로딩 실패 시 기본 아이콘으로 대체
+    previewImg.onerror = function() {
+      previewImg.style.display = 'none';
+      placeholder.style.display = 'block';
+      placeholder.textContent = '🔘';
+      iconPreview.classList.remove('has-icon');
+    };
+    return;
+  }
+  // 이모지나 텍스트 아이콘
+  else if (iconValue && iconValue !== '') {
+    previewImg.style.display = 'none';
+    placeholder.style.display = 'block';
+    placeholder.textContent = iconValue;
     iconPreview.classList.remove('has-icon');
     return;
   }
 
-  // Check if it's a file:// URL (local extracted icon)
-  if (iconValue.startsWith('file://')) {
-    iconPreview.style.backgroundImage = `url(${iconValue})`;
-    iconPreview.classList.add('has-icon');
-  }
-  // Check if it's a regular URL
-  else if (iconValue.startsWith('http://') || iconValue.startsWith('https://')) {
-    iconPreview.style.backgroundImage = `url(${iconValue})`;
-    iconPreview.classList.add('has-icon');
-  }
-  // Check if it's a FlatColorIcons reference
-  else if (iconValue.startsWith('FlatColorIcons.')) {
-    const iconKey = iconValue.replace('FlatColorIcons.', '');
-    // Find the icon in the catalog
-    let iconPath = null;
-    if (window.IconsCatalog) {
-      Object.keys(window.IconsCatalog).forEach(categoryKey => {
-        const category = window.IconsCatalog[categoryKey];
-        if (category.icons && category.icons[iconKey]) {
-          iconPath = category.icons[iconKey];
-        }
-      });
-    }
+  // 아이콘이 없는 경우 액션 타입별 기본 아이콘 표시
+  previewImg.style.display = 'none';
+  placeholder.style.display = 'block';
+  iconPreview.classList.remove('has-icon');
 
-    if (iconPath) {
-      iconPreview.style.backgroundImage = `url(${iconPath})`;
-      iconPreview.classList.add('has-icon');
-    } else {
-      iconPreview.style.backgroundImage = '';
-      iconPreview.classList.remove('has-icon');
-    }
-  }
-  // For emoji or other text, clear preview
-  else {
-    iconPreview.style.backgroundImage = '';
-    iconPreview.classList.remove('has-icon');
+  switch (actionType) {
+    case 'exec':
+      placeholder.textContent = '⚡';
+      break;
+    case 'application':
+      placeholder.textContent = '🚀';
+      break;
+    case 'open':
+      placeholder.textContent = '🌐';
+      break;
+    case 'script':
+      placeholder.textContent = '📜';
+      break;
+    case 'chain':
+      placeholder.textContent = '🔗';
+      break;
+    default:
+      placeholder.textContent = '🖼️';
+      break;
   }
 }
