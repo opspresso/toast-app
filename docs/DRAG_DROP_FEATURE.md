@@ -36,6 +36,7 @@
 ### 핵심 기능
 - 설정 모드에서 버튼 드래그 앤 드롭
 - 실시간 위치 변경
+- 단축키 자동 재할당 (qwertasdfgzxcvb 순서)
 - 자동 저장
 
 ### 지원 범위
@@ -49,7 +50,8 @@
 1. **설정 모드 진입**: 콤마(,) 키 또는 설정 아이콘 클릭
 2. **버튼 드래그**: 버튼을 마우스로 드래그
 3. **위치 변경**: 원하는 위치에 드롭
-4. **자동 저장**: 변경사항 즉시 저장
+4. **단축키 재할당**: 새로운 위치에 따라 qwertasdfgzxcvb 순서로 자동 재할당
+5. **자동 저장**: 변경사항 즉시 저장
 
 ## 기술 구현
 
@@ -134,14 +136,14 @@ const pageStructure = {
   buttons: [
     {
       name: "Files",
-      shortcut: "Q",
+      shortcut: "Q",  // 첫 번째 위치 = Q
       icon: "📁",
       action: "open",
       url: "/Users/username/Documents"
     },
     {
       name: "Browser",
-      shortcut: "W",
+      shortcut: "W",  // 두 번째 위치 = W
       icon: "🌐",
       action: "open",
       url: "https://google.com"
@@ -150,7 +152,8 @@ const pageStructure = {
 };
 
 // 드래그 앤 드롭은 배열 순서로 위치 관리
-// buttons[0] = 첫 번째 위치, buttons[1] = 두 번째 위치
+// buttons[0] = 첫 번째 위치 (Q), buttons[1] = 두 번째 위치 (W)
+// 위치 변경 시 단축키 자동 재할당: qwertasdfgzxcvb 순서
 ```
 
 ### IPC 통신
@@ -179,8 +182,15 @@ ipcMain.handle('reorder-buttons', async (event, data) => {
     const [movedButton] = buttons.splice(fromIndex, 1);
     buttons.splice(toIndex, 0, movedButton);
 
+    // 단축키 재할당 (qwertasdfgzxcvb 순서)
+    const BUTTON_SHORTCUTS = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
+    const buttonsWithReassignedShortcuts = buttons.map((button, index) => ({
+      ...button,
+      shortcut: BUTTON_SHORTCUTS[index] || button.shortcut
+    }));
+
     // 업데이트된 배열 저장
-    page.buttons = buttons;
+    page.buttons = buttonsWithReassignedShortcuts;
     configStore.set('pages', config.pages);
 
     return { success: true };
@@ -229,10 +239,12 @@ src/main/
 
 ### 위치 변경
 - 배열의 `splice()` 메서드로 버튼 순서 변경
+- 위치 변경 후 단축키 자동 재할당 (qwertasdfgzxcvb 순서)
 - 기존 구성 스키마 구조 유지
 
 ### 데이터 일관성
-- 기존 버튼 속성 (`name`, `shortcut`, `icon`, `action` 등) 보존
+- 기존 버튼 속성 (`name`, `icon`, `action` 등) 보존
+- `shortcut` 속성은 위치에 따라 자동 재할당 (qwertasdfgzxcvb 순서)
 - 추가 속성 없이 배열 순서만으로 위치 관리
 
 ## 테스트 시나리오
@@ -244,9 +256,10 @@ src/main/
 4. 유효하지 않은 드롭 처리
 
 ### 데이터 무결성 테스트
-1. 드래그 후 버튼 속성 보존 확인
-2. 구성 파일 저장/로드 테스트
-3. 페이지 전환 후 순서 유지 확인
+1. 드래그 후 버튼 속성 보존 확인 (단축키 제외)
+2. 드래그 후 단축키 자동 재할당 확인
+3. 구성 파일 저장/로드 테스트
+4. 페이지 전환 후 순서 및 단축키 유지 확인
 
 ### 성능 테스트
 1. 15개 버튼 환경에서 드래그 테스트
@@ -255,7 +268,8 @@ src/main/
 ## 주요 고려사항
 
 - **기존 스키마 준수**: 새로운 속성 추가 없이 배열 순서로 위치 관리
-- **데이터 일관성**: 기존 버튼 속성과 구조 보존
+- **데이터 일관성**: 기존 버튼 속성과 구조 보존 (단축키는 위치에 따라 자동 재할당)
+- **단축키 일관성**: 드래그 앤 드롭 후에도 qwertasdfgzxcvb 순서 유지
 - **성능**: DOM 조작 최소화, 이벤트 위임 사용
 - **오류 처리**: 드래그 실패 시 원위치 복원
 - **호환성**: 기존 구성 파일과 완전 호환
