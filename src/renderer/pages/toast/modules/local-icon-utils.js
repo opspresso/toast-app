@@ -36,9 +36,11 @@ async function extractLocalAppIcon(applicationPath, forceRefresh = false) {
  * 버튼 아이콘을 로컬에서 추출한 아이콘으로 업데이트
  * @param {string} applicationPath - 애플리케이션 파일 경로
  * @param {HTMLElement} iconInput - 아이콘 입력 필드 요소
+ * @param {HTMLElement} nameInput - 버튼 이름 입력 필드 요소 (선택사항)
+ * @param {boolean} forceRefresh - 기존 캐시를 무시하고 강제로 다시 추출
  * @returns {Promise<boolean>} - 성공 여부
  */
-async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
+async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInput = null, forceRefresh = false) {
   try {
     if (!applicationPath || !iconInput) {
       console.warn('⚠️ 필수 매개변수가 누락되었습니다');
@@ -49,25 +51,32 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput) {
     iconInput.placeholder = '아이콘 추출 중...';
     iconInput.disabled = true;
 
-    const iconUrl = await extractLocalAppIcon(applicationPath);
+    const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
 
-    if (iconUrl) {
-      iconInput.value = iconUrl;
+    if (result.success) {
+      // 아이콘 업데이트
+      iconInput.value = result.iconUrl;
       iconInput.placeholder = '아이콘이 설정되었습니다';
 
       const previewElement = iconInput.parentElement.querySelector('.icon-preview');
       if (previewElement) {
-        previewElement.style.backgroundImage = `url(${iconUrl})`;
+        previewElement.style.backgroundImage = `url(${result.iconUrl})`;
         previewElement.style.backgroundSize = 'contain';
         previewElement.style.backgroundRepeat = 'no-repeat';
         previewElement.style.backgroundPosition = 'center';
+      }
+
+      // 버튼 이름 업데이트 (nameInput이 제공되고 비어있는 경우)
+      if (nameInput && (!nameInput.value || nameInput.value.trim() === '')) {
+        nameInput.value = result.appName;
+        console.log(`✅ 버튼 이름이 자동으로 설정되었습니다: ${result.appName}`);
       }
 
       console.log('✅ 버튼 아이콘이 로컬에서 성공적으로 설정되었습니다');
       return true;
     } else {
       iconInput.placeholder = originalPlaceholder;
-      console.log('❌ 로컬 아이콘을 찾을 수 없습니다');
+      console.log(`❌ 로컬 아이콘을 찾을 수 없습니다: ${result.error}`);
       return false;
     }
   } catch (err) {
@@ -142,9 +151,10 @@ function isLocalIconExtractionSupported() {
  * 아이콘 추출 버튼 생성
  * @param {HTMLElement} applicationInput - 애플리케이션 입력 필드
  * @param {HTMLElement} iconInput - 아이콘 입력 필드
+ * @param {HTMLElement} nameInput - 버튼 이름 입력 필드 (선택사항)
  * @returns {HTMLElement} - 생성된 버튼 요소
  */
-function createIconExtractionButton(applicationInput, iconInput) {
+function createIconExtractionButton(applicationInput, iconInput, nameInput = null) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'icon-extract-btn';
@@ -162,7 +172,7 @@ function createIconExtractionButton(applicationInput, iconInput) {
     button.innerHTML = '⏳ 추출 중...';
 
     try {
-      const success = await updateButtonIconFromLocalApp(applicationPath, iconInput);
+      const success = await updateButtonIconFromLocalApp(applicationPath, iconInput, nameInput);
       if (success) {
         button.innerHTML = '✅ 완료';
         setTimeout(() => {

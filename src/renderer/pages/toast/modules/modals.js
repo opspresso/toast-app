@@ -40,6 +40,9 @@ import {
   confirmMessage,
   confirmCancelButton,
   confirmOkButton,
+  browseIconButton,
+  reloadIconButton,
+  iconPreview,
 } from './dom-elements.js';
 import { showStatus } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
@@ -114,9 +117,13 @@ export function setupModalEventListeners() {
           // Auto-extract icon if supported and icon field is empty
           if (isLocalIconExtractionSupported() && !editButtonIconInput.value.trim()) {
             try {
-              const success = await updateButtonIconFromLocalApp(result.filePaths[0], editButtonIconInput);
+              const success = await updateButtonIconFromLocalApp(
+                result.filePaths[0],
+                editButtonIconInput,
+                editButtonNameInput
+              );
               if (success) {
-                showStatus('아이콘이 자동으로 추출되었습니다.', 'success');
+                showStatus('아이콘과 버튼 이름이 자동으로 설정되었습니다.', 'success');
               }
             } catch (error) {
               console.warn('자동 아이콘 추출 실패:', error);
@@ -195,6 +202,59 @@ export function setupModalEventListeners() {
   closeProfileModal.addEventListener('click', hideProfileModal);
   closeProfileButton.addEventListener('click', hideProfileModal);
   logoutButton.addEventListener('click', handleLogout);
+
+  // Icon reload button event listener
+  if (reloadIconButton) {
+    reloadIconButton.addEventListener('click', async () => {
+      try {
+        // Get application path from the application input field
+        const applicationPath = editButtonApplicationInput.value.trim();
+
+        if (!applicationPath) {
+          showStatus('애플리케이션을 먼저 선택해주세요.', 'warning');
+          return;
+        }
+
+        if (!isLocalIconExtractionSupported()) {
+          showStatus('아이콘 추출은 macOS에서만 지원됩니다.', 'warning');
+          return;
+        }
+
+        // Disable button during extraction
+        reloadIconButton.disabled = true;
+        const originalText = reloadIconButton.innerHTML;
+        reloadIconButton.innerHTML = '⏳';
+        reloadIconButton.title = '아이콘 추출 중...';
+
+        // Force refresh icon extraction
+        const success = await updateButtonIconFromLocalApp(
+          applicationPath,
+          editButtonIconInput,
+          editButtonNameInput,
+          true // forceRefresh = true
+        );
+
+        if (success) {
+          showStatus('아이콘이 성공적으로 새로고침되었습니다.', 'success');
+        } else {
+          showStatus('아이콘 새로고침에 실패했습니다.', 'error');
+        }
+      } catch (error) {
+        console.error('아이콘 리로드 오류:', error);
+        showStatus('아이콘 새로고침 중 오류가 발생했습니다.', 'error');
+      } finally {
+        // Re-enable button
+        reloadIconButton.disabled = false;
+        reloadIconButton.innerHTML = '🔄';
+        reloadIconButton.title = 'Reload Icon from Application';
+      }
+    });
+  }
+
+  // Icon input change event listener for preview
+  if (editButtonIconInput) {
+    editButtonIconInput.addEventListener('input', updateIconPreview);
+  }
 
   // Icon search modal event listeners
   setupIconSearchModal();
@@ -383,6 +443,9 @@ export function editButtonSettings(button) {
 
   // Show modal
   buttonEditModal.classList.add('show');
+
+  // Update icon preview
+  updateIconPreview();
 
   // Focus on name input field
   editButtonNameInput.focus();
@@ -624,4 +687,56 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
 export function closeConfirmModal() {
   confirmModal.classList.remove('show');
   window.toast.setModalOpen(false);
+}
+
+/**
+ * Update icon preview based on input value
+ */
+function updateIconPreview() {
+  const iconValue = editButtonIconInput.value.trim();
+
+  if (!iconValue) {
+    // Clear preview if no icon
+    iconPreview.style.backgroundImage = '';
+    iconPreview.classList.remove('has-icon');
+    return;
+  }
+
+  // Check if it's a file:// URL (local extracted icon)
+  if (iconValue.startsWith('file://')) {
+    iconPreview.style.backgroundImage = `url(${iconValue})`;
+    iconPreview.classList.add('has-icon');
+  }
+  // Check if it's a regular URL
+  else if (iconValue.startsWith('http://') || iconValue.startsWith('https://')) {
+    iconPreview.style.backgroundImage = `url(${iconValue})`;
+    iconPreview.classList.add('has-icon');
+  }
+  // Check if it's a FlatColorIcons reference
+  else if (iconValue.startsWith('FlatColorIcons.')) {
+    const iconKey = iconValue.replace('FlatColorIcons.', '');
+    // Find the icon in the catalog
+    let iconPath = null;
+    if (window.IconsCatalog) {
+      Object.keys(window.IconsCatalog).forEach(categoryKey => {
+        const category = window.IconsCatalog[categoryKey];
+        if (category.icons && category.icons[iconKey]) {
+          iconPath = category.icons[iconKey];
+        }
+      });
+    }
+
+    if (iconPath) {
+      iconPreview.style.backgroundImage = `url(${iconPath})`;
+      iconPreview.classList.add('has-icon');
+    } else {
+      iconPreview.style.backgroundImage = '';
+      iconPreview.classList.remove('has-icon');
+    }
+  }
+  // For emoji or other text, clear preview
+  else {
+    iconPreview.style.backgroundImage = '';
+    iconPreview.classList.remove('has-icon');
+  }
 }

@@ -78,6 +78,11 @@ export const scriptInputGroup = document.getElementById('script-input-group');
 export const applicationInputGroup = document.getElementById('application-input-group');
 export const chainInputGroup = document.getElementById('chain-input-group');
 
+// Icon related elements
+export const browseIconButton = document.getElementById('browse-icon-button');
+export const reloadIconButton = document.getElementById('reload-icon-button');
+export const iconPreview = document.getElementById('icon-preview');
+
 // Confirm modal elements
 export const confirmModal = document.getElementById('confirm-modal');
 export const confirmTitle = document.getElementById('confirm-title');
