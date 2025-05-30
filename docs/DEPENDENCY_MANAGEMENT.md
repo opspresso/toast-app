@@ -1,143 +1,140 @@
-# Dependency Management
+# Toast 앱 의존성 관리
 
-This document outlines the dependency management strategy used in the Toast App, including policies for adding, updating, and maintaining external dependencies.
+이 문서는 Toast 앱에서 사용하는 의존성 관리 전략을 설명하며, 외부 의존성의 추가, 업데이트 및 유지 관리 정책을 포함합니다.
 
-## Table of Contents
+## 목차
 
-- [Dependency Management](#dependency-management)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Dependency Selection Criteria](#dependency-selection-criteria)
-  - [Current Dependencies](#current-dependencies)
-    - [Production Dependencies](#production-dependencies)
-    - [Development Dependencies](#development-dependencies)
-  - [Versioning Policy](#versioning-policy)
-  - [Updating Dependencies](#updating-dependencies)
-  - [Security Considerations](#security-considerations)
-  - [Dependency Auditing](#dependency-auditing)
-  - [Package Management](#package-management)
-  - [Handling Breaking Changes](#handling-breaking-changes)
-  - [Troubleshooting Common Issues](#troubleshooting-common-issues)
+- [개요](#개요)
+- [의존성 선택 기준](#의존성-선택-기준)
+- [현재 의존성](#현재-의존성)
+  - [프로덕션 의존성](#프로덕션-의존성)
+  - [개발 의존성](#개발-의존성)
+- [버전 관리 정책](#버전-관리-정책)
+- [의존성 업데이트](#의존성-업데이트)
+- [보안 고려사항](#보안-고려사항)
+- [의존성 감사](#의존성-감사)
+- [패키지 관리](#패키지-관리)
+- [호환성 문제 처리](#호환성-문제-처리)
+- [일반적인 문제 해결](#일반적인-문제-해결)
 
-## Overview
+## 개요
 
-Toast App manages dependencies using Yarn, with package information stored in `package.json`. This document provides guidelines on how dependencies are evaluated, selected, and maintained throughout the project lifecycle.
+Toast 앱은 npm을 사용하여 의존성을 관리하며, 패키지 정보는 `package.json`에 저장됩니다. 이 문서는 프로젝트 생명주기 전반에 걸쳐 의존성을 평가, 선택 및 유지 관리하는 방법에 대한 가이드라인을 제공합니다.
 
-## Dependency Selection Criteria
+## 의존성 선택 기준
 
-When considering new dependencies, the following criteria are evaluated:
+새로운 의존성을 고려할 때 다음 기준을 평가합니다:
 
-1. **Necessity**: Does the dependency solve a specific problem that would be significantly more complex to solve in-house?
-2. **Maintenance**: Is the dependency actively maintained with regular updates and security patches?
-3. **Community Support**: Does the dependency have a robust user base and community support?
-4. **Bundle Size**: What impact will the dependency have on the application's bundle size?
-5. **License**: Does the dependency use a license compatible with our project?
-6. **Documentation**: Is the dependency well-documented?
-7. **Testing**: Is the dependency well-tested with good test coverage?
+1. **필요성**: 해당 의존성이 자체 개발하기에는 상당히 복잡한 특정 문제를 해결하는가?
+2. **유지 관리**: 의존성이 정기적인 업데이트와 보안 패치로 활발히 유지 관리되고 있는가?
+3. **커뮤니티 지원**: 의존성이 견고한 사용자 기반과 커뮤니티 지원을 가지고 있는가?
+4. **번들 크기**: 의존성이 애플리케이션의 번들 크기에 미치는 영향은 무엇인가?
+5. **라이선스**: 의존성이 우리 프로젝트와 호환되는 라이선스를 사용하는가?
+6. **문서화**: 의존성이 잘 문서화되어 있는가?
+7. **테스트**: 의존성이 좋은 테스트 커버리지로 잘 테스트되어 있는가?
 
-## Current Dependencies
+## 현재 의존성
 
-### Production Dependencies
+### 프로덕션 의존성
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| @nut-tree-fork/nut-js | ^4.2.6 | Native UI automation for keyboard shortcuts |
-| axios | ^1.8.4 | HTTP client for API requests |
-| dotenv | ^16.5.0 | Environment variable management |
-| electron-log | ^5.3.4 | Logging utility for Electron |
-| electron-store | ^8.1.0 | Simple data persistence for Electron apps |
-| electron-updater | ^6.6.2 | Auto-update functionality |
-| uuid | ^11.1.0 | Generation of unique identifiers |
-| yaml | ^2.7.1 | YAML parsing and generation |
+| 의존성 | 버전 | 목적 |
+|--------|------|------|
+| axios | ^1.8.4 | API 요청을 위한 HTTP 클라이언트 |
+| dotenv | ^16.5.0 | 환경 변수 관리 |
+| electron-log | ^5.3.4 | Electron용 로깅 유틸리티 |
+| electron-store | ^8.1.0 | Electron 앱용 간단한 데이터 지속성 |
+| electron-updater | ^6.6.2 | 자동 업데이트 기능 |
+| uuid | ^11.1.0 | 고유 식별자 생성 |
+| yaml | ^2.7.1 | YAML 파싱 및 생성 |
 
-### Development Dependencies
+### 개발 의존성
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| @electron/notarize | ^3.0.1 | Code signing for macOS |
-| electron | ^35.1.5 | Electron framework |
-| electron-builder | ^26.0.12 | Application packaging and distribution |
-| electron-builder-notarize | ^1.5.2 | Notarization helper for electron-builder |
-| eslint | ^8.57.0 | JavaScript linting |
-| eslint-config-prettier | ^9.1.0 | ESLint configuration for Prettier |
-| jest | ^29.7.0 | Testing framework |
-| prettier | ^3.2.5 | Code formatting |
+| 의존성 | 버전 | 목적 |
+|--------|------|------|
+| @electron/notarize | ^3.0.1 | macOS용 코드 서명 |
+| electron | ^35.1.5 | Electron 프레임워크 |
+| electron-builder | ^26.0.12 | 애플리케이션 패키징 및 배포 |
+| electron-builder-notarize | ^1.5.2 | electron-builder용 공증 헬퍼 |
+| eslint | ^8.57.0 | JavaScript 린팅 |
+| eslint-config-prettier | ^9.1.0 | Prettier용 ESLint 구성 |
+| jest | ^29.7.0 | 테스팅 프레임워크 |
+| prettier | ^3.2.5 | 코드 포맷팅 |
 
-## Versioning Policy
+## 버전 관리 정책
 
-The Toast App uses semantic versioning (SemVer) for dependencies:
+Toast 앱은 의존성에 대해 시맨틱 버전 관리(SemVer)를 사용합니다:
 
-- **Patch updates** (`^1.0.x`): Automatically accepted for security fixes and bug fixes
-- **Minor updates** (`^1.x.0`): Accepted after testing for backward compatibility
-- **Major updates** (`^x.0.0`): Require thorough evaluation, testing, and potentially code changes
+- **패치 업데이트** (`^1.0.x`): 보안 수정 및 버그 수정에 대해 자동으로 허용
+- **마이너 업데이트** (`^1.x.0`): 하위 호환성 테스트 후 허용
+- **메이저 업데이트** (`^x.0.0`): 철저한 평가, 테스트 및 잠재적으로 코드 변경 필요
 
-Dependencies are specified with caret (`^`) notation to allow for automatic patch and minor version updates that maintain backward compatibility.
+의존성은 하위 호환성을 유지하는 자동 패치 및 마이너 버전 업데이트를 허용하기 위해 캐럿(`^`) 표기법으로 지정됩니다.
 
-## Updating Dependencies
+## 의존성 업데이트
 
-Dependencies are regularly updated following this process:
+의존성은 다음 프로세스에 따라 정기적으로 업데이트됩니다:
 
-1. Run `yarn outdated` to identify outdated packages
-2. Research changelogs for packages with available updates
-3. Update non-breaking changes with `yarn upgrade-interactive --latest`
-4. Test thoroughly after updates
-5. Document significant dependency changes in release notes
+1. `npm outdated`를 실행하여 오래된 패키지 식별
+2. 사용 가능한 업데이트가 있는 패키지의 변경 로그 조사
+3. `npm update`로 호환성을 깨지 않는 변경 사항 업데이트
+4. 업데이트 후 철저한 테스트
+5. 릴리스 노트에 중요한 의존성 변경 사항 문서화
 
-Automated dependency updates are configured through GitHub Dependabot, which creates pull requests for dependency updates that pass initial verification.
+자동화된 의존성 업데이트는 GitHub Dependabot을 통해 구성되어 있으며, 초기 검증을 통과한 의존성 업데이트에 대한 풀 리퀘스트를 생성합니다.
 
-## Security Considerations
+## 보안 고려사항
 
-Security is a priority in dependency management:
+의존성 관리에서 보안은 우선순위입니다:
 
-1. Regular security audits using `yarn audit`
-2. Prompt addressing of security vulnerabilities
-3. Review of new dependencies for security implications
-4. Monitoring security advisories for existing dependencies
+1. `npm audit`를 사용한 정기적인 보안 감사
+2. 보안 취약점의 신속한 해결
+3. 보안 영향에 대한 새로운 의존성 검토
+4. 기존 의존성에 대한 보안 권고 모니터링
 
-## Dependency Auditing
+## 의존성 감사
 
-The project conducts regular dependency audits to:
+프로젝트는 다음을 위해 정기적인 의존성 감사를 수행합니다:
 
-1. Identify and remove unused dependencies
-2. Consolidate similar dependencies
-3. Verify license compliance
-4. Check for security vulnerabilities
-5. Evaluate performance impact
+1. 사용하지 않는 의존성 식별 및 제거
+2. 유사한 의존성 통합
+3. 라이선스 준수 확인
+4. 보안 취약점 확인
+5. 성능 영향 평가
 
-## Package Management
+## 패키지 관리
 
-The Toast App uses Yarn as the primary package manager:
+Toast 앱은 npm을 주요 패키지 매니저로 사용합니다:
 
-- Yarn v1.22.x is the standard version
-- Yarn.lock is committed to version control to ensure consistent installations
-- `yarn` is used for installation
-- `yarn add` and `yarn add --dev` are used for adding new dependencies
+- npm v8 이상이 권장됩니다
+- package-lock.json은 일관된 설치를 보장하기 위해 버전 관리에 커밋됩니다
+- 설치에는 `npm install`을 사용합니다
+- 새로운 의존성 추가에는 `npm install <package>` 및 `npm install --save-dev <package>`를 사용합니다
 
-## Handling Breaking Changes
+## 호환성 문제 처리
 
-When a dependency introduces breaking changes:
+의존성이 호환성을 깨는 변경 사항을 도입할 때:
 
-1. Create a dedicated branch for the update
-2. Update the dependency and identify affected code
-3. Refactor code to accommodate changes
-4. Add or update tests to verify functionality
-5. Document changes in migration notes
-6. Submit a pull request with comprehensive details about the update
+1. 업데이트를 위한 전용 브랜치 생성
+2. 의존성 업데이트 및 영향받는 코드 식별
+3. 변경 사항을 수용하기 위한 코드 리팩터링
+4. 기능을 확인하기 위한 테스트 추가 또는 업데이트
+5. 마이그레이션 노트에 변경 사항 문서화
+6. 업데이트에 대한 포괄적인 세부 정보가 포함된 풀 리퀘스트 제출
 
-## Troubleshooting Common Issues
+## 일반적인 문제 해결
 
-Common dependency-related issues and their solutions:
+일반적인 의존성 관련 문제와 해결 방법:
 
-1. **Conflicting Dependencies**:
-   - Use `yarn why <package>` to understand why a package is installed
-   - Review and resolve package version conflicts
+1. **의존성 충돌**:
+   - `npm ls <package>`를 사용하여 패키지 의존성 트리 확인
+   - 패키지 버전 충돌 검토 및 해결
 
-2. **Build Failures After Updates**:
-   - Roll back to previous working versions temporarily
-   - Isolate the problematic dependency
-   - Check for environment or configuration issues
+2. **업데이트 후 빌드 실패**:
+   - 일시적으로 이전 작동 버전으로 롤백
+   - 문제가 있는 의존성 격리
+   - 환경 또는 구성 문제 확인
 
-3. **Performance Degradation**:
-   - Profile the application to identify slow components
-   - Consider alternatives or optimizations for problematic dependencies
-   - Evaluate the use of code splitting to reduce initial load times
+3. **성능 저하**:
+   - 애플리케이션을 프로파일링하여 느린 구성 요소 식별
+   - 문제가 있는 의존성에 대한 대안 또는 최적화 고려
+   - 초기 로드 시간을 줄이기 위한 코드 분할 사용 평가
