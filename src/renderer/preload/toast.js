@@ -76,6 +76,9 @@ contextBridge.exposeInMainWorld('toast', {
   // Configuration
   getConfig: key => ipcRenderer.invoke('get-config', key),
 
+  // Environment variables
+  getEnv: key => ipcRenderer.invoke('get-env', key),
+
   // Actions
   executeAction: action => ipcRenderer.invoke('execute-action', action),
 
