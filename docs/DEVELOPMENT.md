@@ -132,7 +132,6 @@ toast-app/
 - **application.js**: 애플리케이션 관련 액션
 - **exec.js**: 명령 실행 액션
 - **open.js**: URL 및 파일 열기 액션
-- **shortcut.js**: 단축키 실행 액션
 - **script.js**: 스크립트 실행 액션
 - **chain.js**: 여러 액션 체이닝
 
