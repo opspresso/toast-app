@@ -47,8 +47,6 @@
 #### 도구
 
 - **Jest**: 주요 테스팅 프레임워크
-- **Sinon**: 모의 객체, 스텁 및 스파이 생성을 위한 도구
-- **Electron-Mocha**: Electron 특정 테스팅을 위한 도구
 
 #### 단위 테스트 예시
 
@@ -90,40 +88,24 @@ describe('validateAction', () => {
 
 #### 도구
 
-- **Spectron**: Electron 애플리케이션 테스팅을 위한 도구
-- **Electron-Mocha**: Electron 컨텍스트에서 테스트 실행을 위한 도구
-- **Mock-FS**: 파일 시스템 모의를 위한 도구
+- **Jest**: 테스팅 프레임워크
+- **Mock-FS**: 파일 시스템 모의를 위한 도구 (필요시 추가 설치)
 
 #### 통합 테스트 예시
 
 ```javascript
-// Testing the executeAction flow from IPC to action execution
+// Testing the executeAction flow
 describe('Action Execution Flow', () => {
-  let app;
-
-  beforeEach(async () => {
-    app = new spectron.Application({
-      path: electronPath,
-      args: [path.join(__dirname, '..')]
-    });
-
-    await app.start();
-  });
-
-  afterEach(async () => {
-    if (app && app.isRunning()) {
-      await app.stop();
-    }
-  });
-
   it('should execute a command and return the result', async () => {
-    const result = await app.electron.ipcRenderer.invoke('execute-action', {
+    const { executeAction } = require('../src/main/executor');
+
+    const result = await executeAction({
       action: 'exec',
       command: 'echo "Test"'
     });
 
     expect(result.success).toBe(true);
-    expect(result.stdout.trim()).toBe('Test');
+    expect(result.output).toContain('Test');
   });
 });
 ```
@@ -143,40 +125,21 @@ describe('Action Execution Flow', () => {
 
 #### 도구
 
-- **Spectron**: Electron 애플리케이션 자동화를 위한 도구
-- **WebdriverIO**: UI 상호작용을 위한 도구
-- **Mocha**: 테스트 구조를 위한 도구
+- **Jest**: 테스팅 프레임워크
+- **Electron Testing Library**: UI 테스팅을 위한 도구 (필요시 추가 설치)
 
 #### 엔드 투 엔드 테스트 예시
 
 ```javascript
 // Testing the global hotkey functionality
 describe('Global Hotkey', () => {
-  let app;
+  it('should register global shortcuts', () => {
+    const { registerGlobalShortcuts } = require('../src/main/shortcuts');
+    const mockConfig = { get: jest.fn().mockReturnValue('Alt+Space') };
+    const mockWindows = { toast: { show: jest.fn() } };
 
-  beforeEach(async () => {
-    app = new spectron.Application({
-      path: electronPath,
-      args: [path.join(__dirname, '..')]
-    });
-
-    await app.start();
-    await app.client.waitUntilWindowLoaded();
-  });
-
-  afterEach(async () => {
-    if (app && app.isRunning()) {
-      await app.stop();
-    }
-  });
-
-  it('should show the Toast window when the global hotkey is pressed', async () => {
-    // Simulate pressing the global hotkey
-    await app.electron.ipcRenderer.send('test-global-hotkey');
-
-    // Check if the Toast window is visible
-    const isVisible = await app.browserWindow.isVisible();
-    expect(isVisible).toBe(true);
+    const result = registerGlobalShortcuts(mockConfig, mockWindows);
+    expect(result).toBe(true);
   });
 });
 ```
@@ -195,9 +158,8 @@ UI 컴포넌트 테스트는 UI 컴포넌트의 동작과 외관에 초점을 �
 
 #### 도구
 
-- **Testing Library**: 컴포넌트 테스팅을 위한 도구
-- **Jest**: 어서션을 위한 도구
-- **Electron-Mocha**: Electron 컨텍스트에서 테스트 실행을 위한 도구
+- **Jest**: 테스팅 프레임워크
+- **JSDOM**: DOM 환경 시뮬레이션
 
 #### UI 컴포넌트 테스트 예시
 
@@ -242,8 +204,7 @@ describe('Button Component', () => {
 
 #### 도구
 
-- **axe-core**: 자동화된 접근성 테스팅을 위한 도구
-- **Lighthouse**: 접근성 감사를 위한 도구
+- **Jest**: 기본 테스팅 프레임워크
 - **수동 테스팅**: 스크린 리더 및 키보드 탐색을 통한 테스트
 
 #### 접근성 테스트 예시
@@ -289,32 +250,28 @@ describe('Keyboard Navigation', () => {
 
 #### 도구
 
-- **Electron DevTools**: 프로파일링 및 모니터링을 위한 도구
+- **Jest**: 성능 테스트를 위한 기본 프레임워크
 - **Performance API**: 시간 측정을 위한 API
 - **사용자 정의 모니터링**: 리소스 사용량 추적을 위한 도구
 
 #### 성능 테스트 예시
 
 ```javascript
-// Testing the startup time
-describe('Application Startup', () => {
-  it('should start in under 2 seconds', async () => {
-    const startTime = Date.now();
+// Testing function performance
+describe('Performance Tests', () => {
+  it('should execute actions quickly', async () => {
+    const { executeAction } = require('../src/main/executor');
+    const startTime = performance.now();
 
-    const app = new spectron.Application({
-      path: electronPath,
-      args: [path.join(__dirname, '..')]
+    await executeAction({
+      action: 'exec',
+      command: 'echo "Performance test"'
     });
 
-    await app.start();
-    await app.client.waitUntilWindowLoaded();
+    const endTime = performance.now();
+    const executionTime = endTime - startTime;
 
-    const endTime = Date.now();
-    const startupTime = endTime - startTime;
-
-    expect(startupTime).toBeLessThan(2000);
-
-    await app.stop();
+    expect(executionTime).toBeLessThan(1000); // 1초 미만
   });
 });
 ```

@@ -7,6 +7,9 @@ export const TOAST_URL = window.toast?.apiBaseUrl || 'https://toastapp.io';
 export const SUBSCRIPTION_URL = `${TOAST_URL}/subscription`;
 export const DASHBOARD_URL = `${TOAST_URL}/dashboard`;
 
+// 버튼 단축키 순서 정의 (qwertasdfgzxcvb)
+export const BUTTON_SHORTCUTS = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
+
 // Define default button set
 export const defaultButtons = [
   // qwert row
@@ -125,16 +128,32 @@ export const defaultButtons = [
 export const emptyButtons = Array(15)
   .fill(null)
   .map((_, index) => {
-    const rowLetters = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
     return {
       name: ``,
-      shortcut: rowLetters[index],
+      shortcut: BUTTON_SHORTCUTS[index],
       icon: '',
       action: 'application',
       application: '',
       applicationParameters: '',
     };
   });
+
+/**
+ * 버튼 배열의 단축키를 순서대로 재할당하는 함수
+ * @param {Array} buttons - 버튼 배열
+ * @returns {Array} 단축키가 재할당된 버튼 배열
+ */
+export function reassignButtonShortcuts(buttons) {
+  return buttons.map((button, index) => {
+    if (index < BUTTON_SHORTCUTS.length) {
+      return {
+        ...button,
+        shortcut: BUTTON_SHORTCUTS[index]
+      };
+    }
+    return button;
+  });
+}
 
 // Keyboard shortcuts help data
 export const shortcuts = [

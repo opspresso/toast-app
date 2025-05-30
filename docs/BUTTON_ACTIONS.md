@@ -4,6 +4,17 @@
 
 버튼 구성 스키마에 대한 자세한 내용은 [CONFIG_SCHEMA.md](./CONFIG_SCHEMA.md)를 참조하세요.
 
+## 버튼 단축키 규칙
+
+**중요**: 모든 버튼의 단축키는 페이지 내 위치에 따라 순서대로 **qwertasdfgzxcvb**로 자동 할당됩니다.
+
+- **첫 번째 행**: Q, W, E, R, T (5개)
+- **두 번째 행**: A, S, D, F, G (5개)
+- **세 번째 행**: Z, X, C, V, B (5개)
+- **총 15개 버튼**까지 지원
+
+버튼의 위치가 변경되면 변경된 순서에 따라 단축키가 자동으로 재설정됩니다. 사용자가 직접 단축키를 수정할 수 없으며, 시스템에서 자동으로 관리됩니다.
+
 ## 액션 유형 개요
 
 Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
@@ -31,7 +42,7 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 ```json
 {
   "name": "Photoshop",
-  "shortcut": "P",
+  "shortcut": "Q",
   "icon": "🎨",
   "action": "application",
   "applicationPath": "/Applications/Adobe Photoshop 2023/Adobe Photoshop 2023.app",
@@ -60,7 +71,7 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 ```json
 {
   "name": "Git Status",
-  "shortcut": "G",
+  "shortcut": "Q",
   "icon": "📊",
   "action": "exec",
   "command": "git status",
@@ -90,7 +101,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ```json
 {
   "name": "Documentation",
-  "shortcut": "D",
+  "shortcut": "Q",
   "icon": "📚",
   "action": "open",
   "url": "https://docs.example.com"
@@ -100,7 +111,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ```json
 {
   "name": "Open Project",
-  "shortcut": "P",
+  "shortcut": "W",
   "icon": "📁",
   "action": "open",
   "path": "~/projects/my-project",
@@ -128,7 +139,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ```json
 {
   "name": "Hello World Script",
-  "shortcut": "H",
+  "shortcut": "Q",
   "icon": "👋",
   "action": "script",
   "script": "console.log('Hello, World!'); return { message: 'Hello from JavaScript!' };",
@@ -139,7 +150,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ```json
 {
   "name": "System Information",
-  "shortcut": "I",
+  "shortcut": "W",
   "icon": "💻",
   "action": "script",
   "script": "Get-ComputerInfo | Format-List",
@@ -172,7 +183,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 ```json
 {
   "name": "Development Setup",
-  "shortcut": "D",
+  "shortcut": "Q",
   "icon": "🔗",
   "action": "chain",
   "actions": [

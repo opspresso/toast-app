@@ -1,125 +1,123 @@
-# Platform-Specific Features and Considerations
+# Toast 앱 플랫폼별 기능 및 고려사항
 
-This document outlines platform-specific features, considerations, and implementation details for Toast App on macOS and Windows.
+이 문서는 Toast 앱의 플랫폼별 기능, 고려사항 및 구현 세부사항을 설명합니다.
 
-## Table of Contents
+## 목차
 
-- [Platform-Specific Features and Considerations](#platform-specific-features-and-considerations)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Supported Platforms](#supported-platforms)
-  - [macOS-Specific Features](#macos-specific-features)
-    - [Tray Integration](#tray-integration)
-    - [Global Keyboard Shortcuts](#global-keyboard-shortcuts)
-    - [Window Management](#window-management)
-    - [Native Scripting](#native-scripting)
-    - [Code Signing and Notarization](#code-signing-and-notarization)
-    - [Installation and Updates](#installation-and-updates)
-  - [Windows-Specific Features](#windows-specific-features)
-    - [Tray Integration](#tray-integration-1)
-    - [Global Keyboard Shortcuts](#global-keyboard-shortcuts-1)
-    - [Window Management](#window-management-1)
-    - [Native Scripting](#native-scripting-1)
-    - [Code Signing](#code-signing)
-    - [Installation and Updates](#installation-and-updates-1)
-  - [Common Code with Platform-Specific Branches](#common-code-with-platform-specific-branches)
-  - [Platform Detection](#platform-detection)
-  - [Cross-Platform Development Guidelines](#cross-platform-development-guidelines)
-  - [Testing on Multiple Platforms](#testing-on-multiple-platforms)
-  - [Known Platform-Specific Issues](#known-platform-specific-issues)
+- [개요](#개요)
+- [지원 플랫폼](#지원-플랫폼)
+- [macOS 전용 기능](#macos-전용-기능)
+  - [트레이 통합](#트레이-통합)
+  - [전역 키보드 단축키](#전역-키보드-단축키)
+  - [윈도우 관리](#윈도우-관리)
+  - [네이티브 스크립팅](#네이티브-스크립팅)
+  - [코드 서명 및 공증](#코드-서명-및-공증)
+  - [설치 및 업데이트](#설치-및-업데이트)
+- [Windows 전용 기능](#windows-전용-기능)
+  - [시스템 트레이 통합](#시스템-트레이-통합)
+  - [전역 키보드 단축키](#전역-키보드-단축키-1)
+  - [윈도우 관리](#윈도우-관리-1)
+  - [네이티브 스크립팅](#네이티브-스크립팅-1)
+  - [코드 서명](#코드-서명)
+  - [설치 및 업데이트](#설치-및-업데이트-1)
+- [플랫폼별 분기를 가진 공통 코드](#플랫폼별-분기를-가진-공통-코드)
+- [플랫폼 감지](#플랫폼-감지)
+- [크로스 플랫폼 개발 가이드라인](#크로스-플랫폼-개발-가이드라인)
+- [다중 플랫폼 테스팅](#다중-플랫폼-테스팅)
+- [알려진 플랫폼별 문제](#알려진-플랫폼별-문제)
 
-## Overview
+## 개요
 
-Toast App is designed to provide a consistent user experience across macOS and Windows while leveraging each platform's native capabilities. This document focuses on platform-specific implementations and considerations for developers.
+Toast 앱은 macOS와 Windows에서 일관된 사용자 경험을 제공하면서 각 플랫폼의 네이티브 기능을 활용하도록 설계되었습니다. 이 문서는 개발자를 위한 플랫폼별 구현 및 고려사항에 중점을 둡니다.
 
-## Supported Platforms
+## 지원 플랫폼
 
-Toast App officially supports:
+Toast 앱이 공식적으로 지원하는 플랫폼:
 
-- **macOS**: 10.14 (Mojave) and later
-- **Windows**: Windows 10 and later
+- **macOS**: 10.14 (Mojave) 이상
+- **Windows**: Windows 10 이상
 
-## macOS-Specific Features
+## macOS 전용 기능
 
-### Tray Integration
+### 트레이 통합
 
-On macOS, Toast App is integrated into the menu bar:
+macOS에서 Toast 앱은 메뉴 바에 통합됩니다:
 
-- Uses `NSStatusItem` via Electron's `Tray` API
-- Menu bar icon uses template image format (`tray-icon-Template.png`)
-- Supports dark/light mode automatic switching
-- Right-click (or ctrl+click) opens the context menu
-- Left-click toggles the Toast window
+- Electron의 `Tray` API를 통해 `NSStatusItem` 사용
+- 메뉴 바 아이콘은 템플릿 이미지 형식(`tray-icon-Template.png`) 사용
+- 다크/라이트 모드 자동 전환 지원
+- 우클릭(또는 ctrl+클릭)으로 컨텍스트 메뉴 열기
+- 좌클릭으로 Toast 윈도우 토글
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/tray.js
 if (process.platform === 'darwin') {
   tray = new Tray(path.join(__dirname, '../../assets/icons/tray-icon-Template.png'));
   tray.setIgnoreDoubleClickEvents(true);
-  // macOS-specific settings
+  // macOS 전용 설정
 }
 ```
 
-### Global Keyboard Shortcuts
+### 전역 키보드 단축키
 
-macOS-specific keyboard shortcut handling:
+macOS 전용 키보드 단축키 처리:
 
-- Uses macOS system APIs via Electron's `globalShortcut` module
-- Handles macOS-specific modifier keys (Command, Option)
-- Respects System Preferences settings for keyboard behavior
-- Uses validation to avoid conflicts with system shortcuts
+- Electron의 `globalShortcut` 모듈을 통해 macOS 시스템 API 사용
+- macOS 전용 수정자 키(Command, Option) 처리
+- 키보드 동작에 대한 시스템 환경설정 존중
+- 시스템 단축키와의 충돌 방지를 위한 유효성 검사
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/shortcuts.js
 function registerGlobalShortcut(shortcut) {
   let modifiedShortcut = shortcut;
   if (process.platform === 'darwin') {
-    // Convert generic shortcut to macOS format
+    // 일반 단축키를 macOS 형식으로 변환
     modifiedShortcut = shortcut.replace('Alt', 'Option');
-    // Additional macOS-specific handling
+    // 추가 macOS 전용 처리
   }
-  // Register shortcut
+  // 단축키 등록
 }
 ```
 
-### Window Management
+### 윈도우 관리
 
-macOS-specific window behavior:
+macOS 전용 윈도우 동작:
 
-- Supports native window controls (traffic lights)
-- Uses vibrancy and transparency effects when available
-- Handles spaces and fullscreen applications
-- Properly manages focus and activation
+- 네이티브 윈도우 컨트롤(신호등 버튼) 지원
+- 가능한 경우 vibrancy 및 투명도 효과 사용
+- Spaces 및 전체화면 애플리케이션 처리
+- 포커스 및 활성화 적절한 관리
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/windows.js
 function createToastWindow() {
   const windowOptions = {
-    // Common options
+    // 공통 옵션
   };
-  
+
   if (process.platform === 'darwin') {
     windowOptions.vibrancy = 'under-window';
     windowOptions.titleBarStyle = 'hiddenInset';
-    // Other macOS-specific options
+    // 기타 macOS 전용 옵션
   }
-  
+
   return new BrowserWindow(windowOptions);
 }
 ```
 
-### Native Scripting
+### 네이티브 스크립팅
 
-macOS-specific scripting capabilities:
+macOS 전용 스크립팅 기능:
 
-- AppleScript integration via `osascript`
-- macOS shell commands and utilities
-- Integration with macOS services and workflows
+- `osascript`를 통한 AppleScript 통합
+- macOS 셸 명령어 및 유틸리티
+- macOS 서비스 및 워크플로우와의 통합
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/actions/script.js
 async function runScript(script, type) {
@@ -131,121 +129,121 @@ async function runScript(script, type) {
       });
     });
   }
-  // Other script types
+  // 기타 스크립트 유형
 }
 ```
 
-### Code Signing and Notarization
+### 코드 서명 및 공증
 
-macOS-specific security requirements:
+macOS 전용 보안 요구사항:
 
-- Application is code signed with a valid Developer ID
-- App is notarized with Apple's notary service
-- Hardened runtime enabled
-- Entitlements configured for required capabilities
-- Sandboxing considerations documented
+- 유효한 Developer ID로 애플리케이션 코드 서명
+- Apple의 공증 서비스로 앱 공증
+- Hardened Runtime 활성화
+- 필요한 기능에 대한 Entitlements 구성
+- 샌드박싱 고려사항 문서화
 
-Implementation:
+**구현**:
 ```javascript
 // notarize.js
 module.exports = async function (params) {
   if (process.platform !== 'darwin') {
     return;
   }
-  
-  // Notarization process
+
+  // 공증 프로세스
   // ...
 };
 ```
 
-### Installation and Updates
+### 설치 및 업데이트
 
-macOS-specific installation considerations:
+macOS 전용 설치 고려사항:
 
-- DMG-based installation process
-- Homebrew distribution via custom tap
-- Auto-updates using Squirrel.Mac
-- macOS-specific file locations for settings and logs
+- DMG 기반 설치 프로세스
+- 사용자 정의 tap을 통한 Homebrew 배포
+- Squirrel.Mac을 사용한 자동 업데이트
+- 설정 및 로그를 위한 macOS 전용 파일 위치
 
-## Windows-Specific Features
+## Windows 전용 기능
 
-### Tray Integration
+### 시스템 트레이 통합
 
-On Windows, Toast App is integrated into the system tray:
+Windows에서 Toast 앱은 시스템 트레이에 통합됩니다:
 
-- Uses standard ICO format for tray icon
-- Supports light/dark mode with Windows system theme
-- Left-click opens the main Toast window
-- Right-click opens the context menu
+- 트레이 아이콘에 표준 ICO 형식 사용
+- Windows 시스템 테마와 함께 라이트/다크 모드 지원
+- 좌클릭으로 메인 Toast 윈도우 열기
+- 우클릭으로 컨텍스트 메뉴 열기
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/tray.js
 if (process.platform === 'win32') {
   tray = new Tray(path.join(__dirname, '../../assets/icons/tray-icon.png'));
-  // Windows-specific settings
+  // Windows 전용 설정
 }
 ```
 
-### Global Keyboard Shortcuts
+### 전역 키보드 단축키
 
-Windows-specific keyboard shortcut handling:
+Windows 전용 키보드 단축키 처리:
 
-- Uses Windows-specific APIs via Electron's `globalShortcut` module
-- Handles Windows-specific modifier keys (Alt, Windows key)
-- Special handling for Windows key combinations
-- Validation against common Windows shortcuts
+- Electron의 `globalShortcut` 모듈을 통해 Windows 전용 API 사용
+- Windows 전용 수정자 키(Alt, Windows 키) 처리
+- Windows 키 조합에 대한 특별 처리
+- 일반적인 Windows 단축키에 대한 유효성 검사
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/shortcuts.js
 function registerGlobalShortcut(shortcut) {
   let modifiedShortcut = shortcut;
   if (process.platform === 'win32') {
-    // Convert generic shortcut to Windows format
+    // 일반 단축키를 Windows 형식으로 변환
     modifiedShortcut = shortcut.replace('Command', 'Super');
-    // Additional Windows-specific handling
+    // 추가 Windows 전용 처리
   }
-  // Register shortcut
+  // 단축키 등록
 }
 ```
 
-### Window Management
+### 윈도우 관리
 
-Windows-specific window behavior:
+Windows 전용 윈도우 동작:
 
-- Uses standard Windows window decorations
-- Properly handles taskbar integration
-- Handles multi-monitor setups with DPI awareness
-- Task Manager friendly (proper process naming)
+- 표준 Windows 윈도우 장식 사용
+- 작업 표시줄 통합 적절한 처리
+- DPI 인식을 통한 다중 모니터 설정 처리
+- 작업 관리자 친화적(적절한 프로세스 이름 지정)
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/windows.js
 function createToastWindow() {
   const windowOptions = {
-    // Common options
+    // 공통 옵션
   };
-  
+
   if (process.platform === 'win32') {
     windowOptions.frame = false;
     windowOptions.skipTaskbar = true;
-    // Other Windows-specific options
+    // 기타 Windows 전용 옵션
   }
-  
+
   return new BrowserWindow(windowOptions);
 }
 ```
 
-### Native Scripting
+### 네이티브 스크립팅
 
-Windows-specific scripting capabilities:
+Windows 전용 스크립팅 기능:
 
-- PowerShell integration
-- Windows batch file execution
-- Windows-specific command-line tools
+- PowerShell 통합
+- Windows 배치 파일 실행
+- Windows 전용 명령줄 도구
 
-Implementation:
+**구현**:
 ```javascript
 // src/main/actions/script.js
 async function runScript(script, type) {
@@ -257,88 +255,88 @@ async function runScript(script, type) {
       });
     });
   }
-  // Other script types
+  // 기타 스크립트 유형
 }
 ```
 
-### Code Signing
+### 코드 서명
 
-Windows-specific security requirements:
+Windows 전용 보안 요구사항:
 
-- Application is signed with a valid code signing certificate
-- SmartScreen filter considerations
-- Windows Defender compatibility
+- 유효한 코드 서명 인증서로 애플리케이션 서명
+- SmartScreen 필터 고려사항
+- Windows Defender 호환성
 
-Implementation:
+**구현**:
 ```javascript
-// electron-builder.yml (config)
+// electron-builder.yml (구성)
 win:
   sign: './sign.js'
 ```
 
-### Installation and Updates
+### 설치 및 업데이트
 
-Windows-specific installation considerations:
+Windows 전용 설치 고려사항:
 
-- MSI and EXE installer formats
-- Auto-updates using Squirrel.Windows
-- Windows-specific file locations for settings and logs
-- Start-up registry entries
+- MSI 및 EXE 설치 프로그램 형식
+- Squirrel.Windows를 사용한 자동 업데이트
+- 설정 및 로그를 위한 Windows 전용 파일 위치
+- 시작 프로그램 레지스트리 항목
 
-## Common Code with Platform-Specific Branches
+## 플랫폼별 분기를 가진 공통 코드
 
-The Toast App uses a single codebase with platform-specific branches where necessary:
+Toast 앱은 필요한 경우 플랫폼별 분기를 가진 단일 코드베이스를 사용합니다:
 
 ```javascript
-// Example of platform-specific code branching
+// 플랫폼별 코드 분기 예시
 function openTerminal(command) {
   if (process.platform === 'darwin') {
-    // macOS-specific terminal handling
+    // macOS 전용 터미널 처리
     return exec(`open -a Terminal "${command}"`);
   } else if (process.platform === 'win32') {
-    // Windows-specific terminal handling
+    // Windows 전용 터미널 처리
     return exec(`start cmd.exe /K "${command}"`);
   }
 }
 ```
 
-## Platform Detection
+## 플랫폼 감지
 
-The application uses Electron's `process.platform` for platform detection:
+애플리케이션은 플랫폼 감지를 위해 Electron의 `process.platform`을 사용합니다:
 
 ```javascript
 const isMac = process.platform === 'darwin';
 const isWindows = process.platform === 'win32';
 ```
 
-This allows for clean, readable platform-specific code branches.
+이를 통해 깔끔하고 읽기 쉬운 플랫폼별 코드 분기가 가능합니다.
 
-## Cross-Platform Development Guidelines
+## 크로스 플랫폼 개발 가이드라인
 
-When developing cross-platform features for Toast App:
+Toast 앱의 크로스 플랫폼 기능을 개발할 때:
 
-1. **Abstract platform differences**: Create platform-specific implementations with common interfaces
-2. **Test on all platforms**: Ensure features work correctly on macOS and Windows
-3. **Respect platform conventions**: Follow platform-specific UI guidelines and user expectations
-4. **Graceful degradation**: Fall back gracefully when a feature is not available on a platform
-5. **Consistent feature parity**: Maintain core feature parity across platforms while allowing for platform-specific enhancements
+1. **플랫폼 차이점 추상화**: 공통 인터페이스를 가진 플랫폼별 구현 생성
+2. **모든 플랫폼에서 테스트**: 기능이 macOS와 Windows에서 올바르게 작동하는지 확인
+3. **플랫폼 규칙 존중**: 플랫폼별 UI 가이드라인 및 사용자 기대치 준수
+4. **우아한 성능 저하**: 플랫폼에서 기능을 사용할 수 없을 때 우아하게 대체
+5. **일관된 기능 동등성**: 플랫폼별 개선을 허용하면서 플랫폼 간 핵심 기능 동등성 유지
 
-## Testing on Multiple Platforms
+## 다중 플랫폼 테스팅
 
-Testing guidelines for platform-specific features:
+플랫폼별 기능에 대한 테스팅 가이드라인:
 
-1. Maintain test environments for both macOS and Windows
-2. Use platform-specific test cases within the same test suite
-3. Use conditional tests using Electron's platform detection
-4. Test installation and update processes on both platforms
-5. Verify UI rendering on both platforms
+1. macOS와 Windows 모두에 대한 테스트 환경 유지
+2. 동일한 테스트 스위트 내에서 플랫폼별 테스트 케이스 사용
+3. Electron의 플랫폼 감지를 사용한 조건부 테스트
+4. 두 플랫폼에서 설치 및 업데이트 프로세스 테스트
+5. 두 플랫폼에서 UI 렌더링 확인
 
-## Known Platform-Specific Issues
+## 알려진 플랫폼별 문제
 
-| Issue | Platform | Workaround | Status |
-|-------|----------|------------|--------|
-| Transparency performance | Windows | Disable transparency on low-end devices | Active |
-| Keyboard shortcuts conflict with system shortcuts | macOS | Validate against known system shortcuts | Resolved |
-| Tray icon appearance on dark mode | Windows | Use separate icons for light/dark mode | Resolved |
-| High DPI scaling | Windows | Added DPI awareness in window creation | Resolved |
-| Menu bar icon spacing | macOS | Adjusted menu bar icon padding | Resolved |
+| 문제 | 플랫폼 | 해결 방법 | 상태 |
+|------|--------|-----------|------|
+| 투명도 성능 | Windows | 저사양 기기에서 투명도 비활성화 | 활성 |
+| 시스템 단축키와 키보드 단축키 충돌 | macOS | 알려진 시스템 단축키에 대한 유효성 검사 | 해결됨 |
+| 다크 모드에서 트레이 아이콘 모양 | Windows | 라이트/다크 모드용 별도 아이콘 사용 | 해결됨 |
+| 고해상도 DPI 스케일링 | Windows | 윈도우 생성 시 DPI 인식 추가 | 해결됨 |
+| 메뉴 바 아이콘 간격 | macOS | 메뉴 바 아이콘 패딩 조정 | 해결됨 |

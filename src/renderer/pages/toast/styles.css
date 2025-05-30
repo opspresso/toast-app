@@ -992,19 +992,67 @@ body {
 /* 아이콘 입력 컨테이너 */
 .icon-input-container {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   margin-bottom: 5px;
+  align-items: center;
 }
 
 .icon-input-container input {
   flex: 1;
 }
 
-.icon-input-container button {
-  white-space: nowrap;
-  padding: 8px 12px;
-  min-width: 90px;
+.icon-input-container .icon-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border-radius: 6px;
+  min-width: unset;
+  flex-shrink: 0;
+}
+
+.icon-input-container .icon-button:hover {
+  transform: scale(1.05);
+}
+
+/* 아이콘 미리보기 */
+.icon-preview {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.icon-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.icon-preview-placeholder {
+  font-size: 16px;
+  opacity: 0.5;
+  display: block;
+}
+
+.icon-preview.has-icon .icon-preview-placeholder {
+  display: none;
+}
+
+.icon-preview:hover {
+  /* hover 효과 제거 */
 }
 
 /* 아이콘 검색 모달 스타일 */

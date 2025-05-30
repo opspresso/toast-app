@@ -101,62 +101,6 @@ const result = await openItem({
 });
 ```
 
-## Shortcut 액션 (`src/main/actions/shortcut.js`)
-
-Shortcut 액션 모듈은 시스템에 키보드 단축키를 보내는 것을 처리합니다.
-
-### 함수
-
-```javascript
-/**
- * 키보드 단축키 실행
- * @param {Object} action - 액션 구성
- * @param {string} action.keys - 실행할 키보드 단축키(예: "Ctrl+C")
- * @returns {Promise<Object>} 결과 객체
- */
-async function executeShortcut(action)
-
-/**
- * 단축키 문자열을 키 배열로 파싱
- * @param {string} shortcutString - 단축키 문자열(예: "Ctrl+Shift+A")
- * @returns {Array} 키 상수 배열
- */
-function parseShortcut(shortcutString)
-
-/**
- * 키 조합 누르기
- * @param {Array} keys - 키 상수 배열
- * @returns {Promise<void>}
- */
-async function pressKeys(keys)
-```
-
-### 지원되는 키
-
-- **수정자 키**: `Ctrl`, `Cmd`, `Alt`, `Shift`
-- **기능 키**: `F1`-`F12`
-- **특수 키**: `Enter`, `Space`, `Tab`, `Escape`, `Backspace`, `Delete`
-- **화살표 키**: `Up`, `Down`, `Left`, `Right`
-- **문자 및 숫자**: `A`-`Z`, `0`-`9`
-
-### 사용 예시
-
-```javascript
-// 단축키 실행
-const result = await executeShortcut({
-  keys: 'Cmd+Shift+4'  // macOS 스크린샷
-});
-
-// Windows 단축키
-const winResult = await executeShortcut({
-  keys: 'Ctrl+Shift+Esc'  // 작업 관리자
-});
-
-// 키 조합 직접 누르기
-const keys = parseShortcut('Ctrl+C');
-await pressKeys(keys);
-```
-
 ## Script 액션 (`src/main/actions/script.js`)
 
 Script 액션 모듈은 다양한 언어로 사용자 정의 스크립트 실행을 처리합니다.
