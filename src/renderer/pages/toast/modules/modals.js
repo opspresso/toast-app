@@ -44,6 +44,7 @@ import {
 import { showStatus } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
 import { pages, currentPageIndex, updateCurrentPageButtons } from './pages.js';
+import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported } from './local-icon-utils.js';
 
 // State variables
 let currentEditingButton = null;
@@ -109,6 +110,18 @@ export function setupModalEventListeners() {
 
           // Application selected successfully
           showStatus('Application selected successfully.', 'success');
+
+          // Auto-extract icon if supported and icon field is empty
+          if (isLocalIconExtractionSupported() && !editButtonIconInput.value.trim()) {
+            try {
+              const success = await updateButtonIconFromLocalApp(result.filePaths[0], editButtonIconInput);
+              if (success) {
+                showStatus('아이콘이 자동으로 추출되었습니다.', 'success');
+              }
+            } catch (error) {
+              console.warn('자동 아이콘 추출 실패:', error);
+            }
+          }
         }
       } catch (error) {
         console.error('Error selecting application:', error);

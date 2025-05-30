@@ -16,6 +16,7 @@ const authManager = require('./auth-manager');
 const userDataManager = require('./user-data-manager');
 const updater = require('./updater');
 const { createLogger, handleIpcLogging } = require('./logger');
+const { extractAppIcon, extractAppNameFromPath } = require('./utils/app-icon-extractor');
 
 // 모듈별 로거 생성
 const logger = createLogger('IPC');
@@ -907,6 +908,33 @@ function setupIpcHandlers(windows) {
         success: false,
         message: `Error testing action: ${error.message}`,
         error: error.toString(),
+      };
+    }
+  });
+
+  // Extract app icon from application path
+  ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false) => {
+    try {
+      const appName = extractAppNameFromPath(applicationPath);
+      if (!appName) {
+        return { success: false, error: '앱 이름을 추출할 수 없습니다' };
+      }
+
+      const iconPath = await extractAppIcon(appName, null, forceRefresh);
+      if (!iconPath) {
+        return { success: false, error: '아이콘을 추출할 수 없습니다' };
+      }
+
+      return {
+        success: true,
+        iconUrl: `file://${iconPath}`,
+        iconPath,
+        appName
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: `아이콘 추출 중 오류 발생: ${err.message}`
       };
     }
   });

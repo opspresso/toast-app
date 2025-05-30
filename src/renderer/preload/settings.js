@@ -47,6 +47,11 @@ contextBridge.exposeInMainWorld('settings', {
   showSaveDialog: options => ipcRenderer.invoke('show-save-dialog', options),
   showMessageBox: options => ipcRenderer.invoke('show-message-box', options),
 
+  // App icon extraction
+  extractAppIcon: (applicationPath, forceRefresh = false) => {
+    return ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh);
+  },
+
   // App control
   restartApp: () => ipcRenderer.send('restart-app'),
   quitApp: () => ipcRenderer.send('quit-app'),
