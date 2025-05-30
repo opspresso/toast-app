@@ -13,6 +13,9 @@ Toast 윈도우 API는 Toast 윈도우가 메인 프로세스와 통신하기 �
 window.toast.getConfig(key) // 구성 가져오기
 window.toast.saveConfig(config) // 구성 변경 사항 저장
 
+// 환경변수
+window.toast.getEnv(key) // 환경변수 가져오기
+
 // 액션 실행
 window.toast.executeAction(action) // 액션 실행
 
@@ -48,6 +51,10 @@ window.addEventListener('before-window-hide', () => {
 // 구성 가져오기
 const pages = await window.toast.getConfig('pages');
 const appearance = await window.toast.getConfig('appearance');
+
+// 환경변수 가져오기
+const toastUrl = await window.toast.getEnv('TOAST_URL');
+const nodeEnv = await window.toast.getEnv('NODE_ENV');
 
 // 액션 실행
 const result = await window.toast.executeAction({
