@@ -71,6 +71,21 @@ export function setupModalEventListeners() {
   // Save button
   saveButtonEdit.addEventListener('click', saveButtonSettings);
 
+  // Command input change event for exec action
+  editButtonCommandInput.addEventListener('input', async () => {
+    if (editButtonActionSelect.value === 'exec' && editButtonCommandInput.value.trim()) {
+      try {
+        const { updateButtonIconFromCommand } = await import('./icon-utils.js');
+        await updateButtonIconFromCommand(
+          editButtonCommandInput.value.trim(),
+          editButtonIconInput
+        );
+      } catch (error) {
+        // Silently fail
+      }
+    }
+  });
+
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
     showActionFields(editButtonActionSelect.value);

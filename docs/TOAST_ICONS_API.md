@@ -32,6 +32,27 @@ extractApplicationName('C:\\Program Files\\Google\\Chrome\\Application\\chrome.e
 // 반환: 'chrome'
 ```
 
+##### `extractApplicationNameFromCommand(command)`
+exec 명령어에서 애플리케이션 이름을 추출합니다.
+
+**매개변수:**
+- `command` (string): 실행 명령어
+
+**반환값:**
+- (string): 추출된 애플리케이션 이름
+
+**예시:**
+```javascript
+extractApplicationNameFromCommand('open -a Toast')
+// 반환: 'Toast'
+
+extractApplicationNameFromCommand('open -a "Visual Studio Code"')
+// 반환: 'Visual Studio Code'
+
+extractApplicationNameFromCommand('/Applications/Chrome.app/Contents/MacOS/Google Chrome')
+// 반환: 'Google Chrome'
+```
+
 ##### `getToastIconUrl(applicationName)`
 애플리케이션 이름을 기반으로 Toast API 아이콘 URL을 생성합니다.
 
@@ -61,11 +82,36 @@ Toast API에서 애플리케이션 아이콘을 가져옵니다.
 - 실패 시 GET 요청으로 재시도
 - 리다이렉트 자동 처리
 
+##### `fetchApplicationIconFromCommand(command)`
+Toast API에서 exec 명령어를 기반으로 애플리케이션 아이콘을 가져옵니다.
+
+**매개변수:**
+- `command` (string): 실행 명령어
+
+**반환값:**
+- (Promise<string>): 아이콘 URL (실패 시 빈 문자열)
+
+**특징:**
+- 명령어에서 애플리케이션 이름을 자동 추출
+- HEAD 요청으로 먼저 확인
+- 실패 시 GET 요청으로 재시도
+- 리다이렉트 자동 처리
+
 ##### `updateButtonIconFromApplication(applicationPath, iconInput)`
 버튼 아이콘을 Toast API에서 가져온 아이콘으로 자동 업데이트합니다.
 
 **매개변수:**
 - `applicationPath` (string): 애플리케이션 파일 경로
+- `iconInput` (HTMLElement): 아이콘 입력 필드 요소
+
+**반환값:**
+- (Promise<boolean>): 성공 여부
+
+##### `updateButtonIconFromCommand(command, iconInput)`
+버튼 아이콘을 Toast API에서 exec 명령어를 기반으로 자동 업데이트합니다.
+
+**매개변수:**
+- `command` (string): 실행 명령어
 - `iconInput` (HTMLElement): 아이콘 입력 필드 요소
 
 **반환값:**
@@ -154,6 +200,15 @@ GET https://toastapp.io/api/icons/Finder
 4. "Browse" 버튼 클릭
 5. 애플리케이션 선택 (예: `/Applications/Visual Studio Code.app`)
 6. 아이콘이 자동으로 Toast API에서 가져와짐
+
+### 2. Exec 명령어에서 자동 아이콘 설정
+
+1. Toast 앱에서 설정 모드 활성화
+2. 버튼 클릭하여 설정 모달 열기
+3. Action을 "Exec"으로 선택
+4. Command 필드에 명령어 입력 (예: `open -a Toast`)
+5. 명령어 입력 시 자동으로 Toast API에서 아이콘 검색
+6. 아이콘이 발견되면 자동으로 아이콘 필드에 설정
 
 ### 2. 프로그래밍 방식으로 아이콘 가져오기
 

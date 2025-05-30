@@ -152,6 +152,30 @@ export function createButtonElement(button) {
       iconElement.textContent = '🚀';
     }
   }
+  // Exec type and icon is empty but command exists, try to get icon from Toast API
+  else if (button.action === 'exec' && (!button.icon || button.icon.trim() === '') && button.command) {
+    import('./icon-utils.js').then(async ({ fetchApplicationIconFromCommand }) => {
+      try {
+        const iconUrl = await fetchApplicationIconFromCommand(button.command);
+        if (iconUrl) {
+          iconElement.textContent = '';
+          const img = document.createElement('img');
+          img.src = iconUrl;
+          img.alt = button.name || 'Command icon';
+          img.onerror = function () {
+            // Use default command icon if Toast API icon load fails
+            iconElement.textContent = '⚡';
+          };
+          iconElement.appendChild(img);
+        } else {
+          // Use default command icon if not found in Toast API
+          iconElement.textContent = '⚡';
+        }
+      } catch (error) {
+        iconElement.textContent = '⚡';
+      }
+    });
+  }
   // URL type and icon is not empty, use icon
   else if (button.icon && isURL(button.icon)) {
     // Create image tag if icon is a URL image
@@ -169,6 +193,29 @@ export function createButtonElement(button) {
   else if (button.icon && button.icon.trim() !== '') {
     // Use as emoji or plain text
     iconElement.textContent = button.icon || '🔘';
+  }
+  // Default icons for actions without icons
+  else {
+    switch (button.action) {
+      case 'exec':
+        iconElement.textContent = '⚡';
+        break;
+      case 'application':
+        iconElement.textContent = '🚀';
+        break;
+      case 'open':
+        iconElement.textContent = '🌐';
+        break;
+      case 'script':
+        iconElement.textContent = '📜';
+        break;
+      case 'chain':
+        iconElement.textContent = '🔗';
+        break;
+      default:
+        iconElement.textContent = '🔘';
+        break;
+    }
   }
 
   // Set button shortcut
