@@ -120,10 +120,40 @@ export function createButtonElement(button) {
       iconElement.textContent = '🌐';
     };
     iconElement.appendChild(img);
-  } else if (button.action === 'application' && (!button.icon || button.icon.trim() === '')) {
-    // Use default app icon if application type and icon is empty
-    iconElement.textContent = '🚀';
-  } else if (button.icon && isURL(button.icon)) {
+  }
+  // Application type and icon is empty but application path exists, use application icon
+  else if (button.action === 'application' && (!button.icon || button.icon.trim() === '')) {
+    // Try to get icon from Toast API for application type
+    if (button.applicationPath) {
+      import('./icon-utils.js').then(async ({ fetchApplicationIcon }) => {
+        try {
+          const iconUrl = await fetchApplicationIcon(button.applicationPath);
+          if (iconUrl) {
+            iconElement.textContent = '';
+            const img = document.createElement('img');
+            img.src = iconUrl;
+            img.alt = button.name || 'Application icon';
+            img.onerror = function () {
+              // Use default app icon if Toast API icon load fails
+              iconElement.textContent = '🚀';
+            };
+            iconElement.appendChild(img);
+          } else {
+            // Use default app icon if not found in Toast API
+            iconElement.textContent = '🚀';
+          }
+        } catch (error) {
+          console.error('Error fetching application icon:', error);
+          iconElement.textContent = '🚀';
+        }
+      });
+    } else {
+      // Use default app icon if no application path
+      iconElement.textContent = '🚀';
+    }
+  }
+  // URL type and icon is not empty, use icon
+  else if (button.icon && isURL(button.icon)) {
     // Create image tag if icon is a URL image
     iconElement.textContent = '';
     const img = document.createElement('img');
@@ -134,7 +164,9 @@ export function createButtonElement(button) {
       iconElement.textContent = '🔘';
     };
     iconElement.appendChild(img);
-  } else {
+  }
+  // Other types and icon is not empty, use icon
+  else if (button.icon && button.icon.trim() !== '') {
     // Use as emoji or plain text
     iconElement.textContent = button.icon || '🔘';
   }

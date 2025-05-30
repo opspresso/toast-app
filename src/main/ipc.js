@@ -221,6 +221,17 @@ function setupIpcHandlers(windows) {
     }
   });
 
+  // Get environment variable
+  ipcMain.handle('get-env', (event, key) => {
+    try {
+      const { getEnv } = require('./config/env');
+      return getEnv(key);
+    } catch (error) {
+      logger.error('Error getting environment variable:', error);
+      return null;
+    }
+  });
+
   // Set configuration
   ipcMain.handle('set-config', (event, key, value) => {
     try {

@@ -101,13 +101,20 @@ export function setupModalEventListeners() {
         if (!result.canceled && result.filePaths.length > 0) {
           // Set selected application path to input field
           editButtonApplicationInput.value = result.filePaths[0];
-          showStatus('Application selected successfully.', 'success');
-        } else {
-          showStatus('Application selection canceled.', 'info');
+
+          // Try to fetch application icon from Toast API
+          try {
+            const { updateButtonIconFromApplication } = await import('./icon-utils.js');
+            const iconUpdated = await updateButtonIconFromApplication(
+              result.filePaths[0],
+              editButtonIconInput
+            );
+          } catch (error) {
+            showStatus('Application selected successfully.', 'success');
+          }
         }
       } catch (error) {
         console.error('Error selecting application:', error);
-        showStatus('An error occurred while selecting the application.', 'error');
       }
     });
   }
