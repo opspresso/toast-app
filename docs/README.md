@@ -44,6 +44,7 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | 상세한 사용자 가이드 | 최종 사용자 |
 | [`WINDOW_VISIBILITY.md`](./WINDOW_VISIBILITY.md) | 윈도우 가시성 관리 | 개발자 |
 | [`DRAG_DROP_FEATURE.md`](./DRAG_DROP_FEATURE.md) | 드래그 앤 드롭 기능 구현 가이드 | 개발자 & 기획자 |
+| [`ICON_EXTRACTION.md`](./ICON_EXTRACTION.md) | 로컬 앱 아이콘 추출 유틸리티 | 개발자 |
 
 ## 문서 관리 가이드라인
 

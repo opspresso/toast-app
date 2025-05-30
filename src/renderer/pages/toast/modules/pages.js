@@ -2,7 +2,7 @@
  * Toast - Page Management Functions
  */
 
-import { defaultButtons, emptyButtons } from './constants.js';
+import { defaultButtons, emptyButtons, reassignButtonShortcuts } from './constants.js';
 import { pagingButtonsContainer } from './dom-elements.js';
 import { showStatus, createNoResultsElement } from './utils.js';
 import { userProfile, userSubscription, isSubscribed } from './auth.js';
@@ -237,7 +237,12 @@ export async function removePage() {
 export function initializePages(configPages) {
   if (configPages) {
     const previousPageIndex = currentPageIndex;
-    pages = configPages;
+
+    // 각 페이지의 버튼들에 대해 단축키 재할당
+    pages = configPages.map(page => ({
+      ...page,
+      buttons: reassignButtonShortcuts(page.buttons || [])
+    }));
 
     // Initialize paging buttons
     renderPagingButtons();
@@ -270,7 +275,14 @@ export function getCurrentPageButtons() {
  */
 export function updateCurrentPageButtons(buttons) {
   if (currentPageIndex >= 0 && currentPageIndex < pages.length) {
-    pages[currentPageIndex].buttons = buttons;
+    // 버튼 위치 변경 시 단축키 자동 재할당
+    const buttonsWithReassignedShortcuts = reassignButtonShortcuts(buttons);
+    pages[currentPageIndex].buttons = buttonsWithReassignedShortcuts;
+
+    // 구성 저장
+    if (window.toast && window.toast.saveConfig) {
+      window.toast.saveConfig({ pages });
+    }
   }
 }
 

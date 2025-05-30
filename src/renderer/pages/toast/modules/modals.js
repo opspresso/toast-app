@@ -40,10 +40,14 @@ import {
   confirmMessage,
   confirmCancelButton,
   confirmOkButton,
+  browseIconButton,
+  reloadIconButton,
+  iconPreview,
 } from './dom-elements.js';
-import { showStatus } from './utils.js';
+import { showStatus, getFaviconFromUrl } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
 import { pages, currentPageIndex, updateCurrentPageButtons } from './pages.js';
+import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported } from './local-icon-utils.js';
 
 // State variables
 let currentEditingButton = null;
@@ -73,15 +77,41 @@ export function setupModalEventListeners() {
 
   // Command input change event for exec action
   editButtonCommandInput.addEventListener('input', async () => {
-    if (editButtonActionSelect.value === 'exec' && editButtonCommandInput.value.trim()) {
-      try {
-        const { updateButtonIconFromCommand } = await import('./icon-utils.js');
-        await updateButtonIconFromCommand(
-          editButtonCommandInput.value.trim(),
-          editButtonIconInput
-        );
-      } catch (error) {
-        // Silently fail
+    const command = editButtonCommandInput.value.trim();
+
+    // exec 액션에서 'open -a AppName' 패턴 감지
+    if (editButtonActionSelect.value === 'exec' && command) {
+      // 다양한 패턴 지원: open -a AppName, open -a "App Name", open -a domain.com
+      const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+      if (openAppMatch) {
+        const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+        console.log('Detected app name:', appName, 'from command:', command);
+
+        // 아이콘이 비어있고 로컬 아이콘 추출이 지원되는 경우에만 실행
+        console.log('Icon input value:', editButtonIconInput.value.trim());
+        console.log('Is local icon extraction supported:', isLocalIconExtractionSupported());
+        console.log('Platform:', window.toast?.platform);
+        console.log('extractAppIcon function:', typeof window.toast?.extractAppIcon);
+
+        if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
+          try {
+            // /Applications/AppName.app 경로 생성
+            const appPath = `/Applications/${appName}.app`;
+
+            // 아이콘 추출 시도
+            const success = await updateButtonIconFromLocalApp(
+              appPath,
+              editButtonIconInput,
+              editButtonNameInput
+            );
+
+            if (success) {
+              showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
+            }
+          } catch (error) {
+            console.warn(`${appName} 아이콘 추출 실패:`, error);
+          }
+        }
       }
     }
   });
@@ -89,6 +119,8 @@ export function setupModalEventListeners() {
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
     showActionFields(editButtonActionSelect.value);
+    // 액션 타입 변경 시 미리보기 업데이트
+    updateIconPreview();
   });
 
   // Browse button for application selection
@@ -117,15 +149,23 @@ export function setupModalEventListeners() {
           // Set selected application path to input field
           editButtonApplicationInput.value = result.filePaths[0];
 
-          // Try to fetch application icon from Toast API
-          try {
-            const { updateButtonIconFromApplication } = await import('./icon-utils.js');
-            const iconUpdated = await updateButtonIconFromApplication(
-              result.filePaths[0],
-              editButtonIconInput
-            );
-          } catch (error) {
-            showStatus('Application selected successfully.', 'success');
+          // Application selected successfully
+          showStatus('Application selected successfully.', 'success');
+
+          // Auto-extract icon if supported and icon field is empty
+          if (isLocalIconExtractionSupported() && !editButtonIconInput.value.trim()) {
+            try {
+              const success = await updateButtonIconFromLocalApp(
+                result.filePaths[0],
+                editButtonIconInput,
+                editButtonNameInput
+              );
+              if (success) {
+                showStatus('아이콘과 버튼 이름이 자동으로 설정되었습니다.', 'success');
+              }
+            } catch (error) {
+              console.warn('자동 아이콘 추출 실패:', error);
+            }
           }
         }
       } catch (error) {
@@ -200,6 +240,87 @@ export function setupModalEventListeners() {
   closeProfileModal.addEventListener('click', hideProfileModal);
   closeProfileButton.addEventListener('click', hideProfileModal);
   logoutButton.addEventListener('click', handleLogout);
+
+  // Icon reload button event listener
+  if (reloadIconButton) {
+    reloadIconButton.addEventListener('click', async () => {
+      try {
+        const actionType = editButtonActionSelect.value;
+        let applicationPath = null;
+
+        // Get application path based on action type
+        if (actionType === 'application') {
+          applicationPath = editButtonApplicationInput.value.trim();
+          if (!applicationPath) {
+            showStatus('애플리케이션을 먼저 선택해주세요.', 'warning');
+            return;
+          }
+        } else if (actionType === 'exec') {
+          // Extract app name from 'open -a AppName' command
+          const command = editButtonCommandInput.value.trim();
+          const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+          if (openAppMatch) {
+            const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+            applicationPath = `/Applications/${appName}.app`;
+          } else {
+            showStatus('exec 액션에서는 "open -a AppName" 형태의 명령어가 필요합니다.', 'warning');
+            return;
+          }
+        } else {
+          showStatus('아이콘 추출은 Application 또는 Exec 액션에서만 지원됩니다.', 'warning');
+          return;
+        }
+
+        if (!isLocalIconExtractionSupported()) {
+          showStatus('아이콘 추출은 macOS에서만 지원됩니다.', 'warning');
+          return;
+        }
+
+        // Disable button during extraction
+        reloadIconButton.disabled = true;
+        const originalText = reloadIconButton.innerHTML;
+        reloadIconButton.innerHTML = '⏳';
+        reloadIconButton.title = '아이콘 추출 중...';
+
+        // Force refresh icon extraction
+        const success = await updateButtonIconFromLocalApp(
+          applicationPath,
+          editButtonIconInput,
+          editButtonNameInput,
+          true // forceRefresh = true
+        );
+
+        if (success) {
+          showStatus('아이콘이 성공적으로 새로고침되었습니다.', 'success');
+        } else {
+          showStatus('아이콘 새로고침에 실패했습니다.', 'error');
+        }
+      } catch (error) {
+        console.error('아이콘 리로드 오류:', error);
+        showStatus('아이콘 새로고침 중 오류가 발생했습니다.', 'error');
+      } finally {
+        // Re-enable button
+        reloadIconButton.disabled = false;
+        reloadIconButton.innerHTML = '🔄';
+        reloadIconButton.title = 'Reload Icon from Application';
+      }
+    });
+  }
+
+  // Icon input change event listener for preview
+  if (editButtonIconInput) {
+    editButtonIconInput.addEventListener('input', updateIconPreview);
+  }
+
+  // URL input change event listener for favicon preview
+  if (editButtonUrlInput) {
+    editButtonUrlInput.addEventListener('input', updateIconPreview);
+  }
+
+  // Command input change event listener for preview update
+  if (editButtonCommandInput) {
+    editButtonCommandInput.addEventListener('input', updateIconPreview);
+  }
 
   // Icon search modal event listeners
   setupIconSearchModal();
@@ -321,6 +442,9 @@ function setupIconSearchModal() {
           // Set value to icon field
           editButtonIconInput.value = iconValue;
 
+          // Trigger input event to update preview
+          editButtonIconInput.dispatchEvent(new Event('input', { bubbles: true }));
+
           // Close modal
           closeIconSearchModal();
 
@@ -388,6 +512,9 @@ export function editButtonSettings(button) {
 
   // Show modal
   buttonEditModal.classList.add('show');
+
+  // Update icon preview
+  updateIconPreview();
 
   // Focus on name input field
   editButtonNameInput.focus();
@@ -629,4 +756,124 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
 export function closeConfirmModal() {
   confirmModal.classList.remove('show');
   window.toast.setModalOpen(false);
+}
+
+/**
+ * 아이콘 미리보기 업데이트 (toast 창 버튼과 동일한 로직 적용)
+ */
+function updateIconPreview() {
+  const iconValue = editButtonIconInput.value.trim();
+  const actionType = editButtonActionSelect.value;
+  const urlValue = editButtonUrlInput.value.trim();
+  const commandValue = editButtonCommandInput.value.trim();
+  const previewImg = document.getElementById('icon-preview-img');
+  const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
+
+  // FlatColorIcons 처리
+  if (iconValue && iconValue.startsWith('FlatColorIcons.')) {
+    const iconKey = iconValue.replace('FlatColorIcons.', '');
+    let iconPath = null;
+
+    // 아이콘 카탈로그에서 검색
+    for (const categoryKey of Object.keys(window.IconsCatalog)) {
+      const category = window.IconsCatalog[categoryKey];
+      if (category.icons && category.icons[iconKey]) {
+        iconPath = category.icons[iconKey];
+        break;
+      }
+    }
+
+    if (iconPath) {
+      previewImg.src = iconPath;
+      previewImg.style.display = 'block';
+      placeholder.style.display = 'none';
+      iconPreview.classList.add('has-icon');
+      return;
+    }
+  }
+  // open 액션이고 아이콘이 비어있지만 URL이 있는 경우 favicon 사용
+  else if (actionType === 'open' && (!iconValue || iconValue === '') && urlValue) {
+    const faviconUrl = getFaviconFromUrl(urlValue);
+    previewImg.src = faviconUrl;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+    iconPreview.classList.add('has-icon');
+
+    // favicon 로딩 실패 시 기본 아이콘으로 대체
+    previewImg.onerror = function() {
+      previewImg.style.display = 'none';
+      placeholder.style.display = 'block';
+      placeholder.textContent = '🌐';
+      iconPreview.classList.remove('has-icon');
+    };
+    return;
+  }
+  // URL 형태의 아이콘 (file://, http://, https://)
+  else if (iconValue && (iconValue.startsWith('file://') || iconValue.startsWith('http://') || iconValue.startsWith('https://'))) {
+    previewImg.src = iconValue;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+    iconPreview.classList.add('has-icon');
+
+    // 이미지 로딩 실패 시 기본 아이콘으로 대체
+    previewImg.onerror = function() {
+      previewImg.style.display = 'none';
+      placeholder.style.display = 'block';
+      placeholder.textContent = '🔘';
+      iconPreview.classList.remove('has-icon');
+    };
+    return;
+  }
+  // 이모지나 텍스트 아이콘
+  else if (iconValue && iconValue !== '') {
+    previewImg.style.display = 'none';
+    placeholder.style.display = 'block';
+    placeholder.textContent = iconValue;
+    iconPreview.classList.remove('has-icon');
+    return;
+  }
+
+  // exec 액션에서 'open -a AppName' 패턴 감지하여 아이콘 표시
+  if (actionType === 'exec' && (!iconValue || iconValue === '') && commandValue) {
+    // 다양한 패턴 지원: open -a AppName, open -a "App Name", open -a domain.com
+    const openAppMatch = commandValue.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+    if (openAppMatch) {
+      const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+      // 추출된 아이콘이 있는지 확인 (이미 추출된 경우)
+      if (window.toast && window.toast.platform === 'darwin') {
+        // 기본적으로 앱 아이콘 플레이스홀더 표시
+        previewImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.textContent = '📱'; // 앱 아이콘을 나타내는 이모지
+        iconPreview.classList.remove('has-icon');
+        return;
+      }
+    }
+  }
+
+  // 아이콘이 없는 경우 액션 타입별 기본 아이콘 표시
+  previewImg.style.display = 'none';
+  placeholder.style.display = 'block';
+  iconPreview.classList.remove('has-icon');
+
+  switch (actionType) {
+    case 'exec':
+      placeholder.textContent = '⚡';
+      break;
+    case 'application':
+      placeholder.textContent = '🚀';
+      break;
+    case 'open':
+      placeholder.textContent = '🌐';
+      break;
+    case 'script':
+      placeholder.textContent = '📜';
+      break;
+    case 'chain':
+      placeholder.textContent = '🔗';
+      break;
+    default:
+      placeholder.textContent = '🖼️';
+      break;
+  }
 }

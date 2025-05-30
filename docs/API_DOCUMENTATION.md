@@ -19,12 +19,11 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 
 ### 액션 API
 - **[액션 API](./API_ACTIONS.md)**: 액션 모듈들의 상세 API 문서
+  - Application 액션 (`application.js`)
   - Exec 액션 (`exec.js`)
   - Open 액션 (`open.js`)
-  - Shortcut 액션 (`shortcut.js`)
   - Script 액션 (`script.js`)
   - Chain 액션 (`chain.js`)
-  - Application 액션 (`application.js`)
 
 ### 렌더러 프로세스 API
 - **[렌더러 프로세스 API](./API_RENDERER.md)**: 렌더러 프로세스 API 문서
@@ -90,7 +89,6 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 - `exec`: 셸 명령 실행
 - `open`: URL, 파일 또는 폴더 열기
 - `script`: 사용자 정의 스크립트 실행
-- `shortcut`: 키보드 단축키 실행
 - `chain`: 일련의 액션을 순차적으로 실행
 
 ### IPC 채널 요약
