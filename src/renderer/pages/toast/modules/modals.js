@@ -77,7 +77,43 @@ export function setupModalEventListeners() {
 
   // Command input change event for exec action
   editButtonCommandInput.addEventListener('input', async () => {
-    // Command input handling without icon fetching
+    const command = editButtonCommandInput.value.trim();
+
+    // exec 액션에서 'open -a AppName' 패턴 감지
+    if (editButtonActionSelect.value === 'exec' && command) {
+      // 다양한 패턴 지원: open -a AppName, open -a "App Name", open -a domain.com
+      const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+      if (openAppMatch) {
+        const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+        console.log('Detected app name:', appName, 'from command:', command);
+
+        // 아이콘이 비어있고 로컬 아이콘 추출이 지원되는 경우에만 실행
+        console.log('Icon input value:', editButtonIconInput.value.trim());
+        console.log('Is local icon extraction supported:', isLocalIconExtractionSupported());
+        console.log('Platform:', window.toast?.platform);
+        console.log('extractAppIcon function:', typeof window.toast?.extractAppIcon);
+
+        if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
+          try {
+            // /Applications/AppName.app 경로 생성
+            const appPath = `/Applications/${appName}.app`;
+
+            // 아이콘 추출 시도
+            const success = await updateButtonIconFromLocalApp(
+              appPath,
+              editButtonIconInput,
+              editButtonNameInput
+            );
+
+            if (success) {
+              showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
+            }
+          } catch (error) {
+            console.warn(`${appName} 아이콘 추출 실패:`, error);
+          }
+        }
+      }
+    }
   });
 
   // Switch input fields based on action type
@@ -209,11 +245,29 @@ export function setupModalEventListeners() {
   if (reloadIconButton) {
     reloadIconButton.addEventListener('click', async () => {
       try {
-        // Get application path from the application input field
-        const applicationPath = editButtonApplicationInput.value.trim();
+        const actionType = editButtonActionSelect.value;
+        let applicationPath = null;
 
-        if (!applicationPath) {
-          showStatus('애플리케이션을 먼저 선택해주세요.', 'warning');
+        // Get application path based on action type
+        if (actionType === 'application') {
+          applicationPath = editButtonApplicationInput.value.trim();
+          if (!applicationPath) {
+            showStatus('애플리케이션을 먼저 선택해주세요.', 'warning');
+            return;
+          }
+        } else if (actionType === 'exec') {
+          // Extract app name from 'open -a AppName' command
+          const command = editButtonCommandInput.value.trim();
+          const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+          if (openAppMatch) {
+            const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+            applicationPath = `/Applications/${appName}.app`;
+          } else {
+            showStatus('exec 액션에서는 "open -a AppName" 형태의 명령어가 필요합니다.', 'warning');
+            return;
+          }
+        } else {
+          showStatus('아이콘 추출은 Application 또는 Exec 액션에서만 지원됩니다.', 'warning');
           return;
         }
 
@@ -261,6 +315,11 @@ export function setupModalEventListeners() {
   // URL input change event listener for favicon preview
   if (editButtonUrlInput) {
     editButtonUrlInput.addEventListener('input', updateIconPreview);
+  }
+
+  // Command input change event listener for preview update
+  if (editButtonCommandInput) {
+    editButtonCommandInput.addEventListener('input', updateIconPreview);
   }
 
   // Icon search modal event listeners
@@ -706,6 +765,7 @@ function updateIconPreview() {
   const iconValue = editButtonIconInput.value.trim();
   const actionType = editButtonActionSelect.value;
   const urlValue = editButtonUrlInput.value.trim();
+  const commandValue = editButtonCommandInput.value.trim();
   const previewImg = document.getElementById('icon-preview-img');
   const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
 
@@ -771,6 +831,24 @@ function updateIconPreview() {
     placeholder.textContent = iconValue;
     iconPreview.classList.remove('has-icon');
     return;
+  }
+
+  // exec 액션에서 'open -a AppName' 패턴 감지하여 아이콘 표시
+  if (actionType === 'exec' && (!iconValue || iconValue === '') && commandValue) {
+    // 다양한 패턴 지원: open -a AppName, open -a "App Name", open -a domain.com
+    const openAppMatch = commandValue.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+    if (openAppMatch) {
+      const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+      // 추출된 아이콘이 있는지 확인 (이미 추출된 경우)
+      if (window.toast && window.toast.platform === 'darwin') {
+        // 기본적으로 앱 아이콘 플레이스홀더 표시
+        previewImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.textContent = '📱'; // 앱 아이콘을 나타내는 이모지
+        iconPreview.classList.remove('has-icon');
+        return;
+      }
+    }
   }
 
   // 아이콘이 없는 경우 액션 타입별 기본 아이콘 표시
