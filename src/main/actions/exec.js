@@ -5,7 +5,21 @@
  */
 
 const { exec } = require('child_process');
-const { shell } = require('electron');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+/**
+ * Expand tilde (~) to home directory
+ * @param {string} filePath - Path that may contain tilde
+ * @returns {string} Expanded path
+ */
+function expandTilde(filePath) {
+  if (filePath.startsWith('~/')) {
+    return path.join(os.homedir(), filePath.slice(2));
+  }
+  return filePath;
+}
 
 /**
  * Execute a shell command
@@ -16,52 +30,54 @@ const { shell } = require('electron');
  * @returns {Promise<Object>} Result object
  */
 async function executeCommand(action) {
-  try {
-    // Validate required parameters
-    if (!action.command) {
-      return { success: false, message: 'Command is required' };
-    }
+  if (!action.command) {
+    return { success: false, message: 'Command is required' };
+  }
 
-    // If runInTerminal is true, open a terminal and run the command
-    if (action.runInTerminal) {
-      return openInTerminal(action.command, action.workingDir);
-    }
+  if (action.runInTerminal) {
+    return openInTerminal(action.command, action.workingDir);
+  }
 
-    // Otherwise, execute the command directly
-    return new Promise((resolve, reject) => {
-      const options = {};
+  return new Promise((resolve, reject) => {
+    const options = { shell: true };
 
-      // Set working directory if provided
-      if (action.workingDir) {
-        options.cwd = action.workingDir;
+    if (action.workingDir) {
+      const expandedPath = expandTilde(action.workingDir);
+
+      if (!fs.existsSync(expandedPath)) {
+        return reject({
+          success: false,
+          message: `Working directory does not exist: ${expandedPath}`,
+        });
       }
 
-      exec(action.command, options, (error, stdout, stderr) => {
-        if (error) {
-          reject({
-            success: false,
-            message: error.message,
-            error: error,
-            stderr: stderr,
-          });
-          return;
-        }
-
-        resolve({
-          success: true,
-          message: 'Command executed successfully',
-          stdout: stdout,
-          stderr: stderr,
+      if (!fs.statSync(expandedPath).isDirectory()) {
+        return reject({
+          success: false,
+          message: `Working directory path is not a directory: ${expandedPath}`,
         });
+      }
+
+      options.cwd = expandedPath;
+    }
+
+    exec(action.command, options, (error, stdout, stderr) => {
+      if (error) {
+        return reject({
+          success: false,
+          message: `Command execution failed: ${error.message}`,
+          stderr,
+        });
+      }
+
+      resolve({
+        success: true,
+        message: 'Command executed successfully',
+        stdout,
+        stderr,
       });
     });
-  } catch (error) {
-    return {
-      success: false,
-      message: `Error executing command: ${error.message}`,
-      error: error,
-    };
-  }
+  });
 }
 
 /**
@@ -71,66 +87,31 @@ async function executeCommand(action) {
  * @returns {Promise<Object>} Result object
  */
 async function openInTerminal(command, workingDir) {
-  return new Promise((resolve, reject) => {
-    try {
-      // Platform-specific terminal commands
-      let terminalCommand;
+  return new Promise(resolve => {
+    const expandedWorkingDir = workingDir ? expandTilde(workingDir) : null;
+    let terminalCommand;
 
-      if (process.platform === 'darwin') {
-        // macOS
-        terminalCommand = `osascript -e 'tell application "Terminal" to do script "${command}"'`;
-
-        if (workingDir) {
-          terminalCommand = `osascript -e 'tell application "Terminal" to do script "cd ${workingDir} && ${command}"'`;
-        }
-      } else if (process.platform === 'win32') {
-        // Windows
-        terminalCommand = `start cmd.exe /K "${command}"`;
-
-        if (workingDir) {
-          terminalCommand = `start cmd.exe /K "cd /d ${workingDir} && ${command}"`;
-        }
-      } else {
-        // Linux and others
-        // Try to detect the terminal
-        const terminals = [
-          'x-terminal-emulator',
-          'gnome-terminal',
-          'xterm',
-          'konsole',
-          'terminator',
-        ];
-        let terminal = terminals[0]; // Default to first one
-
-        terminalCommand = `${terminal} -e "bash -c '${command}; exec bash'"`;
-
-        if (workingDir) {
-          terminalCommand = `${terminal} -e "bash -c 'cd ${workingDir} && ${command}; exec bash'"`;
-        }
-      }
-
-      // Execute the terminal command
-      exec(terminalCommand, error => {
-        if (error) {
-          resolve({
-            success: false,
-            message: `Error opening terminal: ${error.message}`,
-            error: error,
-          });
-        } else {
-          resolve({
-            success: true,
-            message: 'Command opened in terminal',
-          });
-        }
-      });
-    } catch (error) {
-      resolve({
-        success: false,
-        message: `Error opening terminal: ${error.message}`,
-        error: error,
-      });
+    if (process.platform === 'darwin') {
+      terminalCommand = expandedWorkingDir
+        ? `osascript -e 'tell application "Terminal" to do script "cd ${expandedWorkingDir} && ${command}"'`
+        : `osascript -e 'tell application "Terminal" to do script "${command}"'`;
+    } else if (process.platform === 'win32') {
+      terminalCommand = expandedWorkingDir
+        ? `start cmd.exe /K "cd /d ${expandedWorkingDir} && ${command}"`
+        : `start cmd.exe /K "${command}"`;
+    } else {
+      const terminal = 'x-terminal-emulator';
+      terminalCommand = expandedWorkingDir
+        ? `${terminal} -e "bash -c 'cd ${expandedWorkingDir} && ${command}; exec bash'"`
+        : `${terminal} -e "bash -c '${command}; exec bash'"`;
     }
+
+    exec(terminalCommand, { shell: true }, error => {
+      resolve({
+        success: !error,
+        message: error ? `Error opening terminal: ${error.message}` : 'Command opened in terminal',
+      });
+    });
   });
 }
 

@@ -157,7 +157,6 @@ function isModalOpened() {
 
 ipcMain.on('modal-state-changed', (event, open) => {
   isModalOpen = open;
-  console.log('Modal state changed:', isModalOpen ? 'open' : 'closed');
 });
 ```
 
