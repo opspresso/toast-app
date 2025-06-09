@@ -42,7 +42,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
 
     const existingIcon = getExistingIconPath(appName, outputDir);
     if (existingIcon && !forceRefresh) {
-      logger.info(`✅ 기존 아이콘 사용: ${appName}`);
+      // logger.info(`✅ 기존 아이콘 사용: ${appName}`);
       return existingIcon;
     } else if (existingIcon && forceRefresh) {
       logger.info(`🔄 강제 새로고침으로 기존 아이콘 삭제: ${appName}`);

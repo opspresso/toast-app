@@ -176,10 +176,6 @@ function setupAutoUpdaterEvents() {
     updateCheckInProgress = false;
     lastCheckTime = Date.now();
 
-    // 상세 정보 로깅
-    logger.info(`Release date: ${info.releaseDate || 'N/A'}`);
-    logger.info(`Release notes: ${info.releaseNotes || 'N/A'}`);
-
     sendStatusToWindows('update-available', {
       status: 'available',
       info: {

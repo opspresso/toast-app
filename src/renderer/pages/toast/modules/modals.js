@@ -114,7 +114,54 @@ export function setupModalEventListeners() {
         }
       }
     }
+
+    // 아이콘 미리보기 업데이트
+    updateIconPreview();
   });
+
+  // Application input change event for automatic icon extraction
+  editButtonApplicationInput.addEventListener('input', async () => {
+    const applicationPath = editButtonApplicationInput.value.trim();
+
+    // application 액션에서 애플리케이션 경로가 설정되었을 때
+    if (editButtonActionSelect.value === 'application' && applicationPath) {
+      // 아이콘이 비어있고 로컬 아이콘 추출이 지원되는 경우에만 실행
+      if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
+        try {
+          // 아이콘 추출 시도
+          const success = await updateButtonIconFromLocalApp(
+            applicationPath,
+            editButtonIconInput,
+            editButtonNameInput
+          );
+
+          if (success) {
+            const appName = extractAppNameFromPath(applicationPath);
+            showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
+          }
+        } catch (error) {
+          console.warn(`애플리케이션 아이콘 추출 실패:`, error);
+        }
+      }
+    }
+
+    // 아이콘 미리보기 업데이트
+    updateIconPreview();
+  });
+
+  // Helper function to extract app name from path
+  function extractAppNameFromPath(applicationPath) {
+    if (!applicationPath) return null;
+
+    try {
+      if (applicationPath.endsWith('.app')) {
+        return applicationPath.split('/').pop().replace('.app', '');
+      }
+      return applicationPath.split('/').pop().split('.')[0];
+    } catch (err) {
+      return null;
+    }
+  }
 
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
@@ -759,6 +806,49 @@ export function closeConfirmModal() {
 }
 
 /**
+ * Try to load extracted icon for preview
+ * @param {HTMLElement} previewImg - Preview image element
+ * @param {HTMLElement} placeholder - Placeholder element
+ * @param {HTMLElement} iconPreview - Icon preview container
+ * @param {string} applicationPath - Application path
+ * @param {string} fallbackIcon - Fallback icon if extraction fails
+ */
+function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, applicationPath, fallbackIcon) {
+  // Try to get existing extracted icon
+  window.toast.extractAppIcon(applicationPath, false)
+    .then(result => {
+      if (result.success && result.iconUrl) {
+        // Show extracted icon
+        previewImg.src = result.iconUrl;
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+        iconPreview.classList.add('has-icon');
+
+        // Handle image loading error
+        previewImg.onerror = function() {
+          previewImg.style.display = 'none';
+          placeholder.style.display = 'block';
+          placeholder.textContent = fallbackIcon;
+          iconPreview.classList.remove('has-icon');
+        };
+      } else {
+        // Use fallback icon if extraction fails
+        previewImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.textContent = fallbackIcon;
+        iconPreview.classList.remove('has-icon');
+      }
+    })
+    .catch(error => {
+      console.warn(`아이콘 미리보기 로드 실패:`, error);
+      previewImg.style.display = 'none';
+      placeholder.style.display = 'block';
+      placeholder.textContent = fallbackIcon;
+      iconPreview.classList.remove('has-icon');
+    });
+}
+
+/**
  * 아이콘 미리보기 업데이트 (toast 창 버튼과 동일한 로직 적용)
  */
 function updateIconPreview() {
@@ -839,15 +929,21 @@ function updateIconPreview() {
     const openAppMatch = commandValue.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
     if (openAppMatch) {
       const appName = (openAppMatch[1] || openAppMatch[2]).trim();
-      // 추출된 아이콘이 있는지 확인 (이미 추출된 경우)
+      // 추출된 아이콘이 있는지 확인하고 로드 시도
       if (window.toast && window.toast.platform === 'darwin') {
-        // 기본적으로 앱 아이콘 플레이스홀더 표시
-        previewImg.style.display = 'none';
-        placeholder.style.display = 'block';
-        placeholder.textContent = '📱'; // 앱 아이콘을 나타내는 이모지
-        iconPreview.classList.remove('has-icon');
+        const appPath = `/Applications/${appName}.app`;
+        tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, appPath, '📱');
         return;
       }
+    }
+  }
+
+  // application 액션에서 애플리케이션 경로가 있는 경우 아이콘 표시
+  if (actionType === 'application' && (!iconValue || iconValue === '') && editButtonApplicationInput.value.trim()) {
+    const applicationPath = editButtonApplicationInput.value.trim();
+    if (window.toast && window.toast.platform === 'darwin') {
+      tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, applicationPath, '🚀');
+      return;
     }
   }
 
