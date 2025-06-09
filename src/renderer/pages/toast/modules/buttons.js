@@ -121,15 +121,23 @@ export function createButtonElement(button) {
     };
     iconElement.appendChild(img);
   }
-  // Application type and icon is empty but application path exists, use application icon
-  else if (button.action === 'application' && (!button.icon || button.icon.trim() === '')) {
-    // Use default app icon
-    iconElement.textContent = '🚀';
+  // Application type and icon is empty but application path exists, try to use extracted icon
+  else if (button.action === 'application' && (!button.icon || button.icon.trim() === '') && button.applicationPath) {
+    // Try to check if there's an extracted icon available
+    tryLoadExtractedIcon(iconElement, button.applicationPath, '🚀');
   }
-  // Exec type and icon is empty but command exists, use default icon
+  // Exec type and icon is empty but command exists, try to extract app icon from command
   else if (button.action === 'exec' && (!button.icon || button.icon.trim() === '') && button.command) {
-    // Use default command icon
-    iconElement.textContent = '⚡';
+    // Check if it's an 'open -a AppName' command
+    const openAppMatch = button.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+    if (openAppMatch) {
+      const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+      const appPath = `/Applications/${appName}.app`;
+      tryLoadExtractedIcon(iconElement, appPath, '⚡');
+    } else {
+      // Use default command icon for other exec commands
+      iconElement.textContent = '⚡';
+    }
   }
   // URL type and icon is not empty, use icon
   else if (button.icon && isURL(button.icon)) {
@@ -355,4 +363,67 @@ export function navigateButtons(direction) {
 
   // Update selected button
   selectButton(newIndex);
+}
+
+/**
+ * Try to load extracted icon for application
+ * @param {HTMLElement} iconElement - Icon element to update
+ * @param {string} applicationPath - Application path
+ * @param {string} fallbackIcon - Fallback icon if extraction fails
+ */
+function tryLoadExtractedIcon(iconElement, applicationPath, fallbackIcon) {
+  // Only try on macOS
+  if (window.toast?.platform !== 'darwin') {
+    iconElement.textContent = fallbackIcon;
+    return;
+  }
+
+  // Extract app name from path
+  const appName = extractAppNameFromPath(applicationPath);
+  if (!appName) {
+    iconElement.textContent = fallbackIcon;
+    return;
+  }
+
+  // Try to get existing extracted icon
+  window.toast.extractAppIcon(applicationPath, false)
+    .then(result => {
+      if (result.success && result.iconUrl) {
+        // Clear text content and create image element
+        iconElement.textContent = '';
+        const img = document.createElement('img');
+        img.src = result.iconUrl;
+        img.alt = appName;
+        img.onerror = function () {
+          // Use fallback icon if image loading fails
+          iconElement.textContent = fallbackIcon;
+        };
+        iconElement.appendChild(img);
+      } else {
+        // Use fallback icon if extraction fails
+        iconElement.textContent = fallbackIcon;
+      }
+    })
+    .catch(error => {
+      console.warn(`아이콘 로드 실패 (${appName}):`, error);
+      iconElement.textContent = fallbackIcon;
+    });
+}
+
+/**
+ * Extract app name from application path
+ * @param {string} applicationPath - Application path
+ * @returns {string|null} - App name or null
+ */
+function extractAppNameFromPath(applicationPath) {
+  if (!applicationPath) return null;
+
+  try {
+    if (applicationPath.endsWith('.app')) {
+      return applicationPath.split('/').pop().replace('.app', '');
+    }
+    return applicationPath.split('/').pop().split('.')[0];
+  } catch (err) {
+    return null;
+  }
 }
