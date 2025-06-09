@@ -5,8 +5,6 @@
  */
 
 const { exec } = require('child_process');
-const { shell } = require('electron');
-const path = require('path');
 const fs = require('fs');
 
 /**

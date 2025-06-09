@@ -108,7 +108,6 @@ function setupIpcHandlers(windows) {
   // Handle button edit modal state change
   ipcMain.on('modal-state-changed', (event, open) => {
     isModalOpen = open;
-    logger.info('Modal state changed:', isModalOpen ? 'open' : 'closed');
   });
 
   // Handler to return current modal state
