@@ -48,60 +48,35 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
     const subscription = configStore.get('subscription') || {};
     logger.info('isCloudSyncEnabled: 구독 정보 확인:', JSON.stringify(subscription));
 
-    // 구독 활성화 상태 확인 (다양한 형식 지원)
+    // 구독 활성화 상태 확인 (간소화된 로직)
     let hasSyncFeature = false;
 
-    // 1. 직접적인 구독 상태 확인
-    if (
-      subscription.isSubscribed === true ||
-      subscription.active === true ||
-      subscription.is_subscribed === true
-    ) {
-      hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: 활성화된 구독 발견');
-    }
+    // 1. 구독 활성화 여부 확인
+    const isSubscribed = subscription.isSubscribed === true || subscription.active === true;
+    
+    // 2. cloud_sync 기능 확인 (features 객체 우선, additionalFeatures 대체)
+    const hasCloudSyncFeature = 
+      subscription.features?.cloud_sync === true ||
+      subscription.additionalFeatures?.cloudSync === true;
 
-    // 2. features 객체에서 cloud_sync 기능 확인
-    if (
-      subscription.features &&
-      typeof subscription.features === 'object' &&
-      subscription.features.cloud_sync === true
-    ) {
-      hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: features 객체에서 cloud_sync=true 발견');
-    }
+    // 3. Premium/Pro/VIP 플랜 확인
+    const isPremiumPlan = 
+      subscription.isVip === true ||
+      (subscription.plan && ['premium', 'pro', 'vip'].includes(subscription.plan.toLowerCase()));
 
-    // 3. features_array에서 cloud_sync 기능 확인
-    if (
-      Array.isArray(subscription.features_array) &&
-      subscription.features_array.includes('cloud_sync')
-    ) {
+    // 구독자이고 cloud_sync 기능이 있거나 Premium 플랜인 경우 활성화
+    if (isSubscribed && (hasCloudSyncFeature || isPremiumPlan)) {
       hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: features_array에서 cloud_sync 발견');
-    }
-
-    // 4. additionalFeatures 객체 확인
-    if (
-      subscription.additionalFeatures &&
-      typeof subscription.additionalFeatures === 'object' &&
-      subscription.additionalFeatures.cloudSync === true
-    ) {
-      hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: additionalFeatures에서 cloudSync=true 발견');
-    }
-
-    // 5. 계정이 구독자이면 기본적으로 동기화 기능 활성화
-    if (
-      subscription.plan &&
-      (subscription.plan.toLowerCase().includes('premium') ||
-        subscription.plan.toLowerCase().includes('pro'))
-    ) {
-      hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: premium/pro 플랜 발견, 동기화 기능 활성화');
+      logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 구독 활성화 및 기능 확인됨');
     }
 
     // 결과 반환
-    logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`);
+    logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`, {
+      isSubscribed,
+      hasCloudSyncFeature,
+      isPremiumPlan,
+      plan: subscription.plan
+    });
     return hasSyncFeature;
   } catch (error) {
     logger.error('동기화 가능 여부 확인 중 오류 발생:', error);
