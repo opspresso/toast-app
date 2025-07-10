@@ -1,9 +1,11 @@
-# Toast App 데이터 모델
+# Toast App 논리적 데이터 구조
 
-이 문서는 Toast App의 데이터 모델과 엔티티 관계를 설명합니다.
+이 문서는 Toast App의 논리적 데이터 구조와 엔티티 관계를 설명합니다.
+
+> **중요**: Toast App은 전통적인 데이터베이스를 사용하지 않고, electron-store를 통해 JSON 형식으로 설정을 저장합니다. 이 문서는 물리적 데이터베이스 스키마가 아닌 논리적 데이터 구조를 설명합니다.
 
 > **참고**:
-> - 데이터 저장소 구현 세부사항은 [docs/DATA_STORAGE.md](docs/DATA_STORAGE.md)를 참조하세요.
+> - 실제 데이터 저장 방식은 [docs/DATA_STORAGE.md](docs/DATA_STORAGE.md)를 참조하세요.
 > - 상세한 구성 스키마는 [docs/CONFIG_SCHEMA.md](docs/CONFIG_SCHEMA.md)를 참조하세요.
 
 ## 엔티티 관계
