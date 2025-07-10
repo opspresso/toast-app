@@ -859,10 +859,16 @@ async function updatePageGroupSettings(subscription) {
     config.set('subscription', {
       isAuthenticated: true,
       isSubscribed: isActive,
+      active: isActive,  // Add active field for compatibility
       plan: subscription.plan || 'free',
       expiresAt: expiresAtStr, // Safely converted to string
       pageGroups: subscription.features?.page_groups || pageGroups,
       isVip: isVip,
+      features: {
+        page_groups: subscription.features?.page_groups || pageGroups,
+        advanced_actions: subscription.features?.advanced_actions || false,
+        cloud_sync: subscription.features?.cloud_sync || false,
+      },
       additionalFeatures: {
         advancedActions: subscription.features?.advanced_actions || false,
         cloudSync: subscription.features?.cloud_sync || false,

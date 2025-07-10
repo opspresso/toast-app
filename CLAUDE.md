@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Project Code Guidelines
+## Project Overview
 
-**Important: Before writing new code, search for similar existing code and maintain consistent logic and style patterns. Always refer to the main development documentation and documents in the `docs/` directory.**
+Toast App is an Electron-based desktop application that provides a customizable shortcut launcher for macOS and Windows. It features a popup interface triggered by global shortcuts, system tray integration, and cloud synchronization capabilities.
 
 ## Build & Test Commands
 
@@ -12,6 +12,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build**: `npm run build` (all platforms), `npm run build:mac`, `npm run build:win`, `npm run build:mas` (App Store)
 - **Test**: `npm test` (all tests), `npx jest path/to/file.test.js` (single test)
 - **Lint & Format**: `npm run lint` (ESLint), `npm run format` (Prettier)
+
+## High-Level Architecture
+
+### Process Structure
+- **Main Process** (`src/main/`): Handles application lifecycle, window management, system integration, and IPC communication
+  - `actions/`: Modular action handlers (exec, open, script, chain, application)
+  - `api/`: Cloud sync and authentication client
+  - `config/`: Configuration management with electron-store
+  - `executor.js`: Central action execution dispatcher
+  - `window.js`: Window lifecycle management
+
+- **Renderer Process** (`src/renderer/`): UI implementation
+  - `pages/toast/`: Main popup interface
+  - `pages/settings/`: Multi-tab settings interface
+  - `preload/`: Secure IPC bridges for each page
+
+- **Shared Resources** (`src/renderer/images/`): Flat color icons library
+
+### Key Architectural Patterns
+1. **IPC Communication**: All cross-process communication uses structured IPC handlers defined in `src/main/ipc/`
+2. **Action System**: Extensible action framework supporting exec, open, script, chain, and application types
+3. **Configuration Layers**: Environment variables → Default config → User preferences
+4. **Window Management**: Separate window instances for toast popup and settings, with proper lifecycle handling
 
 ## Code Style
 
@@ -21,6 +44,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Error Handling**: Try/catch with specific error types, log errors appropriately
 - **Naming**: Clear, descriptive names; camelCase for variables/functions, PascalCase for classes
 - **Electron**: Follow proper main/renderer process separation, use IPC for communication
+
+## Development Workflows
+
+### Adding New Action Types
+1. Create new action file in `src/main/actions/`
+2. Implement `validate()` and `execute()` methods
+3. Register action in `src/main/executor.js`
+4. Add documentation in `docs/features.md`
+
+### Adding New Settings
+1. Update default config schema in `src/main/config.js`
+2. Add UI components in `src/renderer/pages/settings/`
+3. Create IPC handlers if needed in `src/main/ipc/`
+4. Update relevant documentation
+
+### Debugging
+- **Main Process**: Use VS Code debugger or check logs via electron-log
+- **Renderer Process**: Open DevTools with Ctrl+Shift+I (Cmd+Option+I on Mac)
+- **Log Locations**: 
+  - macOS: `~/Library/Logs/Toast/`
+  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\`
 
 ## Core Principles
 
@@ -47,3 +91,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Include unit tests for core functions, integration tests for data flow, and E2E tests for key scenarios.
 - Keep tests fast, isolated, and reliable.
 - Use Jest's describe/test structure with descriptive test names.
+- Mock Electron APIs using `tests/mocks/electron.js`
+
+## Platform-Specific Considerations
+
+- **macOS**: Auto-update requires both DMG and ZIP builds, local app icon extraction supported
+- **Windows**: NSIS installer for standard distribution, portable EXE option available
+- **Code Signing**: Required for distribution, configured in electron-builder
+- **Permissions**: macOS requires accessibility permissions for global shortcuts
+
+## Important Notes
+
+- **Security**: Always validate user inputs, especially for script execution actions
+- **Performance**: Toast popup should appear instantly; defer heavy operations
+- **State Management**: Main process holds authoritative state, renderer processes request via IPC
+- **Documentation**: All feature changes must update corresponding docs in `docs/` directory
+
+## Cloud Sync Troubleshooting
+
+### Subscription Data Structure
+When storing subscription data in ConfigStore, ensure consistency:
+- Store `active` and `isSubscribed` fields for subscription status
+- Store cloud sync feature in both `features.cloud_sync` and `additionalFeatures.cloudSync`
+- Premium/Pro/VIP plans automatically include cloud sync feature
+
+### Common Issues
+1. **Cloud sync not enabling**: Check if subscription data is properly stored in ConfigStore
+2. **API authentication**: Verify CLIENT_ID and CLIENT_SECRET in environment variables
+3. **Token expiration**: Default is 30 days, can be set to unlimited with TOKEN_EXPIRES_IN=0
