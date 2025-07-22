@@ -13,12 +13,9 @@ module.exports = {
   testTimeout: 10000,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^electron$': '<rootDir>/tests/mocks/electron.js',
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   transform: {},
-  // Mock electron modules
-  moduleNameMapper: {
-    '^electron$': '<rootDir>/tests/mocks/electron.js',
-  },
 };
