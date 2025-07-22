@@ -23,6 +23,7 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 
 | 문서 | 설명 | 대상 사용자 |
 |------|------|-------------|
+| [`DOCUMENTATION_STATUS.md`](./DOCUMENTATION_STATUS.md) | 📊 문서 현황 및 구현 상태 요약 | 모든 사용자 |
 | [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) | API 문서 개요 및 빠른 참조 | 개발자 |
 | [`API_MAIN_PROCESS.md`](./API_MAIN_PROCESS.md) | 메인 프로세스 모듈 API | 개발자 |
 | [`API_ACTIONS.md`](./API_ACTIONS.md) | 액션 모듈 API | 개발자 |
@@ -40,10 +41,10 @@ docs/ 디렉토리에는 더 자세한 문서들이 포함되어 있습니다:
 | [`SCRIPTS.md`](./SCRIPTS.md) | 사용자 정의 스크립트 작성 및 보안 모델 | 개발자 & 파워 사용자 |
 | [`SECURITY.md`](./SECURITY.md) | 보안 모델, 데이터 보호 및 인증 시스템 | 개발자 & 보안 검토자 |
 | [`SETTINGS.md`](./SETTINGS.md) | 설정 관리 및 구성 | 개발자 & 최종 사용자 |
-| [`TESTING.md`](./TESTING.md) | 테스트 전략 및 프로세스 | 개발자 & QA |
+| [`TESTING.md`](./TESTING.md) | 테스트 전략 (⚠️ 최소한의 구현) | 개발자 & QA |
 | [`USER_GUIDE.md`](./USER_GUIDE.md) | 상세한 사용자 가이드 | 최종 사용자 |
 | [`WINDOW_VISIBILITY.md`](./WINDOW_VISIBILITY.md) | 윈도우 가시성 관리 | 개발자 |
-| [`DRAG_DROP_FEATURE.md`](./DRAG_DROP_FEATURE.md) | 드래그 앤 드롭 기능 구현 가이드 | 개발자 & 기획자 |
+| [`FUTURE_DRAG_DROP_FEATURE.md`](./FUTURE_DRAG_DROP_FEATURE.md) | 드래그 앤 드롭 기능 구현 계획 (❌ 미구현) | 개발자 & 기획자 |
 | [`ICON_EXTRACTION.md`](./ICON_EXTRACTION.md) | 로컬 앱 아이콘 추출 유틸리티 | 개발자 |
 
 ## 문서 관리 가이드라인
