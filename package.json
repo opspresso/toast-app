@@ -1,6 +1,6 @@
 {
   "name": "toast-app",
-  "version": "0.8.6",
+  "version": "0.8.7",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "license": "MIT",
@@ -34,7 +34,7 @@
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,html}\""
   },
   "dependencies": {
-    "axios": "^1.8.4",
+    "axios": "^1.11.0",
     "dotenv": "^16.5.0",
     "electron-log": "^5.3.4",
     "electron-store": "^8.1.0",
