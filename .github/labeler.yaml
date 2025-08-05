@@ -1,9 +1,13 @@
 # Domains
-src:
-  - app/**/*
+main:
+  - src/main/**/*
+
+renderer:
+  - src/renderer/**/*
 
 docs:
   - docs/**/*
 
 test:
   - test/**/*
+  - src/test/**/*
