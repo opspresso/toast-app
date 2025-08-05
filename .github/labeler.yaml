@@ -9,5 +9,4 @@ docs:
   - docs/**/*
 
 test:
-  - test/**/*
-  - src/test/**/*
+  - tests/**/*
