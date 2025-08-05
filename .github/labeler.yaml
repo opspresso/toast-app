@@ -1,12 +1,16 @@
 # Domains
 main:
-  - src/main/**/*
+  - changed-files:
+      - src/main/**/*
 
 renderer:
-  - src/renderer/**/*
+  - changed-files:
+      - src/renderer/**/*
 
 docs:
-  - docs/**/*
+  - changed-files:
+      - docs/**/*
 
 test:
-  - tests/**/*
+  - changed-files:
+      - tests/**/*
