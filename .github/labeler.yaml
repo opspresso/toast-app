@@ -1,0 +1,12 @@
+# Domains
+main:
+  - src/main/**/*
+
+renderer:
+  - src/renderer/**/*
+
+docs:
+  - docs/**/*
+
+test:
+  - tests/**/*
