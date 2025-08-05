@@ -1,0 +1,9 @@
+# Domains
+src:
+- app/**/*
+
+docs:
+- docs/**/*
+
+test:
+- test/**/*
