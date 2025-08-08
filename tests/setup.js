@@ -17,8 +17,8 @@ directories.forEach(dir => {
   }
 });
 
-// Mock Electron
-jest.mock('electron', () => require('./mocks/electron'));
+// Electron is already mocked via jest.config.js moduleNameMapping
+// No need to mock here to avoid circular dependency
 
 // Global setup
 beforeAll(() => {
