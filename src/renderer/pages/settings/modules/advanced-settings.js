@@ -2,13 +2,7 @@
  * Settings - Advanced Settings Management
  */
 
-import {
-  hideAfterActionCheckbox,
-  hideOnBlurCheckbox,
-  hideOnEscapeCheckbox,
-  showInTaskbarCheckbox,
-  resetSettingsButton
-} from './dom-elements.js';
+import { hideAfterActionCheckbox, hideOnBlurCheckbox, hideOnEscapeCheckbox, showInTaskbarCheckbox, resetSettingsButton } from './dom-elements.js';
 import { config, updateConfig } from './state.js';
 
 /**
@@ -80,20 +74,24 @@ export function setupAdvancedEventListeners() {
   if (resetSettingsButton) {
     resetSettingsButton.addEventListener('click', () => {
       if (confirm('Do you want to reset all settings to default values?')) {
-        window.settings.resetToDefaults().then(() => {
-          // 설정 다시 로드
-          return window.settings.getConfig();
-        }).then(loadedConfig => {
-          updateConfig(loadedConfig);
-          // UI 초기화는 동적 import로 처리
-          import('../index.js').then(({ initializeUI }) => {
-            initializeUI();
+        window.settings
+          .resetToDefaults()
+          .then(() =>
+            // 설정 다시 로드
+            window.settings.getConfig(),
+          )
+          .then(loadedConfig => {
+            updateConfig(loadedConfig);
+            // UI 초기화는 동적 import로 처리
+            import('../index.js').then(({ initializeUI }) => {
+              initializeUI();
+            });
+            alert('Settings have been reset.');
+          })
+          .catch(error => {
+            window.settings.log.error('설정 초기화 오류:', error);
+            alert('An error occurred while resetting settings.');
           });
-          alert('Settings have been reset.');
-        }).catch(error => {
-          window.settings.log.error('설정 초기화 오류:', error);
-          alert('An error occurred while resetting settings.');
-        });
       }
     });
   }

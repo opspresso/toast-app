@@ -48,9 +48,7 @@ contextBridge.exposeInMainWorld('settings', {
   showMessageBox: options => ipcRenderer.invoke('show-message-box', options),
 
   // App icon extraction
-  extractAppIcon: (applicationPath, forceRefresh = false) => {
-    return ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh);
-  },
+  extractAppIcon: (applicationPath, forceRefresh = false) => ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh),
 
   // App control
   restartApp: () => ipcRenderer.send('restart-app'),
@@ -77,6 +75,7 @@ contextBridge.exposeInMainWorld('settings', {
   getSyncStatus: () => ipcRenderer.invoke('get-sync-status'),
   setCloudSyncEnabled: enabled => ipcRenderer.invoke('set-cloud-sync-enabled', enabled),
   manualSync: action => ipcRenderer.invoke('manual-sync', action),
+  debugSyncStatus: () => ipcRenderer.invoke('debug-sync-status'),
 });
 
 // Notify main process that the window is ready
@@ -89,6 +88,54 @@ window.addEventListener('DOMContentLoaded', () => {
       }),
     );
   });
+
+  // Add debug functions to window for easy access
+  window.debugSync = async () => {
+    try {
+      const status = await window.settings.debugSyncStatus();
+      console.log('=== Sync Debug Status ===');
+      console.log(status);
+      return status;
+    } catch (error) {
+      console.error('Error getting sync status:', error);
+    }
+  };
+
+  window.triggerManualSync = async (action = 'upload') => {
+    try {
+      console.log(`Triggering manual sync: ${action}`);
+      const result = await window.settings.manualSync(action);
+      console.log('Manual sync result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error triggering manual sync:', error);
+    }
+  };
+
+  window.testIconChange = async () => {
+    try {
+      console.log('Testing icon change detection...');
+      const pages = await window.settings.getConfig('pages');
+      if (pages && pages.length > 0 && pages[0].buttons && pages[0].buttons.length > 0) {
+        // 첫 번째 버튼의 아이콘을 임시로 변경
+        const modifiedPages = JSON.parse(JSON.stringify(pages));
+        const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
+        modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
+
+        console.log('Setting modified pages...');
+        await window.settings.setConfig('pages', modifiedPages);
+        console.log('Icon change test completed. Check logs for sync activity.');
+
+        return { success: true, message: 'Icon change triggered' };
+      } else {
+        console.log('No buttons found to test icon change');
+        return { success: false, message: 'No buttons found' };
+      }
+    } catch (error) {
+      console.error('Error testing icon change:', error);
+      return { success: false, error: error.message };
+    }
+  };
 });
 
 // Event handler for OAuth redirection

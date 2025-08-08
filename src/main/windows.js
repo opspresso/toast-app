@@ -288,12 +288,15 @@ function showToastWindow(config) {
     windows.toast.setAlwaysOnTop(true, 'screen-saver');
 
     // 전체 화면 모드에서 토스트 창을 모든 작업 공간에 표시
-    if (process.platform === 'darwin') { // macOS 전용
+    if (process.platform === 'darwin') {
+      // macOS 전용
       windows.toast.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    } else if (process.platform === 'win32') { // Windows 전용
+    } else if (process.platform === 'win32') {
+      // Windows 전용
       // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
       windows.toast.setAlwaysOnTop(true, 'screen-saver', 1);
-    } else if (process.platform === 'linux') { // Linux 전용
+    } else if (process.platform === 'linux') {
+      // Linux 전용
       // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
       // 다양한 윈도우 매니저에 따라 다르게 동작할 수 있음
       try {
@@ -408,12 +411,15 @@ function showSettingsWindow(config, tabName) {
       settingsWindow.setAlwaysOnTop(true, 'screen-saver');
 
       // 전체 화면 모드에서 창을 모든 작업 공간에 표시
-      if (process.platform === 'darwin') { // macOS 전용
+      if (process.platform === 'darwin') {
+        // macOS 전용
         settingsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-      } else if (process.platform === 'win32') { // Windows 전용
+      } else if (process.platform === 'win32') {
+        // Windows 전용
         // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
         settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-      } else if (process.platform === 'linux') { // Linux 전용
+      } else if (process.platform === 'linux') {
+        // Linux 전용
         // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
         try {
           settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);

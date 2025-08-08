@@ -89,7 +89,7 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 
 - **테스팅**:
   ```
-  npm test
+  npm run test
   ```
 
 ## 프로젝트 구조
@@ -220,7 +220,7 @@ docs: update README with new features
 
 ```
 # 모든 테스트 실행
-npm test
+npm run test
 
 # 커버리지가 있는 테스트 실행
 npm run test:coverage
@@ -229,7 +229,7 @@ npm run test:coverage
 npm run test:watch
 
 # 특정 테스트 실행
-npm test -- -t "test name pattern"
+npm run test -- -t "test name pattern"
 ```
 
 ### 테스트 커버리지

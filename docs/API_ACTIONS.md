@@ -2,6 +2,17 @@
 
 이 문서는 Toast 앱의 액션 모듈에 대한 API 문서를 제공합니다.
 
+## 전체 액션 시스템 개요
+
+Toast 앱은 `src/main/executor.js`에서 중앙 관리되는 5가지 액션 타입을 지원합니다:
+1. **application** - 애플리케이션 실행
+2. **exec** - 셸 명령 실행  
+3. **open** - URL, 파일, 폴더 열기
+4. **script** - 사용자 정의 스크립트 실행 (JavaScript, AppleScript, PowerShell, Bash)
+5. **chain** - 여러 액션을 순차적으로 실행
+
+모든 액션은 실행 전 `validateAction()` 함수로 검증됩니다.
+
 ## Exec 액션 (`src/main/actions/exec.js`)
 
 Exec 액션 모듈은 셸 명령 실행을 처리합니다.

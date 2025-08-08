@@ -113,8 +113,7 @@ const schema = {
       pageGroups: {
         type: 'number',
         default: 1,
-        description:
-          'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
+        description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
       },
     },
     default: {
@@ -127,6 +126,49 @@ const schema = {
   firstLaunchCompleted: {
     type: 'boolean',
     default: false,
+  },
+  _sync: {
+    type: 'object',
+    properties: {
+      lastModifiedAt: {
+        type: 'number',
+        default: 0,
+        description: 'Timestamp when settings were last modified locally',
+      },
+      lastModifiedDevice: {
+        type: 'string',
+        default: '',
+        description: 'Device identifier that last modified the settings',
+      },
+      lastSyncedAt: {
+        type: 'number',
+        default: 0,
+        description: 'Timestamp when settings were last synced with server',
+      },
+      lastSyncedDevice: {
+        type: 'string',
+        default: '',
+        description: 'Device identifier that last synced with server',
+      },
+      dataHash: {
+        type: 'string',
+        default: '',
+        description: 'Hash of synced data for change detection',
+      },
+      isConflicted: {
+        type: 'boolean',
+        default: false,
+        description: 'Whether there is a sync conflict',
+      },
+    },
+    default: {
+      lastModifiedAt: 0,
+      lastModifiedDevice: '',
+      lastSyncedAt: 0,
+      lastSyncedDevice: '',
+      dataHash: '',
+      isConflicted: false,
+    },
   },
 };
 
@@ -169,10 +211,7 @@ function createConfigStore() {
     return new Store({ schema });
   } catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
-    logger.error(
-      'Error creating config store with schema, falling back to schema-less store:',
-      error,
-    );
+    logger.error('Error creating config store with schema, falling back to schema-less store:', error);
     return new Store({
       schema: null,
       clearInvalidConfig: false,
@@ -329,13 +368,140 @@ function sanitizeSubscription(subscription) {
 
   // pageGroups 필드는 숫자여야 함
   if (result.pageGroups !== undefined) {
-    result.pageGroups =
-      Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
+    result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
   } else {
     result.pageGroups = schema.subscription.properties.pageGroups.default;
   }
 
   return result;
+}
+
+/**
+ * Generate device identifier
+ * @returns {string} Device identifier
+ */
+function getDeviceId() {
+  const os = require('os');
+  return `${os.hostname()}-${os.platform()}`;
+}
+
+/**
+ * Generate data hash for change detection
+ * @param {Object} data - Data to hash
+ * @returns {string} Hash string
+ */
+function generateDataHash(data) {
+  const crypto = require('crypto');
+  // Only hash the core sync data (pages, appearance, advanced)
+  const coreData = {
+    pages: data.pages || [],
+    appearance: data.appearance || {},
+    advanced: data.advanced || {},
+  };
+  const dataString = JSON.stringify(coreData, Object.keys(coreData).sort());
+  return crypto.createHash('sha256').update(dataString).digest('hex');
+}
+
+/**
+ * Update sync metadata in ConfigStore
+ * @param {Object} config - ConfigStore instance
+ * @param {Object} metadata - Metadata to update
+ */
+function updateSyncMetadata(config, metadata) {
+  const currentSync = config.get('_sync') || schema._sync.default;
+  const updatedSync = {
+    ...currentSync,
+    ...metadata,
+  };
+  config.set('_sync', updatedSync);
+}
+
+/**
+ * Mark settings as modified
+ * @param {Object} config - ConfigStore instance
+ * @param {string} [deviceId] - Device identifier
+ */
+function markAsModified(config, deviceId = null) {
+  const timestamp = Date.now();
+  const device = deviceId || getDeviceId();
+  
+  // Generate new hash based on current data
+  const currentData = {
+    pages: config.get('pages'),
+    appearance: config.get('appearance'),
+    advanced: config.get('advanced'),
+  };
+  const dataHash = generateDataHash(currentData);
+  
+  updateSyncMetadata(config, {
+    lastModifiedAt: timestamp,
+    lastModifiedDevice: device,
+    dataHash,
+    isConflicted: false, // Reset conflict flag when locally modified
+  });
+}
+
+/**
+ * Mark settings as synced
+ * @param {Object} config - ConfigStore instance
+ * @param {string} [deviceId] - Device identifier
+ */
+function markAsSynced(config, deviceId = null) {
+  const timestamp = Date.now();
+  const device = deviceId || getDeviceId();
+  
+  // Generate hash based on current data
+  const currentData = {
+    pages: config.get('pages'),
+    appearance: config.get('appearance'),
+    advanced: config.get('advanced'),
+  };
+  const dataHash = generateDataHash(currentData);
+  
+  updateSyncMetadata(config, {
+    lastSyncedAt: timestamp,
+    lastSyncedDevice: device,
+    lastModifiedAt: timestamp, // Also update modified time
+    lastModifiedDevice: device,
+    dataHash,
+    isConflicted: false,
+  });
+}
+
+/**
+ * Check if settings have changes that need sync
+ * @param {Object} config - ConfigStore instance
+ * @returns {boolean} Whether settings have unsaved changes
+ */
+function hasUnsyncedChanges(config) {
+  const syncMeta = config.get('_sync') || schema._sync.default;
+  const currentData = {
+    pages: config.get('pages'),
+    appearance: config.get('appearance'),
+    advanced: config.get('advanced'),
+  };
+  const currentHash = generateDataHash(currentData);
+  
+  return currentHash !== syncMeta.dataHash || syncMeta.lastModifiedAt > syncMeta.lastSyncedAt;
+}
+
+/**
+ * Mark settings as conflicted
+ * @param {Object} config - ConfigStore instance
+ */
+function markAsConflicted(config) {
+  updateSyncMetadata(config, {
+    isConflicted: true,
+  });
+}
+
+/**
+ * Get sync metadata
+ * @param {Object} config - ConfigStore instance
+ * @returns {Object} Sync metadata
+ */
+function getSyncMetadata(config) {
+  return config.get('_sync') || schema._sync.default;
 }
 
 module.exports = {
@@ -345,4 +511,13 @@ module.exports = {
   importConfig,
   exportConfig,
   sanitizeSubscription,
+  // Sync metadata management functions
+  getDeviceId,
+  generateDataHash,
+  updateSyncMetadata,
+  markAsModified,
+  markAsSynced,
+  hasUnsyncedChanges,
+  markAsConflicted,
+  getSyncMetadata,
 };

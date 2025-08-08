@@ -55,8 +55,7 @@ export const defaultButtons = [
     shortcut: 'A',
     icon: '🛒',
     action: 'exec',
-    command:
-      window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:',
+    command: window.toast?.platform === 'darwin' ? 'open -a "App Store"' : 'start ms-windows-store:',
   },
   {
     name: 'Slack',
@@ -127,16 +126,14 @@ export const defaultButtons = [
 // Define empty button set (15 buttons)
 export const emptyButtons = Array(15)
   .fill(null)
-  .map((_, index) => {
-    return {
-      name: ``,
-      shortcut: BUTTON_SHORTCUTS[index],
-      icon: '',
-      action: 'application',
-      application: '',
-      applicationParameters: '',
-    };
-  });
+  .map((_, index) => ({
+    name: '',
+    shortcut: BUTTON_SHORTCUTS[index],
+    icon: '',
+    action: 'application',
+    application: '',
+    applicationParameters: '',
+  }));
 
 /**
  * 버튼 배열의 단축키를 순서대로 재할당하는 함수
@@ -148,7 +145,7 @@ export function reassignButtonShortcuts(buttons) {
     if (index < BUTTON_SHORTCUTS.length) {
       return {
         ...button,
-        shortcut: BUTTON_SHORTCUTS[index]
+        shortcut: BUTTON_SHORTCUTS[index],
       };
     }
     return button;

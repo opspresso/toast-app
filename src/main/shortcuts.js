@@ -16,7 +16,9 @@ const logger = createLogger('Shortcuts');
  * @returns {string} Electron 형식 단축키
  */
 function convertHotkeyToElectronFormat(hotkey) {
-  if (!hotkey) return '';
+  if (!hotkey) {
+    return '';
+  }
 
   // 변환 전 원본 핫키 로깅
   logger.info(`Converting hotkey format: "${hotkey}"`);
@@ -47,7 +49,9 @@ function convertHotkeyToElectronFormat(hotkey) {
   let mainKey = '';
 
   for (const part of parts) {
-    if (!part) continue; // 빈 부분 건너뛰기
+    if (!part) {
+      continue;
+    } // 빈 부분 건너뛰기
 
     // 모디파이어 키 처리
     if (part === 'Ctrl' || part === 'Control') {
@@ -185,8 +189,8 @@ function positionToastWindow(toastWindow, config) {
     const displayWorkArea = currentDisplay.workArea;
 
     // Default to center position on current display
-    let x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
-    let y = displayWorkArea.y + Math.round((displayWorkArea.height - windowBounds.height) / 2);
+    const x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
+    const y = displayWorkArea.y + Math.round((displayWorkArea.height - windowBounds.height) / 2);
 
     // Set the window position
     toastWindow.setPosition(x, y);
@@ -208,8 +212,12 @@ function positionToastWindow(toastWindow, config) {
     let y = savedPosition.y;
 
     // If the position would be off-screen, adjust it
-    if (x < displayWorkArea.x) x = displayWorkArea.x;
-    if (y < displayWorkArea.y) y = displayWorkArea.y;
+    if (x < displayWorkArea.x) {
+      x = displayWorkArea.x;
+    }
+    if (y < displayWorkArea.y) {
+      y = displayWorkArea.y;
+    }
     if (x + windowBounds.width > displayWorkArea.x + displayWorkArea.width) {
       x = displayWorkArea.x + displayWorkArea.width - windowBounds.width;
     }
@@ -245,14 +253,8 @@ function positionToastWindow(toastWindow, config) {
       y = cursorPosition.y - 10;
 
       // Ensure the window is within the screen bounds
-      x = Math.max(
-        displayWorkArea.x,
-        Math.min(x, displayWorkArea.x + displayWorkArea.width - windowBounds.width),
-      );
-      y = Math.max(
-        displayWorkArea.y,
-        Math.min(y, displayWorkArea.y + displayWorkArea.height - windowBounds.height),
-      );
+      x = Math.max(displayWorkArea.x, Math.min(x, displayWorkArea.x + displayWorkArea.width - windowBounds.width));
+      y = Math.max(displayWorkArea.y, Math.min(y, displayWorkArea.y + displayWorkArea.height - windowBounds.height));
       break;
     case 'center':
     default:

@@ -34,7 +34,7 @@ async function openItem(action) {
     return {
       success: false,
       message: `Error opening item: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -63,7 +63,7 @@ async function openUrl(url) {
     return {
       success: false,
       message: `Error opening URL: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -103,7 +103,7 @@ async function openPath(itemPath, application) {
     return {
       success: false,
       message: `Error opening path: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -137,7 +137,7 @@ async function openWithApplication(filePath, application) {
         return {
           success: false,
           message: `Error opening with application: ${error.message}`,
-          error: error,
+          error,
         };
       }
     });
@@ -150,7 +150,7 @@ async function openWithApplication(filePath, application) {
     return {
       success: false,
       message: `Error opening with application: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }

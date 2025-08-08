@@ -3,14 +3,7 @@
  */
 
 import { defaultButtons } from './modules/constants.js';
-import {
-  closeButton,
-  settingsModeToggle,
-  settingsButton,
-  addPageButton,
-  removePageButton,
-  userButton,
-} from './modules/dom-elements.js';
+import { closeButton, settingsModeToggle, settingsButton, addPageButton, removePageButton, userButton } from './modules/dom-elements.js';
 import { applyAppearanceSettings, showStatus } from './modules/utils.js';
 import { initClock } from './modules/clock.js';
 import {
@@ -21,14 +14,7 @@ import {
   setupAuthEventHandlers,
   handlePageLimitAfterLogout,
 } from './modules/auth.js';
-import {
-  initializePages,
-  addNewPage,
-  removePage,
-  pages,
-  renderPagingButtons,
-  changePage,
-} from './modules/pages.js';
+import { initializePages, addNewPage, removePage, pages, renderPagingButtons, changePage } from './modules/pages.js';
 import { toggleSettingsMode, showCurrentPageButtons } from './modules/buttons.js';
 import { setupKeyboardEventListeners } from './modules/keyboard.js';
 import { setupModalEventListeners } from './modules/modals.js';
@@ -110,8 +96,6 @@ function setupEventListeners() {
     Object.keys(window.AllIcons).forEach(iconName => {
       window.FlatColorIcons[iconName] = window.AllIcons[iconName];
     });
-
-    console.log('FlatColorIcons object has been initialized.');
   }
 
   // Listen for configuration updates (only if window.toast exists)
@@ -144,15 +128,13 @@ function setupEventListeners() {
   // 특별 명령어 처리 (꽃가루 애니메이션 등) - only if window.toast exists
   if (window.toast) {
     window.toast.onSpecialCommand = function (command) {
-      console.log('Special command received:', command);
-
       if (command === 'confetti' || command === '꽃가루') {
         // 꽃가루 애니메이션 실행
         showStatus('🎉 Let it go!', 'success');
         if (window.confetti && window.confetti.start) {
           window.confetti.start({
-            duration: 5,  // 5초 동안 실행
-            density: 100  // 꽃가루 밀도
+            duration: 5, // 5초 동안 실행
+            density: 100, // 꽃가루 밀도
           });
         }
         return true; // 명령 처리 완료
@@ -167,8 +149,6 @@ function setupEventListeners() {
  * Initialize the application
  */
 function initializeApp() {
-  console.log('Initializing Toast application...');
-
   // Always initialize clock first (independent of window.toast)
   initClock();
 
@@ -212,7 +192,6 @@ function initializeApp() {
       // Load user information when the app starts
       fetchUserProfileAndSubscription()
         .then(() => {
-          console.log('User information loading complete');
           // Update user information UI
           updateProfileDisplay();
           updateUserButton();
@@ -226,7 +205,6 @@ function initializeApp() {
     });
   } else {
     // If window.toast doesn't exist, just show default buttons
-    console.log('window.toast not available, showing default buttons');
     const newPage = {
       name: 'Page 1',
       shortcut: '1',

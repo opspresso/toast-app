@@ -91,7 +91,9 @@ export function getFaviconFromUrl(url) {
  * @returns {boolean} True if URL, false otherwise
  */
 export function isURL(str) {
-  if (!str) return false;
+  if (!str) {
+    return false;
+  }
   const pattern = /^(https?:\/\/|file:\/\/\/|data:image\/)/i;
   return pattern.test(str.trim());
 }

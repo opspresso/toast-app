@@ -61,9 +61,7 @@ export const editButtonScriptParamsInput = document.getElementById('edit-button-
 
 // Application action elements
 export const editButtonApplicationInput = document.getElementById('edit-button-application');
-export const editButtonApplicationParametersInput = document.getElementById(
-  'edit-button-application-parameters',
-);
+export const editButtonApplicationParametersInput = document.getElementById('edit-button-application-parameters');
 export const browseApplicationButton = document.getElementById('browse-application-button');
 
 // Chain action elements

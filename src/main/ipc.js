@@ -111,9 +111,7 @@ function setupIpcHandlers(windows) {
   });
 
   // Handler to return current modal state
-  ipcMain.handle('is-modal-open', () => {
-    return isModalOpen;
-  });
+  ipcMain.handle('is-modal-open', () => isModalOpen);
 
   // Set window's alwaysOnTop property
   ipcMain.handle('set-always-on-top', (event, value) => {
@@ -235,6 +233,11 @@ function setupIpcHandlers(windows) {
   // Set configuration
   ipcMain.handle('set-config', (event, key, value) => {
     try {
+      logger.info('=== set-config called ===');
+      logger.info('Key:', key);
+      if (key === 'pages') {
+        logger.info('Pages being updated. Length:', Array.isArray(value) ? value.length : 'Not array');
+      }
       if (key === null && typeof value === 'object') {
         // Set entire config
         Object.keys(value).forEach(k => {
@@ -263,7 +266,7 @@ function setupIpcHandlers(windows) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: subscription,
+            subscription,
           });
         }
 
@@ -319,6 +322,11 @@ function setupIpcHandlers(windows) {
   // Save configuration (specific changes)
   ipcMain.handle('save-config', (event, changes) => {
     try {
+      logger.info('=== save-config called ===');
+      logger.info('Changes keys:', Object.keys(changes || {}));
+      if (changes && changes.pages) {
+        logger.info('Pages being updated via save-config. Length:', Array.isArray(changes.pages) ? changes.pages.length : 'Not array');
+      }
       if (typeof changes === 'object') {
         // Apply each change to config
         Object.keys(changes).forEach(key => {
@@ -334,7 +342,7 @@ function setupIpcHandlers(windows) {
           windows.toast.webContents.send('config-updated', {
             pages: config.get('pages'),
             appearance: config.get('appearance'),
-            subscription: subscription,
+            subscription,
           });
 
           // Update toast window appearance if appearance settings change
@@ -378,7 +386,7 @@ function setupIpcHandlers(windows) {
         windows.toast.webContents.send('config-updated', {
           pages: config.get('pages'),
           appearance: config.get('appearance'),
-          subscription: subscription,
+          subscription,
         });
       }
 
@@ -490,55 +498,37 @@ function setupIpcHandlers(windows) {
   // Authentication related handlers
 
   // Start login process
-  ipcMain.handle('initiate-login', async () => {
-    return await authManager.initiateLogin();
-  });
+  ipcMain.handle('initiate-login', async () => await authManager.initiateLogin());
 
   // Exchange authentication code for token
-  ipcMain.handle('exchange-code-for-token', async (event, code) => {
-    return await authManager.exchangeCodeForToken(code);
-  });
+  ipcMain.handle('exchange-code-for-token', async (event, code) => await authManager.exchangeCodeForToken(code));
 
   // Logout
-  ipcMain.handle('logout', async () => {
-    return await authManager.logout();
-  });
+  ipcMain.handle('logout', async () => await authManager.logout());
 
   // Get user profile information
-  ipcMain.handle('fetch-user-profile', async () => {
-    return await authManager.fetchUserProfile();
-  });
+  ipcMain.handle('fetch-user-profile', async () => await authManager.fetchUserProfile());
 
   // Get user settings information
-  ipcMain.handle('get-user-settings', async () => {
-    return await authManager.getUserSettings();
-  });
+  ipcMain.handle('get-user-settings', async () => await authManager.getUserSettings());
 
   // Get subscription information
-  ipcMain.handle('fetch-subscription', async () => {
-    return await authManager.fetchSubscription();
-  });
+  ipcMain.handle('fetch-subscription', async () => await authManager.fetchSubscription());
 
   // Return current authentication token
-  ipcMain.handle('get-auth-token', async () => {
-    return await authManager.getAccessToken();
-  });
+  ipcMain.handle('get-auth-token', async () => await authManager.getAccessToken());
 
   // Cloud synchronization related handlers
 
   // Check if synchronization is possible
-  ipcMain.handle('is-cloud-sync-enabled', async () => {
-    // const cloudSync = require('./cloud-sync');
-    // return await cloudSync.isCloudSyncEnabled();
-    return true;
-  });
+  ipcMain.handle('is-cloud-sync-enabled', async () => true);
 
   // Cloud Sync Manager 저장 변수
   let cloudSyncManager = null;
 
-  // 윈도우 초기화 이후 Cloud Sync Manager 초기화
-  const cloudSync = require('./cloud-sync');
-  cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager);
+  // 윈도우 초기화 이후 Cloud Sync Manager 초기화 (authManager, userDataManager 초기화 후 실행)
+  // 지연 초기화를 위해 나중에 debug 함수에서 수행하도록 변경
+  logger.info('Cloud sync manager will be initialized on first use');
 
   // Settings Synced 이벤트 핸들러 전달
   ipcMain.on('settings-synced', (event, data) => {
@@ -582,7 +572,13 @@ function setupIpcHandlers(windows) {
       // 동기화 설정 변경 로그
       logger.info(`Setting cloud sync to ${enabled ? 'enabled' : 'disabled'}`);
 
-      // 이미 초기화된 cloudSyncManager 사용
+      // CloudSyncManager 초기화 확인 및 필요 시 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('Initializing CloudSyncManager for set-cloud-sync-enabled...');
+        const cloudSync = require('./cloud-sync');
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+      }
+
       if (cloudSyncManager) {
         // enable/disable 메서드를 사용하여 클라우드 동기화 활성화/비활성화
         if (enabled) {
@@ -624,7 +620,13 @@ function setupIpcHandlers(windows) {
         throw new Error(`Invalid sync action: ${action}`);
       }
 
-      // 이미 초기화된 cloudSyncManager 사용
+      // CloudSyncManager 초기화 확인 및 필요 시 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('Initializing CloudSyncManager for manual-sync...');
+        const cloudSync = require('./cloud-sync');
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+      }
+
       if (cloudSyncManager) {
         // 수동 동기화 실행
         logger.info(`Performing manual sync action: ${action}`);
@@ -660,6 +662,67 @@ function setupIpcHandlers(windows) {
       }
     } catch (error) {
       logger.error(`Error performing manual sync (${action}):`, error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error',
+      };
+    }
+  });
+
+  // Debug sync status (for troubleshooting)
+  ipcMain.handle('debug-sync-status', async () => {
+    try {
+      logger.info('=== Debug sync status requested ===');
+      logger.info('cloudSyncManager exists:', !!cloudSyncManager);
+      logger.info('authManager exists:', !!authManager);
+      logger.info('userDataManager exists:', !!userDataManager);
+
+      // CloudSyncManager가 아직 초기화되지 않았을 경우 지금 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('CloudSyncManager not initialized, initializing now...');
+        const cloudSync = require('./cloud-sync');
+        // 중요: IPC에서 사용하는 config 인스턴스를 전달
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+        logger.info('CloudSyncManager initialized successfully with shared config instance');
+      }
+
+      if (cloudSyncManager) {
+        const status = cloudSyncManager.getCurrentStatus();
+        const subscription = config.get('subscription');
+        const hasAuthManager = !!authManager;
+        const hasValidToken = hasAuthManager ? await authManager.hasValidToken() : false;
+
+        logger.info('Sync status:', status);
+        logger.info('Has valid token:', hasValidToken);
+
+        return {
+          success: true,
+          status: {
+            ...status,
+            hasAuthManager,
+            hasValidToken,
+            subscription: subscription
+              ? {
+                  active: subscription.active,
+                  isSubscribed: subscription.isSubscribed,
+                  features: subscription.features,
+                  plan: subscription.plan,
+                }
+              : null,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Cloud sync manager not initialized - authManager or userDataManager missing',
+          debug: {
+            hasAuthManager: !!authManager,
+            hasUserDataManager: !!userDataManager,
+          },
+        };
+      }
+    } catch (error) {
+      logger.error('Error getting debug sync status:', error);
       return {
         success: false,
         error: error.message || 'Unknown error',
@@ -791,10 +854,7 @@ function setupIpcHandlers(windows) {
       const checkResult = await updater.checkForUpdates(true);
 
       if (!checkResult || !checkResult.success) {
-        logger.warn(
-          '업데이트 확인 실패, 다운로드를 진행할 수 없습니다:',
-          checkResult?.error || '알 수 없는 오류',
-        );
+        logger.warn('업데이트 확인 실패, 다운로드를 진행할 수 없습니다:', checkResult?.error || '알 수 없는 오류');
         return {
           success: false,
           error: checkResult?.error || '업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
@@ -829,10 +889,7 @@ function setupIpcHandlers(windows) {
       const checkResult = await updater.checkForUpdates(false);
 
       if (!checkResult || !checkResult.success) {
-        logger.warn(
-          '업데이트 확인 실패, 다운로드를 진행할 수 없습니다:',
-          checkResult?.error || '알 수 없는 오류',
-        );
+        logger.warn('업데이트 확인 실패, 다운로드를 진행할 수 없습니다:', checkResult?.error || '알 수 없는 오류');
         return {
           success: false,
           error: checkResult?.error || '업데이트 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
@@ -872,21 +929,13 @@ function setupIpcHandlers(windows) {
   });
 
   // 로깅 핸들러 추가
-  ipcMain.handle('log-info', (event, message, ...args) => {
-    return handleIpcLogging('info', message, ...args);
-  });
+  ipcMain.handle('log-info', (event, message, ...args) => handleIpcLogging('info', message, ...args));
 
-  ipcMain.handle('log-warn', (event, message, ...args) => {
-    return handleIpcLogging('warn', message, ...args);
-  });
+  ipcMain.handle('log-warn', (event, message, ...args) => handleIpcLogging('warn', message, ...args));
 
-  ipcMain.handle('log-error', (event, message, ...args) => {
-    return handleIpcLogging('error', message, ...args);
-  });
+  ipcMain.handle('log-error', (event, message, ...args) => handleIpcLogging('error', message, ...args));
 
-  ipcMain.handle('log-debug', (event, message, ...args) => {
-    return handleIpcLogging('debug', message, ...args);
-  });
+  ipcMain.handle('log-debug', (event, message, ...args) => handleIpcLogging('debug', message, ...args));
 
   // Test an action (for settings UI)
   ipcMain.handle('test-action', async (event, action) => {
@@ -928,12 +977,12 @@ function setupIpcHandlers(windows) {
         success: true,
         iconUrl: `file://${iconPath}`,
         iconPath,
-        appName
+        appName,
       };
     } catch (err) {
       return {
         success: false,
-        error: `아이콘 추출 중 오류 발생: ${err.message}`
+        error: `아이콘 추출 중 오류 발생: ${err.message}`,
       };
     }
   });

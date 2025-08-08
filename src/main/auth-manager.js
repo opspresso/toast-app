@@ -85,9 +85,7 @@ async function exchangeCodeForToken(code) {
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   try {
-    logger.info(
-      'Starting exchange of authentication code for token and update of profile/settings',
-    );
+    logger.info('Starting exchange of authentication code for token and update of profile/settings');
     const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
 
     // Notify both windows on login success
@@ -119,10 +117,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         logger.info('Starting cloud synchronization after successful login');
 
         // Add debugging information
-        logger.info(
-          'Complete subscription information:',
-          JSON.stringify(result.subscription || {}),
-        );
+        logger.info('Complete subscription information:', JSON.stringify(result.subscription || {}));
 
         // Check if features object exists
         if (result.subscription?.features && typeof result.subscription.features === 'object') {
@@ -135,11 +130,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           logger.info('Checking cloud_sync feature in features_array:', hasSyncFeature);
         }
         // Subscribers can use cloud_sync by default
-        else if (
-          result.subscription?.isSubscribed === true ||
-          result.subscription?.active === true ||
-          result.subscription?.is_subscribed === true
-        ) {
+        else if (result.subscription?.isSubscribed === true || result.subscription?.active === true || result.subscription?.is_subscribed === true) {
           hasSyncFeature = true;
           logger.info('Cloud_sync feature enabled due to active subscription status');
         }
@@ -164,10 +155,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
             }
 
             // Set to empty string if value is 'undefined' or 'null'
-            if (
-              updatedSubscription.expiresAt === 'undefined' ||
-              updatedSubscription.expiresAt === 'null'
-            ) {
+            if (updatedSubscription.expiresAt === 'undefined' || updatedSubscription.expiresAt === 'null') {
               updatedSubscription.expiresAt = '';
             }
           } else {
@@ -177,15 +165,10 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Same for subscribed_until if it exists
           if (updatedSubscription.subscribed_until !== undefined) {
             if (typeof updatedSubscription.subscribed_until !== 'string') {
-              updatedSubscription.subscribed_until = String(
-                updatedSubscription.subscribed_until || '',
-              );
+              updatedSubscription.subscribed_until = String(updatedSubscription.subscribed_until || '');
             }
 
-            if (
-              updatedSubscription.subscribed_until === 'undefined' ||
-              updatedSubscription.subscribed_until === 'null'
-            ) {
+            if (updatedSubscription.subscribed_until === 'undefined' || updatedSubscription.subscribed_until === 'null') {
               updatedSubscription.subscribed_until = '';
             }
           }
@@ -193,10 +176,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Save updated subscription info to settings store
           const config = createConfigStore();
           config.set('subscription', updatedSubscription);
-          logger.info(
-            'Updated subscription information saved:',
-            JSON.stringify(updatedSubscription),
-          );
+          logger.info('Updated subscription information saved:', JSON.stringify(updatedSubscription));
         }
 
         logger.info('Cloud synchronization feature status set:', hasSyncFeature);
@@ -204,9 +184,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         if (syncManager && typeof syncManager.updateCloudSyncSettings === 'function') {
           syncManager.updateCloudSyncSettings(hasSyncFeature);
         } else {
-          logger.warn(
-            'syncManager not properly initialized or missing updateCloudSyncSettings method',
-          );
+          logger.warn('syncManager not properly initialized or missing updateCloudSyncSettings method');
         }
       }
 
@@ -237,9 +215,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
           // Execute cloud synchronization
           if (syncManager && hasSyncFeature) {
-            logger.info(
-              'Cloud synchronization feature is enabled. Getting settings from server...',
-            );
+            logger.info('Cloud synchronization feature is enabled. Getting settings from server...');
 
             // Execute synchronization and process results
             const syncResult = await syncManager.syncAfterLogin();
@@ -249,15 +225,10 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
               // Notification on successful synchronization
               notifySettingsSynced();
             } else {
-              logger.warn(
-                'Synchronization failed after login:',
-                syncResult?.error || 'Unknown error',
-              );
+              logger.warn('Synchronization failed after login:', syncResult?.error || 'Unknown error');
             }
           } else {
-            logger.info(
-              'Cloud synchronization feature is disabled. Please check your subscription status.',
-            );
+            logger.info('Cloud synchronization feature is disabled. Please check your subscription status.');
           }
 
           resolve(true);
@@ -269,10 +240,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
       // Synchronization processing in background
       syncPromise.then(success => {
-        logger.info(
-          'Login synchronization process completed:',
-          success ? 'successfully' : 'with errors',
-        );
+        logger.info('Login synchronization process completed:', success ? 'successfully' : 'with errors');
       });
     } else {
       notifyLoginError(result.error || 'Unknown error');
@@ -311,9 +279,7 @@ async function logout() {
         syncManager.stopPeriodicSync();
       }
 
-      logger.info(
-        'Cloud synchronization disabled and periodic synchronization stopped due to logout',
-      );
+      logger.info('Cloud synchronization disabled and periodic synchronization stopped due to logout');
     }
 
     // Clean up user data when logout is successful
@@ -421,7 +387,9 @@ async function hasValidToken() {
  * @param {Object} subscription - Subscription information
  */
 function notifyLoginSuccess(subscription) {
-  if (!windows) return;
+  if (!windows) {
+    return;
+  }
 
   const loginData = {
     isAuthenticated: true,
@@ -447,7 +415,9 @@ function notifyLoginSuccess(subscription) {
  * @param {string} errorMessage - Error message
  */
 function notifyLoginError(errorMessage) {
-  if (!windows) return;
+  if (!windows) {
+    return;
+  }
 
   const errorData = {
     error: errorMessage,
@@ -471,7 +441,9 @@ function notifyLoginError(errorMessage) {
  * Send logout notification to both windows
  */
 function notifyLogout() {
-  if (!windows) return;
+  if (!windows) {
+    return;
+  }
 
   // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {
@@ -490,7 +462,9 @@ function notifyLogout() {
  * Send settings synchronization notification to both windows
  */
 function notifySettingsSynced(configData = null) {
-  if (!windows) return;
+  if (!windows) {
+    return;
+  }
 
   const syncData = {
     success: true,
@@ -592,7 +566,9 @@ function updateSyncSettings(enabled) {
  * @param {Object} authState - Authentication state information
  */
 function notifyAuthStateChange(authState) {
-  if (!windows) return;
+  if (!windows) {
+    return;
+  }
 
   // Send notification to toast window
   if (windows.toast && !windows.toast.isDestroyed()) {

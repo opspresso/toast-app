@@ -77,21 +77,13 @@ export function changePage(pageIndex) {
 export function addNewPage() {
   const pageNumber = pages.length + 1;
 
-  console.log('New page add request, subscription info:', {
-    userProfile: userProfile ? 'exists' : 'none',
-    isSubscribed: isSubscribed,
-    pageGroups: userSubscription?.features?.page_groups || 1,
-  });
-
   // Calculate allowed maximum number of pages
   let maxPages = 1; // Default: anonymous users are allowed only 1 page
 
   if (userProfile && userProfile.is_authenticated !== false) {
     // Authenticated user
     maxPages = userSubscription?.features?.page_groups || 3;
-    console.log('Authenticated user: max pages =', maxPages);
   } else {
-    console.log('Anonymous user: max pages =', maxPages);
   }
 
   // Check if current page count exceeds maximum pages
@@ -110,17 +102,14 @@ export function addNewPage() {
         showStatus(`You can only use a maximum of ${maxPages} page(s).`, 'error');
       } else {
         // Authenticated but not subscribed user
-        showStatus(
-          `Free users can only use a maximum of ${maxPages} page(s). Please subscribe.`,
-          'error',
-        );
+        showStatus(`Free users can only use a maximum of ${maxPages} page(s). Please subscribe.`, 'error');
       }
     }
     return;
   }
 
   // Default new page configuration
-  let newPage = {
+  const newPage = {
     name: `Page ${pageNumber}`,
     shortcut: pageNumber.toString(),
     buttons: [],
@@ -169,11 +158,7 @@ export async function removePage() {
 
   // Show deletion confirmation using custom modal
   const { showConfirmModal } = await import('./modals.js');
-  const isConfirmed = await showConfirmModal(
-    'Delete Page',
-    `Are you sure you want to delete "${pageName}"?`,
-    'Delete'
-  );
+  const isConfirmed = await showConfirmModal('Delete Page', `Are you sure you want to delete "${pageName}"?`, 'Delete');
 
   if (!isConfirmed) {
     showStatus('Page deletion canceled.', 'info');
@@ -214,7 +199,7 @@ export async function removePage() {
     const noResults = createNoResultsElement();
     buttonsContainer.appendChild(noResults);
 
-    showStatus(`All pages have been deleted. Press the + button to add a new page.`, 'info');
+    showStatus('All pages have been deleted. Press the + button to add a new page.', 'info');
     return;
   }
 
@@ -241,7 +226,7 @@ export function initializePages(configPages) {
     // 각 페이지의 버튼들에 대해 단축키 재할당
     pages = configPages.map(page => ({
       ...page,
-      buttons: reassignButtonShortcuts(page.buttons || [])
+      buttons: reassignButtonShortcuts(page.buttons || []),
     }));
 
     // Initialize paging buttons
@@ -308,9 +293,6 @@ export async function handlePageLimitAfterLogout() {
     // Save configuration
     await window.toast.saveConfig({ pages });
 
-    showStatus(
-      'Unauthenticated users can only use 1 page. Only the first page has been kept.',
-      'info',
-    );
+    showStatus('Unauthenticated users can only use 1 page. Only the first page has been kept.', 'info');
   }
 }

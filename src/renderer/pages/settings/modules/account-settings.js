@@ -18,7 +18,7 @@ import {
   manageSubscriptionButton,
   refreshSubscriptionButton,
   authLoading,
-  subscriptionLoading
+  subscriptionLoading,
 } from './dom-elements.js';
 import {
   authState,
@@ -26,7 +26,7 @@ import {
   profileDataFetchInProgress,
   updateAuthState,
   setAuthStateInitialized,
-  setProfileDataFetchInProgress
+  setProfileDataFetchInProgress,
 } from './state.js';
 import { setLoading, getInitials, saveSubscriptionToConfig, handleTokenExpired } from './utils.js';
 
@@ -98,8 +98,12 @@ export async function loadUserDataEfficiently() {
     window.settings.log.info('사용자 프로필 및 구독 정보 효율적 로드 시작');
 
     // 로딩 표시
-    if (authLoading) setLoading(authLoading, true);
-    if (subscriptionLoading) setLoading(subscriptionLoading, true);
+    if (authLoading) {
+      setLoading(authLoading, true);
+    }
+    if (subscriptionLoading) {
+      setLoading(subscriptionLoading, true);
+    }
 
     // 프로필 정보 로드
     await fetchUserProfile();
@@ -108,14 +112,22 @@ export async function loadUserDataEfficiently() {
     await fetchSubscriptionInfo();
 
     // 로딩 숨김
-    if (authLoading) setLoading(authLoading, false);
-    if (subscriptionLoading) setLoading(subscriptionLoading, false);
+    if (authLoading) {
+      setLoading(authLoading, false);
+    }
+    if (subscriptionLoading) {
+      setLoading(subscriptionLoading, false);
+    }
 
     window.settings.log.info('사용자 프로필 및 구독 정보 로드 완료');
   } catch (error) {
     window.settings.log.error('사용자 데이터 로드 중 오류:', error);
-    if (authLoading) setLoading(authLoading, false);
-    if (subscriptionLoading) setLoading(subscriptionLoading, false);
+    if (authLoading) {
+      setLoading(authLoading, false);
+    }
+    if (subscriptionLoading) {
+      setLoading(subscriptionLoading, false);
+    }
   } finally {
     // 데이터 로드 완료 표시
     setProfileDataFetchInProgress(false);
@@ -177,29 +189,46 @@ export function handleLogin() {
 
   try {
     // 로딩 표시
-    if (authLoading) setLoading(authLoading, true);
-    if (loginButton) loginButton.disabled = true;
+    if (authLoading) {
+      setLoading(authLoading, true);
+    }
+    if (loginButton) {
+      loginButton.disabled = true;
+    }
 
     // 로그인 시작
-    window.settings.initiateLogin()
+    window.settings
+      .initiateLogin()
       .then(success => {
         if (!success) {
           // 로그인 실패
-          if (authLoading) setLoading(authLoading, false);
-          if (loginButton) loginButton.disabled = false;
+          if (authLoading) {
+            setLoading(authLoading, false);
+          }
+          if (loginButton) {
+            loginButton.disabled = false;
+          }
           window.settings.log.error('로그인 시작 실패');
         }
       })
       .catch(error => {
         // 오류 처리
         window.settings.log.error('로그인 오류:', error);
-        if (authLoading) setLoading(authLoading, false);
-        if (loginButton) loginButton.disabled = false;
+        if (authLoading) {
+          setLoading(authLoading, false);
+        }
+        if (loginButton) {
+          loginButton.disabled = false;
+        }
       });
   } catch (error) {
     window.settings.log.error('로그인 처리 중 오류:', error);
-    if (authLoading) setLoading(authLoading, false);
-    if (loginButton) loginButton.disabled = false;
+    if (authLoading) {
+      setLoading(authLoading, false);
+    }
+    if (loginButton) {
+      loginButton.disabled = false;
+    }
   }
 }
 
@@ -210,7 +239,8 @@ export function handleLogout() {
   window.settings.log.info('로그아웃 시작');
 
   try {
-    window.settings.logout()
+    window.settings
+      .logout()
       .then(() => {
         // 로그아웃 성공 시 UI 업데이트
         updateAuthStateUI(false);
@@ -245,7 +275,9 @@ export function handleRefreshSubscription() {
       refreshSubscriptionButton.textContent = 'Refreshing...';
     }
 
-    if (subscriptionLoading) setLoading(subscriptionLoading, true);
+    if (subscriptionLoading) {
+      setLoading(subscriptionLoading, true);
+    }
 
     // 구독 정보 다시 로드
     fetchSubscriptionInfo()
@@ -275,7 +307,9 @@ export function handleRefreshSubscription() {
     window.settings.log.error('구독 정보 새로고침 처리 중 오류:', error);
 
     // 오류 시 버튼 및 로딩 상태 복원
-    if (subscriptionLoading) setLoading(subscriptionLoading, false);
+    if (subscriptionLoading) {
+      setLoading(subscriptionLoading, false);
+    }
     if (refreshSubscriptionButton) {
       refreshSubscriptionButton.textContent = 'Refresh Subscription Info';
       refreshSubscriptionButton.disabled = false;
@@ -402,11 +436,7 @@ export async function fetchSubscriptionInfo() {
       window.settings.log.info('수신된 구독 정보:', JSON.stringify(subscription));
 
       // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
-      if (
-        subscription.plan &&
-        (subscription.plan.toLowerCase().includes('premium') ||
-          subscription.plan.toLowerCase().includes('pro'))
-      ) {
+      if (subscription.plan && (subscription.plan.toLowerCase().includes('premium') || subscription.plan.toLowerCase().includes('pro'))) {
         if (!subscription.features) {
           subscription.features = {};
         }
@@ -484,8 +514,7 @@ export function updateSubscriptionUI(subscription) {
     }
   }
 
-  subscriptionFeatures.textContent =
-    featuresText.length > 0 ? `Features: ${featuresText.join(', ')}` : 'Basic features';
+  subscriptionFeatures.textContent = featuresText.length > 0 ? `Features: ${featuresText.join(', ')}` : 'Basic features';
 }
 
 /**

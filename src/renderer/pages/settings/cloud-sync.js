@@ -6,7 +6,7 @@
  */
 
 // 상태 관리
-let cloudSyncState = {
+const cloudSyncState = {
   enabled: false,
   isLoading: false,
   deviceId: null,
@@ -81,7 +81,8 @@ function initializeCloudSyncUI(config, authState, logger) {
     logger.info(`Cloud sync initial state: ${cloudSyncEnabled ? 'enabled' : 'disabled'}`);
 
     // 현재 동기화 상태 가져오기
-    window.settings.getSyncStatus()
+    window.settings
+      .getSyncStatus()
       .then(status => {
         logger.info('Sync status query result:', status);
         updateSyncStatusUI(status, authState, logger);
@@ -158,9 +159,7 @@ function updateSyncStatusUI(status, authState, logger) {
     cloudSyncState.hasPermission = hasCloudSyncPermission;
 
     const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
-    logger.info(
-      `Sync permission check: permission=${hasCloudSyncPermission}, logged in=${authState.isLoggedIn}`,
-    );
+    logger.info(`Sync permission check: permission=${hasCloudSyncPermission}, logged in=${authState.isLoggedIn}`);
 
     // 권한이 없으면 UI 비활성화
     if (!canUseCloudSync) {
@@ -173,16 +172,13 @@ function updateSyncStatusUI(status, authState, logger) {
     updateStatusBadge(status.enabled);
 
     // 상태 텍스트 업데이트
-    DOM.syncStatusText.textContent = status.enabled ?
-      'Cloud Sync Enabled' : 'Cloud Sync Disabled';
+    DOM.syncStatusText.textContent = status.enabled ? 'Cloud Sync Enabled' : 'Cloud Sync Disabled';
 
     // 마지막 동기화 시간 업데이트
     updateLastSyncTime(status.lastSyncTime);
 
     // 장치 정보 업데이트
-    DOM.syncDeviceInfo.textContent = status.deviceId ?
-      `Current Device: ${status.deviceId}` :
-      'Current Device: Unknown';
+    DOM.syncDeviceInfo.textContent = status.deviceId ? `Current Device: ${status.deviceId}` : 'Current Device: Unknown';
 
     // 컨트롤 활성화/비활성화
     DOM.enableCloudSyncCheckbox.disabled = !canUseCloudSync;
@@ -231,9 +227,7 @@ function updateLastSyncTime(lastSyncTime) {
   const syncTime = lastSyncTime ? new Date(lastSyncTime) : new Date();
   const formattedDate = formatDate(syncTime);
 
-  DOM.lastSyncedTime.textContent = lastSyncTime ?
-    `Last Synced: ${formattedDate}` :
-    `Sync Status: Ready to sync (${formattedDate})`;
+  DOM.lastSyncedTime.textContent = lastSyncTime ? `Last Synced: ${formattedDate}` : `Sync Status: Ready to sync (${formattedDate})`;
 }
 
 /**
@@ -256,11 +250,7 @@ function formatDate(date) {
  * @param {boolean} disabled - 비활성화 여부
  */
 function updateButtonStyles(disabled) {
-  const buttons = [
-    DOM.manualSyncUploadButton,
-    DOM.manualSyncDownloadButton,
-    DOM.manualSyncResolveButton,
-  ];
+  const buttons = [DOM.manualSyncUploadButton, DOM.manualSyncDownloadButton, DOM.manualSyncResolveButton];
 
   buttons.forEach(button => {
     if (disabled) {
@@ -323,11 +313,7 @@ function checkCloudSyncPermission(authState) {
   }
 
   // 1. 직접적인 구독 상태 확인
-  if (
-    authState.subscription.isSubscribed === true ||
-    authState.subscription.active === true ||
-    authState.subscription.is_subscribed === true
-  ) {
+  if (authState.subscription.isSubscribed === true || authState.subscription.active === true || authState.subscription.is_subscribed === true) {
     hasPermission = true;
   }
 
@@ -345,10 +331,7 @@ function checkCloudSyncPermission(authState) {
   }
 
   // 4. 특정 기능 확인
-  if (
-    authState.subscription.features?.cloud_sync === true ||
-    authState.subscription.additionalFeatures?.cloudSync === true
-  ) {
+  if (authState.subscription.features?.cloud_sync === true || authState.subscription.additionalFeatures?.cloudSync === true) {
     hasPermission = true;
   }
 
@@ -408,11 +391,12 @@ function handleCloudSyncToggle(authState, logger) {
   DOM.enableCloudSyncCheckbox.disabled = true;
 
   // 서버에 상태 동기화
-  window.settings.setCloudSyncEnabled(enabled)
-    .then(() => {
+  window.settings
+    .setCloudSyncEnabled(enabled)
+    .then(() =>
       // 상태 업데이트 후 UI 갱신
-      return window.settings.getSyncStatus();
-    })
+      window.settings.getSyncStatus(),
+    )
     .then(status => {
       // UI 업데이트
       updateSyncStatusUI(status, authState, logger);
@@ -442,7 +426,8 @@ function handleManualSyncUpload(logger) {
   disableSyncButtons();
 
   // 업로드 실행
-  window.settings.manualSync('upload')
+  window.settings
+    .manualSync('upload')
     .then(result => {
       if (result.success) {
         logger.info('Settings upload successful');
@@ -493,7 +478,8 @@ function handleManualSyncDownload(logger) {
   disableSyncButtons();
 
   // 다운로드 실행
-  window.settings.manualSync('download')
+  window.settings
+    .manualSync('download')
     .then(result => {
       if (result.success) {
         logger.info('Settings download successful');
@@ -542,7 +528,9 @@ function handleManualSyncResolve(logger) {
   logger.info('Manual sync - conflict resolution started');
 
   // 확인 대화상자
-  if (!confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')) {
+  if (
+    !confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')
+  ) {
     logger.info('User canceled the conflict resolution');
     return;
   }
@@ -552,7 +540,8 @@ function handleManualSyncResolve(logger) {
   disableSyncButtons();
 
   // 충돌 해결 실행
-  window.settings.manualSync('resolve')
+  window.settings
+    .manualSync('resolve')
     .then(result => {
       if (result.success) {
         logger.info('Settings conflict resolution successful');
