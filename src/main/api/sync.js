@@ -89,7 +89,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
  * @param {Object} [params.directData] - 서버에 직접 업로드할 데이터
  * @returns {Promise<Object>} 업로드 결과
  */
-async function uploadSettings({ hasValidToken, onUnauthorized, configStore, directData }) {
+async function uploadSettings({ hasValidToken: _hasValidToken, onUnauthorized, configStore: _configStore, directData }) {
   // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
     return { success: false, error: 'Sync already in progress' };
@@ -178,7 +178,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
  * @param {Object} params.configStore - 설정 저장소
  * @returns {Promise<Object>} 다운로드 결과
  */
-async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) {
+async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized, configStore }) {
   // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
     return { success: false, error: 'Sync already in progress' };
@@ -238,9 +238,8 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           if (settings.lastModifiedDevice) {
             syncMetadata.lastModifiedDevice = settings.lastModifiedDevice;
           }
-        }
+        } else if (settings.data) {
         // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
-        else if (settings.data) {
           logger.info('중첩된 데이터 구조 발견');
           const data = settings.data;
 
@@ -266,17 +265,15 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           if (data.lastModifiedDevice) {
             syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
           }
-        }
+        } else if (Array.isArray(settings)) {
         // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
-        else if (Array.isArray(settings)) {
           logger.info('배열 전용 구조 발견');
           pagesData = settings;
-        }
+        } else {
         // 1.4 기타 구조 - 모든 배열 필드 검색
-        else {
           logger.info('알 수 없는 구조에서 페이지 배열 검색 중');
           const arrayFields = Object.entries(settings)
-            .filter(([key, value]) => Array.isArray(value))
+            .filter(([_key, value]) => Array.isArray(value))
             .map(([key, value]) => ({ key, value }));
 
           if (arrayFields.length > 0) {
@@ -316,20 +313,24 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         logger.info(`동기화 데이터에서 ${pagesData.length}개의 페이지 발견`);
 
-        // ConfigStore에 직접 데이터 저장 (단일 소스 원칙)
-        configStore.set('pages', pagesData);
-        logger.info('페이지 데이터를 ConfigStore에 저장 완료');
+        // ConfigStore에 직접 데이터 저장 (configStore가 제공된 경우만)
+        if (configStore) {
+          configStore.set('pages', pagesData);
+          logger.info('페이지 데이터를 ConfigStore에 저장 완료');
 
-        // appearance 설정 저장 (있는 경우)
-        if (appearanceData) {
-          configStore.set('appearance', appearanceData);
-          logger.info('외관 설정을 ConfigStore에 저장 완료');
-        }
+          // appearance 설정 저장 (있는 경우)
+          if (appearanceData) {
+            configStore.set('appearance', appearanceData);
+            logger.info('외관 설정을 ConfigStore에 저장 완료');
+          }
 
-        // advanced 설정 저장 (있는 경우)
-        if (advancedData) {
-          configStore.set('advanced', advancedData);
-          logger.info('고급 설정을 ConfigStore에 저장 완료');
+          // advanced 설정 저장 (있는 경우)
+          if (advancedData) {
+            configStore.set('advanced', advancedData);
+            logger.info('고급 설정을 ConfigStore에 저장 완료');
+          }
+        } else {
+          logger.info('ConfigStore not provided - data downloaded but not saved locally');
         }
 
         // 동기화 상태 업데이트
