@@ -9,8 +9,12 @@ Toast App is an Electron-based desktop application that provides a customizable 
 ## Build & Test Commands
 
 - **Start**: `npm start` (production) or `npm run dev` (development)
+  - Windows: `npm run dev:win` (sets NODE_ENV correctly for Windows)
 - **Build**: `npm run build` (all platforms), `npm run build:mac`, `npm run build:win`, `npm run build:mas` (App Store)
-- **Test**: `npm test` (all tests), `npx jest path/to/file.test.js` (single test)
+- **Test**: `npm test` (all tests with coverage)
+  - Single test: `npx jest path/to/file.test.js`
+  - Watch mode: `npx jest --watch`
+  - Coverage report: `npm test -- --coverage`
 - **Lint & Format**: `npm run lint` (ESLint), `npm run format` (Prettier)
 
 ## High-Level Architecture
@@ -62,7 +66,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 ### Debugging
 - **Main Process**: Use VS Code debugger or check logs via electron-log
 - **Renderer Process**: Open DevTools with Ctrl+Shift+I (Cmd+Option+I on Mac)
-- **Log Locations**: 
+- **Log Locations**:
   - macOS: `~/Library/Logs/Toast/`
   - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\`
 
@@ -88,15 +92,18 @@ Toast App is an Electron-based desktop application that provides a customizable 
 ## Testing Strategy
 
 - Write automated tests for important logic and user flows.
-- Include unit tests for core functions, integration tests for data flow, and E2E tests for key scenarios.
+- Test structure: `tests/unit/`, `tests/integration/`, `tests/e2e/`
 - Keep tests fast, isolated, and reliable.
 - Use Jest's describe/test structure with descriptive test names.
 - Mock Electron APIs using `tests/mocks/electron.js`
+- Test configuration: `jest.config.js` with coverage enabled by default
+- Coverage reports generated in `coverage/` directory
 
 ## Platform-Specific Considerations
 
 - **macOS**: Auto-update requires both DMG and ZIP builds, local app icon extraction supported
 - **Windows**: NSIS installer for standard distribution, portable EXE option available
+- **Linux**: AppImage and deb builds available (experimental support)
 - **Code Signing**: Required for distribution, configured in electron-builder
 - **Permissions**: macOS requires accessibility permissions for global shortcuts
 
@@ -119,3 +126,13 @@ When storing subscription data in ConfigStore, ensure consistency:
 1. **Cloud sync not enabling**: Check if subscription data is properly stored in ConfigStore
 2. **API authentication**: Verify CLIENT_ID and CLIENT_SECRET in environment variables
 3. **Token expiration**: Default is 30 days, can be set to unlimited with TOKEN_EXPIRES_IN=0
+
+## Environment Configuration
+
+### Environment Variables
+- Create `.env` file in `src/main/config/` for local configuration
+- Key variables:
+  - `CLIENT_ID`, `CLIENT_SECRET`: OAuth authentication
+  - `TOAST_URL`: API endpoint (default: https://toastapp.io)
+  - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 2592000)
+  - `NODE_ENV`: Set to 'development' for dev mode
