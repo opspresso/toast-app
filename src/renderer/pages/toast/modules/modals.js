@@ -99,11 +99,7 @@ export function setupModalEventListeners() {
             const appPath = `/Applications/${appName}.app`;
 
             // 아이콘 추출 시도
-            const success = await updateButtonIconFromLocalApp(
-              appPath,
-              editButtonIconInput,
-              editButtonNameInput
-            );
+            const success = await updateButtonIconFromLocalApp(appPath, editButtonIconInput, editButtonNameInput);
 
             if (success) {
               showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
@@ -129,18 +125,14 @@ export function setupModalEventListeners() {
       if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
         try {
           // 아이콘 추출 시도
-          const success = await updateButtonIconFromLocalApp(
-            applicationPath,
-            editButtonIconInput,
-            editButtonNameInput
-          );
+          const success = await updateButtonIconFromLocalApp(applicationPath, editButtonIconInput, editButtonNameInput);
 
           if (success) {
             const appName = extractAppNameFromPath(applicationPath);
             showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
           }
         } catch (error) {
-          console.warn(`애플리케이션 아이콘 추출 실패:`, error);
+          console.warn('애플리케이션 아이콘 추출 실패:', error);
         }
       }
     }
@@ -151,7 +143,9 @@ export function setupModalEventListeners() {
 
   // Helper function to extract app name from path
   function extractAppNameFromPath(applicationPath) {
-    if (!applicationPath) return null;
+    if (!applicationPath) {
+      return null;
+    }
 
     try {
       if (applicationPath.endsWith('.app')) {
@@ -175,18 +169,14 @@ export function setupModalEventListeners() {
     browseApplicationButton.addEventListener('click', async () => {
       try {
         // Set Application folder as default path
-        const defaultPath =
-          window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
+        const defaultPath = window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
 
         // Configure file selection dialog options
         const options = {
           title: 'Select Application',
-          defaultPath: defaultPath,
+          defaultPath,
           properties: ['openFile'],
-          filters:
-            window.toast?.platform === 'darwin'
-              ? [{ name: 'Applications', extensions: ['app'] }]
-              : [{ name: 'Executable Files', extensions: ['exe'] }],
+          filters: window.toast?.platform === 'darwin' ? [{ name: 'Applications', extensions: ['app'] }] : [{ name: 'Executable Files', extensions: ['exe'] }],
         };
 
         // Call file selection dialog directly without window manipulation
@@ -202,11 +192,7 @@ export function setupModalEventListeners() {
           // Auto-extract icon if supported and icon field is empty
           if (isLocalIconExtractionSupported() && !editButtonIconInput.value.trim()) {
             try {
-              const success = await updateButtonIconFromLocalApp(
-                result.filePaths[0],
-                editButtonIconInput,
-                editButtonNameInput
-              );
+              const success = await updateButtonIconFromLocalApp(result.filePaths[0], editButtonIconInput, editButtonNameInput);
               if (success) {
                 showStatus('아이콘과 버튼 이름이 자동으로 설정되었습니다.', 'success');
               }
@@ -334,7 +320,7 @@ export function setupModalEventListeners() {
           applicationPath,
           editButtonIconInput,
           editButtonNameInput,
-          true // forceRefresh = true
+          true, // forceRefresh = true
         );
 
         if (success) {
@@ -435,7 +421,9 @@ function setupIconSearchModal() {
 
   // Category icon rendering function
   function renderCategoryIcons(categoryKey, searchQuery) {
-    if (!window.IconsCatalog || !window.IconsCatalog[categoryKey]) return;
+    if (!window.IconsCatalog || !window.IconsCatalog[categoryKey]) {
+      return;
+    }
 
     const category = window.IconsCatalog[categoryKey];
     const icons = category.icons;
@@ -496,7 +484,7 @@ function setupIconSearchModal() {
           closeIconSearchModal();
 
           // Show status message
-          showStatus(`Icon selected`, 'info');
+          showStatus('Icon selected', 'info');
         });
 
         // Add only image to icon item (remove name)
@@ -543,9 +531,7 @@ export function editButtonSettings(button) {
 
   editButtonScriptInput.value = button.script || '';
   editButtonScriptTypeSelect.value = button.scriptType || 'javascript';
-  editButtonScriptParamsInput.value = button.scriptParams
-    ? JSON.stringify(button.scriptParams, null, 2)
-    : '';
+  editButtonScriptParamsInput.value = button.scriptParams ? JSON.stringify(button.scriptParams, null, 2) : '';
 
   editButtonApplicationInput.value = button.applicationPath || '';
   editButtonApplicationParametersInput.value = button.applicationParameters || '';
@@ -625,13 +611,13 @@ function showActionFields(actionType) {
  * Save button settings
  */
 function saveButtonSettings() {
-  if (!currentEditingButton) return;
+  if (!currentEditingButton) {
+    return;
+  }
 
   // Get current page and button index
   const pageIndex = currentPageIndex;
-  const buttonIndex = pages[pageIndex].buttons.findIndex(
-    b => b.shortcut === currentEditingButton.shortcut,
-  );
+  const buttonIndex = pages[pageIndex].buttons.findIndex(b => b.shortcut === currentEditingButton.shortcut);
 
   if (buttonIndex < 0) {
     showStatus('Button not found.', 'error');
@@ -644,7 +630,7 @@ function saveButtonSettings() {
     name: editButtonNameInput.value.trim(),
     icon: editButtonIconInput.value.trim(),
     shortcut: currentEditingButton.shortcut.trim(), // Shortcut cannot be changed
-    action: action,
+    action,
   };
 
   // Set additional properties based on action type
@@ -740,7 +726,7 @@ function saveButtonSettings() {
  * @returns {Promise<boolean>} - Returns true if confirmed, false if canceled
  */
 export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', okButtonText = 'Delete') {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     // Set modal content
     confirmTitle.textContent = title;
     confirmMessage.textContent = message;
@@ -774,7 +760,7 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
       resolve(true);
     };
 
-    outsideClickHandler = (event) => {
+    outsideClickHandler = event => {
       if (event.target === confirmModal) {
         cleanup();
         resolve(false);
@@ -815,7 +801,8 @@ export function closeConfirmModal() {
  */
 function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, applicationPath, fallbackIcon) {
   // Try to get existing extracted icon
-  window.toast.extractAppIcon(applicationPath, false)
+  window.toast
+    .extractAppIcon(applicationPath, false)
     .then(result => {
       if (result.success && result.iconUrl) {
         // Show extracted icon
@@ -825,7 +812,7 @@ function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, ap
         iconPreview.classList.add('has-icon');
 
         // Handle image loading error
-        previewImg.onerror = function() {
+        previewImg.onerror = function () {
           previewImg.style.display = 'none';
           placeholder.style.display = 'block';
           placeholder.textContent = fallbackIcon;
@@ -840,7 +827,7 @@ function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, ap
       }
     })
     .catch(error => {
-      console.warn(`아이콘 미리보기 로드 실패:`, error);
+      console.warn('아이콘 미리보기 로드 실패:', error);
       previewImg.style.display = 'none';
       placeholder.style.display = 'block';
       placeholder.textContent = fallbackIcon;
@@ -890,7 +877,7 @@ function updateIconPreview() {
     iconPreview.classList.add('has-icon');
 
     // favicon 로딩 실패 시 기본 아이콘으로 대체
-    previewImg.onerror = function() {
+    previewImg.onerror = function () {
       previewImg.style.display = 'none';
       placeholder.style.display = 'block';
       placeholder.textContent = '🌐';
@@ -906,7 +893,7 @@ function updateIconPreview() {
     iconPreview.classList.add('has-icon');
 
     // 이미지 로딩 실패 시 기본 아이콘으로 대체
-    previewImg.onerror = function() {
+    previewImg.onerror = function () {
       previewImg.style.display = 'none';
       placeholder.style.display = 'block';
       placeholder.textContent = '🔘';

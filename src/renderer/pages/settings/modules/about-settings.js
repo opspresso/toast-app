@@ -13,7 +13,7 @@ import {
   copyBrewCommand,
   downloadUpdateButton,
   installUpdateButton,
-  updateLoading
+  updateLoading,
 } from './dom-elements.js';
 import { formatFileSize } from './utils.js';
 
@@ -27,19 +27,21 @@ export function initializeAboutSettings() {
     // 버전 표시
     if (appVersionElement) {
       // 앱 버전 가져오기
-      window.settings.getVersion().then(version => {
-        // 버전 정보 표시
-        appVersionElement.innerHTML = `<strong>${version}</strong>`;
-        window.settings.log.info(`앱 버전 정보: ${version}`);
-      }).catch(error => {
-        window.settings.log.error('버전 정보를 가져오는 중 오류 발생:', error);
-        appVersionElement.innerHTML = '<strong>Version information unavailable</strong>';
-      });
+      window.settings
+        .getVersion()
+        .then(version => {
+          // 버전 정보 표시
+          appVersionElement.innerHTML = `<strong>${version}</strong>`;
+          window.settings.log.info(`앱 버전 정보: ${version}`);
+        })
+        .catch(error => {
+          window.settings.log.error('버전 정보를 가져오는 중 오류 발생:', error);
+          appVersionElement.innerHTML = '<strong>Version information unavailable</strong>';
+        });
     }
 
     // 업데이트 상태 초기화
     resetUpdateUI();
-
   } catch (error) {
     window.settings.log.error('정보 탭 초기화 중 오류 발생:', error);
   }
@@ -114,7 +116,8 @@ export function handleCheckForUpdates() {
   }
 
   // 업데이트 확인 요청 (개선된 updater 사용)
-  window.settings.checkForUpdates()
+  window.settings
+    .checkForUpdates()
     .then(result => {
       window.settings.log.info('업데이트 확인 결과:', result);
 
@@ -136,9 +139,7 @@ export function handleCheckForUpdates() {
 
             // 릴리스 노트가 너무 길면 잘라내기
             const maxLength = 100;
-            const trimmedNotes = plainText.length > maxLength
-              ? plainText.substring(0, maxLength) + '...'
-              : plainText;
+            const trimmedNotes = plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText;
 
             messageText += ` Release notes: ${trimmedNotes}`;
           }
@@ -237,11 +238,11 @@ export function handleDownloadUpdate() {
       const progressBar = progressElement.querySelector('.progress-bar');
       const progressText = progressElement.querySelector('.progress-text');
 
-      if (progressBar) progressBar.style.width = `${percent}%`;
+      if (progressBar) {
+        progressBar.style.width = `${percent}%`;
+      }
       if (progressText) {
-        progressText.textContent = data.progress.formattedPercent
-          ? `${data.progress.formattedPercent} (${data.progress.formattedSpeed || ''})`
-          : `${percent}%`;
+        progressText.textContent = data.progress.formattedPercent ? `${data.progress.formattedPercent} (${data.progress.formattedSpeed || ''})` : `${percent}%`;
       }
     }
   };
@@ -250,7 +251,8 @@ export function handleDownloadUpdate() {
   window.addEventListener('download-progress', progressListener);
 
   // 업데이트 다운로드
-  window.settings.downloadUpdate()
+  window.settings
+    .downloadUpdate()
     .then(result => {
       window.settings.log.info('업데이트 다운로드 결과:', result);
 
@@ -365,11 +367,10 @@ export function handleInstallUpdate() {
 
       try {
         // 업데이트 설치 (앱 재시작)
-        window.settings.installUpdate()
-          .catch(error => {
-            window.settings.log.error('업데이트 설치 오류:', error);
-            handleInstallError(error);
-          });
+        window.settings.installUpdate().catch(error => {
+          window.settings.log.error('업데이트 설치 오류:', error);
+          handleInstallError(error);
+        });
       } catch (error) {
         window.settings.log.error('업데이트 설치 과정에서 예외 발생:', error);
         handleInstallError(error);
@@ -438,7 +439,7 @@ export function handleInstallError(error) {
     message: error.message,
     name: error.name,
     stack: error.stack,
-    code: error.code
+    code: error.code,
   });
 }
 
@@ -469,7 +470,8 @@ export function setupAboutEventListeners() {
   if (copyBrewCommand) {
     copyBrewCommand.addEventListener('click', () => {
       const command = 'brew upgrade opspresso/tap/toast';
-      navigator.clipboard.writeText(command)
+      navigator.clipboard
+        .writeText(command)
         .then(() => {
           copyBrewCommand.textContent = 'Copied!';
           setTimeout(() => {

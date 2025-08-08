@@ -364,7 +364,7 @@
 1. **개발 버튼 구성**
    - 사용자가 일반적인 개발 작업에 대한 버튼을 구성합니다:
      - "서버 시작" (명령 실행: `npm start`)
-     - "테스트 실행" (명령 실행: `npm test`)
+     - "테스트 실행" (명령 실행: `npm run test`)
      - "빌드" (명령 실행: `npm run build`)
      - "GitHub" (URL 열기: "https://github.com")
      - "문서" (URL 열기: "https://developer.mozilla.org")

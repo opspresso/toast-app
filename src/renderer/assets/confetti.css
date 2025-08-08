@@ -124,7 +124,7 @@
 
 .confetti.heart:before,
 .confetti.heart:after {
-  content: "";
+  content: '';
   position: absolute;
   width: 15px;
   height: 15px;
@@ -182,17 +182,59 @@
 }
 
 /* 다양한 색상 */
-.confetti.color-red { background-color: #ff5252; color: #ff5252; }
-.confetti.color-blue { background-color: #4dabf7; color: #4dabf7; }
-.confetti.color-green { background-color: #69db7c; color: #69db7c; }
-.confetti.color-yellow { background-color: #ffd43b; color: #ffd43b; }
-.confetti.color-pink { background-color: #f783ac; color: #f783ac; }
-.confetti.color-purple { background-color: #da77f2; color: #da77f2; }
-.confetti.color-orange { background-color: #ff922b; color: #ff922b; }
-.confetti.color-cyan { background-color: #22b8cf; color: #22b8cf; }
-.confetti.color-magenta { background-color: #f06595; color: #f06595; }
-.confetti.color-lime { background-color: #94d82d; color: #94d82d; }
-.confetti.color-gold { background-color: #fcc419; color: #fcc419; }
-.confetti.color-violet { background-color: #9775fa; color: #9775fa; }
-.confetti.color-coral { background-color: #ff8787; color: #ff8787; }
-.confetti.color-turquoise { background-color: #20c997; color: #20c997; }
+.confetti.color-red {
+  background-color: #ff5252;
+  color: #ff5252;
+}
+.confetti.color-blue {
+  background-color: #4dabf7;
+  color: #4dabf7;
+}
+.confetti.color-green {
+  background-color: #69db7c;
+  color: #69db7c;
+}
+.confetti.color-yellow {
+  background-color: #ffd43b;
+  color: #ffd43b;
+}
+.confetti.color-pink {
+  background-color: #f783ac;
+  color: #f783ac;
+}
+.confetti.color-purple {
+  background-color: #da77f2;
+  color: #da77f2;
+}
+.confetti.color-orange {
+  background-color: #ff922b;
+  color: #ff922b;
+}
+.confetti.color-cyan {
+  background-color: #22b8cf;
+  color: #22b8cf;
+}
+.confetti.color-magenta {
+  background-color: #f06595;
+  color: #f06595;
+}
+.confetti.color-lime {
+  background-color: #94d82d;
+  color: #94d82d;
+}
+.confetti.color-gold {
+  background-color: #fcc419;
+  color: #fcc419;
+}
+.confetti.color-violet {
+  background-color: #9775fa;
+  color: #9775fa;
+}
+.confetti.color-coral {
+  background-color: #ff8787;
+  color: #ff8787;
+}
+.confetti.color-turquoise {
+  background-color: #20c997;
+  color: #20c997;
+}

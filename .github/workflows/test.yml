@@ -1,0 +1,74 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, alpha ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "src/**/*.js"
+      - "tests/**/*.js"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        id: test
+        run: |
+          npm run test -- --coverage --verbose 2>&1 | tee test-output.txt
+          echo "test_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Comment Test Results
+        if: github.event_name == 'pull_request'
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          direct_prompt: |
+            테스트 실행 결과를 분석하고 요약해 주세요:
+
+            ```
+            $(cat test-output.txt)
+            ```
+
+            다음 정보를 포함하여 보고서를 작성해 주세요:
+            - 테스트 성공/실패 상태
+            - 테스트 커버리지 정보
+            - 실패한 테스트가 있다면 원인 분석
+            - 개선 권장사항 (필요시)
+
+            보고서는 간결하고 개발자가 이해하기 쉽게 작성해 주세요.
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Fail if tests failed
+        if: steps.test.outputs.test_exit_code != '0'
+        run: exit 1

@@ -61,7 +61,7 @@ async function executeApplication(action) {
           reject({
             success: false,
             message: `Error executing application: ${error.message}`,
-            error: error,
+            error,
           });
           return;
         }
@@ -76,7 +76,7 @@ async function executeApplication(action) {
     return {
       success: false,
       message: `Error launching application: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }

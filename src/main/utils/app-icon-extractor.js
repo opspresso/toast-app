@@ -143,7 +143,8 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
 
       // iconset에서 가장 큰 아이콘 찾기
       if (fs.existsSync(tempIconsetPath)) {
-        const iconFiles = fs.readdirSync(tempIconsetPath)
+        const iconFiles = fs
+          .readdirSync(tempIconsetPath)
           .filter(file => file.endsWith('.png'))
           .sort((a, b) => {
             // 파일명에서 크기 추출하여 정렬 (큰 것부터)
@@ -208,7 +209,9 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
  * @returns {string|null} - 추출된 앱 이름 또는 null
  */
 function extractAppNameFromPath(applicationPath) {
-  if (!applicationPath) return null;
+  if (!applicationPath) {
+    return null;
+  }
 
   try {
     if (applicationPath.endsWith('.app')) {
@@ -245,7 +248,9 @@ function getExistingIconPath(appName, outputDir) {
  */
 function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   try {
-    if (!fs.existsSync(iconsDir)) return;
+    if (!fs.existsSync(iconsDir)) {
+      return;
+    }
 
     const files = fs.readdirSync(iconsDir);
     const now = Date.now();
@@ -268,5 +273,5 @@ module.exports = {
   extractAppIcon,
   extractAppNameFromPath,
   getExistingIconPath,
-  cleanupOldIcons
+  cleanupOldIcons,
 };

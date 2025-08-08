@@ -65,10 +65,8 @@ export async function initiateSignIn() {
  */
 export async function fetchUserProfileAndSubscription() {
   try {
-    console.log('Starting to fetch user profile and subscription information...');
     // Fetch user profile (only call profile API once)
     const profileResult = await window.toast.fetchUserProfile();
-    console.log('Profile API response:', profileResult);
 
     if (!profileResult.error) {
       userProfile = profileResult;
@@ -82,16 +80,10 @@ export async function fetchUserProfileAndSubscription() {
       // Extract subscription information (provided in profile)
       if (profileResult.subscription) {
         userSubscription = profileResult.subscription;
-        console.log('Subscription information extraction successful:', {
-          plan: userSubscription.plan || 'free',
-          isActive: userSubscription.active || userSubscription.is_subscribed || false,
-          pageGroups: userSubscription.features?.page_groups || 1,
-        });
 
         // Update subscription status
         isSubscribed = userSubscription.active || userSubscription.is_subscribed || false;
       } else {
-        console.log('No subscription information, using default values');
         // Set default values when no subscription information exists
         userSubscription = {
           active: false,
@@ -105,8 +97,6 @@ export async function fetchUserProfileAndSubscription() {
       // UI update - display profile and subscription information
       updateUserButton();
       updateProfileDisplay();
-
-      console.log('User information update complete: profile and subscription information loaded');
     } else {
       console.error('Failed to fetch user profile information:', profileResult.error);
     }
@@ -141,11 +131,7 @@ export function hideLoginLoadingScreen() {
 export async function showUserProfile() {
   // When user is not logged in
   // Explicitly check is_authenticated flag
-  if (
-    !userProfile ||
-    !userSubscription ||
-    (userProfile && userProfile.is_authenticated === false)
-  ) {
+  if (!userProfile || !userSubscription || (userProfile && userProfile.is_authenticated === false)) {
     try {
       showStatus('Fetching user information...', 'info');
       showLoginLoadingScreen();
@@ -214,31 +200,16 @@ export async function showUserProfile() {
  * Display profile image in user button
  */
 export function updateUserButton() {
-  console.log('Starting user button UI update');
-  console.log(
-    'Current user profile status:',
-    userProfile
-      ? {
-          name: userProfile.name || userProfile.display_name,
-          hasImage: !!(userProfile.profile_image || userProfile.avatar || userProfile.image),
-          isAuthenticated: userProfile.is_authenticated !== false,
-        }
-      : 'No userProfile',
-  );
-
   userButton.innerHTML = ''; // Remove existing content
 
   // Authentication status check - consider logged in only if user profile exists and is_authenticated is true
   const isAuthenticated = userProfile && userProfile.is_authenticated !== false;
 
   if (isAuthenticated) {
-    console.log('Authenticated user - displaying profile image or initials');
-
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       // If profile image exists
       const img = document.createElement('img');
       const imageUrl = userProfile.profile_image || userProfile.avatar || userProfile.image;
-      console.log('Profile image URL:', imageUrl);
       img.src = imageUrl;
       img.alt = 'Profile';
       img.style.width = '100%';
@@ -248,7 +219,6 @@ export function updateUserButton() {
 
       // Handle image load error
       img.onerror = function () {
-        console.log('Profile image load failed, using initials');
         // Use initials as fallback if image load fails
         const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
         userButton.textContent = initials;
@@ -258,15 +228,12 @@ export function updateUserButton() {
       };
 
       // Log on successful image load
-      img.onload = function () {
-        console.log('Profile image loaded successfully');
-      };
+      img.onload = function () {};
 
       userButton.appendChild(img);
     } else {
       // Display initials if no image available
       const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
-      console.log('No profile image, using initials:', initials);
       userButton.textContent = initials;
       userButton.style.fontSize = '12px';
       userButton.style.backgroundColor = 'var(--primary-color)';
@@ -276,7 +243,6 @@ export function updateUserButton() {
     // Update tooltip for logged in user
     userButton.title = 'View User Information';
   } else {
-    console.log('Unauthenticated user - displaying default icon');
     // Default icon if not logged in
     userButton.textContent = '👤';
     userButton.style.fontSize = '16px';
@@ -291,44 +257,34 @@ export function updateUserButton() {
     userButton.style.border = '2px dashed var(--accent-color)';
     userButton.style.boxShadow = '0 0 5px rgba(var(--accent-color-rgb), 0.5)';
   }
-
-  console.log('User button UI update complete');
 }
 
 /**
  * Update profile display
  */
 export function updateProfileDisplay() {
-  console.log('Starting profile display update');
   // Initialize profile image
   profileAvatar.innerHTML = '';
 
   // Authentication status check - consider logged in only if user profile exists and is_authenticated is true
   const isAuthenticated = userProfile && userProfile.is_authenticated !== false;
-  console.log('Authentication status:', isAuthenticated);
 
   if (isAuthenticated) {
-    console.log('Displaying authenticated user information');
     // When user profile exists and is authenticated
     if (userProfile.profile_image || userProfile.avatar || userProfile.image) {
       const img = document.createElement('img');
       const imageUrl = userProfile.profile_image || userProfile.avatar || userProfile.image;
-      console.log('Profile modal image URL:', imageUrl);
       img.src = imageUrl;
       img.alt = 'Profile image';
 
       // Handle image load error
       img.onerror = function () {
-        console.log('Profile modal image load failed, using initials');
         // Replace with initials if image load fails
-        profileAvatar.innerHTML = getInitials(
-          userProfile.name || userProfile.display_name || 'User',
-        );
+        profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || 'User');
       };
 
       // Apply effect when image load completes
       img.onload = function () {
-        console.log('Profile modal image loaded successfully');
         img.style.opacity = 1;
       };
 
@@ -338,24 +294,18 @@ export function updateProfileDisplay() {
     } else {
       // Use initials if no image available
       const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
-      console.log('No profile image, using initials in profile modal:', initials);
       profileAvatar.innerHTML = initials;
     }
 
     // Set name and email
     profileName.textContent = userProfile.name || userProfile.display_name || 'User';
     profileEmail.textContent = userProfile.email || '';
-    console.log('Profile name/email set:', {
-      name: profileName.textContent,
-      email: profileEmail.textContent,
-    });
 
     // Show logout button when logged in
     if (logoutButton) {
       logoutButton.textContent = 'Sign Out';
     }
   } else {
-    console.log('Displaying unauthenticated user status');
     // When no user profile (logged out state)
     profileAvatar.innerHTML = '👤';
     profileName.textContent = 'Guest User';
@@ -381,13 +331,10 @@ export function updateProfileDisplay() {
   }
 
   if (userSubscription) {
-    console.log('Displaying subscription information:', userSubscription);
     // When subscription information exists
     const isActive = userSubscription.active || userSubscription.is_subscribed || false;
     subscriptionStatus.textContent = isActive ? 'Active' : 'Inactive';
-    subscriptionStatus.className =
-      'subscription-value ' +
-      (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
+    subscriptionStatus.className = 'subscription-value ' + (isActive ? 'subscription-status-active' : 'subscription-status-inactive');
 
     // Subscription plan
     const planName = (userSubscription.plan || 'free').toUpperCase();
@@ -398,19 +345,11 @@ export function updateProfileDisplay() {
 
     // Expiry date
     const expiryDate = userSubscription.expiresAt || userSubscription.subscribed_until;
-    subscriptionExpiry.textContent = expiryDate
-      ? new Date(expiryDate).toLocaleDateString()
-      : 'None';
+    subscriptionExpiry.textContent = expiryDate ? new Date(expiryDate).toLocaleDateString() : 'None';
 
     // Page group information
     const pageGroups = userSubscription.features?.page_groups || '1';
     subscriptionPages.textContent = pageGroups;
-    console.log('Subscription information set complete:', {
-      status: subscriptionStatus.textContent,
-      plan: subscriptionPlan.textContent,
-      expiry: subscriptionExpiry.textContent,
-      pages: subscriptionPages.textContent,
-    });
 
     // Show subscribe button - when not subscribed (including anonymous users)
     if (!isActive && subscribeButton) {
@@ -422,15 +361,12 @@ export function updateProfileDisplay() {
       dashboardButton.style.display = 'block';
     }
   } else {
-    console.log('No subscription information, using default values');
     // When no subscription information (logged out state)
     subscriptionStatus.textContent = 'Inactive';
     subscriptionPlan.textContent = 'FREE';
     subscriptionExpiry.textContent = 'None';
     subscriptionPages.textContent = '1';
   }
-
-  console.log('Profile display update complete');
 }
 
 /**
@@ -478,7 +414,6 @@ export async function handleLogout() {
       try {
         // Call logout (function provided in auth.js)
         await window.toast.invoke('logout');
-        console.log('Settings reset successful');
       } catch (resetError) {
         console.error('Error resetting settings:', resetError);
 
@@ -553,7 +488,6 @@ export async function handlePageLimitAfterLogout() {
   // Limit number of pages (unauthenticated users are limited to 1 page)
   if (pages.length > 1) {
     // Keep only the first page and delete the rest
-    const firstPage = pages[0];
     pages.splice(1); // Remove all pages except the first one
 
     // Update UI
@@ -563,10 +497,7 @@ export async function handlePageLimitAfterLogout() {
     // Save configuration
     await window.toast.saveConfig({ pages });
 
-    showStatus(
-      'Unauthenticated users can only use 1 page. Only the first page has been kept.',
-      'info',
-    );
+    showStatus('Unauthenticated users can only use 1 page. Only the first page has been kept.', 'info');
   }
 }
 
@@ -605,7 +536,6 @@ export function setupAuthEventHandlers() {
   // Set up authentication related event listeners
   if (window.toast.onLoginSuccess) {
     window.toast.onLoginSuccess(data => {
-      console.log('Login success:', data);
       isSubscribed = data.isSubscribed;
 
       // Update user information
@@ -627,9 +557,7 @@ export function setupAuthEventHandlers() {
   }
 
   if (window.toast.onLogoutSuccess) {
-    window.toast.onLogoutSuccess(data => {
-      console.log('Logout success event received in toast window');
-
+    window.toast.onLogoutSuccess(() => {
       // Update UI on successful logout
       userProfile = null;
       userSubscription = null;
@@ -644,8 +572,6 @@ export function setupAuthEventHandlers() {
 
   if (window.toast.onAuthStateChanged) {
     window.toast.onAuthStateChanged(data => {
-      console.log('Auth state changed event received in toast window:', data);
-
       // Handle based on authentication state change type
       if (data.type === 'auth-reload') {
         // Load user data and update UI when authentication info is refreshed
@@ -662,8 +588,6 @@ export function setupAuthEventHandlers() {
 
   if (window.toast.onAuthReloadSuccess) {
     window.toast.onAuthReloadSuccess(data => {
-      console.log('Auth reload success:', data);
-
       // Update subscription information
       if (data.subscription) {
         userSubscription = data.subscription;

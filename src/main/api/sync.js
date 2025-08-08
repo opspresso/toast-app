@@ -53,16 +53,12 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
 
     // 1. 구독 활성화 여부 확인
     const isSubscribed = subscription.isSubscribed === true || subscription.active === true;
-    
+
     // 2. cloud_sync 기능 확인 (features 객체 우선, additionalFeatures 대체)
-    const hasCloudSyncFeature = 
-      subscription.features?.cloud_sync === true ||
-      subscription.additionalFeatures?.cloudSync === true;
+    const hasCloudSyncFeature = subscription.features?.cloud_sync === true || subscription.additionalFeatures?.cloudSync === true;
 
     // 3. Premium/Pro/VIP 플랜 확인
-    const isPremiumPlan = 
-      subscription.isVip === true ||
-      (subscription.plan && ['premium', 'pro', 'vip'].includes(subscription.plan.toLowerCase()));
+    const isPremiumPlan = subscription.isVip === true || (subscription.plan && ['premium', 'pro', 'vip'].includes(subscription.plan.toLowerCase()));
 
     // 구독자이고 cloud_sync 기능이 있거나 Premium 플랜인 경우 활성화
     if (isSubscribed && (hasCloudSyncFeature || isPremiumPlan)) {
@@ -75,7 +71,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       isSubscribed,
       hasCloudSyncFeature,
       isPremiumPlan,
-      plan: subscription.plan
+      plan: subscription.plan,
     });
     return hasSyncFeature;
   } catch (error) {
@@ -93,7 +89,7 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
  * @param {Object} [params.directData] - 서버에 직접 업로드할 데이터
  * @returns {Promise<Object>} 업로드 결과
  */
-async function uploadSettings({ hasValidToken, onUnauthorized, configStore, directData }) {
+async function uploadSettings({ hasValidToken: _hasValidToken, onUnauthorized, configStore: _configStore, directData }) {
   // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
     return { success: false, error: 'Sync already in progress' };
@@ -160,14 +156,14 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
     logger.error('설정 업로드 오류 상세 정보:', {
       message: errorMessage,
       details: errorDetails,
-      status: error.response?.status
+      status: error.response?.status,
     });
 
     return {
       success: false,
       error: errorMessage,
-      errorDetails: errorDetails,
-      statusCode: error.response?.status
+      errorDetails,
+      statusCode: error.response?.status,
     };
   } finally {
     state.isSyncing = false;
@@ -182,7 +178,7 @@ async function uploadSettings({ hasValidToken, onUnauthorized, configStore, dire
  * @param {Object} params.configStore - 설정 저장소
  * @returns {Promise<Object>} 다운로드 결과
  */
-async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) {
+async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized, configStore }) {
   // 이미 동기화 중이면 건너뜀
   if (state.isSyncing) {
     return { success: false, error: 'Sync already in progress' };
@@ -204,9 +200,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         // 상세 디버깅 로그
         logger.info(
           '클라우드 동기화 - 다운로드된 설정 구조:',
-          Object.keys(settings || {}).length > 0
-            ? `다음 키 포함: ${Object.keys(settings).join(', ')}`
-            : '빈 응답 또는 유효하지 않은 응답',
+          Object.keys(settings || {}).length > 0 ? `다음 키 포함: ${Object.keys(settings).join(', ')}` : '빈 응답 또는 유효하지 않은 응답',
         );
 
         // 유효성 검사
@@ -218,7 +212,7 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         let pagesData = null;
         let appearanceData = null;
         let advancedData = null;
-        let syncMetadata = {
+        const syncMetadata = {
           lastSyncedAt: Date.now(),
           lastSyncedDevice: getDeviceInfo(),
         };
@@ -232,14 +226,20 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           advancedData = settings.advanced || null;
 
           // 메타데이터 추출
-          if (settings.lastSyncedAt) syncMetadata.lastSyncedAt = settings.lastSyncedAt;
-          if (settings.lastModifiedAt) syncMetadata.lastModifiedAt = settings.lastModifiedAt;
-          if (settings.lastSyncedDevice) syncMetadata.lastSyncedDevice = settings.lastSyncedDevice;
-          if (settings.lastModifiedDevice)
+          if (settings.lastSyncedAt) {
+            syncMetadata.lastSyncedAt = settings.lastSyncedAt;
+          }
+          if (settings.lastModifiedAt) {
+            syncMetadata.lastModifiedAt = settings.lastModifiedAt;
+          }
+          if (settings.lastSyncedDevice) {
+            syncMetadata.lastSyncedDevice = settings.lastSyncedDevice;
+          }
+          if (settings.lastModifiedDevice) {
             syncMetadata.lastModifiedDevice = settings.lastModifiedDevice;
-        }
+          }
+        } else if (settings.data) {
         // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
-        else if (settings.data) {
           logger.info('중첩된 데이터 구조 발견');
           const data = settings.data;
 
@@ -253,31 +253,33 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
           advancedData = data.advanced || settings.advanced || null;
 
           // 메타데이터 추출
-          if (data.lastSyncedAt) syncMetadata.lastSyncedAt = data.lastSyncedAt;
-          if (data.lastModifiedAt) syncMetadata.lastModifiedAt = data.lastModifiedAt;
-          if (data.lastSyncedDevice) syncMetadata.lastSyncedDevice = data.lastSyncedDevice;
-          if (data.lastModifiedDevice) syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
-        }
+          if (data.lastSyncedAt) {
+            syncMetadata.lastSyncedAt = data.lastSyncedAt;
+          }
+          if (data.lastModifiedAt) {
+            syncMetadata.lastModifiedAt = data.lastModifiedAt;
+          }
+          if (data.lastSyncedDevice) {
+            syncMetadata.lastSyncedDevice = data.lastSyncedDevice;
+          }
+          if (data.lastModifiedDevice) {
+            syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
+          }
+        } else if (Array.isArray(settings)) {
         // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
-        else if (Array.isArray(settings)) {
           logger.info('배열 전용 구조 발견');
           pagesData = settings;
-        }
+        } else {
         // 1.4 기타 구조 - 모든 배열 필드 검색
-        else {
           logger.info('알 수 없는 구조에서 페이지 배열 검색 중');
           const arrayFields = Object.entries(settings)
-            .filter(([key, value]) => Array.isArray(value))
+            .filter(([_key, value]) => Array.isArray(value))
             .map(([key, value]) => ({ key, value }));
 
           if (arrayFields.length > 0) {
             // 페이지 데이터로 추정되는 첫 번째 배열 사용
             const pagesField =
-              arrayFields.find(
-                field =>
-                  field.key === 'pages' ||
-                  (field.value.length > 0 && field.value[0].name && field.value[0].buttons),
-              ) || arrayFields[0];
+              arrayFields.find(field => field.key === 'pages' || (field.value.length > 0 && field.value[0].name && field.value[0].buttons)) || arrayFields[0];
 
             logger.info(`페이지 데이터로 '${pagesField.key}' 배열 필드 사용`);
             pagesData = pagesField.value;
@@ -296,20 +298,13 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
         // 페이지 데이터 검증
         if (!pagesData) {
           logger.error('응답에서 페이지 데이터를 찾을 수 없음:', JSON.stringify(settings));
-          throw new Error(
-            'Invalid settings data: Could not find page information in any expected format',
-          );
+          throw new Error('Invalid settings data: Could not find page information in any expected format');
         }
 
         // 페이지 데이터 구조 검증
         const isValidPageData =
           Array.isArray(pagesData) &&
-          pagesData.every(
-            page =>
-              typeof page === 'object' &&
-              page !== null &&
-              (page.name !== undefined || page.buttons !== undefined),
-          );
+          pagesData.every(page => typeof page === 'object' && page !== null && (page.name !== undefined || page.buttons !== undefined));
 
         if (!isValidPageData) {
           logger.error('유효하지 않은 페이지 데이터 구조:', JSON.stringify(pagesData.slice(0, 2)));
@@ -318,20 +313,24 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
 
         logger.info(`동기화 데이터에서 ${pagesData.length}개의 페이지 발견`);
 
-        // ConfigStore에 직접 데이터 저장 (단일 소스 원칙)
-        configStore.set('pages', pagesData);
-        logger.info('페이지 데이터를 ConfigStore에 저장 완료');
+        // ConfigStore에 직접 데이터 저장 (configStore가 제공된 경우만)
+        if (configStore) {
+          configStore.set('pages', pagesData);
+          logger.info('페이지 데이터를 ConfigStore에 저장 완료');
 
-        // appearance 설정 저장 (있는 경우)
-        if (appearanceData) {
-          configStore.set('appearance', appearanceData);
-          logger.info('외관 설정을 ConfigStore에 저장 완료');
-        }
+          // appearance 설정 저장 (있는 경우)
+          if (appearanceData) {
+            configStore.set('appearance', appearanceData);
+            logger.info('외관 설정을 ConfigStore에 저장 완료');
+          }
 
-        // advanced 설정 저장 (있는 경우)
-        if (advancedData) {
-          configStore.set('advanced', advancedData);
-          logger.info('고급 설정을 ConfigStore에 저장 완료');
+          // advanced 설정 저장 (있는 경우)
+          if (advancedData) {
+            configStore.set('advanced', advancedData);
+            logger.info('고급 설정을 ConfigStore에 저장 완료');
+          }
+        } else {
+          logger.info('ConfigStore not provided - data downloaded but not saved locally');
         }
 
         // 동기화 상태 업데이트
@@ -386,14 +385,14 @@ async function downloadSettings({ hasValidToken, onUnauthorized, configStore }) 
     logger.error('설정 다운로드 오류 상세 정보:', {
       message: errorMessage,
       details: errorDetails,
-      status: error.response?.status
+      status: error.response?.status,
     });
 
     return {
       success: false,
       error: errorMessage,
-      errorDetails: errorDetails,
-      statusCode: error.response?.status
+      errorDetails,
+      statusCode: error.response?.status,
     };
   } finally {
     state.isSyncing = false;

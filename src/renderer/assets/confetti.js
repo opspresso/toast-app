@@ -10,10 +10,7 @@ let confettiContainer = null;
 let isAnimationActive = false;
 
 // 꽃가루 색상 배열 - 더 화려한 색상으로 확장
-const COLORS = [
-  'red', 'blue', 'green', 'yellow', 'pink', 'purple', 'orange',
-  'cyan', 'magenta', 'lime', 'gold', 'violet', 'coral', 'turquoise'
-];
+const COLORS = ['red', 'blue', 'green', 'yellow', 'pink', 'purple', 'orange', 'cyan', 'magenta', 'lime', 'gold', 'violet', 'coral', 'turquoise'];
 
 // 꽃가루 크기 배열
 const SIZES = ['small', 'medium', 'large', 'xlarge'];
@@ -86,7 +83,7 @@ function randomItem(array) {
  * @returns {string} CSS 클래스 이름
  */
 function createShapeClass(shape) {
-  switch(shape) {
+  switch (shape) {
     case 'circle':
       return 'circle';
     case 'square':
@@ -166,11 +163,14 @@ function createConfetti(container, position = null) {
   container.appendChild(confetti);
 
   // 애니메이션 완료 후 제거
-  setTimeout(() => {
-    if (confetti.parentNode === container) {
-      container.removeChild(confetti);
-    }
-  }, (initialDelay + fallDuration) * 1000);
+  setTimeout(
+    () => {
+      if (confetti.parentNode === container) {
+        container.removeChild(confetti);
+      }
+    },
+    (initialDelay + fallDuration) * 1000,
+  );
 }
 
 /**
@@ -182,7 +182,9 @@ function createConfetti(container, position = null) {
  */
 function startConfetti(options = {}) {
   // 이미 실행 중이면 무시
-  if (isAnimationActive) return;
+  if (isAnimationActive) {
+    return;
+  }
 
   // 옵션 기본값 설정 - 전체 화면용으로 더 많은 밀도와 더 긴 지속 시간
   const duration = options.duration || 8; // 기본 8초로 연장
@@ -198,7 +200,7 @@ function startConfetti(options = {}) {
   for (let i = 0; i < 9; i++) {
     startPositions.push({
       x: `${i * 12}%`,
-      y: -20
+      y: -20,
     });
   }
 
@@ -206,7 +208,7 @@ function startConfetti(options = {}) {
   for (let i = 0; i < 6; i++) {
     startPositions.push({
       x: `${random(0, 100)}%`,
-      y: -20
+      y: -20,
     });
   }
 
@@ -258,10 +260,10 @@ function stopConfetti() {
 // 모듈 내보내기
 window.confetti = {
   start: startConfetti,
-  stop: stopConfetti
+  stop: stopConfetti,
 };
 
 // 애니메이션 테스트 함수 (window 객체에 등록)
-window.startConfettiAnimation = function(options) {
+window.startConfettiAnimation = function (options) {
   startConfetti(options);
 };

@@ -11,7 +11,7 @@ import {
   manualSyncUploadButton,
   manualSyncDownloadButton,
   manualSyncResolveButton,
-  syncLoading
+  syncLoading,
 } from './dom-elements.js';
 import { config, authState, updateConfig } from './state.js';
 import { setLoading } from './utils.js';
@@ -20,10 +20,7 @@ import { setLoading } from './utils.js';
  * Initialize Cloud Sync UI
  */
 export function initializeCloudSyncUI() {
-  window.settings.log.info(
-    'initializeCloudSyncUI 호출 - 구독:',
-    authState.subscription ? authState.subscription.plan : 'none',
-  );
+  window.settings.log.info('initializeCloudSyncUI 호출 - 구독:', authState.subscription ? authState.subscription.plan : 'none');
 
   try {
     // cloud-sync.js의 초기화 함수 호출
@@ -42,22 +39,31 @@ export function handleCloudSyncToggle() {
 
   try {
     // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) setLoading(syncLoading, true);
-    if (enableCloudSyncCheckbox) enableCloudSyncCheckbox.disabled = true;
+    if (syncLoading) {
+      setLoading(syncLoading, true);
+    }
+    if (enableCloudSyncCheckbox) {
+      enableCloudSyncCheckbox.disabled = true;
+    }
 
     // 동기화 상태 변경
-    window.settings.setCloudSyncEnabled(enabled)
-      .then(() => {
+    window.settings
+      .setCloudSyncEnabled(enabled)
+      .then(() =>
         // 상태 업데이트
-        return window.settings.getSyncStatus();
-      })
+        window.settings.getSyncStatus(),
+      )
       .then(status => {
         // UI 업데이트
         updateSyncStatusUI(status);
 
         // 로딩 숨김 및 버튼 활성화
-        if (syncLoading) setLoading(syncLoading, false);
-        if (enableCloudSyncCheckbox) enableCloudSyncCheckbox.disabled = false;
+        if (syncLoading) {
+          setLoading(syncLoading, false);
+        }
+        if (enableCloudSyncCheckbox) {
+          enableCloudSyncCheckbox.disabled = false;
+        }
       })
       .catch(error => {
         window.settings.log.error('클라우드 동기화 상태 변경 오류:', error);
@@ -69,13 +75,17 @@ export function handleCloudSyncToggle() {
         }
 
         // 로딩 숨김
-        if (syncLoading) setLoading(syncLoading, false);
+        if (syncLoading) {
+          setLoading(syncLoading, false);
+        }
       });
   } catch (error) {
     window.settings.log.error('클라우드 동기화 상태 변경 처리 중 오류:', error);
 
     // 오류 시 UI 복원
-    if (syncLoading) setLoading(syncLoading, false);
+    if (syncLoading) {
+      setLoading(syncLoading, false);
+    }
     if (enableCloudSyncCheckbox) {
       enableCloudSyncCheckbox.checked = !enabled;
       enableCloudSyncCheckbox.disabled = false;
@@ -91,13 +101,22 @@ export function handleManualSyncUpload() {
 
   try {
     // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) setLoading(syncLoading, true);
-    if (manualSyncUploadButton) manualSyncUploadButton.disabled = true;
-    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = true;
-    if (manualSyncResolveButton) manualSyncResolveButton.disabled = true;
+    if (syncLoading) {
+      setLoading(syncLoading, true);
+    }
+    if (manualSyncUploadButton) {
+      manualSyncUploadButton.disabled = true;
+    }
+    if (manualSyncDownloadButton) {
+      manualSyncDownloadButton.disabled = true;
+    }
+    if (manualSyncResolveButton) {
+      manualSyncResolveButton.disabled = true;
+    }
 
     // 업로드 실행
-    window.settings.manualSync('upload')
+    window.settings
+      .manualSync('upload')
       .then(result => {
         if (result.success) {
           // 성공 메시지
@@ -127,25 +146,39 @@ export function handleManualSyncUpload() {
       })
       .finally(() => {
         // 상태 복원
-        if (syncLoading) setLoading(syncLoading, false);
+        if (syncLoading) {
+          setLoading(syncLoading, false);
+        }
 
         setTimeout(() => {
           if (manualSyncUploadButton) {
             manualSyncUploadButton.textContent = 'Upload to Server';
             manualSyncUploadButton.disabled = false;
           }
-          if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
-          if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+          if (manualSyncDownloadButton) {
+            manualSyncDownloadButton.disabled = false;
+          }
+          if (manualSyncResolveButton) {
+            manualSyncResolveButton.disabled = false;
+          }
         }, 1500);
       });
   } catch (error) {
     window.settings.log.error('수동 동기화 업로드 처리 중 오류:', error);
 
     // 로딩 및 버튼 상태 복원
-    if (syncLoading) setLoading(syncLoading, false);
-    if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
-    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
-    if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+    if (syncLoading) {
+      setLoading(syncLoading, false);
+    }
+    if (manualSyncUploadButton) {
+      manualSyncUploadButton.disabled = false;
+    }
+    if (manualSyncDownloadButton) {
+      manualSyncDownloadButton.disabled = false;
+    }
+    if (manualSyncResolveButton) {
+      manualSyncResolveButton.disabled = false;
+    }
   }
 }
 
@@ -162,13 +195,22 @@ export function handleManualSyncDownload() {
     }
 
     // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) setLoading(syncLoading, true);
-    if (manualSyncUploadButton) manualSyncUploadButton.disabled = true;
-    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = true;
-    if (manualSyncResolveButton) manualSyncResolveButton.disabled = true;
+    if (syncLoading) {
+      setLoading(syncLoading, true);
+    }
+    if (manualSyncUploadButton) {
+      manualSyncUploadButton.disabled = true;
+    }
+    if (manualSyncDownloadButton) {
+      manualSyncDownloadButton.disabled = true;
+    }
+    if (manualSyncResolveButton) {
+      manualSyncResolveButton.disabled = true;
+    }
 
     // 다운로드 실행
-    window.settings.manualSync('download')
+    window.settings
+      .manualSync('download')
       .then(result => {
         if (result.success) {
           // 성공 메시지
@@ -208,25 +250,39 @@ export function handleManualSyncDownload() {
       })
       .finally(() => {
         // 상태 복원
-        if (syncLoading) setLoading(syncLoading, false);
+        if (syncLoading) {
+          setLoading(syncLoading, false);
+        }
 
         setTimeout(() => {
           if (manualSyncDownloadButton) {
             manualSyncDownloadButton.textContent = 'Download from Server';
             manualSyncDownloadButton.disabled = false;
           }
-          if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
-          if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+          if (manualSyncUploadButton) {
+            manualSyncUploadButton.disabled = false;
+          }
+          if (manualSyncResolveButton) {
+            manualSyncResolveButton.disabled = false;
+          }
         }, 1500);
       });
   } catch (error) {
     window.settings.log.error('수동 동기화 다운로드 처리 중 오류:', error);
 
     // 로딩 및 버튼 상태 복원
-    if (syncLoading) setLoading(syncLoading, false);
-    if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
-    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
-    if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+    if (syncLoading) {
+      setLoading(syncLoading, false);
+    }
+    if (manualSyncUploadButton) {
+      manualSyncUploadButton.disabled = false;
+    }
+    if (manualSyncDownloadButton) {
+      manualSyncDownloadButton.disabled = false;
+    }
+    if (manualSyncResolveButton) {
+      manualSyncResolveButton.disabled = false;
+    }
   }
 }
 
@@ -238,18 +294,29 @@ export function handleManualSyncResolve() {
 
   try {
     // 확인 대화상자
-    if (!confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')) {
+    if (
+      !confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')
+    ) {
       return;
     }
 
     // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) setLoading(syncLoading, true);
-    if (manualSyncUploadButton) manualSyncUploadButton.disabled = true;
-    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = true;
-    if (manualSyncResolveButton) manualSyncResolveButton.disabled = true;
+    if (syncLoading) {
+      setLoading(syncLoading, true);
+    }
+    if (manualSyncUploadButton) {
+      manualSyncUploadButton.disabled = true;
+    }
+    if (manualSyncDownloadButton) {
+      manualSyncDownloadButton.disabled = true;
+    }
+    if (manualSyncResolveButton) {
+      manualSyncResolveButton.disabled = true;
+    }
 
     // 충돌 해결 실행
-    window.settings.manualSync('resolve')
+    window.settings
+      .manualSync('resolve')
       .then(result => {
         if (result.success) {
           // 성공 메시지
@@ -289,25 +356,39 @@ export function handleManualSyncResolve() {
       })
       .finally(() => {
         // 상태 복원
-        if (syncLoading) setLoading(syncLoading, false);
+        if (syncLoading) {
+          setLoading(syncLoading, false);
+        }
 
         setTimeout(() => {
           if (manualSyncResolveButton) {
             manualSyncResolveButton.textContent = 'Resolve Conflicts';
             manualSyncResolveButton.disabled = false;
           }
-          if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
-          if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
+          if (manualSyncUploadButton) {
+            manualSyncUploadButton.disabled = false;
+          }
+          if (manualSyncDownloadButton) {
+            manualSyncDownloadButton.disabled = false;
+          }
         }, 1500);
       });
   } catch (error) {
     window.settings.log.error('수동 동기화 충돌 해결 처리 중 오류:', error);
 
     // 로딩 및 버튼 상태 복원
-    if (syncLoading) setLoading(syncLoading, false);
-    if (manualSyncUploadButton) manualSyncUploadButton.disabled = false;
-    if (manualSyncDownloadButton) manualSyncDownloadButton.disabled = false;
-    if (manualSyncResolveButton) manualSyncResolveButton.disabled = false;
+    if (syncLoading) {
+      setLoading(syncLoading, false);
+    }
+    if (manualSyncUploadButton) {
+      manualSyncUploadButton.disabled = false;
+    }
+    if (manualSyncDownloadButton) {
+      manualSyncDownloadButton.disabled = false;
+    }
+    if (manualSyncResolveButton) {
+      manualSyncResolveButton.disabled = false;
+    }
   }
 }
 
@@ -350,11 +431,7 @@ export function updateSyncStatusUI(status) {
   window.settings.log.info('구독 정보 확인:', authState.subscription);
 
   // 1. 직접적인 구독 상태 확인
-  if (
-    authState.subscription?.isSubscribed === true ||
-    authState.subscription?.active === true ||
-    authState.subscription?.is_subscribed === true
-  ) {
+  if (authState.subscription?.isSubscribed === true || authState.subscription?.active === true || authState.subscription?.is_subscribed === true) {
     hasCloudSyncPermission = true;
     window.settings.log.info('구독 활성화 상태 확인됨');
   }
@@ -399,9 +476,7 @@ export function updateSyncStatusUI(status) {
   }
 
   // 로깅: 최종 권한 확인
-  window.settings.log.info(
-    `Cloud Sync 권한: ${hasCloudSyncPermission ? '있음' : '없음'}, 로그인 상태: ${authState.isLoggedIn ? '로그인됨' : '로그아웃됨'}`,
-  );
+  window.settings.log.info(`Cloud Sync 권한: ${hasCloudSyncPermission ? '있음' : '없음'}, 로그인 상태: ${authState.isLoggedIn ? '로그인됨' : '로그아웃됨'}`);
 
   const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
 
@@ -443,14 +518,10 @@ export function updateSyncStatusUI(status) {
     minute: '2-digit',
   });
 
-  lastSyncedTime.textContent = status.lastSyncTime
-    ? `Last Synced: ${formattedDate}`
-    : `Sync Status: Ready to sync (${formattedDate})`;
+  lastSyncedTime.textContent = status.lastSyncTime ? `Last Synced: ${formattedDate}` : `Sync Status: Ready to sync (${formattedDate})`;
 
   // Update device info
-  syncDeviceInfo.textContent = status.deviceId
-    ? `Current Device: ${status.deviceId}`
-    : 'Current Device: Unknown';
+  syncDeviceInfo.textContent = status.deviceId ? `Current Device: ${status.deviceId}` : 'Current Device: Unknown';
 
   enableCloudSyncCheckbox.disabled = !canUseCloudSync;
   enableCloudSyncCheckbox.checked = status.enabled;

@@ -13,7 +13,9 @@
  * @returns {Promise<boolean>} - 성공 여부
  */
 async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInput = null, forceRefresh = false) {
-  if (!applicationPath || !iconInput) return false;
+  if (!applicationPath || !iconInput) {
+    return false;
+  }
 
   try {
     const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
@@ -48,7 +50,4 @@ function isLocalIconExtractionSupported() {
 }
 
 // ES6 모듈로 내보내기
-export {
-  updateButtonIconFromLocalApp,
-  isLocalIconExtractionSupported
-};
+export { updateButtonIconFromLocalApp, isLocalIconExtractionSupported };

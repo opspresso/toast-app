@@ -9,13 +9,7 @@ const { URL } = require('url');
 const { v4: uuidv4 } = require('uuid');
 const Store = require('electron-store');
 const { createLogger } = require('../logger');
-const {
-  ENDPOINTS,
-  createApiClient,
-  getAuthHeaders,
-  authenticatedRequest,
-  clearTokens,
-} = require('./client');
+const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest, clearTokens } = require('./client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // 모듈별 로거 생성
@@ -85,7 +79,9 @@ function retrieveStoredState() {
  * @returns {boolean} True if login is in progress
  */
 function isLoginProcessActive() {
-  if (!isLoginInProgress) return false;
+  if (!isLoginInProgress) {
+    return false;
+  }
 
   // Check login time limit
   const elapsed = Date.now() - loginStartTimestamp;
@@ -318,10 +314,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         };
       }
 
-      const errorMessage =
-        tokenRequestError.response?.data?.error ||
-        tokenRequestError.message ||
-        'Unknown error during token refresh';
+      const errorMessage = tokenRequestError.response?.data?.error || tokenRequestError.message || 'Unknown error during token refresh';
 
       logger.info('Error message:', errorMessage);
       return {
@@ -484,7 +477,7 @@ async function fetchSubscription(onUnauthorized) {
       }
 
       // Extract subscription information from profile data
-      let subscriptionData = profileData.subscription || {};
+      const subscriptionData = profileData.subscription || {};
 
       logger.info('Subscription data received:', JSON.stringify(subscriptionData, null, 2));
 

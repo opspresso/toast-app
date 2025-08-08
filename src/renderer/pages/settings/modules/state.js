@@ -6,7 +6,7 @@
 export let config = {};
 export let isRecordingHotkey = false;
 export let unsavedChanges = false;
-export let authState = {
+export const authState = {
   isLoggedIn: false,
   profile: null,
   subscription: null,
@@ -19,7 +19,7 @@ export const tabInitState = {
   account: false,
   advanced: false,
   'cloud-sync': false,
-  about: false
+  about: false,
 };
 
 // 중복 호출 방지를 위한 상태 관리

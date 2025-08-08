@@ -135,8 +135,7 @@
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: var(--text-color);
   background-color: transparent;
   overflow: hidden;
@@ -483,11 +482,7 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-gap: 12px;
-  background-image: linear-gradient(
-    to bottom,
-    var(--background-color) 0%,
-    var(--background-color) 100%
-  );
+  background-image: linear-gradient(to bottom, var(--background-color) 0%, var(--background-color) 100%);
   grid-auto-rows: 90px; /* 고정 높이 설정 - 76px에서 90px로 증가 */
 }
 
@@ -1373,7 +1368,6 @@ body {
   text-align: center;
   padding: 20px;
 }
-
 
 .form-group textarea {
   min-height: 120px;

@@ -49,7 +49,7 @@ async function executeAction(action) {
     return {
       success: false,
       message: `Error executing action: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -122,7 +122,7 @@ async function validateAction(action) {
     return {
       valid: false,
       message: `Error validating action: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }

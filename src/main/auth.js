@@ -272,9 +272,7 @@ async function storeToken(token, expiresIn = 31536000) {
       throw new Error('Failed to save token file');
     }
 
-    logger.info(
-      `Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`,
-    );
+    logger.info(`Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`);
   } catch (error) {
     logger.error('Failed to save token:', error);
     throw error;
@@ -392,10 +390,9 @@ async function handleAuthRedirect(url) {
     if (code) {
       const redirectResult = await apiAuth.handleAuthRedirect({
         url,
-        onCodeExchange: async code => {
+        onCodeExchange: async code =>
           // Exchange code for token and update subscription information
-          return await exchangeCodeForTokenAndUpdateSubscription(code);
-        },
+          await exchangeCodeForTokenAndUpdateSubscription(code),
       });
 
       // Process 'reload_auth' action
@@ -455,10 +452,7 @@ async function handleAuthRedirect(url) {
  */
 async function exchangeCodeForToken(code) {
   try {
-    logger.info(
-      'Starting exchange of authentication code for token:',
-      code.substring(0, 8) + '...',
-    );
+    logger.info('Starting exchange of authentication code for token:', code.substring(0, 8) + '...');
 
     // Exchange code for token through common module
     const tokenResult = await apiAuth.exchangeCodeForToken({
@@ -526,9 +520,7 @@ async function refreshAccessToken() {
     const timeSinceLastRefresh = now - lastTokenRefresh;
 
     if (timeSinceLastRefresh < TOKEN_REFRESH_COOLDOWN_MS && lastTokenRefresh > 0) {
-      logger.info(
-        `Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`,
-      );
+      logger.info(`Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`);
 
       // 현재 토큰이 여전히 유효한지 확인
       const isExpired = await isTokenExpired();
@@ -543,16 +535,14 @@ async function refreshAccessToken() {
           success: false,
           throttled: true,
           error: 'Token refresh is throttled. Please try again later.',
-          code: 'REFRESH_THROTTLED'
+          code: 'REFRESH_THROTTLED',
         };
       }
     }
 
     // If already refreshing, return the ongoing refresh promise instead of starting a new one
     if (isRefreshing && refreshPromise) {
-      logger.info(
-        'Token refresh already in progress. Returning existing promise to prevent duplicate requests.',
-      );
+      logger.info('Token refresh already in progress. Returning existing promise to prevent duplicate requests.');
       return refreshPromise;
     }
 
@@ -827,16 +817,10 @@ async function updatePageGroupSettings(subscription) {
     try {
       if (subscription.subscribed_until) {
         // Explicitly convert to string and verify valid string
-        expiresAtStr =
-          typeof subscription.subscribed_until === 'string'
-            ? subscription.subscribed_until
-            : String(subscription.subscribed_until);
+        expiresAtStr = typeof subscription.subscribed_until === 'string' ? subscription.subscribed_until : String(subscription.subscribed_until);
       } else if (subscription.expiresAt) {
         // Explicitly convert to string and verify valid string
-        expiresAtStr =
-          typeof subscription.expiresAt === 'string'
-            ? subscription.expiresAt
-            : String(subscription.expiresAt);
+        expiresAtStr = typeof subscription.expiresAt === 'string' ? subscription.expiresAt : String(subscription.expiresAt);
       }
 
       // Set to empty string if value is undefined or null
@@ -859,11 +843,11 @@ async function updatePageGroupSettings(subscription) {
     config.set('subscription', {
       isAuthenticated: true,
       isSubscribed: isActive,
-      active: isActive,  // Add active field for compatibility
+      active: isActive, // Add active field for compatibility
       plan: subscription.plan || 'free',
       expiresAt: expiresAtStr, // Safely converted to string
       pageGroups: subscription.features?.page_groups || pageGroups,
-      isVip: isVip,
+      isVip,
       features: {
         page_groups: subscription.features?.page_groups || pageGroups,
         advanced_actions: subscription.features?.advanced_actions || false,

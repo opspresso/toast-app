@@ -2,18 +2,8 @@
  * Settings - General Settings Management
  */
 
-import {
-  globalHotkeyInput,
-  recordHotkeyButton,
-  clearHotkeyButton,
-  launchAtLoginCheckbox
-} from './dom-elements.js';
-import {
-  config,
-  isRecordingHotkey,
-  setRecordingHotkey,
-  markUnsavedChanges
-} from './state.js';
+import { globalHotkeyInput, recordHotkeyButton, clearHotkeyButton, launchAtLoginCheckbox } from './dom-elements.js';
+import { config, isRecordingHotkey, setRecordingHotkey, markUnsavedChanges } from './state.js';
 
 /**
  * Initialize General Settings tab
@@ -45,7 +35,8 @@ export function startRecordingHotkey() {
   window.settings.log.info('단축키 녹화 시작');
 
   // 녹화 시작 전에 전역 단축키를 일시적으로 비활성화
-  window.settings.temporarilyDisableShortcuts()
+  window.settings
+    .temporarilyDisableShortcuts()
     .then(success => {
       window.settings.log.info('전역 단축키 일시 비활성화:', success ? '성공' : '실패');
     })
@@ -74,7 +65,8 @@ export function clearHotkey() {
   window.settings.log.info('단축키 초기화');
 
   // 녹화 취소 시 전역 단축키 복원
-  window.settings.restoreShortcuts()
+  window.settings
+    .restoreShortcuts()
     .then(success => {
       window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
     })
@@ -101,7 +93,9 @@ export function clearHotkey() {
  * Handle hotkey recording
  */
 export function handleHotkeyRecording(event) {
-  if (!isRecordingHotkey) return;
+  if (!isRecordingHotkey) {
+    return;
+  }
 
   // 키 조합 처리
   if (event.key === 'Escape') {
@@ -112,10 +106,18 @@ export function handleHotkeyRecording(event) {
 
   // 단축키 조합 생성
   const modifiers = [];
-  if (event.ctrlKey) modifiers.push('Ctrl');
-  if (event.shiftKey) modifiers.push('Shift');
-  if (event.altKey) modifiers.push('Alt');
-  if (event.metaKey) modifiers.push('Meta');
+  if (event.ctrlKey) {
+    modifiers.push('Ctrl');
+  }
+  if (event.shiftKey) {
+    modifiers.push('Shift');
+  }
+  if (event.altKey) {
+    modifiers.push('Alt');
+  }
+  if (event.metaKey) {
+    modifiers.push('Meta');
+  }
 
   // 일반 키 처리
   let key = event.key;
@@ -138,19 +140,45 @@ export function handleHotkeyRecording(event) {
   }
 
   // 특수 키 처리 (화살표 등)
-  if (key === 'ArrowUp') key = 'Up';
-  if (key === 'ArrowDown') key = 'Down';
-  if (key === 'ArrowLeft') key = 'Left';
-  if (key === 'ArrowRight') key = 'Right';
-  if (key === 'Enter') key = 'Return';
-  if (key === 'Tab') key = 'Tab';
-  if (key === 'Backspace') key = 'Backspace';
-  if (key === 'Delete') key = 'Delete';
-  if (key === 'Home') key = 'Home';
-  if (key === 'End') key = 'End';
-  if (key === 'PageUp') key = 'PageUp';
-  if (key === 'PageDown') key = 'PageDown';
-  if (key === 'Escape') key = 'Escape';
+  if (key === 'ArrowUp') {
+    key = 'Up';
+  }
+  if (key === 'ArrowDown') {
+    key = 'Down';
+  }
+  if (key === 'ArrowLeft') {
+    key = 'Left';
+  }
+  if (key === 'ArrowRight') {
+    key = 'Right';
+  }
+  if (key === 'Enter') {
+    key = 'Return';
+  }
+  if (key === 'Tab') {
+    key = 'Tab';
+  }
+  if (key === 'Backspace') {
+    key = 'Backspace';
+  }
+  if (key === 'Delete') {
+    key = 'Delete';
+  }
+  if (key === 'Home') {
+    key = 'Home';
+  }
+  if (key === 'End') {
+    key = 'End';
+  }
+  if (key === 'PageUp') {
+    key = 'PageUp';
+  }
+  if (key === 'PageDown') {
+    key = 'PageDown';
+  }
+  if (key === 'Escape') {
+    key = 'Escape';
+  }
 
   // 적어도 하나의 모디파이어와 하나의 일반 키가 필요함
   if (modifiers.length === 0) {
@@ -162,8 +190,7 @@ export function handleHotkeyRecording(event) {
   const hotkey = [...modifiers, key].join('+');
 
   // 유효한 핫키인지 검증
-  if (hotkey.includes('Alt+Alt') || hotkey.includes('Shift+Shift') ||
-    hotkey.includes('Ctrl+Ctrl') || hotkey.includes('Meta+Meta')) {
+  if (hotkey.includes('Alt+Alt') || hotkey.includes('Shift+Shift') || hotkey.includes('Ctrl+Ctrl') || hotkey.includes('Meta+Meta')) {
     window.settings.log.warn('유효하지 않은 핫키 조합 감지:', hotkey);
     return;
   }
@@ -183,7 +210,8 @@ export function handleHotkeyRecording(event) {
   event.preventDefault();
 
   // 설정 즉시 저장
-  window.settings.setConfig('globalHotkey', hotkey)
+  window.settings
+    .setConfig('globalHotkey', hotkey)
     .then(() => {
       window.settings.log.info('전역 단축키 설정 변경:', hotkey);
 

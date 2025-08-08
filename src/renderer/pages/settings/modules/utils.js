@@ -59,7 +59,9 @@ export function applyTheme(theme) {
  * @returns {string} 변환된 문자열 (예: 1.5 MB)
  */
 export function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
 
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];

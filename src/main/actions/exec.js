@@ -159,13 +159,12 @@ async function openInTerminal(command, workingDir) {
     let terminalCommand;
 
     if (process.platform === 'darwin') {
-      terminalCommand = expandedWorkingDir && !openAppMatch
-        ? `osascript -e 'tell application "Terminal" to do script "cd ${expandedWorkingDir} && ${finalCommand}"'`
-        : `osascript -e 'tell application "Terminal" to do script "${finalCommand}"'`;
+      terminalCommand =
+        expandedWorkingDir && !openAppMatch
+          ? `osascript -e 'tell application "Terminal" to do script "cd ${expandedWorkingDir} && ${finalCommand}"'`
+          : `osascript -e 'tell application "Terminal" to do script "${finalCommand}"'`;
     } else if (process.platform === 'win32') {
-      terminalCommand = expandedWorkingDir
-        ? `start cmd.exe /K "cd /d ${expandedWorkingDir} && ${finalCommand}"`
-        : `start cmd.exe /K "${finalCommand}"`;
+      terminalCommand = expandedWorkingDir ? `start cmd.exe /K "cd /d ${expandedWorkingDir} && ${finalCommand}"` : `start cmd.exe /K "${finalCommand}"`;
     } else {
       const terminal = 'x-terminal-emulator';
       terminalCommand = expandedWorkingDir

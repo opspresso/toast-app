@@ -59,40 +59,43 @@ document.addEventListener('DOMContentLoaded', () => {
   window.settings.log.info('DOMContentLoaded 이벤트 발생 - 초기화 시작');
 
   // Load configuration from main process
-  window.settings.getConfig().then(loadedConfig => {
-    try {
-      // 설정 초기화
-      window.settings.log.info('설정 로드 완료');
-      updateConfig(loadedConfig);
+  window.settings
+    .getConfig()
+    .then(loadedConfig => {
+      try {
+        // 설정 초기화
+        window.settings.log.info('설정 로드 완료');
+        updateConfig(loadedConfig);
 
-      // 테마 적용 (가장 우선순위로 처리)
-      window.settings.log.info('테마 적용 중...');
-      applyTheme(config.appearance?.theme || 'system');
+        // 테마 적용 (가장 우선순위로 처리)
+        window.settings.log.info('테마 적용 중...');
+        applyTheme(config.appearance?.theme || 'system');
 
-      // 이벤트 리스너 설정 - UI 초기화 전에 처리
-      window.settings.log.info('이벤트 리스너 설정 중...');
-      setupEventListeners();
+        // 이벤트 리스너 설정 - UI 초기화 전에 처리
+        window.settings.log.info('이벤트 리스너 설정 중...');
+        setupEventListeners();
 
-      // 전체 UI 초기화 (모든 필요한 설정 한 번에 처리)
-      window.settings.log.info('전체 UI 초기화 중...');
-      initializeUI();
+        // 전체 UI 초기화 (모든 필요한 설정 한 번에 처리)
+        window.settings.log.info('전체 UI 초기화 중...');
+        initializeUI();
 
-      // 첫 번째 탭 선택 (반드시 UI 초기화 후)
-      window.settings.log.info('첫 번째 탭 선택 중...');
-      const firstTabLink = document.querySelector('.settings-nav li');
-      if (firstTabLink) {
-        const firstTabId = firstTabLink.getAttribute('data-tab');
-        window.settings.log.info(`기본 탭 선택: ${firstTabId}`);
-        switchTab(firstTabId);
+        // 첫 번째 탭 선택 (반드시 UI 초기화 후)
+        window.settings.log.info('첫 번째 탭 선택 중...');
+        const firstTabLink = document.querySelector('.settings-nav li');
+        if (firstTabLink) {
+          const firstTabId = firstTabLink.getAttribute('data-tab');
+          window.settings.log.info(`기본 탭 선택: ${firstTabId}`);
+          switchTab(firstTabId);
+        }
+
+        window.settings.log.info('초기화 완료');
+      } catch (error) {
+        window.settings.log.error('초기화 오류:', error);
       }
-
-      window.settings.log.info('초기화 완료');
-    } catch (error) {
-      window.settings.log.error('초기화 오류:', error);
-    }
-  }).catch(error => {
-    window.settings.log.error('설정 로드 오류:', error);
-  });
+    })
+    .catch(error => {
+      window.settings.log.error('설정 로드 오류:', error);
+    });
 
   // Config update listener - 필요한 설정만 업데이트하도록 최적화
   window.addEventListener('config-loaded', event => {
@@ -115,8 +118,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const globalHotkeyInput = document.getElementById('global-hotkey');
           const launchAtLoginCheckbox = document.getElementById('launch-at-login');
 
-          if (globalHotkeyInput) globalHotkeyInput.value = config.globalHotkey || '';
-          if (launchAtLoginCheckbox) launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
+          if (globalHotkeyInput) {
+            globalHotkeyInput.value = config.globalHotkey || '';
+          }
+          if (launchAtLoginCheckbox) {
+            launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
+          }
         } else if (tabId === 'appearance') {
           const themeSelect = document.getElementById('theme');
           const positionSelect = document.getElementById('position');
@@ -124,12 +131,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const opacityRange = document.getElementById('opacity');
           const opacityValue = document.getElementById('opacity-value');
 
-          if (themeSelect) themeSelect.value = config.appearance?.theme || 'system';
-          if (positionSelect) positionSelect.value = config.appearance?.position || 'center';
-          if (sizeSelect) sizeSelect.value = config.appearance?.size || 'medium';
+          if (themeSelect) {
+            themeSelect.value = config.appearance?.theme || 'system';
+          }
+          if (positionSelect) {
+            positionSelect.value = config.appearance?.position || 'center';
+          }
+          if (sizeSelect) {
+            sizeSelect.value = config.appearance?.size || 'medium';
+          }
           if (opacityRange) {
             opacityRange.value = config.appearance?.opacity || 0.95;
-            if (opacityValue) opacityValue.textContent = opacityRange.value;
+            if (opacityValue) {
+              opacityValue.textContent = opacityRange.value;
+            }
           }
         } else if (tabId === 'advanced') {
           const hideAfterActionCheckbox = document.getElementById('hide-after-action');
@@ -137,10 +152,18 @@ document.addEventListener('DOMContentLoaded', () => {
           const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');
           const showInTaskbarCheckbox = document.getElementById('show-in-taskbar');
 
-          if (hideAfterActionCheckbox) hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
-          if (hideOnBlurCheckbox) hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
-          if (hideOnEscapeCheckbox) hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
-          if (showInTaskbarCheckbox) showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
+          if (hideAfterActionCheckbox) {
+            hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
+          }
+          if (hideOnBlurCheckbox) {
+            hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
+          }
+          if (hideOnEscapeCheckbox) {
+            hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
+          }
+          if (showInTaskbarCheckbox) {
+            showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
+          }
         }
       }
     }

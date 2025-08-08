@@ -3,18 +3,9 @@
  */
 
 import { cancelButton, launchAtLoginCheckbox } from './dom-elements.js';
-import {
-  isRecordingHotkey,
-  unsavedChanges,
-  config,
-  updateConfig
-} from './state.js';
+import { isRecordingHotkey, unsavedChanges, config, updateConfig } from './state.js';
 import { switchTab } from './tabs.js';
-import {
-  startRecordingHotkey,
-  clearHotkey,
-  handleHotkeyRecording
-} from './general-settings.js';
+import { startRecordingHotkey, clearHotkey, handleHotkeyRecording } from './general-settings.js';
 import { setupAppearanceEventListeners } from './appearance-settings.js';
 import { setupAdvancedEventListeners } from './advanced-settings.js';
 import { setupAccountEventListeners } from './account-settings.js';
@@ -59,53 +50,61 @@ export function setupEventListeners() {
       }
 
       // 이벤트 위임 방식으로 이벤트 리스너 등록
-      newNav.addEventListener('click', function (event) {
-        // li 요소 또는 li의 자식 요소를 클릭했는지 확인
-        let targetLi = event.target;
-        while (targetLi && targetLi !== newNav) {
-          if (targetLi.tagName === 'LI') {
-            break;
+      newNav.addEventListener(
+        'click',
+        function (event) {
+          // li 요소 또는 li의 자식 요소를 클릭했는지 확인
+          let targetLi = event.target;
+          while (targetLi && targetLi !== newNav) {
+            if (targetLi.tagName === 'LI') {
+              break;
+            }
+            targetLi = targetLi.parentNode;
           }
-          targetLi = targetLi.parentNode;
-        }
 
-        // 클릭한 요소가 li가 아니면 무시
-        if (!targetLi || targetLi === newNav) return;
+          // 클릭한 요소가 li가 아니면 무시
+          if (!targetLi || targetLi === newNav) {
+            return;
+          }
 
-        // 이벤트 전파 완전 차단
-        event.preventDefault();
-        event.stopImmediatePropagation();
+          // 이벤트 전파 완전 차단
+          event.preventDefault();
+          event.stopImmediatePropagation();
 
-        // 현재 시간 기록
-        const now = Date.now();
-        const tabId = targetLi.getAttribute('data-tab');
+          // 현재 시간 기록
+          const now = Date.now();
+          const tabId = targetLi.getAttribute('data-tab');
 
-        // 이미 처리 중인 디바운스 타이머가 있다면 취소
-        if (tabClickTimer) {
-          clearTimeout(tabClickTimer);
-        }
+          // 이미 처리 중인 디바운스 타이머가 있다면 취소
+          if (tabClickTimer) {
+            clearTimeout(tabClickTimer);
+          }
 
-        // 연속 클릭 방지 (300ms 이내 같은 탭)
-        if (now - lastTabClickTime < 300) {
-          window.settings.log.info(`빠른 연속 클릭 감지됨 (${tabId}), 무시합니다.`);
-          return;
-        }
+          // 연속 클릭 방지 (300ms 이내 같은 탭)
+          if (now - lastTabClickTime < 300) {
+            window.settings.log.info(`빠른 연속 클릭 감지됨 (${tabId}), 무시합니다.`);
+            return;
+          }
 
-        // 시간 업데이트
-        lastTabClickTime = now;
+          // 시간 업데이트
+          lastTabClickTime = now;
 
-        // 디바운싱 처리 (10ms 내에 처리가 집중되면 하나로 병합)
-        tabClickTimer = setTimeout(() => {
-          window.settings.log.info(`탭 클릭 감지: ${tabId}`);
-          switchTab(tabId);
-          tabClickTimer = null;
-        }, 10);
-      }, true);
+          // 디바운싱 처리 (10ms 내에 처리가 집중되면 하나로 병합)
+          tabClickTimer = setTimeout(() => {
+            window.settings.log.info(`탭 클릭 감지: ${tabId}`);
+            switchTab(tabId);
+            tabClickTimer = null;
+          }, 10);
+        },
+        true,
+      );
     }
 
     // ESC 키 이벤트 핸들러 (전역 핸들러)
     function handleEscKey(event) {
-      if (event.key !== 'Escape' || isRecordingHotkey) return;
+      if (event.key !== 'Escape' || isRecordingHotkey) {
+        return;
+      }
 
       // 이벤트 전파 차단
       event.stopImmediatePropagation();
