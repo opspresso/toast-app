@@ -8,37 +8,56 @@ Toast App is an Electron-based desktop application that provides a customizable 
 
 ## Build & Test Commands
 
-- **Start**: `npm start` (production) or `npm run dev` (development)
-  - Windows: `npm run dev:win` (sets NODE_ENV correctly for Windows)
-- **Build**: `npm run build` (all platforms), `npm run build:mac`, `npm run build:win`, `npm run build:mas` (App Store)
-- **Test**: `npm test` (all tests with coverage)
-  - Single test: `npx jest path/to/file.test.js`
-  - Watch mode: `npx jest --watch`
-  - Coverage report: `npm test -- --coverage`
-- **Lint & Format**: `npm run lint` (ESLint), `npm run format` (Prettier)
+### Development
+- **Start Dev**: `npm run dev` (development mode with NODE_ENV=development)
+- **Start Dev (Windows)**: `npm run dev:win` (Windows-specific NODE_ENV setting)
+- **Start Production**: `npm start` (production mode)
+
+### Building
+- **All Platforms**: `npm run build` (creates macOS, Windows, Linux builds)
+- **macOS**: `npm run build:mac` (creates DMG and ZIP)
+- **Windows**: `npm run build:win` (creates NSIS installer and portable EXE)
+- **Mac App Store**: `npm run build:mas` (MAS distribution)
+
+### Testing & Quality
+- **Run Tests**: `npm test` (Jest with coverage - currently 2 unit tests)
+- **Lint**: `npm run lint` (ESLint check)
+- **Format**: `npm run format` (Prettier formatting)
+
+### Build Details
+- **Output Directory**: `dist/`
+- **Code Signing**: macOS (entitlements + notarization), Windows (NSIS)
+- **Auto-Update**: GitHub releases via electron-updater
+- **Linux Support**: AppImage and .deb packages (experimental)
 
 ## High-Level Architecture
 
 ### Process Structure
-- **Main Process** (`src/main/`): Handles application lifecycle, window management, system integration, and IPC communication
-  - `actions/`: Modular action handlers (exec, open, script, chain, application)
-  - `api/`: Cloud sync and authentication client
-  - `config/`: Configuration management with electron-store
-  - `executor.js`: Central action execution dispatcher
-  - `window.js`: Window lifecycle management
+- **Main Process** (`src/main/`): Handles application lifecycle, window management, system integration
+  - `actions/`: 5 action handlers (application, chain, exec, open, script)
+  - `api/`: Cloud sync API client (auth.js, client.js, sync.js)
+  - `config/`: Configuration with electron-store schema validation
+  - `executor.js`: Central action dispatcher with validation
+  - `windows.js`: Toast/Settings window lifecycle management
+  - `auth-manager.js`: Authentication state synchronization
+  - `cloud-sync.js`: Automatic cloud synchronization (15min intervals)
+  - `shortcuts.js`: Global hotkey registration
+  - `tray.js`: System tray integration
+  - `updater.js`: Auto-update functionality
 
-- **Renderer Process** (`src/renderer/`): UI implementation
-  - `pages/toast/`: Main popup interface
-  - `pages/settings/`: Multi-tab settings interface
-  - `preload/`: Secure IPC bridges for each page
-
-- **Shared Resources** (`src/renderer/images/`): Flat color icons library
+- **Renderer Process** (`src/renderer/`): Modular UI implementation
+  - `pages/toast/`: Main popup with ES6 modules
+  - `pages/settings/`: 6-tab settings interface (General, Appearance, Account, Advanced, Cloud Sync, About)
+  - `preload/`: Secure IPC bridges (toast.js, settings.js)
+  - `assets/flat-color-icons/`: 200+ SVG icons library
 
 ### Key Architectural Patterns
-1. **IPC Communication**: All cross-process communication uses structured IPC handlers defined in `src/main/ipc/`
-2. **Action System**: Extensible action framework supporting exec, open, script, chain, and application types
-3. **Configuration Layers**: Environment variables → Default config → User preferences
-4. **Window Management**: Separate window instances for toast popup and settings, with proper lifecycle handling
+1. **IPC Communication**: Structured handlers in `src/main/ipc.js` with secure preload scripts
+2. **Action System**: 5 types (application, exec, open, script, chain) with validation pipeline
+3. **Configuration**: electron-store with JSON schema validation and migration support
+4. **Authentication**: OAuth 2.0 with automatic token refresh and profile management
+5. **Cloud Sync**: Real-time sync with debouncing (2s) and conflict resolution
+6. **Subscription Tiers**: Anonymous (1 page), Authenticated (3 pages), Premium (9 pages)
 
 ## Code Style
 
@@ -52,23 +71,34 @@ Toast App is an Electron-based desktop application that provides a customizable 
 ## Development Workflows
 
 ### Adding New Action Types
-1. Create new action file in `src/main/actions/`
-2. Implement `validate()` and `execute()` methods
-3. Register action in `src/main/executor.js`
-4. Add documentation in `docs/features.md`
+1. Create new action file in `src/main/actions/` (e.g., `my-action.js`)
+2. Implement `async execute(action)` function returning `{success, message, ...}`
+3. Add validation case in `executor.js` `validateAction()` function
+4. Register action type in `executor.js` switch statement
+5. Update `docs/BUTTON_ACTIONS.md` with new action documentation
+6. Add unit tests in `tests/unit/`
 
 ### Adding New Settings
-1. Update default config schema in `src/main/config.js`
-2. Add UI components in `src/renderer/pages/settings/`
-3. Create IPC handlers if needed in `src/main/ipc/`
-4. Update relevant documentation
+1. Update schema in `src/main/config.js` with type validation
+2. Add settings module in `src/renderer/pages/settings/modules/`
+3. Update settings UI in `src/renderer/pages/settings/index.html`
+4. Add IPC handlers in `src/main/ipc.js` if needed
+5. Update `docs/CONFIG_SCHEMA.md` and `docs/SETTINGS.md`
+
+### Testing & Quality Assurance
+- **Unit Tests**: Currently 2 tests (config, app-icon-extractor)
+- **Manual Testing**: Use dev mode with `npm run dev`
+- **Coverage**: Run `npm test` to generate coverage report
+- **Linting**: `npm run lint` to check code style
+- **Build Testing**: Test all platforms before release
 
 ### Debugging
-- **Main Process**: Use VS Code debugger or check logs via electron-log
-- **Renderer Process**: Open DevTools with Ctrl+Shift+I (Cmd+Option+I on Mac)
+- **Main Process**: electron-log outputs to files + console
+- **Renderer Process**: DevTools (Ctrl+Shift+I / Cmd+Option+I)
 - **Log Locations**:
-  - macOS: `~/Library/Logs/Toast/`
-  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\`
+  - macOS: `~/Library/Logs/Toast/main.log`
+  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\main.log`
+- **Debug Mode**: Set NODE_ENV=development for verbose logging
 
 ## Core Principles
 
@@ -91,13 +121,31 @@ Toast App is an Electron-based desktop application that provides a customizable 
 
 ## Testing Strategy
 
-- Write automated tests for important logic and user flows.
-- Test structure: `tests/unit/`, `tests/integration/`, `tests/e2e/`
-- Keep tests fast, isolated, and reliable.
-- Use Jest's describe/test structure with descriptive test names.
-- Mock Electron APIs using `tests/mocks/electron.js`
-- Test configuration: `jest.config.js` with coverage enabled by default
-- Coverage reports generated in `coverage/` directory
+### Current Test Status
+- **Framework**: Jest with coverage reporting
+- **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
+- **Coverage**: Enabled by default, reports in `coverage/` directory
+- **Current Tests**: 2 unit tests
+  - `tests/unit/config.test.js` - Configuration store testing
+  - `tests/unit/app-icon-extractor.test.js` - Icon extraction utility
+
+### Test Structure
+```
+tests/
+├── mocks/
+│   └── electron.js        # Electron API mocks
+├── setup.js               # Jest setup configuration
+├── unit/                  # Unit tests (current: 2 tests)
+├── integration/           # Integration tests (empty)
+└── e2e/                   # End-to-end tests (empty)
+```
+
+### Testing Guidelines
+- Use Jest's `describe/test` structure with descriptive names
+- Mock Electron APIs to avoid native dependencies
+- Keep tests fast, isolated, and deterministic
+- Focus on core business logic and action execution
+- **Priority areas for testing**: Action validation, configuration management, API clients
 
 ## Platform-Specific Considerations
 
