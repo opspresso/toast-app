@@ -121,10 +121,10 @@ function initialize() {
   // Initialize authentication manager and cloud sync
   authManager.initialize(windows);
 
-  // Initialize cloud sync and connect with auth manager
-  const syncManager = cloudSync.initCloudSync(authManager, userDataManager);
+  // Initialize cloud sync and connect with auth manager (중요: config 인스턴스 전달)
+  const syncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
   authManager.setSyncManager(syncManager);
-  logger.info('Cloud sync module initialized and connected to auth manager');
+  logger.info('Cloud sync module initialized and connected to auth manager with shared config');
 
   // Load environment configuration files and apply to app
   loadEnvironmentConfig();

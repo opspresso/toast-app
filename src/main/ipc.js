@@ -235,6 +235,11 @@ function setupIpcHandlers(windows) {
   // Set configuration
   ipcMain.handle('set-config', (event, key, value) => {
     try {
+      logger.info('=== set-config called ===');
+      logger.info('Key:', key);
+      if (key === 'pages') {
+        logger.info('Pages being updated. Length:', Array.isArray(value) ? value.length : 'Not array');
+      }
       if (key === null && typeof value === 'object') {
         // Set entire config
         Object.keys(value).forEach(k => {
@@ -319,6 +324,11 @@ function setupIpcHandlers(windows) {
   // Save configuration (specific changes)
   ipcMain.handle('save-config', (event, changes) => {
     try {
+      logger.info('=== save-config called ===');
+      logger.info('Changes keys:', Object.keys(changes || {}));
+      if (changes && changes.pages) {
+        logger.info('Pages being updated via save-config. Length:', Array.isArray(changes.pages) ? changes.pages.length : 'Not array');
+      }
       if (typeof changes === 'object') {
         // Apply each change to config
         Object.keys(changes).forEach(key => {
@@ -536,9 +546,9 @@ function setupIpcHandlers(windows) {
   // Cloud Sync Manager 저장 변수
   let cloudSyncManager = null;
 
-  // 윈도우 초기화 이후 Cloud Sync Manager 초기화
-  const cloudSync = require('./cloud-sync');
-  cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager);
+  // 윈도우 초기화 이후 Cloud Sync Manager 초기화 (authManager, userDataManager 초기화 후 실행)
+  // 지연 초기화를 위해 나중에 debug 함수에서 수행하도록 변경
+  logger.info('Cloud sync manager will be initialized on first use');
 
   // Settings Synced 이벤트 핸들러 전달
   ipcMain.on('settings-synced', (event, data) => {
@@ -582,7 +592,13 @@ function setupIpcHandlers(windows) {
       // 동기화 설정 변경 로그
       logger.info(`Setting cloud sync to ${enabled ? 'enabled' : 'disabled'}`);
 
-      // 이미 초기화된 cloudSyncManager 사용
+      // CloudSyncManager 초기화 확인 및 필요 시 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('Initializing CloudSyncManager for set-cloud-sync-enabled...');
+        const cloudSync = require('./cloud-sync');
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+      }
+      
       if (cloudSyncManager) {
         // enable/disable 메서드를 사용하여 클라우드 동기화 활성화/비활성화
         if (enabled) {
@@ -624,7 +640,13 @@ function setupIpcHandlers(windows) {
         throw new Error(`Invalid sync action: ${action}`);
       }
 
-      // 이미 초기화된 cloudSyncManager 사용
+      // CloudSyncManager 초기화 확인 및 필요 시 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('Initializing CloudSyncManager for manual-sync...');
+        const cloudSync = require('./cloud-sync');
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+      }
+      
       if (cloudSyncManager) {
         // 수동 동기화 실행
         logger.info(`Performing manual sync action: ${action}`);
@@ -663,6 +685,65 @@ function setupIpcHandlers(windows) {
       return {
         success: false,
         error: error.message || 'Unknown error',
+      };
+    }
+  });
+
+  // Debug sync status (for troubleshooting)
+  ipcMain.handle('debug-sync-status', async () => {
+    try {
+      logger.info('=== Debug sync status requested ===');
+      logger.info('cloudSyncManager exists:', !!cloudSyncManager);
+      logger.info('authManager exists:', !!authManager);
+      logger.info('userDataManager exists:', !!userDataManager);
+      
+      // CloudSyncManager가 아직 초기화되지 않았을 경우 지금 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('CloudSyncManager not initialized, initializing now...');
+        const cloudSync = require('./cloud-sync');
+        // 중요: IPC에서 사용하는 config 인스턴스를 전달
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+        logger.info('CloudSyncManager initialized successfully with shared config instance');
+      }
+      
+      if (cloudSyncManager) {
+        const status = cloudSyncManager.getCurrentStatus();
+        const subscription = config.get('subscription');
+        const hasAuthManager = !!authManager;
+        const hasValidToken = hasAuthManager ? await authManager.hasValidToken() : false;
+        
+        logger.info('Sync status:', status);
+        logger.info('Has valid token:', hasValidToken);
+        
+        return {
+          success: true,
+          status: {
+            ...status,
+            hasAuthManager,
+            hasValidToken,
+            subscription: subscription ? {
+              active: subscription.active,
+              isSubscribed: subscription.isSubscribed,
+              features: subscription.features,
+              plan: subscription.plan
+            } : null
+          }
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Cloud sync manager not initialized - authManager or userDataManager missing',
+          debug: {
+            hasAuthManager: !!authManager,
+            hasUserDataManager: !!userDataManager
+          }
+        };
+      }
+    } catch (error) {
+      logger.error('Error getting debug sync status:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
       };
     }
   });

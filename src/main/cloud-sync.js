@@ -66,16 +66,31 @@ function getCurrentTimestamp() {
  * @returns {Promise<boolean>} Whether synchronization is possible
  */
 async function canSync() {
-  if (!state.enabled || !authManager) {
-    logger.info('Cannot synchronize: sync is disabled or auth manager is missing');
+  logger.info('=== canSync() called ===');
+  logger.info('state.enabled:', state.enabled);
+  logger.info('authManager exists:', !!authManager);
+  
+  if (!state.enabled) {
+    logger.info('Cannot synchronize: sync is disabled');
+    return false;
+  }
+  
+  if (!authManager) {
+    logger.info('Cannot synchronize: auth manager is missing');
     return false;
   }
 
   try {
-    return await apiSync.isCloudSyncEnabled({
+    const hasToken = await authManager.hasValidToken();
+    logger.info('hasValidToken result:', hasToken);
+    
+    const result = await apiSync.isCloudSyncEnabled({
       hasValidToken: authManager.hasValidToken,
       configStore,
     });
+    logger.info('isCloudSyncEnabled result:', result);
+    
+    return result;
   } catch (error) {
     logger.error('Error checking if sync is possible:', error);
     return false;
@@ -490,22 +505,75 @@ function setEnabled(enabled) {
 function setupConfigListeners() {
   // 페이지 설정 변경 감지
   configStore.onDidChange('pages', async (newValue, oldValue) => {
+    logger.info('=== Pages change detected ===');
+    logger.info('Sync state.enabled:', state.enabled);
+    logger.info('Old pages length:', Array.isArray(oldValue) ? oldValue.length : 'Not array');
+    logger.info('New pages length:', Array.isArray(newValue) ? newValue.length : 'Not array');
+    
+    // 동기화 가능 여부 확인
+    const canSyncResult = await canSync();
+    logger.info('canSync() result:', canSyncResult);
+    
     // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 건너뛰기
-    if (!state.enabled || !(await canSync())) {
+    if (!state.enabled) {
+      logger.info('Sync disabled - state.enabled is false');
+      return;
+    }
+    
+    if (!canSyncResult) {
+      logger.info('Cannot sync - canSync() returned false');
       return;
     }
 
-    // 변경 유형 감지
+    // 변경 유형 감지 (더 정확한 deep comparison 포함)
     let changeType = 'unknown_change';
+    let hasRealChange = false;
 
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
       if (newValue.length > oldValue.length) {
         changeType = 'page_added';
+        hasRealChange = true;
       } else if (newValue.length < oldValue.length) {
         changeType = 'page_deleted';
+        hasRealChange = true;
       } else {
-        changeType = 'button_modified';
+        // 길이가 같은 경우 deep comparison으로 실제 변경사항 확인
+        const oldJson = JSON.stringify(oldValue);
+        const newJson = JSON.stringify(newValue);
+        
+        if (oldJson !== newJson) {
+          changeType = 'page_content_modified';
+          hasRealChange = true;
+          
+          // 더 자세한 변경 유형 감지
+          for (let i = 0; i < newValue.length; i++) {
+            const oldPage = oldValue[i] || {};
+            const newPage = newValue[i] || {};
+            
+            if (JSON.stringify(oldPage) !== JSON.stringify(newPage)) {
+              logger.info(`Page ${i} modified:`);
+              logger.info('Old page buttons:', oldPage.buttons?.length || 0);
+              logger.info('New page buttons:', newPage.buttons?.length || 0);
+              
+              if (oldPage.buttons?.length !== newPage.buttons?.length) {
+                changeType = 'button_added_or_removed';
+              } else {
+                changeType = 'button_modified';
+              }
+              break;
+            }
+          }
+        }
       }
+    }
+    
+    logger.info('Change type:', changeType);
+    logger.info('Has real change:', hasRealChange);
+    
+    // 실제 변경사항이 없으면 동기화 건너뛰기
+    if (!hasRealChange) {
+      logger.info('No real changes detected, skipping sync');
+      return;
     }
 
     logger.info(`Page settings change detected (${changeType})`);
@@ -568,9 +636,12 @@ function setupConfigListeners() {
 
 /**
  * 클라우드 동기화 초기화
+ * @param {Object} authManagerInstance - 인증 관리자 인스턴스
+ * @param {Object} userDataManagerInstance - 사용자 데이터 관리자 인스턴스
+ * @param {Object} configStoreInstance - 설정 저장소 인스턴스 (선택적)
  * @returns {Object} 동기화 관리자 객체
  */
-function initCloudSync(authManagerInstance, userDataManagerInstance) {
+function initCloudSync(authManagerInstance, userDataManagerInstance, configStoreInstance = null) {
   logger.info('Starting cloud synchronization initialization');
 
   // 인증 관리자 참조 설정
@@ -579,15 +650,29 @@ function initCloudSync(authManagerInstance, userDataManagerInstance) {
   // 사용자 데이터 관리자 참조 설정
   setUserDataManager(userDataManagerInstance);
 
-  // 설정 저장소 생성
-  configStore = createConfigStore();
+  // 설정 저장소 설정 (외부에서 전달받은 인스턴스 사용 또는 새로 생성)
+  if (configStoreInstance) {
+    configStore = configStoreInstance;
+    logger.info('Using provided config store instance');
+  } else {
+    configStore = createConfigStore();
+    logger.info('Created new config store instance');
+  }
 
   // 장치 정보 초기화
   state.deviceId = getDeviceIdentifier();
   logger.info(`Device ID: ${state.deviceId}`);
 
+  // 동기화 기본 활성화 (중요: 기본값을 true로 설정)
+  state.enabled = true;
+  logger.info('Cloud sync enabled by default');
+
   // 설정 변경 감지 이벤트 등록
   setupConfigListeners();
+
+  // 주기적 동기화 자동 시작 (중요!)
+  logger.info('Starting periodic sync automatically');
+  startPeriodicSync();
 
   // 인터페이스 객체 생성
   const syncManager = {
