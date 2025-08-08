@@ -1,8 +1,6 @@
 name: Run Tests
 
 on:
-  push:
-    branches: [ main, alpha ]
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
