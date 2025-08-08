@@ -227,7 +227,9 @@ function createSettingsWindow(config) {
   windows.settings.once('ready-to-show', () => {
     // Position the settings window on the same display as the toast window
     positionSettingsWindowOnToastDisplay(windows.settings);
-    windows.settings.show();
+    if (windows.settings && !windows.settings.isDestroyed()) {
+      windows.settings.show();
+    }
   });
 
   // Handle window events
@@ -434,10 +436,12 @@ function showSettingsWindow(config, tabName) {
     }
 
     // Position the settings window on the same display as the toast window
-    positionSettingsWindowOnToastDisplay(windows.settings);
+    positionSettingsWindowOnToastDisplay(settingsWindow);
     // Show and focus it
-    windows.settings.show();
-    windows.settings.focus();
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.show();
+      settingsWindow.focus();
+    }
 
     // Select tab in already open window
     if (tabName) {
