@@ -36,12 +36,7 @@
             <div class="settings-group">
               <label for="global-hotkey">Global Hotkey</label>
               <div class="hotkey-input-container">
-                <input
-                  type="text"
-                  id="global-hotkey"
-                  placeholder="Click to record hotkey"
-                  readonly
-                />
+                <input type="text" id="global-hotkey" placeholder="Click to record hotkey" readonly />
                 <button id="record-hotkey" class="small-button">Record</button>
                 <button id="clear-hotkey" class="small-button">Clear</button>
               </div>
@@ -53,9 +48,7 @@
                 <input type="checkbox" id="launch-at-login" />
                 Launch at login
               </label>
-              <p class="help-text">
-                Start Toast automatically when you log in to your computer.
-              </p>
+              <p class="help-text">Start Toast automatically when you log in to your computer.</p>
             </div>
           </div>
 
@@ -147,9 +140,7 @@
                   <p id="subscription-features">-</p>
                 </div>
                 <div class="subscription-actions">
-                  <button id="manage-subscription" class="primary-button">
-                    Manage Subscription
-                  </button>
+                  <button id="manage-subscription" class="primary-button">Manage Subscription</button>
                   <button id="refresh-subscription" class="secondary-button">Refresh Status</button>
                 </div>
                 <div id="subscription-loading" class="loading-indicator hidden">
@@ -228,21 +219,14 @@
                   <input type="checkbox" id="enable-cloud-sync" />
                   Enable Cloud Sync
                 </label>
-                <p class="help-text">
-                  Synchronize settings and pages across multiple devices. Premium subscription
-                  required.
-                </p>
+                <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
               </div>
 
               <div class="settings-group">
                 <div class="subscription-actions">
                   <button id="manual-sync-upload" class="primary-button">Upload to Server</button>
-                  <button id="manual-sync-download" class="primary-button">
-                    Download from Server
-                  </button>
-                  <button id="manual-sync-resolve" class="secondary-button">
-                    Resolve Conflicts
-                  </button>
+                  <button id="manual-sync-download" class="primary-button">Download from Server</button>
+                  <button id="manual-sync-resolve" class="secondary-button">Resolve Conflicts</button>
                 </div>
                 <div id="sync-loading" class="loading-indicator hidden">
                   <div class="spinner"></div>
@@ -262,12 +246,8 @@
               </div>
 
               <div class="app-info">
-                <p class="app-version">
-                  <strong>Version:</strong> <span id="app-version">v0.0.0</span>
-                </p>
-                <p class="app-description">
-                  A customizable shortcut launcher for macOS and Windows
-                </p>
+                <p class="app-version"><strong>Version:</strong> <span id="app-version">v0.0.0</span></p>
+                <p class="app-description">A customizable shortcut launcher for macOS and Windows</p>
                 <p class="app-authors"><strong>Authors:</strong> nalbam &lt;me@nalbam.com&gt;</p>
                 <p class="app-license"><strong>License:</strong> MIT</p>
               </div>
@@ -291,7 +271,21 @@
                   </div>
                   <div class="alternative-method github-method">
                     <a id="github-release-link" href="https://github.com/opspresso/toast/releases/latest" target="_blank" class="github-button">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                        ></path>
+                      </svg>
                       Download from GitHub Releases
                     </a>
                   </div>
@@ -316,24 +310,25 @@
             info: (...args) => console.log('[INFO]', ...args),
             error: (...args) => console.error('[ERROR]', ...args),
             warn: (...args) => console.warn('[WARN]', ...args),
-            debug: (...args) => console.debug('[DEBUG]', ...args)
+            debug: (...args) => console.debug('[DEBUG]', ...args),
           },
-          getConfig: () => Promise.resolve({
-            globalHotkey: 'Alt+Space',
-            appearance: {
-              theme: 'system',
-              position: 'center',
-              size: 'medium',
-              opacity: 0.95
-            },
-            advanced: {
-              launchAtLogin: false,
-              hideAfterAction: true,
-              hideOnBlur: true,
-              hideOnEscape: true,
-              showInTaskbar: false
-            }
-          }),
+          getConfig: () =>
+            Promise.resolve({
+              globalHotkey: 'Alt+Space',
+              appearance: {
+                theme: 'system',
+                position: 'center',
+                size: 'medium',
+                opacity: 0.95,
+              },
+              advanced: {
+                launchAtLogin: false,
+                hideAfterAction: true,
+                hideOnBlur: true,
+                hideOnEscape: true,
+                showInTaskbar: false,
+              },
+            }),
           setConfig: (key, value) => {
             console.log('Setting config:', key, value);
             return Promise.resolve();
@@ -345,7 +340,7 @@
           fetchSubscription: () => Promise.resolve(null),
           getSyncStatus: () => Promise.resolve({ enabled: false }),
           checkForUpdates: () => Promise.resolve({ hasUpdate: false }),
-          openUrl: (url) => window.open(url, '_blank')
+          openUrl: url => window.open(url, '_blank'),
         };
       }
 
@@ -354,7 +349,7 @@
         window.cloudSyncUI = {
           initializeCloudSyncUI: () => console.log('Cloud sync UI initialized'),
           updateSyncStatusUI: () => console.log('Sync status UI updated'),
-          disableCloudSyncUI: () => console.log('Cloud sync UI disabled')
+          disableCloudSyncUI: () => console.log('Cloud sync UI disabled'),
         };
       }
     </script>

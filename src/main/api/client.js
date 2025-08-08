@@ -119,12 +119,7 @@ const tokenRefreshTracking = {
  * @returns {Promise<any>} API response
  */
 async function authenticatedRequest(apiCall, options = {}) {
-  const {
-    allowUnauthenticated = false,
-    defaultValue = null,
-    isSubscriptionRequest = false,
-    onUnauthorized = null,
-  } = options;
+  const { allowUnauthenticated = false, defaultValue = null, isSubscriptionRequest = false, onUnauthorized = null } = options;
 
   // Default subscription response
   const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
@@ -169,9 +164,7 @@ async function authenticatedRequest(apiCall, options = {}) {
         };
       }
 
-      if (
-        tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh
-      ) {
+      if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
         // Reset token to force re-login
         clearTokens();
 
@@ -208,7 +201,7 @@ async function authenticatedRequest(apiCall, options = {}) {
                   code: 'API_ERROR_WITH_VALID_TOKEN',
                   message: 'API request failed with a valid token. Please try again later.',
                   statusCode: retryError.response?.status,
-                  originalError: retryError.message
+                  originalError: retryError.message,
                 },
               };
             }

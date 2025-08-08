@@ -69,12 +69,12 @@ async function canSync() {
   logger.info('=== canSync() called ===');
   logger.info('state.enabled:', state.enabled);
   logger.info('authManager exists:', !!authManager);
-  
+
   if (!state.enabled) {
     logger.info('Cannot synchronize: sync is disabled');
     return false;
   }
-  
+
   if (!authManager) {
     logger.info('Cannot synchronize: auth manager is missing');
     return false;
@@ -83,13 +83,13 @@ async function canSync() {
   try {
     const hasToken = await authManager.hasValidToken();
     logger.info('hasValidToken result:', hasToken);
-    
+
     const result = await apiSync.isCloudSyncEnabled({
       hasValidToken: authManager.hasValidToken,
       configStore,
     });
     logger.info('isCloudSyncEnabled result:', result);
-    
+
     return result;
   } catch (error) {
     logger.error('Error checking if sync is possible:', error);
@@ -110,9 +110,7 @@ function startPeriodicSync() {
     }
   }, SYNC_INTERVAL_MS);
 
-  logger.info(
-    `Periodic synchronization started (${Math.floor(SYNC_INTERVAL_MS / 60000)} minute interval)`,
-  );
+  logger.info(`Periodic synchronization started (${Math.floor(SYNC_INTERVAL_MS / 60000)} minute interval)`);
 }
 
 /**
@@ -145,9 +143,7 @@ function scheduleSync(changeType) {
     await uploadSettingsWithRetry();
   }, SYNC_DEBOUNCE_MS);
 
-  logger.info(
-    `${changeType} change detected, synchronization scheduled in ${SYNC_DEBOUNCE_MS / 1000} seconds`,
-  );
+  logger.info(`${changeType} change detected, synchronization scheduled in ${SYNC_DEBOUNCE_MS / 1000} seconds`);
 }
 
 /**
@@ -173,18 +169,14 @@ async function uploadSettingsWithRetry() {
       logger.info(`Synchronization failed reason: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
-        logger.info(
-          `Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`,
-        );
+        logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
         // 재시도 예약
         setTimeout(() => {
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
       } else {
-        logger.error(
-          `Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`,
-        );
+        logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
         state.retryCount = 0;
       }
     }
@@ -193,9 +185,7 @@ async function uploadSettingsWithRetry() {
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
-      logger.info(
-        `Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`,
-      );
+      logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
       // 재시도 예약
       setTimeout(() => {
@@ -454,16 +444,18 @@ async function syncSettings(action = 'resolve') {
  * @returns {Object} 병합된 설정
  */
 function mergeSettings(localSettings, serverSettings) {
-  if (!localSettings) return serverSettings;
-  if (!serverSettings) return localSettings;
+  if (!localSettings) {
+    return serverSettings;
+  }
+  if (!serverSettings) {
+    return localSettings;
+  }
 
   // 타임스탬프 기반 충돌 해결
   const localTime = localSettings.lastModifiedAt || 0;
   const serverTime = serverSettings.lastModifiedAt || 0;
 
-  logger.info(
-    `Settings merge: Local(${new Date(localTime).toISOString()}) vs Server(${new Date(serverTime).toISOString()})`,
-  );
+  logger.info(`Settings merge: Local(${new Date(localTime).toISOString()}) vs Server(${new Date(serverTime).toISOString()})`);
 
   // 서버 설정이 더 최신인 경우
   if (serverTime > localTime) {
@@ -509,17 +501,17 @@ function setupConfigListeners() {
     logger.info('Sync state.enabled:', state.enabled);
     logger.info('Old pages length:', Array.isArray(oldValue) ? oldValue.length : 'Not array');
     logger.info('New pages length:', Array.isArray(newValue) ? newValue.length : 'Not array');
-    
+
     // 동기화 가능 여부 확인
     const canSyncResult = await canSync();
     logger.info('canSync() result:', canSyncResult);
-    
+
     // 동기화가 비활성화되었거나 로그인하지 않은 경우 동기화 건너뛰기
     if (!state.enabled) {
       logger.info('Sync disabled - state.enabled is false');
       return;
     }
-    
+
     if (!canSyncResult) {
       logger.info('Cannot sync - canSync() returned false');
       return;
@@ -540,21 +532,21 @@ function setupConfigListeners() {
         // 길이가 같은 경우 deep comparison으로 실제 변경사항 확인
         const oldJson = JSON.stringify(oldValue);
         const newJson = JSON.stringify(newValue);
-        
+
         if (oldJson !== newJson) {
           changeType = 'page_content_modified';
           hasRealChange = true;
-          
+
           // 더 자세한 변경 유형 감지
           for (let i = 0; i < newValue.length; i++) {
             const oldPage = oldValue[i] || {};
             const newPage = newValue[i] || {};
-            
+
             if (JSON.stringify(oldPage) !== JSON.stringify(newPage)) {
               logger.info(`Page ${i} modified:`);
               logger.info('Old page buttons:', oldPage.buttons?.length || 0);
               logger.info('New page buttons:', newPage.buttons?.length || 0);
-              
+
               if (oldPage.buttons?.length !== newPage.buttons?.length) {
                 changeType = 'button_added_or_removed';
               } else {
@@ -566,10 +558,10 @@ function setupConfigListeners() {
         }
       }
     }
-    
+
     logger.info('Change type:', changeType);
     logger.info('Has real change:', hasRealChange);
-    
+
     // 실제 변경사항이 없으면 동기화 건너뛰기
     if (!hasRealChange) {
       logger.info('No real changes detected, skipping sync');
@@ -592,7 +584,7 @@ function setupConfigListeners() {
   });
 
   // 외관 설정 변경 감지
-  configStore.onDidChange('appearance', async (newValue, oldValue) => {
+  configStore.onDidChange('appearance', async () => {
     if (!state.enabled || !(await canSync())) {
       return;
     }
@@ -613,7 +605,7 @@ function setupConfigListeners() {
   });
 
   // 고급 설정 변경 감지
-  configStore.onDidChange('advanced', async (newValue, oldValue) => {
+  configStore.onDidChange('advanced', async () => {
     if (!state.enabled || !(await canSync())) {
       return;
     }
@@ -730,9 +722,7 @@ function initCloudSync(authManagerInstance, userDataManagerInstance, configStore
 
       return result;
     },
-    manualSync: async (action = 'resolve') => {
-      return await syncSettings(action);
-    },
+    manualSync: async (action = 'resolve') => await syncSettings(action),
 
     // 추가 인터페이스
     startPeriodicSync,

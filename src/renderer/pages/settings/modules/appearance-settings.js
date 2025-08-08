@@ -2,13 +2,7 @@
  * Settings - Appearance Settings Management
  */
 
-import {
-  themeSelect,
-  positionSelect,
-  sizeSelect,
-  opacityRange,
-  opacityValue
-} from './dom-elements.js';
+import { themeSelect, positionSelect, sizeSelect, opacityRange, opacityValue } from './dom-elements.js';
 import { config } from './state.js';
 import { applyTheme } from './utils.js';
 

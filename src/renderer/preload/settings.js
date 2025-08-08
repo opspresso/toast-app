@@ -48,9 +48,7 @@ contextBridge.exposeInMainWorld('settings', {
   showMessageBox: options => ipcRenderer.invoke('show-message-box', options),
 
   // App icon extraction
-  extractAppIcon: (applicationPath, forceRefresh = false) => {
-    return ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh);
-  },
+  extractAppIcon: (applicationPath, forceRefresh = false) => ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh),
 
   // App control
   restartApp: () => ipcRenderer.send('restart-app'),
@@ -90,7 +88,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }),
     );
   });
-  
+
   // Add debug functions to window for easy access
   window.debugSync = async () => {
     try {
@@ -102,7 +100,7 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error('Error getting sync status:', error);
     }
   };
-  
+
   window.triggerManualSync = async (action = 'upload') => {
     try {
       console.log(`Triggering manual sync: ${action}`);
@@ -113,7 +111,7 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error('Error triggering manual sync:', error);
     }
   };
-  
+
   window.testIconChange = async () => {
     try {
       console.log('Testing icon change detection...');
@@ -123,11 +121,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const modifiedPages = JSON.parse(JSON.stringify(pages));
         const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
         modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
-        
+
         console.log('Setting modified pages...');
         await window.settings.setConfig('pages', modifiedPages);
         console.log('Icon change test completed. Check logs for sync activity.');
-        
+
         return { success: true, message: 'Icon change triggered' };
       } else {
         console.log('No buttons found to test icon change');

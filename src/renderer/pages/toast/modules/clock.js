@@ -6,15 +6,11 @@
  * Initialize the clock and start updating it
  */
 export function initClock() {
-  console.log('Initializing clock...');
-
   // Immediately try to update clock
   updateClock();
 
   // Update clock every second
-  const clockInterval = setInterval(updateClock, 1000);
-
-  console.log('Clock started with interval:', clockInterval);
+  setInterval(updateClock, 1000);
 }
 
 /**
@@ -40,17 +36,13 @@ export function updateClock() {
     if (toastClock) {
       const timeString = `<span class="ampm">${ampm}</span> ${hours12Str}:${minutes}<span class="seconds">:${seconds}</span>`;
       toastClock.innerHTML = timeString;
-      console.log('Clock updated:', timeString);
     } else {
-      console.warn('Toast clock element not found - DOM may not be ready yet');
-
       // Try again after a short delay if element not found
       setTimeout(() => {
         const retryElement = document.getElementById('toast-clock');
         if (retryElement) {
           const timeString = `<span class="ampm">${ampm}</span> ${hours12Str}:${minutes}<span class="seconds">:${seconds}</span>`;
           retryElement.innerHTML = timeString;
-          console.log('Clock updated on retry:', timeString);
         }
       }, 500);
     }

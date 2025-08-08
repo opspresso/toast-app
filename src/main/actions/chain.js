@@ -35,7 +35,7 @@ async function executeChainedActions(action) {
       results.push({
         index: i,
         action: currentAction,
-        result: result,
+        result,
       });
 
       // If this action failed and stopOnError is true, stop execution
@@ -47,16 +47,14 @@ async function executeChainedActions(action) {
 
     return {
       success: !hasErrors,
-      message: hasErrors
-        ? 'Chain execution stopped due to an error'
-        : 'Chain executed successfully',
-      results: results,
+      message: hasErrors ? 'Chain execution stopped due to an error' : 'Chain executed successfully',
+      results,
     };
   } catch (error) {
     return {
       success: false,
       message: `Error executing chain action: ${error.message || error}`,
-      error: error,
+      error,
       results: [],
     };
   }

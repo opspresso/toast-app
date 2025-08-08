@@ -2,19 +2,8 @@
  * Toast - Keyboard Navigation and Shortcuts
  */
 
-import {
-  buttonEditModal,
-  profileModal,
-  iconSearchModal
-} from './dom-elements.js';
-import {
-  filteredButtons,
-  selectedButtonIndex,
-  isSettingsMode,
-  navigateButtons,
-  executeButton,
-  toggleSettingsMode
-} from './buttons.js';
+import { buttonEditModal, profileModal, iconSearchModal } from './dom-elements.js';
+import { filteredButtons, selectedButtonIndex, isSettingsMode, navigateButtons, executeButton, toggleSettingsMode } from './buttons.js';
 import { changePage, addNewPage, removePage } from './pages.js';
 
 /**
@@ -106,12 +95,9 @@ export function handleKeyDown(event) {
       // Use event.code to get physical key location instead of event.key
       const keyCode = event.code;
       // Extract the relevant part from the code (e.g., 'KeyQ' -> 'Q')
-      const keyValue = keyCode.startsWith('Key') ? keyCode.slice(3) :
-                      keyCode.startsWith('Digit') ? keyCode.slice(5) : keyCode;
+      const keyValue = keyCode.startsWith('Key') ? keyCode.slice(3) : keyCode.startsWith('Digit') ? keyCode.slice(5) : keyCode;
 
-      const buttonIndex = filteredButtons.findIndex(
-        button => button.shortcut && button.shortcut.toUpperCase() === keyValue,
-      );
+      const buttonIndex = filteredButtons.findIndex(button => button.shortcut && button.shortcut.toUpperCase() === keyValue);
 
       if (buttonIndex >= 0) {
         event.preventDefault();
@@ -127,11 +113,7 @@ export function handleKeyDown(event) {
  */
 export async function handlePageSwitching(event) {
   // Keyboard paging does not work when a modal is open
-  if (
-    buttonEditModal.classList.contains('show') ||
-    profileModal.classList.contains('show') ||
-    iconSearchModal.classList.contains('show')
-  ) {
+  if (buttonEditModal.classList.contains('show') || profileModal.classList.contains('show') || iconSearchModal.classList.contains('show')) {
     return;
   }
 
@@ -162,7 +144,7 @@ function hideToastWindow() {
  */
 export function setupKeyboardEventListeners() {
   // Keyboard page switching (1-9 key events)
-  document.addEventListener('keydown', async (event) => {
+  document.addEventListener('keydown', async event => {
     await handlePageSwitching(event);
   });
 

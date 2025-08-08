@@ -213,8 +213,8 @@ export function executeButton(button) {
     // 꽃가루 애니메이션 실행
     showStatus('🎉 Let it go!', 'success');
     window.confetti.start({
-      duration: 5,  // 5초 동안 실행
-      density: 100  // 꽃가루 밀도
+      duration: 5, // 5초 동안 실행
+      density: 100, // 꽃가루 밀도
     });
     return;
   }
@@ -308,7 +308,9 @@ export function getButtonsPerRow() {
  * @param {string} direction - Direction to navigate (up, down, left, right)
  */
 export function navigateButtons(direction) {
-  if (filteredButtons.length === 0) return;
+  if (filteredButtons.length === 0) {
+    return;
+  }
 
   const buttonsPerRow = getButtonsPerRow();
   let newIndex = selectedButtonIndex;
@@ -337,9 +339,7 @@ export function navigateButtons(direction) {
     if (newIndex < 0) {
       newIndex =
         direction === 'up'
-          ? filteredButtons.length -
-          (filteredButtons.length % buttonsPerRow || buttonsPerRow) +
-          (selectedButtonIndex % buttonsPerRow)
+          ? filteredButtons.length - (filteredButtons.length % buttonsPerRow || buttonsPerRow) + (selectedButtonIndex % buttonsPerRow)
           : direction === 'left'
             ? selectedButtonIndex + buttonsPerRow - 1
             : 0;
@@ -386,7 +386,8 @@ function tryLoadExtractedIcon(iconElement, applicationPath, fallbackIcon) {
   }
 
   // Try to get existing extracted icon
-  window.toast.extractAppIcon(applicationPath, false)
+  window.toast
+    .extractAppIcon(applicationPath, false)
     .then(result => {
       if (result.success && result.iconUrl) {
         // Clear text content and create image element
@@ -416,7 +417,9 @@ function tryLoadExtractedIcon(iconElement, applicationPath, fallbackIcon) {
  * @returns {string|null} - App name or null
  */
 function extractAppNameFromPath(applicationPath) {
-  if (!applicationPath) return null;
+  if (!applicationPath) {
+    return null;
+  }
 
   try {
     if (applicationPath.endsWith('.app')) {

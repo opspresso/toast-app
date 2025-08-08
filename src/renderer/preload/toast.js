@@ -105,9 +105,7 @@ contextBridge.exposeInMainWorld('toast', {
   showOpenDialog: options => ipcRenderer.invoke('show-open-dialog', options),
 
   // App icon extraction
-  extractAppIcon: (applicationPath, forceRefresh = false) => {
-    return ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh);
-  },
+  extractAppIcon: (applicationPath, forceRefresh = false) => ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh),
 
   // Listen for events
   onConfigUpdated: callback => {

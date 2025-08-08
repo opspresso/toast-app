@@ -22,13 +22,7 @@ loadEnv();
 const { createConfigStore } = require('./main/config');
 const { registerGlobalShortcuts, unregisterGlobalShortcuts } = require('./main/shortcuts');
 const { createTray, destroyTray } = require('./main/tray');
-const {
-  createToastWindow,
-  createSettingsWindow,
-  showSettingsWindow,
-  closeAllWindows,
-  windows,
-} = require('./main/windows');
+const { createToastWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
 const { setupIpcHandlers } = require('./main/ipc');
 const authManager = require('./main/auth-manager');
 const auth = require('./main/auth');
@@ -160,16 +154,11 @@ function initialize() {
           authManager
             .exchangeCodeForTokenAndUpdateSubscription(code)
             .then(result => {
-              logger.info(
-                'Authentication code exchange result:',
-                result.success ? 'Success' : 'Failed',
-              );
+              logger.info('Authentication code exchange result:', result.success ? 'Success' : 'Failed');
             })
             .catch(err => {
               logger.error('Authentication code exchange error:', err);
-              authManager.notifyLoginError(
-                err.message || 'An error occurred during authentication processing',
-              );
+              authManager.notifyLoginError(err.message || 'An error occurred during authentication processing');
             });
         } else if (action === 'reload_auth' && token && userId) {
           // connect 페이지에서 온 딥링크 처리
@@ -227,7 +216,7 @@ function setupAutoUpdater() {
       logger.info(`Download progress: ${progressObj.percent.toFixed(2)}%`);
     });
 
-    autoUpdater.on('update-downloaded', info => {
+    autoUpdater.on('update-downloaded', () => {
       logger.info('Update downloaded. Will install on restart.');
     });
   }
@@ -250,7 +239,7 @@ app.whenReady().then(() => {
 });
 
 // Handle second instance
-app.on('second-instance', (event, commandLine, workingDirectory) => {
+app.on('second-instance', (_, commandLine) => {
   // Focus the toast window if it exists
   if (windows.toast) {
     if (windows.toast.isMinimized()) {

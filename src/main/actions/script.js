@@ -54,7 +54,7 @@ async function executeScript(action) {
     return {
       success: false,
       message: `Error executing script: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -69,20 +69,20 @@ async function executeJavaScript(script, params = {}) {
   try {
     // Create a sandbox with limited context
     const sandbox = {
-      console: console,
-      require: require,
+      console,
+      require,
       process: {
         platform: process.platform,
         arch: process.arch,
         env: process.env,
       },
-      params: params,
+      params,
       result: null,
-      setTimeout: setTimeout,
-      clearTimeout: clearTimeout,
-      setInterval: setInterval,
-      clearInterval: clearInterval,
-      Buffer: Buffer,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      Buffer,
       __dirname: app.getAppPath(),
       __filename: path.join(app.getAppPath(), 'script.js'),
     };
@@ -115,7 +115,7 @@ async function executeJavaScript(script, params = {}) {
     return {
       success: false,
       message: `Error executing JavaScript: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -155,8 +155,8 @@ async function executeAppleScript(script) {
           reject({
             success: false,
             message: error.message,
-            error: error,
-            stderr: stderr,
+            error,
+            stderr,
           });
           return;
         }
@@ -164,8 +164,8 @@ async function executeAppleScript(script) {
         resolve({
           success: true,
           message: 'AppleScript executed successfully',
-          stdout: stdout,
-          stderr: stderr,
+          stdout,
+          stderr,
         });
       });
     });
@@ -173,7 +173,7 @@ async function executeAppleScript(script) {
     return {
       success: false,
       message: `Error executing AppleScript: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -213,8 +213,8 @@ async function executePowerShell(script) {
           reject({
             success: false,
             message: error.message,
-            error: error,
-            stderr: stderr,
+            error,
+            stderr,
           });
           return;
         }
@@ -222,8 +222,8 @@ async function executePowerShell(script) {
         resolve({
           success: true,
           message: 'PowerShell script executed successfully',
-          stdout: stdout,
-          stderr: stderr,
+          stdout,
+          stderr,
         });
       });
     });
@@ -231,7 +231,7 @@ async function executePowerShell(script) {
     return {
       success: false,
       message: `Error executing PowerShell script: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }
@@ -274,8 +274,8 @@ async function executeBash(script) {
           reject({
             success: false,
             message: error.message,
-            error: error,
-            stderr: stderr,
+            error,
+            stderr,
           });
           return;
         }
@@ -283,8 +283,8 @@ async function executeBash(script) {
         resolve({
           success: true,
           message: 'Bash script executed successfully',
-          stdout: stdout,
-          stderr: stderr,
+          stdout,
+          stderr,
         });
       });
     });
@@ -292,7 +292,7 @@ async function executeBash(script) {
     return {
       success: false,
       message: `Error executing Bash script: ${error.message}`,
-      error: error,
+      error,
     };
   }
 }

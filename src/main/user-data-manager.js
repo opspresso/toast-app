@@ -140,8 +140,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       logger.info('프로필 정보 처리 중:', {
         name: profileDataInput.name || '이름 없음',
         email: profileDataInput.email || '이메일 없음',
-        hasSubscription:
-          profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
+        hasSubscription: profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
         plan: profileDataInput.subscription?.plan || 'free',
       });
 
@@ -157,10 +156,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       const profileData = readFromFile(PROFILE_FILE_PATH);
       if (profileData) {
         // 로컬 파일에 인증 상태가 없는 경우 추가
-        if (
-          profileData.is_authenticated === undefined ||
-          profileData.isAuthenticated === undefined
-        ) {
+        if (profileData.is_authenticated === undefined || profileData.isAuthenticated === undefined) {
           profileData.is_authenticated = true;
           profileData.isAuthenticated = true;
           writeToFile(PROFILE_FILE_PATH, profileData);
@@ -171,12 +167,9 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
         // 구독 정보 로그
         if (profileData.subscription) {
           const plan = profileData.subscription.plan || 'free';
-          const isSubscribed =
-            profileData.subscription.active || profileData.subscription.is_subscribed || false;
+          const isSubscribed = profileData.subscription.active || profileData.subscription.is_subscribed || false;
           const pageGroups = profileData.subscription.features?.page_groups || 1;
-          logger.info(
-            `로드된 구독 정보: 플랜=${plan}, 구독 상태=${isSubscribed ? '활성' : '비활성'}, 페이지=${pageGroups}`,
-          );
+          logger.info(`로드된 구독 정보: 플랜=${plan}, 구독 상태=${isSubscribed ? '활성' : '비활성'}, 페이지=${pageGroups}`);
         }
 
         return profileData;
@@ -211,8 +204,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
       logger.info('API에서 가져온, 프로필 정보:', {
         name: profileData.name || '이름 없음',
         email: profileData.email || '이메일 없음',
-        hasSubscription:
-          profileData.subscription?.active || profileData.subscription?.is_subscribed,
+        hasSubscription: profileData.subscription?.active || profileData.subscription?.is_subscribed,
         plan: profileData.subscription?.plan || 'free',
       });
 
@@ -243,9 +235,7 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
  */
 async function getUserSettings(forceRefresh = false) {
   try {
-    logger.info(
-      `사용자 설정 정보 가져오기 (강제 새로고침: ${forceRefresh ? '예' : '아니오'})`,
-    );
+    logger.info(`사용자 설정 정보 가져오기 (강제 새로고침: ${forceRefresh ? '예' : '아니오'})`);
 
     // 인증 상태 확인
     if (!authManagerRef) {
@@ -264,10 +254,7 @@ async function getUserSettings(forceRefresh = false) {
       const settingsData = readFromFile(SETTINGS_FILE_PATH);
       if (settingsData) {
         // 로컬 파일에 인증 상태가 없는 경우 추가
-        if (
-          settingsData.is_authenticated === undefined ||
-          settingsData.isAuthenticated === undefined
-        ) {
+        if (settingsData.is_authenticated === undefined || settingsData.isAuthenticated === undefined) {
           settingsData.is_authenticated = true;
           settingsData.isAuthenticated = true;
           writeToFile(SETTINGS_FILE_PATH, settingsData);
@@ -465,9 +452,7 @@ function startProfileRefresh() {
   // 실행 중인 타이머가 있으면 중지
   stopProfileRefresh();
 
-  logger.info(
-    `주기적 프로필 새로고침 시작 (${Math.floor(REFRESH_INTERVAL_MS / 60000)}분 간격)`,
-  );
+  logger.info(`주기적 프로필 새로고침 시작 (${Math.floor(REFRESH_INTERVAL_MS / 60000)}분 간격)`);
 
   // 타이머 시작 전 즉시 한 번 실행
   getUserProfile(true).then(profile => {
@@ -507,9 +492,7 @@ function startSettingsRefresh() {
   // 실행 중인 타이머가 있으면 중지
   stopSettingsRefresh();
 
-  logger.info(
-    `주기적 설정 새로고침 시작 (${Math.floor(REFRESH_INTERVAL_MS / 60000)}분 간격)`,
-  );
+  logger.info(`주기적 설정 새로고침 시작 (${Math.floor(REFRESH_INTERVAL_MS / 60000)}분 간격)`);
 
   // 타이머 시작 전 즉시 한 번 실행
   getUserSettings(true).then(settings => {

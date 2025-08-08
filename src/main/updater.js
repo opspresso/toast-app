@@ -206,7 +206,8 @@ function setupAutoUpdaterEvents() {
 
   // 업데이트 다운로드 진행 상황
   autoUpdater.on('download-progress', progressObj => {
-    const logMessage = `Download progress: ${Math.round(progressObj.percent)}% ` +
+    const logMessage =
+      `Download progress: ${Math.round(progressObj.percent)}% ` +
       `(${formatBytes(progressObj.transferred)}/${formatBytes(progressObj.total)}) ` +
       `@ ${formatBytes(progressObj.bytesPerSecond)}/s`;
 
@@ -287,24 +288,27 @@ function setupAutoUpdaterEvents() {
  */
 function promptUserToInstall(version) {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: '업데이트 준비 완료',
-      message: `Toast 앱 버전 ${version}이(가) 다운로드되었습니다.`,
-      detail: '앱을 재시작하여 업데이트를 설치하시겠습니까?',
-      buttons: ['지금 재시작', '나중에'],
-      defaultId: 0,
-      cancelId: 1,
-    }).then(result => {
-      if (result.response === 0) {
-        logger.info('User confirmed update installation');
-        installUpdate();
-      } else {
-        logger.info('User postponed update installation');
-      }
-    }).catch(err => {
-      logger.error('Error showing update dialog:', err.toString());
-    });
+    dialog
+      .showMessageBox(mainWindow, {
+        type: 'info',
+        title: '업데이트 준비 완료',
+        message: `Toast 앱 버전 ${version}이(가) 다운로드되었습니다.`,
+        detail: '앱을 재시작하여 업데이트를 설치하시겠습니까?',
+        buttons: ['지금 재시작', '나중에'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then(result => {
+        if (result.response === 0) {
+          logger.info('User confirmed update installation');
+          installUpdate();
+        } else {
+          logger.info('User postponed update installation');
+        }
+      })
+      .catch(err => {
+        logger.error('Error showing update dialog:', err.toString());
+      });
   }
 }
 
@@ -341,9 +345,7 @@ async function checkForUpdates(silent = false) {
       const currentVersion = app.getVersion();
       const latestVersion = result.updateInfo.version;
 
-      logger.info(
-        `Update check result: Current version ${currentVersion}, Latest version ${latestVersion}`,
-      );
+      logger.info(`Update check result: Current version ${currentVersion}, Latest version ${latestVersion}`);
 
       // 버전 비교 로직 강화
       const hasUpdate = compareVersions(latestVersion, currentVersion) > 0;
@@ -361,7 +363,7 @@ async function checkForUpdates(silent = false) {
           current: currentVersion,
           latest: latestVersion,
         },
-        hasUpdate: hasUpdate,
+        hasUpdate,
         files: result.updateInfo.files,
       };
     } else {
@@ -451,7 +453,6 @@ async function downloadUpdate() {
       if (compareVersions(updateVersion, currentVersion) <= 0 && process.env.NODE_ENV !== 'development') {
         logger.warn(`Warning: Update version (${updateVersion}) is not newer than current version (${currentVersion})`);
       }
-
     } catch (checkError) {
       logger.error('Error verifying update before download:', checkError.toString());
       throw new Error(`Update verification failed: ${checkError.message}`);
@@ -602,7 +603,9 @@ function sendStatusToWindows(channel, data) {
  * @returns {string} 변환된 문자열 (예: 1.5 MB)
  */
 function formatBytes(bytes, decimals = 2) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
 
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
@@ -627,8 +630,12 @@ function compareVersions(v1, v2) {
     const v1Part = v1Parts[i] || 0;
     const v2Part = v2Parts[i] || 0;
 
-    if (v1Part > v2Part) return 1;
-    if (v1Part < v2Part) return -1;
+    if (v1Part > v2Part) {
+      return 1;
+    }
+    if (v1Part < v2Part) {
+      return -1;
+    }
   }
 
   return 0;

@@ -113,8 +113,7 @@ const schema = {
       pageGroups: {
         type: 'number',
         default: 1,
-        description:
-          'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
+        description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
       },
     },
     default: {
@@ -169,10 +168,7 @@ function createConfigStore() {
     return new Store({ schema });
   } catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
-    logger.error(
-      'Error creating config store with schema, falling back to schema-less store:',
-      error,
-    );
+    logger.error('Error creating config store with schema, falling back to schema-less store:', error);
     return new Store({
       schema: null,
       clearInvalidConfig: false,
@@ -329,8 +325,7 @@ function sanitizeSubscription(subscription) {
 
   // pageGroups 필드는 숫자여야 함
   if (result.pageGroups !== undefined) {
-    result.pageGroups =
-      Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
+    result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
   } else {
     result.pageGroups = schema.subscription.properties.pageGroups.default;
   }
