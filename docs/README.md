@@ -7,15 +7,15 @@
 모든 문서는 최신 상태로 유지되고 버전 관리되어야 합니다. 각 문서는 명확한 목적을 가져야 합니다.
 새로운 문서를 추가할 때는 docs/ 디렉토리 하위에 배치하세요.
 
-## 프로젝트 루트 문서
+## 프로젝트 문서
 
 | 문서 | 설명 |
 |------|------|
 | [`README.md`](../README.md) | 프로젝트 개요, 설치 및 기본 사용법 |
-| [`ARCHITECTURE.md`](../ARCHITECTURE.md) | 시스템 아키텍처 및 구성 요소 개요 |
-| [`DATABASE.md`](../DATABASE.md) | 데이터 모델 및 엔티티 관계 |
-| [`PAGES.md`](../PAGES.md) | UI 레이아웃 및 네비게이션 구조 |
-| [`SCENARIOS.md`](../SCENARIOS.md) | 사용자 시나리오 및 워크플로우 |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | 시스템 아키텍처 및 구성 요소 개요 |
+| [`DATABASE.md`](./DATABASE.md) | 데이터 모델 및 엔티티 관계 |
+| [`PAGES.md`](./PAGES.md) | UI 레이아웃 및 네비게이션 구조 |
+| [`SCENARIOS.md`](./SCENARIOS.md) | 사용자 시나리오 및 워크플로우 |
 
 ## docs/ 디렉토리 문서 인덱스
 
@@ -67,7 +67,7 @@ Toast App을 처음 사용하는 경우:
 1. 프로젝트 루트의 [`README.md`](../README.md)를 먼저 읽어보세요
 2. 개발자라면 [`DEVELOPMENT.md`](./DEVELOPMENT.md)를 확인하세요
 3. 최종 사용자라면 [`USER_GUIDE.md`](./USER_GUIDE.md)를 참조하세요
-4. 시스템 아키텍처를 이해하려면 [`ARCHITECTURE.md`](../ARCHITECTURE.md)를 읽어보세요
+4. 시스템 아키텍처를 이해하려면 [`ARCHITECTURE.md`](./ARCHITECTURE.md)를 읽어보세요
 
 ## 기여하기
 
