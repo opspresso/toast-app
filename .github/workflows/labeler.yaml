@@ -1,7 +1,8 @@
 name: Label Pull Requests
 
 on:
-- pull_request
+  pull_request:
+    types: [opened]
 
 permissions:
   pull-requests: write
