@@ -135,6 +135,12 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           logger.info('Cloud_sync feature enabled due to active subscription status');
         }
 
+        // In development mode, enable cloud_sync for Basic plan users for testing
+        if (!hasSyncFeature && process.env.NODE_ENV === 'development' && result.subscription?.plan === 'Basic') {
+          hasSyncFeature = true;
+          logger.info('Cloud_sync feature enabled for Basic plan in development mode');
+        }
+
         // Force add cloud_sync feature to subscription info (for debugging)
         if (result.subscription && typeof result.subscription === 'object') {
           // Copy existing subscription info
@@ -290,14 +296,24 @@ async function logout() {
       // Get current configuration
       const config = createConfigStore();
 
-      // Reset subscription information but preserve pages
+      // Reset subscription information and clear all settings
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
         expiresAt: '',
-        // pageGroups field removed to preserve pages configuration
+        pageGroups: 1, // Reset to anonymous user default
       });
-      logger.info('Subscription information reset complete (pages preserved)');
+      
+      // Reset pages to default empty state
+      config.set('pages', []);
+      
+      // Reset appearance to default
+      config.set('appearance', {});
+      
+      // Reset advanced settings to default
+      config.set('advanced', {});
+      
+      logger.info('All user configuration reset to defaults on logout');
 
       // Send app authentication state change notification
       notifyAuthStateChange({
@@ -479,6 +495,20 @@ function notifySettingsSynced(configData = null) {
       appearance: config.get('appearance'),
       advanced: config.get('advanced'),
       subscription: config.get('subscription'),
+    };
+  }
+
+  // IPC 전송을 위해 안전하게 클론 가능한 객체로 변환
+  try {
+    configData = JSON.parse(JSON.stringify(configData));
+  } catch (error) {
+    logger.error('Failed to serialize config data for IPC:', error);
+    // 기본값으로 fallback
+    configData = {
+      pages: [],
+      appearance: {},
+      advanced: {},
+      subscription: {},
     };
   }
 

@@ -17,7 +17,7 @@ const logger = createLogger('CloudSync');
 
 // Synchronization related constants
 const SYNC_INTERVAL_MS = 15 * 60 * 1000; // Auto-sync every 15 minutes
-const SYNC_DEBOUNCE_MS = 2000; // Sync 2 seconds after the last change
+const SYNC_DEBOUNCE_MS = 5000; // Sync 5 seconds after the last change (increased from 2s)
 const MAX_RETRY_COUNT = 3; // Maximum number of retry attempts
 const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
 
@@ -30,6 +30,8 @@ const state = {
   pendingSync: false, // Whether there's a pending sync
   retryCount: 0, // Current retry count
   deviceId: null, // Device identifier
+  lastChangeHash: null, // Hash of last processed change to prevent duplicates
+  lastScheduleTime: 0, // Last time a sync was scheduled to prevent rapid scheduling
   timers: {
     sync: null, // Periodic sync timer
     debounce: null, // Debounce timer
@@ -110,7 +112,37 @@ function stopPeriodicSync() {
  * @param {string} changeType - 변경 유형 (예: '페이지 추가됨', '버튼 수정됨' 등)
  */
 function scheduleSync(changeType) {
+  // 현재 설정의 해시를 생성하여 중복 변경 방지 (_sync 메타데이터 제외)
+  const currentData = {
+    appearance: configStore.get('appearance'),
+    pages: configStore.get('pages'),
+    advanced: configStore.get('advanced')
+    // _sync 필드는 의도적으로 제외 (메타데이터 변경으로 인한 false positive 방지)
+  };
+  const currentHash = JSON.stringify(currentData);
+  
+  // 동일한 변경사항인지 확인
+  if (state.lastChangeHash === currentHash && state.lastChangeType === changeType) {
+    logger.info(`Duplicate ${changeType} change detected, ignoring sync request`);
+    return;
+  }
+  
+  // 현재 동기화가 진행 중인 경우 완전 무시 (대기하지 않음)
+  if (state.isSyncing) {
+    logger.info(`${changeType} change detected but sync in progress, ignoring request`);
+    return;
+  }
+
+  // 너무 빠른 연속 변경 방지 (최소 1초 간격)
+  const now = Date.now();
+  if (state.lastScheduleTime && (now - state.lastScheduleTime) < 1000) {
+    logger.info(`${changeType} change detected too quickly, ignoring request`);
+    return;
+  }
+
   state.lastChangeType = changeType;
+  state.lastChangeHash = currentHash;
+  state.lastScheduleTime = now;
 
   // 이전에 예약된 동기화 취소
   if (state.timers.debounce) {
@@ -144,6 +176,7 @@ async function uploadSettingsWithRetry() {
       logger.info(`Cloud synchronization successful for '${state.lastChangeType}' change`);
       state.retryCount = 0;
       state.pendingSync = false;
+      state.lastChangeHash = null; // 성공 시 해시 초기화
     } else {
       state.retryCount++;
 
@@ -159,6 +192,7 @@ async function uploadSettingsWithRetry() {
       } else {
         logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
         state.retryCount = 0;
+        state.pendingSync = false;
       }
     }
   } catch (error) {
@@ -175,9 +209,21 @@ async function uploadSettingsWithRetry() {
     } else {
       logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload canceled`);
       state.retryCount = 0;
+      state.pendingSync = false;
     }
   } finally {
     state.isSyncing = false;
+    
+    // 대기 중인 동기화가 있다면 처리
+    if (state.pendingSync) {
+      logger.info('Processing pending sync request');
+      state.pendingSync = false;
+      setTimeout(() => {
+        if (state.lastChangeType) {
+          scheduleSync(state.lastChangeType);
+        }
+      }, 1000); // 1초 후 재시도
+    }
   }
 }
 
@@ -624,14 +670,11 @@ function setupConfigListeners() {
 
     logger.info(`${changeType} settings change confirmed, marking as modified`);
 
-    // ConfigStore의 메타데이터 업데이트
-    markAsModified(configStore);
-
-    // 상태 업데이트
-    state.lastChangeType = changeType;
-
-    // 동기화 예약
+    // 동기화 예약 (markAsModified 전에 실행하여 해시 비교가 제대로 작동하도록 함)
     scheduleSync(changeType);
+
+    // ConfigStore의 메타데이터 업데이트 (이것이 추가 이벤트를 트리거할 수 있음)
+    markAsModified(configStore);
   }
 
   // 페이지 설정 변경 감지
@@ -761,6 +804,10 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
       return result;
     },
     manualSync: async (action = 'resolve') => await syncSettings(action),
+    updateCloudSyncSettings: (enabled) => {
+      logger.info(`updateCloudSyncSettings called with enabled: ${enabled}`);
+      setEnabled(enabled);
+    },
 
     // 추가 인터페이스
     startPeriodicSync,

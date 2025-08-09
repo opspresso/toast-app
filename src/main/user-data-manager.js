@@ -651,13 +651,19 @@ function cleanupOnLogout() {
     stopSettingsRefresh();
     logger.info('주기적 새로고침 타이머 중지됨');
 
-    // 3. 프로필 파일 삭제 (설정은 보존)
+    // 3. 프로필 파일과 설정 파일 모두 삭제
     if (profileExists) {
-      // 테스트 호환성을 위해 직접 unlinkSync 사용
       fs.unlinkSync(PROFILE_FILE_PATH);
       logger.info('프로필 파일 삭제 성공');
     } else {
       logger.info('프로필 파일이 존재하지 않음 - 삭제할 필요 없음');
+    }
+    
+    if (settingsExists) {
+      fs.unlinkSync(SETTINGS_FILE_PATH);
+      logger.info('설정 파일 삭제 성공');
+    } else {
+      logger.info('설정 파일이 존재하지 않음 - 삭제할 필요 없음');
     }
 
     // 4. 최종 결과 확인

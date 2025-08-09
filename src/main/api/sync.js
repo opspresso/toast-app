@@ -65,6 +65,11 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       hasSyncFeature = true;
       logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 구독 활성화 및 기능 확인됨');
     }
+    // 개발 모드에서 cloud_sync 기능이 활성화된 경우 허용
+    else if (process.env.NODE_ENV === 'development' && hasCloudSyncFeature && subscription.plan === 'Basic') {
+      hasSyncFeature = true;
+      logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 개발 모드에서 Basic 플랜 허용됨');
+    }
 
     // 결과 반환
     logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`, {
