@@ -166,7 +166,7 @@ describe('Windows Management', () => {
         show: false,
         alwaysOnTop: true,
         alwaysOnTopLevel: 'screen-saver',
-        type: 'panel',
+        type: process.platform === 'darwin' ? 'normal' : 'panel',
         thickFrame: false,
         fullscreen: false,
         fullscreenable: false,
@@ -267,9 +267,8 @@ describe('Windows Management', () => {
 
       createToastWindow(mockConfig);
 
-      expect(mockWindow.webContents.openDevTools).toHaveBeenCalledWith({
-        mode: 'detach',
-      });
+      // Dev tools are opened asynchronously after dom-ready event
+      expect(mockWindow.webContents.once).toHaveBeenCalledWith('dom-ready', expect.any(Function));
     });
 
     test('should not open dev tools in production mode', () => {
@@ -302,7 +301,7 @@ describe('Windows Management', () => {
         show: false,
         alwaysOnTop: true,
         alwaysOnTopLevel: 'screen-saver',
-        type: 'panel',
+        type: process.platform === 'darwin' ? 'normal' : 'panel',
         thickFrame: false,
         fullscreen: false,
         fullscreenable: false,
@@ -338,9 +337,8 @@ describe('Windows Management', () => {
 
       createSettingsWindow(mockConfig);
 
-      expect(mockWindow.webContents.openDevTools).toHaveBeenCalledWith({
-        mode: 'detach',
-      });
+      // Dev tools are opened asynchronously after dom-ready event
+      expect(mockWindow.webContents.once).toHaveBeenCalledWith('dom-ready', expect.any(Function));
     });
 
     test('should set up window event handlers', () => {
