@@ -186,12 +186,15 @@ describe('Main Config Module (P0)', () => {
     test('should create config store with schema', () => {
       const store = config.createConfigStore();
       
-      // Just verify the function returns a store-like object
+      // Verify the function returns a store-like object
       expect(store).toBeDefined();
-      expect(store).toBe(mockStore); // Should return our mock store
+      expect(store).toBe(mockStore);
       
-      // Skip Store constructor call verification for now due to mocking issues
-      // The important thing is that createConfigStore() returns a working store
+      // Verify Store constructor was called with the correct schema
+      const Store = require('electron-store');
+      expect(Store).toHaveBeenCalledWith(expect.objectContaining({
+        schema: config.schema
+      }));
     });
 
     test('should create multiple store instances', () => {
@@ -206,14 +209,43 @@ describe('Main Config Module (P0)', () => {
     });
 
     test('should handle store creation errors', () => {
-      Store.mockImplementation(() => {
-        throw new Error('Store creation failed');
+      // Clear the Store mock and re-mock it for this specific test
+      jest.clearAllMocks();
+      const Store = require('electron-store');
+      
+      let callCount = 0;
+      Store.mockImplementation((options) => {
+        callCount++;
+        // First call is migration store (without schema)
+        // Second call is the real store (with schema) - make this one fail
+        if (callCount === 2 && options && options.schema) {
+          throw new Error('Store creation failed');
+        }
+        // All other calls return mockStore
+        return mockStore;
       });
 
-      // The function should handle errors gracefully and return a store (fallback)
+      // The function should handle errors gracefully and create a schema-less store
       const store = config.createConfigStore();
       expect(store).toBeDefined();
-      expect(store).toBe(mockStore); // Should still return the mock store
+      expect(store).toBe(mockStore);
+      
+      // Verify the call sequence:
+      // 1. Migration store (no schema)
+      // 2. Real store with schema (fails) 
+      // 3. Fallback store (no schema)
+      expect(Store).toHaveBeenCalledTimes(3);
+      expect(Store).toHaveBeenNthCalledWith(1, expect.objectContaining({ 
+        schema: null,
+        clearInvalidConfig: false
+      }));
+      expect(Store).toHaveBeenNthCalledWith(2, expect.objectContaining({ 
+        schema: config.schema 
+      }));
+      expect(Store).toHaveBeenNthCalledWith(3, expect.objectContaining({ 
+        schema: null,
+        clearInvalidConfig: false
+      }));
     });
   });
 

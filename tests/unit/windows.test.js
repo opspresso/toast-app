@@ -48,6 +48,9 @@ const mockScreen = {
     workArea: { x: 0, y: 0, width: 1920, height: 1080 },
   })),
   getCursorScreenPoint: jest.fn(() => ({ x: 960, y: 540 })),
+  getAllDisplays: jest.fn(() => [
+    { id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1080 } }
+  ]),
 };
 
 jest.mock('electron', () => ({

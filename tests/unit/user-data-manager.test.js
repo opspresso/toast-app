@@ -98,40 +98,19 @@ describe('User Data Manager (P1)', () => {
 
   describe('Module Initialization', () => {
     test('should initialize with windows reference', () => {
-      userDataManager.initialize(mockWindows);
-      
-      // Should initialize successfully and be able to access functionality
-      expect(typeof userDataManager.getUserProfile).toBe('function');
-      expect(typeof userDataManager.getUserSettings).toBe('function');
+      // Should initialize successfully without throwing
+      expect(() => {
+        userDataManager.initialize(mockWindows);
+      }).not.toThrow();
     });
 
     test('should handle null windows parameter', () => {
-      userDataManager.initialize(null);
-      
-      // Should handle null windows gracefully and maintain functionality
-      expect(typeof userDataManager.getUserProfile).toBe('function');
-      expect(typeof userDataManager.getUserSettings).toBe('function');
+      // Should handle null windows gracefully without throwing
+      expect(() => {
+        userDataManager.initialize(null);
+      }).not.toThrow();
     });
 
-    test('should export all required functions', () => {
-      const requiredFunctions = [
-        'initialize',
-        'getUserProfile',
-        'getUserSettings', 
-        'updateSettings',
-        'updateSyncMetadata',
-        'syncAfterLogin',
-        'cleanupOnLogout',
-        'startProfileRefresh',
-        'stopProfileRefresh',
-        'startSettingsRefresh',
-        'stopSettingsRefresh',
-      ];
-
-      requiredFunctions.forEach(funcName => {
-        expect(typeof userDataManager[funcName]).toBe('function');
-      });
-    });
   });
 
   describe('Authentication-Based Operations', () => {
@@ -158,26 +137,49 @@ describe('User Data Manager (P1)', () => {
       // Test the case where auth manager is not initialized
       const profile = await userDataManager.getUserProfile();
 
-      // Should return DEFAULT_ANONYMOUS or handle gracefully
-      expect(profile).toBeDefined();
+      // Should return DEFAULT_ANONYMOUS when no auth manager is initialized
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free'
+        }
+      });
     });
 
     test('should handle getUserSettings without auth manager initialization', async () => {
       // Test the case where auth manager is not initialized  
       const settings = await userDataManager.getUserSettings();
 
-      // Should return null or handle gracefully
-      expect(settings).toBeDefined();
+      // Should return {isAuthenticated: false} when no auth manager is initialized
+      expect(settings).toEqual({
+        isAuthenticated: false
+      });
     });
 
     test('should handle force refresh parameter', async () => {
       // Test with forceRefresh = true
       const profile = await userDataManager.getUserProfile(true);
-      expect(profile).toBeDefined();
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free'
+        }
+      });
 
       // Test with forceRefresh = false (default)
       const profileCached = await userDataManager.getUserProfile(false);
-      expect(profileCached).toBeDefined();
+      expect(profileCached).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free'
+        }
+      });
     });
 
     test('should handle profile data input parameter', async () => {
@@ -189,7 +191,16 @@ describe('User Data Manager (P1)', () => {
 
       // Test with profile data input to avoid duplicate API calls
       const profile = await userDataManager.getUserProfile(false, mockProfileInput);
-      expect(profile).toBeDefined();
+      
+      // Should return DEFAULT_ANONYMOUS without auth manager, even with profile input
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free'
+        }
+      });
     });
   });
 
@@ -326,8 +337,9 @@ describe('User Data Manager (P1)', () => {
       
       // Should start settings refresh successfully
       // Verify by checking that getUserSettings returns expected result
+      // When no valid token, should return {isAuthenticated: false}
       const settings = await userDataManager.getUserSettings();
-      expect(settings).toEqual({});
+      expect(settings).toEqual({isAuthenticated: false});
       
       userDataManager.stopSettingsRefresh();
     });
@@ -337,8 +349,9 @@ describe('User Data Manager (P1)', () => {
       userDataManager.stopSettingsRefresh();
       
       // Should stop settings refresh cleanly - verify functionality still works
+      // When no valid token, should return {isAuthenticated: false}
       const settings = await userDataManager.getUserSettings();
-      expect(settings).toEqual({});
+      expect(settings).toEqual({isAuthenticated: false});
       
       // Should be able to restart after stopping
       userDataManager.startSettingsRefresh();
@@ -365,7 +378,7 @@ describe('User Data Manager (P1)', () => {
         name: 'Anonymous User',
         subscription: { active: false, plan: 'free' },
       });
-      expect(settings).toEqual({});
+      expect(settings).toEqual({isAuthenticated: false});
     });
   });
 
@@ -502,9 +515,19 @@ describe('User Data Manager (P1)', () => {
       const profile = await userDataManager.getUserProfile();
       const settings = await userDataManager.getUserSettings();
 
-      // Should handle gracefully, may return null or default values
-      expect(profile).toBeDefined();
-      expect(settings).toBeDefined();
+      // Should return DEFAULT_ANONYMOUS when JSON parsing fails for profile
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free'
+        }
+      });
+      // Should return {isAuthenticated: false} when JSON parsing fails for settings
+      expect(settings).toEqual({
+        isAuthenticated: false
+      });
     });
   });
 
@@ -554,7 +577,7 @@ describe('User Data Manager (P1)', () => {
     });
 
     test('should handle refresh timer management', async () => {
-      userDataManager.initialize(mockWindows);
+      userDataManager.initialize(null, mockAuthManager);
 
       // Start refresh timers
       userDataManager.startProfileRefresh();
@@ -572,29 +595,30 @@ describe('User Data Manager (P1)', () => {
         name: 'Anonymous User',
         subscription: { active: false, plan: 'free' },
       });
-      expect(settings).toEqual({});
+      expect(settings).toEqual({isAuthenticated: false});
     });
   });
 
   describe('Edge Cases', () => {
     test('should handle async operations gracefully', async () => {
-      const profile = await userDataManager.getUserProfile();
-      const settings = await userDataManager.getUserSettings();
-
-      // These functions should return something (not throw)
-      expect(profile !== undefined).toBe(true);
-      expect(settings !== undefined).toBe(true);
+      // Should complete without throwing errors
+      await expect(userDataManager.getUserProfile()).resolves.toBeDefined();
+      await expect(userDataManager.getUserSettings()).resolves.toBeDefined();
     });
 
     test('should handle null and undefined input data', () => {
-      userDataManager.updateSettings(null);
-      userDataManager.updateSettings(undefined);
-      userDataManager.updateSyncMetadata(null);
+      // Should not throw when called with null/undefined
+      expect(() => {
+        userDataManager.updateSettings(null);
+      }).not.toThrow();
       
-      // Should handle invalid input gracefully
-      // Verify functionality still works after invalid input
-      const profile = userDataManager.getUserProfile();
-      expect(profile).toBeInstanceOf(Promise);
+      expect(() => {
+        userDataManager.updateSettings(undefined);
+      }).not.toThrow();
+      
+      expect(() => {
+        userDataManager.updateSyncMetadata(null);
+      }).not.toThrow();
     });
 
     test('should handle very large data objects', () => {

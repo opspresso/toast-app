@@ -152,47 +152,57 @@ describe('Auto Updater', () => {
       expect(result).toEqual({
         checkForUpdates: expect.any(Function),
         downloadUpdate: expect.any(Function),
-        installUpdate: expect.any(Function)
+        installUpdate: expect.any(Function),
+        getLastCheckTime: expect.any(Function),
+        isUpdateCheckInProgress: expect.any(Function),
+        isUpdateDownloadInProgress: expect.any(Function)
       });
     });
   });
 
   describe('Update Checking', () => {
-    test('should have checkForUpdates function', () => {
-      expect(typeof updater.checkForUpdates).toBe('function');
-    });
-
     test('should call checkForUpdates without throwing', async () => {
-      await expect(updater.checkForUpdates()).resolves.toBeDefined();
+      const result = await updater.checkForUpdates();
+      
+      // Should return an object with success property
+      expect(result).toEqual(expect.objectContaining({
+        success: expect.any(Boolean)
+      }));
     });
   });
 
   describe('Update Events', () => {
-    test('should register event handlers', () => {
+    test('should register required event handlers', () => {
       updater.initAutoUpdater(mockWindows);
       
-      expect(mockAutoUpdater.on).toHaveBeenCalled();
+      // Should register handlers for key events
+      const expectedEvents = ['update-available', 'update-downloaded', 'error'];
+      expectedEvents.forEach(eventName => {
+        expect(mockAutoUpdater.on).toHaveBeenCalledWith(eventName, expect.any(Function));
+      });
     });
   });
 
   describe('Update Download', () => {
-    test('should have downloadUpdate function', () => {
-      expect(typeof updater.downloadUpdate).toBe('function');
-    });
-
     test('should call downloadUpdate without throwing', async () => {
-      await expect(updater.downloadUpdate()).resolves.toBeDefined();
+      const result = await updater.downloadUpdate();
+      
+      // Should return an object with success property
+      expect(result).toEqual(expect.objectContaining({
+        success: expect.any(Boolean)
+      }));
     });
   });
 
   describe('Update Installation', () => {
-    test('should have installUpdate function', () => {
-      expect(typeof updater.installUpdate).toBe('function');
-    });
-
     test('should call installUpdate without throwing', async () => {
       mockDialog.showMessageBox.mockResolvedValue({ response: 0 });
-      await expect(updater.installUpdate()).resolves.toBeDefined();
+      const result = await updater.installUpdate();
+      
+      // Should return an object with success property
+      expect(result).toEqual(expect.objectContaining({
+        success: expect.any(Boolean)
+      }));
     });
   });
 

@@ -38,11 +38,11 @@ const mockStore = {
 
 const mockClientModule = {
   ENDPOINTS: {
-    LOGIN: '/oauth/login',
-    TOKEN: '/oauth/token',
-    REFRESH: '/oauth/refresh',
-    USER_PROFILE: '/api/user/profile',
-    SUBSCRIPTION: '/api/user/subscription'
+    OAUTH_AUTHORIZE: 'https://toastapp.io/api/oauth/authorize',
+    OAUTH_TOKEN: 'https://toastapp.io/api/oauth/token',
+    OAUTH_REVOKE: 'https://toastapp.io/api/oauth/revoke',
+    USER_PROFILE: 'https://toastapp.io/api/users/profile',
+    SETTINGS: 'https://toastapp.io/api/users/settings'
   },
   createApiClient: jest.fn(() => mockClient),
   getAuthHeaders: jest.fn(() => ({ Authorization: 'Bearer mock-token' })),
@@ -62,6 +62,10 @@ describe('API Auth Module (P0)', () => {
     jest.clearAllMocks();
     jest.resetModules();
     
+    // Re-setup Store mock after clearing
+    const Store = require('electron-store');
+    Store.mockImplementation(() => mockStore);
+    
     // Setup default mock responses
     mockStore.get.mockReturnValue(null);
     mockClient.get.mockResolvedValue({ data: {} });
@@ -70,19 +74,6 @@ describe('API Auth Module (P0)', () => {
     
     // Get fresh module instance
     authApi = require('../../../src/main/api/auth');
-  });
-
-  describe('Module Exports', () => {
-    test('should export required functions', () => {
-      expect(typeof authApi.initiateLogin).toBe('function');
-      expect(typeof authApi.exchangeCodeForToken).toBe('function');
-      expect(typeof authApi.refreshAccessToken).toBe('function');
-      expect(typeof authApi.handleAuthRedirect).toBe('function');
-      expect(typeof authApi.fetchUserProfile).toBe('function');
-      expect(typeof authApi.fetchSubscription).toBe('function');
-      expect(typeof authApi.logout).toBe('function');
-      expect(typeof authApi.isLoginProcessActive).toBe('function');
-    });
   });
 
   describe('Login Process Management', () => {
@@ -175,10 +166,16 @@ describe('API Auth Module (P0)', () => {
         access_token: 'new-access-token',
         refresh_token: 'new-refresh-token'
       });
-      expect(mockClient.post).toHaveBeenCalledWith('/oauth/token', expect.objectContaining({
-        grant_type: 'refresh_token',
-        refresh_token: 'refresh-token-123'
+      expect(mockClient.post).toHaveBeenCalledWith('https://toastapp.io/api/oauth/token', expect.any(URLSearchParams), expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       }));
+      
+      // Verify the URLSearchParams contains the expected data
+      const calledWith = mockClient.post.mock.calls[0][1];
+      expect(calledWith.get('grant_type')).toBe('refresh_token');
+      expect(calledWith.get('refresh_token')).toBe('refresh-token-123');
     });
 
     test('should handle refresh errors with proper error response', async () => {
@@ -210,11 +207,21 @@ describe('API Auth Module (P0)', () => {
         })
       };
       
+      // Clear any previous mock calls
+      mockStore.get.mockClear();
+      
+      // Set up specific mock calls for state validation
+      const currentTime = Date.now();
       mockStore.get
-        .mockReturnValueOnce('mock-uuid-12345')
-        .mockReturnValueOnce(Date.now() - 10000);
+        .mockReturnValueOnce('mock-uuid-12345')     // First call for 'oauth-state'  
+        .mockReturnValueOnce(currentTime - 10000); // Second call for 'state-created-at'
 
       const result = await authApi.handleAuthRedirect(params);
+      
+      // Verify the mock was called correctly
+      expect(mockStore.get).toHaveBeenCalledTimes(2);
+      expect(mockStore.get).toHaveBeenNthCalledWith(1, 'oauth-state');
+      expect(mockStore.get).toHaveBeenNthCalledWith(2, 'state-created-at');
       
       expect(result).toEqual({
         success: true,

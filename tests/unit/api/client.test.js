@@ -320,19 +320,7 @@ describe('API Client', () => {
     });
   });
 
-  describe('Module Exports', () => {
-    test('should export required functions and constants', () => {
-      expect(typeof client.setAccessToken).toBe('function');
-      expect(typeof client.getAccessToken).toBe('function');
-      expect(typeof client.setRefreshToken).toBe('function');
-      expect(typeof client.getRefreshToken).toBe('function');
-      expect(typeof client.clearTokens).toBe('function');
-      expect(typeof client.getAuthHeaders).toBe('function');
-      expect(typeof client.createApiClient).toBe('function');
-      expect(typeof client.authenticatedRequest).toBe('function');
-      expect(client.ENDPOINTS).toBeDefined();
-    });
-
+  describe('Module Configuration', () => {
     test('should have all endpoint constants', () => {
       const requiredEndpoints = [
         'OAUTH_AUTHORIZE',
@@ -376,16 +364,15 @@ describe('API Client', () => {
       
       const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
 
-      // Simulate multiple failed refresh attempts with delay to avoid rate limit
-      for (let i = 0; i < 5; i++) {
-        await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+      // Force refresh attempts to trigger loop or rate limit detection
+      for (let i = 0; i < 3; i++) {
         await client.authenticatedRequest(mockApiCall, { onUnauthorized });
       }
 
-      // This should trigger loop detection 
+      // This should trigger either loop detection or rate limit
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
 
-      // Might be rate limit or loop detection depending on timing
+      // Should trigger either loop detection or rate limit protection
       expect(['AUTH_REFRESH_LOOP', 'AUTH_REFRESH_RATE_LIMIT']).toContain(result.error.code);
     });
 
