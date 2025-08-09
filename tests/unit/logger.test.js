@@ -90,7 +90,10 @@ describe('Logger', () => {
       // Clear cache and re-require
       delete require.cache[require.resolve('../../src/main/logger')];
       
-      expect(() => require('../../src/main/logger')).not.toThrow();
+      const logger = require('../../src/main/logger');
+      
+      // Should load logger module successfully
+      expect(typeof logger.createLogger).toBe('function');
       
       process.env = originalEnv;
     });

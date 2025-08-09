@@ -715,9 +715,7 @@ describe('IPC Handlers', () => {
     test('should handle setup with null windows gracefully', () => {
       const nullWindows = { toast: null, settings: null };
       
-      expect(() => {
-        setupIpcHandlers(nullWindows);
-      }).not.toThrow();
+      setupIpcHandlers(nullWindows);
 
       // Should still register handlers even with null windows
       expect(mockIpcMain.handle).toHaveBeenCalled();

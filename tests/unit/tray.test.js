@@ -131,7 +131,11 @@ describe('System Tray', () => {
     });
 
     test('should handle null windows parameter', () => {
-      expect(() => tray.createTray(null)).not.toThrow();
+      const result = tray.createTray(null);
+      
+      // Should handle null windows gracefully - may still create tray
+      expect(result).toBeDefined();
+      expect(Tray).toHaveBeenCalled();
     });
   });
 
@@ -209,7 +213,10 @@ describe('System Tray', () => {
       const showItem = menuTemplate.find(item => item.label === 'Open Toast'); // Fixed: actual code uses 'Open Toast'
 
       if (showItem && showItem.click) {
-        expect(() => showItem.click()).not.toThrow();
+        showItem.click();
+        
+        // Should execute menu item click handler
+        expect(mockWindows.toast.show).toHaveBeenCalled();
       }
     });
   });
@@ -267,7 +274,12 @@ describe('System Tray', () => {
     test('should handle null windows', () => {
       const trayInstance = tray.createTray(mockWindows);
 
-      expect(() => tray.updateTrayMenu(trayInstance, null)).not.toThrow();
+      tray.updateTrayMenu(trayInstance, null);
+      
+      // Should handle null windows gracefully in menu update
+      expect(trayInstance).toBeDefined();
+      // Menu should still be set on tray
+      expect(mockTray.setContextMenu).toHaveBeenCalled();
     });
   });
 
@@ -281,7 +293,10 @@ describe('System Tray', () => {
     });
 
     test('should handle destroy when no tray exists', () => {
-      expect(() => tray.destroyTray()).not.toThrow();
+      tray.destroyTray();
+      
+      // Should handle destroy gracefully when no tray exists
+      expect(mockTray.destroy).not.toHaveBeenCalled();
     });
 
     test('should allow creating new tray after destruction', () => {
@@ -362,7 +377,11 @@ describe('System Tray', () => {
     test('should handle destroyed windows gracefully', () => {
       mockWindows.toast.isDestroyed.mockReturnValue(true);
 
-      expect(() => tray.createTray(mockWindows)).not.toThrow();
+      const result = tray.createTray(mockWindows);
+      
+      // Should still create tray even with destroyed windows
+      expect(result).toBeDefined();
+      expect(Tray).toHaveBeenCalled();
     });
   });
 
@@ -373,11 +392,19 @@ describe('System Tray', () => {
         settings: {},
       };
 
-      expect(() => tray.createTray(incompleteWindows)).not.toThrow();
+      const result = tray.createTray(incompleteWindows);
+      
+      // Should handle incomplete window objects gracefully
+      expect(result).toBeDefined();
+      expect(Tray).toHaveBeenCalled();
     });
 
     test('should handle undefined windows object', () => {
-      expect(() => tray.createTray(undefined)).not.toThrow();
+      const result = tray.createTray(undefined);
+      
+      // Should handle undefined windows gracefully - may still create tray
+      expect(result).toBeDefined();
+      expect(Tray).toHaveBeenCalled();
     });
 
     test('should handle multiple tray creation attempts', () => {

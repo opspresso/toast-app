@@ -545,9 +545,13 @@ describe('Windows Management', () => {
     });
 
     test('should handle null settings window gracefully', () => {
-      expect(() => {
-        positionSettingsWindowOnToastDisplay(null);
-      }).not.toThrow();
+      positionSettingsWindowOnToastDisplay(null);
+      
+      // Should handle null window gracefully without attempting positioning
+      // Verify that screen methods are not called with null window
+      expect(mockScreen.getAllDisplays).not.toHaveBeenCalled();
+      // Verify function exists and can be called safely
+      expect(typeof positionSettingsWindowOnToastDisplay).toBe('function');
     });
   });
 

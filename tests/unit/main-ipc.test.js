@@ -511,10 +511,12 @@ describe('Main IPC Handlers (P0)', () => {
     test('should handle window destruction gracefully', () => {
       windows.toast.isDestroyed.mockReturnValue(true);
 
-      expect(() => {
-        const mockEvent = { sender: { getOwnerBrowserWindow: jest.fn(() => null) } };
-        ipcHandlers['set-always-on-top'](mockEvent, true);
-      }).not.toThrow();
+      const mockEvent = { sender: { getOwnerBrowserWindow: jest.fn(() => null) } };
+      const result = ipcHandlers['set-always-on-top'](mockEvent, true);
+      
+      // Should return false when window is destroyed
+      expect(result).toBe(false);
+      expect(windows.toast.isDestroyed).toHaveBeenCalled();
     });
 
     test('should handle missing handlers gracefully', () => {

@@ -487,11 +487,11 @@ describe('API Sync Module (P1)', () => {
   });
 
   describe('Device Information', () => {
-    test('should generate device info string', () => {
+    test('should generate device info string', async () => {
       // This tests the internal getDeviceInfo function through module behavior
       // Since it's not exported, we test it indirectly through upload/download operations
       
-      expect(true).toBe(true); // Placeholder test
+      // Test device info generation through actual API call verification\n      mockApiClient.post.mockResolvedValue({ data: { success: true } });\n      \n      const result = await sync.uploadSettings({\n        hasValidToken: jest.fn().mockResolvedValue(true),\n        configStore: { get: jest.fn() },\n        directData: { pages: [] }\n      });\n      \n      expect(result.success).toBe(true);\n      expect(mockApiClient.post).toHaveBeenCalled();
     });
   });
 

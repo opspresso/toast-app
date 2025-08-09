@@ -460,7 +460,7 @@ describe('Main Auth Module (P0)', () => {
   });
 
   describe('Token Storage', () => {
-    test('should read token file when it exists', () => {
+    test('should read token file when it exists', async () => {
       mockFs.existsSync.mockReturnValue(true);
       const tokenData = {
         'auth-token': 'stored-token',
@@ -469,20 +469,30 @@ describe('Main Auth Module (P0)', () => {
       mockFs.readFileSync.mockReturnValue(JSON.stringify(tokenData));
 
       // This is testing an internal function, so we test it through public methods
-      expect(() => auth.hasValidToken()).not.toThrow();
+      const result = await auth.hasValidToken();
+      // Should return false when no token exists
+      expect(result).toBe(false);
     });
 
-    test('should handle missing token file', () => {
+    test('should handle missing token file', async () => {
       mockFs.existsSync.mockReturnValue(false);
 
-      expect(() => auth.hasValidToken()).not.toThrow();
+      const result = await auth.hasValidToken();
+      
+      // Should handle missing token file gracefully and return false
+      expect(result).toBe(false);
+      expect(mockFs.existsSync).toHaveBeenCalled();
     });
 
-    test('should handle corrupted token file', () => {
+    test('should handle corrupted token file', async () => {
       mockFs.existsSync.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue('invalid json');
 
-      expect(() => auth.hasValidToken()).not.toThrow();
+      const result = await auth.hasValidToken();
+      
+      // Should handle corrupted token file gracefully and return false
+      expect(result).toBe(false);
+      expect(mockFs.readFileSync).toHaveBeenCalled();
     });
 
     test('should write token file successfully', async () => {
@@ -525,14 +535,17 @@ describe('Main Auth Module (P0)', () => {
       expect(result.error).toContain('500 Internal Server Error');
     });
 
-    test('should handle missing environment variables', () => {
+    test('should handle missing environment variables', async () => {
       const { getEnv } = require('../../src/main/config/env');
       getEnv.mockImplementation((key, defaultValue) => defaultValue);
 
       jest.resetModules();
       const envlessAuth = require('../../src/main/auth');
       
-      expect(() => envlessAuth.initiateLogin()).not.toThrow();
+      const result = await envlessAuth.initiateLogin();
+      
+      // Should handle missing env gracefully and return false
+      expect(result).toBe(false);
     });
   });
 

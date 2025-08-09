@@ -110,22 +110,27 @@ describe('Auto Updater', () => {
   });
 
   describe('Initialization', () => {
-    test('should initialize auto updater', () => {
+    test('should initialize auto updater with proper interface', () => {
       const result = updater.initAutoUpdater(mockWindows);
 
-      expect(result).toBeDefined();
-      expect(result.checkForUpdates).toBeDefined();
-      expect(result.downloadUpdate).toBeDefined();
-      expect(result.installUpdate).toBeDefined();
+      expect(result).toEqual({
+        checkForUpdates: expect.any(Function),
+        downloadUpdate: expect.any(Function),
+        installUpdate: expect.any(Function),
+        getLastCheckTime: expect.any(Function),
+        isUpdateCheckInProgress: expect.any(Function),
+        isUpdateDownloadInProgress: expect.any(Function)
+      });
     });
 
-    test('should configure updater settings', () => {
+    test('should configure updater settings properly', () => {
       const result = updater.initAutoUpdater(mockWindows);
 
-      // Check that the result has the expected methods
-      expect(result.checkForUpdates).toBeDefined();
-      expect(result.downloadUpdate).toBeDefined();
-      expect(result.installUpdate).toBeDefined();
+      // Verify proper function signatures
+      expect(typeof result.checkForUpdates).toBe('function');
+      expect(typeof result.downloadUpdate).toBe('function');
+      expect(typeof result.installUpdate).toBe('function');
+      expect(result.checkForUpdates.length).toBe(0); // No parameters expected
     });
 
     test('should register event handlers', () => {
@@ -141,10 +146,14 @@ describe('Auto Updater', () => {
       expect(() => updater.initAutoUpdater(null)).toThrow();
     });
 
-    test('should handle missing windows properties', () => {
+    test('should handle missing windows properties gracefully', () => {
       // Function expects windows.toast and windows.settings properties
       const result = updater.initAutoUpdater({});
-      expect(result).toBeDefined();
+      expect(result).toEqual({
+        checkForUpdates: expect.any(Function),
+        downloadUpdate: expect.any(Function),
+        installUpdate: expect.any(Function)
+      });
     });
   });
 
@@ -189,13 +198,22 @@ describe('Auto Updater', () => {
 
   describe('Development Mode', () => {
     test('should handle development mode initialization', () => {
-      expect(() => updater.initAutoUpdater(mockWindows)).not.toThrow();
+      const result = updater.initAutoUpdater(mockWindows);
+      
+      // Should initialize successfully in development mode
+      expect(result).toHaveProperty('checkForUpdates');
+      expect(result).toHaveProperty('downloadUpdate');
+      expect(result).toHaveProperty('installUpdate');
     });
   });
 
   describe('Configuration', () => {
     test('should handle configuration initialization', () => {
-      expect(() => updater.initAutoUpdater(mockWindows)).not.toThrow();
+      const result = updater.initAutoUpdater(mockWindows);
+      
+      // Should initialize configuration successfully
+      expect(result).toHaveProperty('checkForUpdates');
+      expect(mockAutoUpdater.on).toHaveBeenCalled();
     });
   });
 
@@ -207,7 +225,12 @@ describe('Auto Updater', () => {
 
     test('should handle re-initialization', () => {
       updater.initAutoUpdater(mockWindows);
-      expect(() => updater.initAutoUpdater(mockWindows)).not.toThrow();
+      const result = updater.initAutoUpdater(mockWindows);
+      
+      // Should handle re-initialization gracefully
+      expect(result).toHaveProperty('checkForUpdates');
+      expect(result).toHaveProperty('downloadUpdate');
+      expect(result).toHaveProperty('installUpdate');
     });
   });
 });

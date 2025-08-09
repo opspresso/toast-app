@@ -267,7 +267,10 @@ describe('Main Config Module (P0)', () => {
         appearance: null,
       };
 
-      expect(() => config.importConfig(store, invalidConfig)).not.toThrow();
+      config.importConfig(store, invalidConfig);
+      
+      // Should handle invalid config gracefully by sanitizing data
+      expect(store.set).toHaveBeenCalled();
     });
 
     test('should sanitize subscription data', () => {

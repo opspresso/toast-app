@@ -85,24 +85,36 @@ describe('Global Shortcuts', () => {
 
   describe('Global Shortcut Registration', () => {
     test('should register global shortcuts', () => {
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
 
       // Should attempt to register shortcuts
       expect(mockConfig.get).toHaveBeenCalledWith('globalHotkey');
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockGlobalShortcut.unregisterAll).toHaveBeenCalled(); // Clears existing first
     });
 
     test('should handle registration with null config', () => {
-      expect(() => shortcuts.registerGlobalShortcuts(null, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(null, mockWindows);
+      
+      // Should gracefully handle null config without attempting registration
+      expect(mockGlobalShortcut.register).not.toHaveBeenCalled();
     });
 
     test('should handle registration with null windows', () => {
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, null)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, null);
+      
+      // Should still try to get config but skip window-dependent operations
+      expect(mockConfig.get).toHaveBeenCalled();
     });
 
     test('should handle registration failure', () => {
       mockGlobalShortcut.register.mockReturnValue(false);
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should attempt registration but handle failure gracefully
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
     });
 
     test('should handle registration exception', () => {
@@ -110,7 +122,11 @@ describe('Global Shortcuts', () => {
         throw new Error('Registration failed');
       });
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should attempt registration and handle exceptions gracefully
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
     });
   });
 
@@ -184,21 +200,39 @@ describe('Global Shortcuts', () => {
     });
 
     test('should position toast window', () => {
-      expect(() => shortcuts.positionToastWindow(mockWindows.toast, mockConfig)).not.toThrow();
+      shortcuts.positionToastWindow(mockWindows.toast, mockConfig);
+      
+      // Should check screen positioning and set window properties
+      expect(mockScreen.getCursorScreenPoint).toHaveBeenCalled();
+      expect(mockScreen.getDisplayNearestPoint).toHaveBeenCalled();
+      expect(mockWindows.toast.setPosition).toHaveBeenCalled();
     });
 
     test('should handle positioning with null windows', () => {
-      expect(() => shortcuts.positionToastWindow(null, mockConfig)).not.toThrow();
+      shortcuts.positionToastWindow(null, mockConfig);
+      
+      // Should handle null window gracefully without attempting positioning
+      expect(mockScreen.getCursorScreenPoint).not.toHaveBeenCalled();
+      expect(mockScreen.getDisplayNearestPoint).not.toHaveBeenCalled();
     });
 
     test('should handle positioning with destroyed toast window', () => {
       mockWindows.toast.isDestroyed.mockReturnValue(true);
 
-      expect(() => shortcuts.positionToastWindow(mockWindows.toast, mockConfig)).not.toThrow();
+      shortcuts.positionToastWindow(mockWindows.toast, mockConfig);
+      
+      // Should handle destroyed windows gracefully
+      // Verify that screen positioning functions are called for positioning logic
+      expect(mockScreen.getCursorScreenPoint).toHaveBeenCalled();
+      expect(mockScreen.getDisplayNearestPoint).toHaveBeenCalled();
     });
 
     test('should handle positioning with missing toast window', () => {
-      expect(() => shortcuts.positionToastWindow(undefined, mockConfig)).not.toThrow();
+      shortcuts.positionToastWindow(undefined, mockConfig);
+      
+      // Should handle undefined window gracefully
+      expect(mockScreen.getCursorScreenPoint).not.toHaveBeenCalled();
+      expect(mockScreen.getDisplayNearestPoint).not.toHaveBeenCalled();
     });
   });
 
@@ -211,7 +245,11 @@ describe('Global Shortcuts', () => {
         })),
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(customConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(customConfig, mockWindows);
+      
+      // Should handle custom hotkeys gracefully
+      // May or may not call register depending on implementation logic
+      expect(customConfig.get).toHaveBeenCalled();
     });
 
     test('should handle empty hotkey configuration', () => {
@@ -222,7 +260,12 @@ describe('Global Shortcuts', () => {
         })),
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(emptyConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(emptyConfig, mockWindows);
+      
+      // Should handle empty strings gracefully
+      expect(emptyConfig.get).toHaveBeenCalled();
+      // Empty strings should not be registered as shortcuts
+      expect(mockGlobalShortcut.register).toHaveBeenCalledTimes(0);
     });
 
     test('should handle missing hotkey configuration', () => {
@@ -230,7 +273,11 @@ describe('Global Shortcuts', () => {
         get: jest.fn(() => ({})),
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(missingConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(missingConfig, mockWindows);
+      
+      // Should handle missing configuration gracefully
+      expect(missingConfig.get).toHaveBeenCalled();
+      expect(mockGlobalShortcut.register).toHaveBeenCalledTimes(0);
     });
 
     test('should handle null hotkey values', () => {
@@ -241,7 +288,11 @@ describe('Global Shortcuts', () => {
         })),
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(nullConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(nullConfig, mockWindows);
+      
+      // Should handle null values gracefully
+      expect(nullConfig.get).toHaveBeenCalled();
+      expect(mockGlobalShortcut.register).toHaveBeenCalledTimes(0);
     });
   });
 
@@ -249,24 +300,33 @@ describe('Global Shortcuts', () => {
     test('should handle toast window show/hide operations', () => {
       // This tests the internal callback functions
       // The actual implementation may vary based on the shortcut handlers
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
 
-      // Verify that window operations don't cause errors
+      // Verify that window operations don't cause errors and are properly set up
       expect(mockWindows.toast.isVisible).toBeDefined();
       expect(mockWindows.toast.show).toBeDefined();
       expect(mockWindows.toast.hide).toBeDefined();
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
     });
 
     test('should handle window state checks', () => {
       mockWindows.toast.isVisible.mockReturnValue(true);
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should register shortcuts regardless of window visibility state
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
     });
 
     test('should handle destroyed windows during operations', () => {
       mockWindows.toast.isDestroyed.mockReturnValue(true);
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should still register shortcuts even with destroyed windows
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
     });
   });
 
@@ -278,7 +338,12 @@ describe('Global Shortcuts', () => {
         }),
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(errorConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(errorConfig, mockWindows);
+      
+      // Should handle config errors gracefully
+      expect(errorConfig.get).toHaveBeenCalled();
+      // No shortcuts should be registered when config fails
+      expect(mockGlobalShortcut.register).not.toHaveBeenCalled();
     });
 
     test('should handle window operation errors', () => {
@@ -286,25 +351,32 @@ describe('Global Shortcuts', () => {
         throw new Error('Window show error');
       });
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should register shortcuts despite window operation errors
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
     });
 
     test('should handle multiple registration attempts', () => {
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
 
-      // Should have been called at least once
-      expect(mockConfig.get).toHaveBeenCalled();
-      expect(mockGlobalShortcut.unregisterAll).toHaveBeenCalled();
+      // Should have been called multiple times
+      expect(mockConfig.get).toHaveBeenCalledTimes(2);
+      expect(mockGlobalShortcut.unregisterAll).toHaveBeenCalledTimes(2);
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
     });
 
     test('should handle registration after unregistration', () => {
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
-      expect(() => shortcuts.unregisterGlobalShortcuts()).not.toThrow();
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      shortcuts.unregisterGlobalShortcuts();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
 
-      // unregisterAll should be called at least once
-      expect(mockGlobalShortcut.unregisterAll).toHaveBeenCalled();
+      // unregisterAll should be called multiple times
+      expect(mockGlobalShortcut.unregisterAll).toHaveBeenCalledTimes(3); // Once per registration + once for explicit unregister
+      expect(mockConfig.get).toHaveBeenCalledTimes(2);
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
     });
   });
 
@@ -313,7 +385,11 @@ describe('Global Shortcuts', () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', { value: 'darwin' });
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should register shortcuts on macOS platform
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
 
       Object.defineProperty(process, 'platform', { value: originalPlatform });
     });
@@ -322,7 +398,11 @@ describe('Global Shortcuts', () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', { value: 'win32' });
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should register shortcuts on Windows platform
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
 
       Object.defineProperty(process, 'platform', { value: originalPlatform });
     });
@@ -331,7 +411,11 @@ describe('Global Shortcuts', () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', { value: 'linux' });
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+      
+      // Should register shortcuts on Linux platform
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
 
       Object.defineProperty(process, 'platform', { value: originalPlatform });
     });
@@ -339,9 +423,14 @@ describe('Global Shortcuts', () => {
 
   describe('Edge Cases', () => {
     test('should handle undefined parameters', () => {
-      expect(() => shortcuts.registerGlobalShortcuts(undefined, undefined)).not.toThrow();
-      expect(() => shortcuts.isShortcutRegistered(undefined)).not.toThrow();
-      expect(() => shortcuts.positionToastWindow(undefined, undefined)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(undefined, undefined);
+      const isRegistered = shortcuts.isShortcutRegistered(undefined);
+      shortcuts.positionToastWindow(undefined, undefined);
+      
+      // Should handle undefined parameters gracefully
+      expect(isRegistered).toBe(false);
+      expect(mockGlobalShortcut.register).not.toHaveBeenCalled();
+      expect(mockScreen.getCursorScreenPoint).not.toHaveBeenCalled();
     });
 
     test('should handle complex window structures', () => {
@@ -361,18 +450,23 @@ describe('Global Shortcuts', () => {
         },
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(mockConfig, complexWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(mockConfig, complexWindows);
+      
+      // Should handle complex window structures
+      expect(mockGlobalShortcut.register).toHaveBeenCalled();
+      expect(mockConfig.get).toHaveBeenCalled();
     });
 
     test('should handle rapid registration/unregistration cycles', () => {
       for (let i = 0; i < 5; i++) {
-        expect(() => shortcuts.registerGlobalShortcuts(mockConfig, mockWindows)).not.toThrow();
-        expect(() => shortcuts.unregisterGlobalShortcuts()).not.toThrow();
+        shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+        shortcuts.unregisterGlobalShortcuts();
       }
 
       // Should have been called multiple times
       expect(mockGlobalShortcut.unregisterAll).toHaveBeenCalled();
-      expect(mockGlobalShortcut.unregisterAll.mock.calls.length).toBeGreaterThan(5);
+      expect(mockGlobalShortcut.unregisterAll.mock.calls.length).toBeGreaterThan(9); // 5 explicit + 5 from re-registration
+      expect(mockConfig.get).toHaveBeenCalledTimes(5);
     });
 
     test('should handle very long shortcut strings', () => {
@@ -383,7 +477,11 @@ describe('Global Shortcuts', () => {
         })),
       };
 
-      expect(() => shortcuts.registerGlobalShortcuts(longConfig, mockWindows)).not.toThrow();
+      shortcuts.registerGlobalShortcuts(longConfig, mockWindows);
+      
+      // Should handle long shortcut strings gracefully
+      expect(longConfig.get).toHaveBeenCalled();
+      // Long shortcuts may be rejected, so register may or may not be called
     });
   });
 });

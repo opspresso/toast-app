@@ -349,6 +349,158 @@ describe('API Client', () => {
     });
   });
 
+  describe('Token Refresh Logic', () => {
+    test('should handle refresh rate limiting', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn().mockRejectedValue({
+        response: { status: 401 }
+      });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      // First call - should trigger refresh
+      await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+      
+      // Second call immediately - should hit rate limit
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.code).toBe('AUTH_REFRESH_RATE_LIMIT');
+      expect(result.error.message).toContain('rate limit exceeded');
+    });
+
+    test('should handle refresh loop detection', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn().mockRejectedValue({
+        response: { status: 401 }
+      });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      // Simulate multiple failed refresh attempts with delay to avoid rate limit
+      for (let i = 0; i < 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+        await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+      }
+
+      // This should trigger loop detection 
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      // Might be rate limit or loop detection depending on timing
+      expect(['AUTH_REFRESH_LOOP', 'AUTH_REFRESH_RATE_LIMIT']).toContain(result.error.code);
+    });
+
+    test('should handle throttled requests with valid tokens', async () => {
+      client.setAccessToken('valid-token');
+      const mockApiCall = jest.fn()
+        .mockRejectedValueOnce({ response: { status: 401 } })
+        .mockResolvedValueOnce({ data: 'success' });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ 
+        success: true, 
+        throttled: true, 
+        tokenValid: true 
+      });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result).toEqual({ data: 'success' });
+      expect(mockApiCall).toHaveBeenCalledTimes(2);
+    });
+
+    test('should handle API error with valid token', async () => {
+      client.setAccessToken('valid-token');
+      const mockApiCall = jest.fn()
+        .mockRejectedValueOnce({ response: { status: 401 } })
+        .mockRejectedValueOnce({ 
+          response: { status: 500 },
+          message: 'Internal server error'
+        });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ 
+        success: true, 
+        throttled: true, 
+        tokenValid: true 
+      });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.code).toBe('API_ERROR_WITH_VALID_TOKEN');
+      expect(result.error.statusCode).toBe(500);
+      expect(result.error.originalError).toContain('Internal server error');
+    });
+
+    test('should handle refresh failure with retry', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn()
+        .mockRejectedValueOnce({ response: { status: 401 } })
+        .mockRejectedValueOnce({ response: { status: 401 } });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.code).toBe('AUTH_REFRESH_FAILED');
+      expect(result.error.requireRelogin).toBe(true);
+    });
+
+    test('should reset request counter after successful API call', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn()
+        .mockRejectedValueOnce({ response: { status: 401 } })
+        .mockResolvedValueOnce({ data: 'success' });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result).toEqual({ data: 'success' });
+      expect(mockApiCall).toHaveBeenCalledTimes(2);
+    });
+
+    test('should handle unsuccessful refresh attempts', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn().mockRejectedValue({
+        response: { status: 401 }
+      });
+      
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: false });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error).toBeDefined();
+      expect(onUnauthorized).toHaveBeenCalled();
+    });
+  });
+
+  describe('Environment Configuration', () => {
+    test('should use default URL when env var not set', () => {
+      getEnv.mockImplementation((key, defaultValue) => defaultValue);
+
+      client.createApiClient();
+
+      expect(mockAxios.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseURL: 'https://toastapp.io/api'
+        })
+      );
+    });
+
+    test('should handle custom timeout from environment', () => {
+      getEnv.mockImplementation((key, defaultValue) => {
+        if (key === 'API_TIMEOUT') return '15000';
+        return defaultValue;
+      });
+
+      client.createApiClient({ timeout: parseInt(getEnv('API_TIMEOUT', '10000')) });
+
+      expect(mockAxios.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeout: 15000
+        })
+      );
+    });
+  });
+
   describe('Edge Cases', () => {
     test('should handle undefined options in createApiClient', () => {
       client.createApiClient(undefined);
@@ -382,6 +534,32 @@ describe('API Client', () => {
       client.setAccessToken(mixedCaseToken);
 
       expect(client.getAccessToken()).toBe(mixedCaseToken);
+    });
+
+    test('should handle null onUnauthorized callback', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn().mockRejectedValue({
+        response: { status: 401 }
+      });
+
+      const result = await client.authenticatedRequest(mockApiCall, { 
+        onUnauthorized: null 
+      });
+
+      expect(result.error).toBeDefined();
+    });
+
+    test('should handle undefined onUnauthorized callback', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn().mockRejectedValue({
+        response: { status: 401 }
+      });
+
+      const result = await client.authenticatedRequest(mockApiCall, { 
+        onUnauthorized: undefined 
+      });
+
+      expect(result.error).toBeDefined();
     });
   });
 });

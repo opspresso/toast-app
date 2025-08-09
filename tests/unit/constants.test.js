@@ -9,13 +9,15 @@ const constants = require('../../src/main/constants');
 describe('Constants', () => {
   describe('APP_DEFAULT_INFO', () => {
     test('should have required app information', () => {
-      expect(constants.APP_DEFAULT_INFO).toBeDefined();
-      expect(constants.APP_DEFAULT_INFO.name).toBe('Toast');
-      expect(constants.APP_DEFAULT_INFO.version).toBe('v0.0.0');
-      expect(constants.APP_DEFAULT_INFO.description).toContain('customizable shortcut launcher');
-      expect(constants.APP_DEFAULT_INFO.homepage).toBe('https://toastapp.io');
-      expect(constants.APP_DEFAULT_INFO.license).toBe('MIT');
-      expect(constants.APP_DEFAULT_INFO.repository).toBe('https://github.com/opspresso/toast-app');
+      expect(constants.APP_DEFAULT_INFO).toEqual({
+        name: 'Toast',
+        version: 'v0.0.0',
+        description: expect.stringContaining('customizable shortcut launcher'),
+        homepage: 'https://toastapp.io',
+        license: 'MIT',
+        repository: 'https://github.com/opspresso/toast-app',
+        author: expect.stringContaining('nalbam')
+      });
     });
 
     test('should have author information', () => {
@@ -29,9 +31,8 @@ describe('Constants', () => {
       // JavaScript objects are mutable by default
       const originalName = constants.APP_DEFAULT_INFO.name;
       
-      expect(() => {
-        constants.APP_DEFAULT_INFO.name = 'Modified';
-      }).not.toThrow();
+      constants.APP_DEFAULT_INFO.name = 'Modified';
+      expect(constants.APP_DEFAULT_INFO.name).toBe('Modified');
       
       // Restore original value for other tests
       constants.APP_DEFAULT_INFO.name = originalName;
@@ -41,10 +42,11 @@ describe('Constants', () => {
 
   describe('PAGE_GROUPS', () => {
     test('should have correct subscription tier page limits', () => {
-      expect(constants.PAGE_GROUPS).toBeDefined();
-      expect(constants.PAGE_GROUPS.ANONYMOUS).toBe(1);
-      expect(constants.PAGE_GROUPS.AUTHENTICATED).toBe(3);
-      expect(constants.PAGE_GROUPS.PREMIUM).toBe(9);
+      expect(constants.PAGE_GROUPS).toEqual({
+        ANONYMOUS: 1,
+        AUTHENTICATED: 3,
+        PREMIUM: 9
+      });
     });
 
     test('should have ascending page limits', () => {
@@ -65,30 +67,34 @@ describe('Constants', () => {
     test('should have correct subscription structure', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
       
-      expect(subscription).toBeDefined();
-      expect(subscription.id).toBe('sub_free_anonymous');
-      expect(subscription.userId).toBe('anonymous');
-      expect(subscription.plan).toBe('free');
-      expect(subscription.status).toBe('active');
-      expect(subscription.active).toBe(false);
-      expect(subscription.is_subscribed).toBe(false);
+      expect(subscription).toEqual(expect.objectContaining({
+        id: 'sub_free_anonymous',
+        userId: 'anonymous',
+        plan: 'free',
+        status: 'active',
+        active: false,
+        is_subscribed: false
+      }));
     });
 
     test('should have correct features configuration', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
       
-      expect(subscription.features).toBeDefined();
-      expect(subscription.features.page_groups).toBe(constants.PAGE_GROUPS.ANONYMOUS);
-      expect(subscription.features_array).toContain('basic_shortcuts');
+      expect(subscription.features).toEqual(expect.objectContaining({
+        page_groups: constants.PAGE_GROUPS.ANONYMOUS
+      }));
+      expect(subscription.features_array).toEqual(expect.arrayContaining(['basic_shortcuts']));
     });
 
     test('should have valid timestamps', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
       
-      expect(subscription.created_at).toBeDefined();
-      expect(subscription.updated_at).toBeDefined();
+      expect(subscription.created_at).toEqual(expect.any(String));
+      expect(subscription.updated_at).toEqual(expect.any(String));
       expect(new Date(subscription.created_at)).toBeInstanceOf(Date);
       expect(new Date(subscription.updated_at)).toBeInstanceOf(Date);
+      expect(new Date(subscription.created_at).getTime()).not.toBeNaN();
+      expect(new Date(subscription.updated_at).getTime()).not.toBeNaN();
     });
 
     test('should have null expiration fields for free tier', () => {

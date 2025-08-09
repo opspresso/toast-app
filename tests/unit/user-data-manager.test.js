@@ -98,11 +98,19 @@ describe('User Data Manager (P1)', () => {
 
   describe('Module Initialization', () => {
     test('should initialize with windows reference', () => {
-      expect(() => userDataManager.initialize(mockWindows)).not.toThrow();
+      userDataManager.initialize(mockWindows);
+      
+      // Should initialize successfully and be able to access functionality
+      expect(typeof userDataManager.getUserProfile).toBe('function');
+      expect(typeof userDataManager.getUserSettings).toBe('function');
     });
 
     test('should handle null windows parameter', () => {
-      expect(() => userDataManager.initialize(null)).not.toThrow();
+      userDataManager.initialize(null);
+      
+      // Should handle null windows gracefully and maintain functionality
+      expect(typeof userDataManager.getUserProfile).toBe('function');
+      expect(typeof userDataManager.getUserSettings).toBe('function');
     });
 
     test('should export all required functions', () => {
@@ -275,25 +283,69 @@ describe('User Data Manager (P1)', () => {
       userDataManager.stopSettingsRefresh();
     });
 
-    test('should start profile refresh', () => {
-      expect(() => userDataManager.startProfileRefresh()).not.toThrow();
-    });
-
-    test('should stop profile refresh', () => {
+    test('should start profile refresh', async () => {
       userDataManager.startProfileRefresh();
-      expect(() => userDataManager.stopProfileRefresh()).not.toThrow();
+      
+      // Should start profile refresh successfully
+      // Verify by checking that getUserProfile returns expected result
+      const profile = await userDataManager.getUserProfile();
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free',
+        },
+      });
+      
+      userDataManager.stopProfileRefresh();
     });
 
-    test('should start settings refresh', () => {
-      expect(() => userDataManager.startSettingsRefresh()).not.toThrow();
+    test('should stop profile refresh', async () => {
+      userDataManager.startProfileRefresh();
+      userDataManager.stopProfileRefresh();
+      
+      // Should stop profile refresh cleanly - verify functionality still works
+      const profile = await userDataManager.getUserProfile();
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: {
+          active: false,
+          plan: 'free',
+        },
+      });
+      
+      // Should be able to restart after stopping
+      userDataManager.startProfileRefresh();
+      userDataManager.stopProfileRefresh();
     });
 
-    test('should stop settings refresh', () => {
+    test('should start settings refresh', async () => {
       userDataManager.startSettingsRefresh();
-      expect(() => userDataManager.stopSettingsRefresh()).not.toThrow();
+      
+      // Should start settings refresh successfully
+      // Verify by checking that getUserSettings returns expected result
+      const settings = await userDataManager.getUserSettings();
+      expect(settings).toEqual({});
+      
+      userDataManager.stopSettingsRefresh();
     });
 
-    test('should handle multiple start/stop cycles', () => {
+    test('should stop settings refresh', async () => {
+      userDataManager.startSettingsRefresh();
+      userDataManager.stopSettingsRefresh();
+      
+      // Should stop settings refresh cleanly - verify functionality still works
+      const settings = await userDataManager.getUserSettings();
+      expect(settings).toEqual({});
+      
+      // Should be able to restart after stopping
+      userDataManager.startSettingsRefresh();
+      userDataManager.stopSettingsRefresh();
+    });
+
+    test('should handle multiple start/stop cycles', async () => {
       // Start and stop multiple times
       userDataManager.startProfileRefresh();
       userDataManager.stopProfileRefresh();
@@ -305,7 +357,15 @@ describe('User Data Manager (P1)', () => {
       userDataManager.startSettingsRefresh();
       userDataManager.stopSettingsRefresh();
 
-      expect(true).toBe(true); // No exceptions thrown
+      // Verify that functionality still works after multiple cycles
+      const profile = await userDataManager.getUserProfile();
+      const settings = await userDataManager.getUserSettings();
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: { active: false, plan: 'free' },
+      });
+      expect(settings).toEqual({});
     });
   });
 
@@ -493,7 +553,7 @@ describe('User Data Manager (P1)', () => {
       expect(result).toBe(true);
     });
 
-    test('should handle refresh timer management', () => {
+    test('should handle refresh timer management', async () => {
       userDataManager.initialize(mockWindows);
 
       // Start refresh timers
@@ -504,8 +564,15 @@ describe('User Data Manager (P1)', () => {
       userDataManager.stopProfileRefresh();
       userDataManager.stopSettingsRefresh();
 
-      // Should not throw any errors
-      expect(true).toBe(true);
+      // Verify that manager still functions correctly after timer management
+      const profile = await userDataManager.getUserProfile();
+      const settings = await userDataManager.getUserSettings();
+      expect(profile).toEqual({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        subscription: { active: false, plan: 'free' },
+      });
+      expect(settings).toEqual({});
     });
   });
 
@@ -520,9 +587,14 @@ describe('User Data Manager (P1)', () => {
     });
 
     test('should handle null and undefined input data', () => {
-      expect(() => userDataManager.updateSettings(null)).not.toThrow();
-      expect(() => userDataManager.updateSettings(undefined)).not.toThrow();
-      expect(() => userDataManager.updateSyncMetadata(null)).not.toThrow();
+      userDataManager.updateSettings(null);
+      userDataManager.updateSettings(undefined);
+      userDataManager.updateSyncMetadata(null);
+      
+      // Should handle invalid input gracefully
+      // Verify functionality still works after invalid input
+      const profile = userDataManager.getUserProfile();
+      expect(profile).toBeInstanceOf(Promise);
     });
 
     test('should handle very large data objects', () => {

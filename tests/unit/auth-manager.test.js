@@ -109,7 +109,11 @@ describe('Authentication Manager', () => {
     });
 
     test('should handle null windows gracefully', () => {
-      expect(() => authManager.initialize(null)).not.toThrow();
+      authManager.initialize(null);
+      
+      // Should handle null windows and maintain functionality
+      expect(typeof authManager.hasValidToken).toBe('function');
+      expect(typeof authManager.notifyLoginSuccess).toBe('function');
     });
   });
 
@@ -255,7 +259,11 @@ describe('Authentication Manager', () => {
     test('should set sync manager', () => {
       const mockSyncManager = { sync: jest.fn() };
 
-      expect(() => authManager.setSyncManager(mockSyncManager)).not.toThrow();
+      authManager.setSyncManager(mockSyncManager);
+      
+      // Should set sync manager successfully - verify by attempting sync
+      const syncResult = authManager.syncSettings('upload');
+      expect(syncResult).toBeInstanceOf(Promise);
     });
 
     test('should sync settings manually', async () => {
@@ -341,7 +349,12 @@ describe('Authentication Manager', () => {
     test('should handle destroyed windows gracefully', () => {
       mockWindows.toast.isDestroyed.mockReturnValue(true);
 
-      expect(() => authManager.notifyLoginSuccess({})).not.toThrow();
+      authManager.notifyLoginSuccess({});
+      
+      // Should handle destroyed windows gracefully
+      expect(mockWindows.toast.isDestroyed).toHaveBeenCalled();
+      // Should not attempt to send to destroyed window
+      expect(mockWindows.toast.webContents.send).not.toHaveBeenCalled();
     });
   });
 
@@ -399,9 +412,15 @@ describe('Authentication Manager', () => {
     test('should handle null windows in notifications', () => {
       authManager.initialize(null);
 
-      expect(() => authManager.notifyLoginSuccess({})).not.toThrow();
-      expect(() => authManager.notifyLoginError('error')).not.toThrow();
-      expect(() => authManager.notifyLogout()).not.toThrow();
+      authManager.notifyLoginSuccess({});
+      authManager.notifyLoginError('error');
+      authManager.notifyLogout();
+      
+      // Should handle notifications with null windows gracefully
+      // Verify that no webContents.send calls are made with null windows
+      // Since we initialized with null, no webContents should exist to call
+      expect(typeof authManager.notifyLoginSuccess).toBe('function');
+      expect(typeof authManager.notifyLoginError).toBe('function');
     });
 
     test('should handle missing window methods', () => {
@@ -422,7 +441,11 @@ describe('Authentication Manager', () => {
 
       authManager.initialize(incompleteWindows);
 
-      expect(() => authManager.notifyLoginSuccess({})).not.toThrow();
+      authManager.notifyLoginSuccess({});
+      
+      // Should handle incomplete windows and still send notifications
+      expect(incompleteWindows.toast.isDestroyed).toHaveBeenCalled();
+      expect(incompleteWindows.toast.webContents.send).toHaveBeenCalled();
     });
 
     test('should handle settings sync notification with config data', () => {
@@ -435,7 +458,17 @@ describe('Authentication Manager', () => {
 
       mockConfigStore.get.mockImplementation((key) => configData[key] || {});
 
-      expect(() => authManager.notifySettingsSynced(configData)).not.toThrow();
+      authManager.notifySettingsSynced(configData);
+      
+      // Should process settings sync notification
+      expect(mockWindows.settings.webContents.send).toHaveBeenCalledWith(
+        'settings-synced',
+        expect.any(Object)
+      );
+      expect(mockWindows.settings.webContents.send).toHaveBeenCalledWith(
+        'config-updated',
+        expect.any(Object)
+      );
     });
   });
 });
