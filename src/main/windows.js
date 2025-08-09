@@ -99,9 +99,9 @@ function createToastWindow(config) {
     // DevTools를 더 조용하게 열기 위해 약간의 지연 추가
     windows.toast.webContents.once('dom-ready', () => {
       setTimeout(() => {
-        windows.toast.webContents.openDevTools({ 
+        windows.toast.webContents.openDevTools({
           mode: 'detach',
-          activate: false // DevTools 창을 활성화하지 않음
+          activate: false, // DevTools 창을 활성화하지 않음
         });
       }, 1000);
     });
@@ -248,9 +248,9 @@ function createSettingsWindow(config) {
     // DevTools를 더 조용하게 열기 위해 약간의 지연 추가
     windows.settings.webContents.once('dom-ready', () => {
       setTimeout(() => {
-        windows.settings.webContents.openDevTools({ 
+        windows.settings.webContents.openDevTools({
           mode: 'detach',
-          activate: false // DevTools 창을 활성화하지 않음
+          activate: false, // DevTools 창을 활성화하지 않음
         });
       }, 1000);
     });

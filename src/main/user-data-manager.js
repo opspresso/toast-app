@@ -658,7 +658,7 @@ function cleanupOnLogout() {
     } else {
       logger.info('프로필 파일이 존재하지 않음 - 삭제할 필요 없음');
     }
-    
+
     if (settingsExists) {
       fs.unlinkSync(SETTINGS_FILE_PATH);
       logger.info('설정 파일 삭제 성공');

@@ -424,7 +424,7 @@ function updateSyncMetadata(config, metadata) {
 function markAsModified(config, deviceId = null) {
   const timestamp = Date.now();
   const device = deviceId || getDeviceId();
-  
+
   // Generate new hash based on current data
   const currentData = {
     pages: config.get('pages'),
@@ -432,7 +432,7 @@ function markAsModified(config, deviceId = null) {
     advanced: config.get('advanced'),
   };
   const dataHash = generateDataHash(currentData);
-  
+
   updateSyncMetadata(config, {
     lastModifiedAt: timestamp,
     lastModifiedDevice: device,
@@ -449,7 +449,7 @@ function markAsModified(config, deviceId = null) {
 function markAsSynced(config, deviceId = null) {
   const timestamp = Date.now();
   const device = deviceId || getDeviceId();
-  
+
   // Generate hash based on current data
   const currentData = {
     pages: config.get('pages'),
@@ -457,7 +457,7 @@ function markAsSynced(config, deviceId = null) {
     advanced: config.get('advanced'),
   };
   const dataHash = generateDataHash(currentData);
-  
+
   updateSyncMetadata(config, {
     lastSyncedAt: timestamp,
     lastSyncedDevice: device,
@@ -481,7 +481,7 @@ function hasUnsyncedChanges(config) {
     advanced: config.get('advanced'),
   };
   const currentHash = generateDataHash(currentData);
-  
+
   return currentHash !== syncMeta.dataHash || syncMeta.lastModifiedAt > syncMeta.lastSyncedAt;
 }
 

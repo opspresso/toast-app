@@ -244,7 +244,7 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             syncMetadata.lastModifiedDevice = settings.lastModifiedDevice;
           }
         } else if (settings.data) {
-        // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
+          // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
           logger.info('중첩된 데이터 구조 발견');
           const data = settings.data;
 
@@ -271,11 +271,11 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
           }
         } else if (Array.isArray(settings)) {
-        // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
+          // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
           logger.info('배열 전용 구조 발견');
           pagesData = settings;
         } else {
-        // 1.4 기타 구조 - 모든 배열 필드 검색
+          // 1.4 기타 구조 - 모든 배열 필드 검색
           logger.info('알 수 없는 구조에서 페이지 배열 검색 중');
           const arrayFields = Object.entries(settings)
             .filter(([_key, value]) => Array.isArray(value))

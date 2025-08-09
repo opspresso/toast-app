@@ -303,16 +303,16 @@ async function logout() {
         expiresAt: '',
         pageGroups: 1, // Reset to anonymous user default
       });
-      
+
       // Reset pages to default empty state
       config.set('pages', []);
-      
+
       // Reset appearance to default
       config.set('appearance', {});
-      
+
       // Reset advanced settings to default
       config.set('advanced', {});
-      
+
       logger.info('All user configuration reset to defaults on logout');
 
       // Send app authentication state change notification
