@@ -48,6 +48,9 @@ const mockScreen = {
     workArea: { x: 0, y: 0, width: 1920, height: 1080 },
   })),
   getCursorScreenPoint: jest.fn(() => ({ x: 960, y: 540 })),
+  getAllDisplays: jest.fn(() => [
+    { id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1080 } }
+  ]),
 };
 
 jest.mock('electron', () => ({
@@ -163,7 +166,7 @@ describe('Windows Management', () => {
         show: false,
         alwaysOnTop: true,
         alwaysOnTopLevel: 'screen-saver',
-        type: 'panel',
+        type: process.platform === 'darwin' ? 'normal' : 'panel',
         thickFrame: false,
         fullscreen: false,
         fullscreenable: false,
@@ -264,9 +267,8 @@ describe('Windows Management', () => {
 
       createToastWindow(mockConfig);
 
-      expect(mockWindow.webContents.openDevTools).toHaveBeenCalledWith({
-        mode: 'detach',
-      });
+      // Dev tools are opened asynchronously after dom-ready event
+      expect(mockWindow.webContents.once).toHaveBeenCalledWith('dom-ready', expect.any(Function));
     });
 
     test('should not open dev tools in production mode', () => {
@@ -299,7 +301,7 @@ describe('Windows Management', () => {
         show: false,
         alwaysOnTop: true,
         alwaysOnTopLevel: 'screen-saver',
-        type: 'panel',
+        type: process.platform === 'darwin' ? 'normal' : 'panel',
         thickFrame: false,
         fullscreen: false,
         fullscreenable: false,
@@ -335,9 +337,8 @@ describe('Windows Management', () => {
 
       createSettingsWindow(mockConfig);
 
-      expect(mockWindow.webContents.openDevTools).toHaveBeenCalledWith({
-        mode: 'detach',
-      });
+      // Dev tools are opened asynchronously after dom-ready event
+      expect(mockWindow.webContents.once).toHaveBeenCalledWith('dom-ready', expect.any(Function));
     });
 
     test('should set up window event handlers', () => {
@@ -545,9 +546,13 @@ describe('Windows Management', () => {
     });
 
     test('should handle null settings window gracefully', () => {
-      expect(() => {
-        positionSettingsWindowOnToastDisplay(null);
-      }).not.toThrow();
+      positionSettingsWindowOnToastDisplay(null);
+      
+      // Should handle null window gracefully without attempting positioning
+      // Verify that screen methods are not called with null window
+      expect(mockScreen.getAllDisplays).not.toHaveBeenCalled();
+      // Verify function exists and can be called safely
+      expect(typeof positionSettingsWindowOnToastDisplay).toBe('function');
     });
   });
 

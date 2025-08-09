@@ -66,7 +66,7 @@ function createToastWindow(config) {
     alwaysOnTop: true,
     // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
     alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
-    type: 'panel', // 'panel' 또는 'utility' 타입은 전체 화면 위에 floating window로 표시됨
+    type: process.platform === 'darwin' ? 'normal' : 'panel', // macOS에서는 normal 타입 사용하여 경고 방지
     // hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
     thickFrame: false, // Windows에서 기본 창 프레임 비활성화
     fullscreen: false,
@@ -96,7 +96,15 @@ function createToastWindow(config) {
 
   // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
-    windows.toast.webContents.openDevTools({ mode: 'detach' });
+    // DevTools를 더 조용하게 열기 위해 약간의 지연 추가
+    windows.toast.webContents.once('dom-ready', () => {
+      setTimeout(() => {
+        windows.toast.webContents.openDevTools({
+          mode: 'detach',
+          activate: false, // DevTools 창을 활성화하지 않음
+        });
+      }, 1000);
+    });
   }
 
   return windows.toast;
@@ -204,7 +212,7 @@ function createSettingsWindow(config) {
     alwaysOnTop: true,
     // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
     alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
-    type: 'panel', // 'panel' 또는 'utility' 타입은 전체 화면 위에 floating window로 표시됨
+    type: process.platform === 'darwin' ? 'normal' : 'panel', // macOS에서는 normal 타입 사용하여 경고 방지
     // hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
     thickFrame: false, // Windows에서 기본 창 프레임 비활성화
     fullscreen: false,
@@ -237,7 +245,15 @@ function createSettingsWindow(config) {
 
   // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
-    windows.settings.webContents.openDevTools({ mode: 'detach' });
+    // DevTools를 더 조용하게 열기 위해 약간의 지연 추가
+    windows.settings.webContents.once('dom-ready', () => {
+      setTimeout(() => {
+        windows.settings.webContents.openDevTools({
+          mode: 'detach',
+          activate: false, // DevTools 창을 활성화하지 않음
+        });
+      }, 1000);
+    });
   }
 
   return windows.settings;

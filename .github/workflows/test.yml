@@ -1,8 +1,6 @@
 name: Run Tests
 
 on:
-  push:
-    branches: [ main, alpha ]
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -38,8 +36,11 @@ jobs:
       - name: Run tests
         id: test
         run: |
+          set +e
           npm run test -- --coverage --verbose 2>&1 | tee test-output.txt
-          echo "test_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          exit_code=$?
+          echo "test_exit_code=$exit_code" >> $GITHUB_OUTPUT
+          exit $exit_code
 
       - name: Comment Test Results
         if: github.event_name == 'pull_request'

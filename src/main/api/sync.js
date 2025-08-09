@@ -65,6 +65,11 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       hasSyncFeature = true;
       logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 구독 활성화 및 기능 확인됨');
     }
+    // 개발 모드에서 cloud_sync 기능이 활성화된 경우 허용
+    else if (process.env.NODE_ENV === 'development' && hasCloudSyncFeature && subscription.plan === 'Basic') {
+      hasSyncFeature = true;
+      logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 개발 모드에서 Basic 플랜 허용됨');
+    }
 
     // 결과 반환
     logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`, {
@@ -239,7 +244,7 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             syncMetadata.lastModifiedDevice = settings.lastModifiedDevice;
           }
         } else if (settings.data) {
-        // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
+          // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
           logger.info('중첩된 데이터 구조 발견');
           const data = settings.data;
 
@@ -266,11 +271,11 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
           }
         } else if (Array.isArray(settings)) {
-        // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
+          // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
           logger.info('배열 전용 구조 발견');
           pagesData = settings;
         } else {
-        // 1.4 기타 구조 - 모든 배열 필드 검색
+          // 1.4 기타 구조 - 모든 배열 필드 검색
           logger.info('알 수 없는 구조에서 페이지 배열 검색 중');
           const arrayFields = Object.entries(settings)
             .filter(([_key, value]) => Array.isArray(value))

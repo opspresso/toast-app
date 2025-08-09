@@ -24,14 +24,18 @@ function loadEnv() {
     const defaultEnvPath = path.join(configDir, '.env');
     if (fs.existsSync(defaultEnvPath)) {
       dotenv.config({ path: defaultEnvPath });
-      logger.info('Default environment variable settings loaded.');
+      if (process.env.NODE_ENV !== 'test') {
+        logger.info('Default environment variable settings loaded.');
+      }
     }
 
     // Additionally load .env.local file if it exists (takes precedence)
     const localEnvPath = path.join(configDir, '.env.local');
     if (fs.existsSync(localEnvPath)) {
       dotenv.config({ path: localEnvPath });
-      logger.info('Local environment variable settings loaded.');
+      if (process.env.NODE_ENV !== 'test') {
+        logger.info('Local environment variable settings loaded.');
+      }
     }
 
     return true;

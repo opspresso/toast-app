@@ -23,11 +23,9 @@ directories.forEach(dir => {
 // Global setup
 beforeAll(() => {
   // Setup code that runs before all tests
-  console.log('Starting tests...');
 });
 
 // Global teardown
 afterAll(() => {
   // Cleanup code that runs after all tests
-  console.log('Tests completed.');
 });
