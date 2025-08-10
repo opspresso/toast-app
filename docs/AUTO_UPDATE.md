@@ -2,6 +2,11 @@
 
 이 문서는 Toast 앱의 자동 업데이트 시스템과 사용자 경험에 대해 설명합니다.
 
+> **구현 상태**: ✅ 완전 구현됨
+> - 업데이트 확인, 다운로드, 설치 기능 모두 구현
+> - electron-updater 기반 자동 업데이트 시스템
+> - IPC를 통한 사용자 인터페이스 연동
+
 ## 목차
 
 - [개요](#개요)
@@ -25,7 +30,12 @@
 
 ## 개요
 
-Toast 앱은 electron-updater 라이브러리를 사용하여 자동 업데이트 기능을 제공합니다. 이 시스템은 사용자가 수동으로 업데이트를 확인하거나 다운로드할 필요 없이 앱이 최신 상태를 유지하도록 합니다. 업데이트 프로세스는 사용자 경험을 방해하지 않으면서 백그라운드에서 진행되며, 새 버전이 준비되면 사용자에게 알림이 표시됩니다.
+Toast 앱은 electron-updater 라이브러리를 사용하여 자동 업데이트 기능을 제공합니다. 시스템은 두 가지 방식으로 동작합니다:
+
+1. **자동 확인**: 앱 시작 시 자동으로 업데이트를 확인하고 알림 (`index.js`)
+2. **사용자 제어**: 설정 창에서 수동으로 업데이트 확인, 다운로드, 설치 가능 (`updater.js`)
+
+업데이트는 사용자 확인 후 다운로드되며 (`autoDownload: false`), 설치는 앱 재시작 시 자동으로 진행됩니다.
 
 ## 업데이트 아키텍처
 
@@ -160,61 +170,52 @@ Toast 앱은 다음과 같은 시점에 업데이트를 확인합니다:
 
 ### 업데이트 메커니즘
 
-Toast 앱의 자동 업데이트 시스템은 `electron-updater` 라이브러리를 사용하여 구현되었습니다. 주요 구성 요소는 다음과 같습니다:
+Toast 앱의 자동 업데이트 시스템은 `electron-updater` 라이브러리를 사용하여 구현되었습니다. 
 
-1. **update.yml 파일**: 각 릴리스의 메타데이터를 저장합니다.
-2. **릴리스 파일**: GitHub Releases에 배포됩니다.
-3. **updater.js**: `electron-updater`를 사용하여 업데이트 로직을 구현합니다.
+#### 주요 구성 요소
 
-업데이트 확인 프로세스:
+1. **app-update.yml / dev-app-update.yml**: 업데이트 서버 설정
+2. **src/main/updater.js**: 상세한 업데이트 로직 구현
+3. **src/main/ipc.js**: IPC 핸들러를 통한 UI 연동
+4. **GitHub Releases**: 업데이트 배포 채널
+
+#### 구현 특징
+
 ```javascript
-// src/main/updater.js (간소화됨)
-const { autoUpdater } = require('electron-updater');
-const { createLogger } = require('./logger');
+// src/main/updater.js 주요 설정
+const updaterConfig = {
+  appId: 'com.opspresso.toast-app',
+  autoDownload: false,  // 사용자 확인 후 다운로드
+  autoInstallOnAppQuit: true,  // 앱 종료 시 자동 설치
+  channel: 'latest',  // 업데이트 채널
+  allowDowngrade: false,  // 다운그레이드 방지 (프로덕션)
+};
 
-const logger = createLogger('Updater');
-
-function initAutoUpdater(windows) {
-  if (process.env.NODE_ENV !== 'development') {
-    autoUpdater.checkForUpdatesAndNotify();
-
-    autoUpdater.on('update-available', (info) => {
-      logger.info('Update available:', info.version);
-      windows.toast?.webContents.send('update-available', { info });
-    });
-
-    autoUpdater.on('download-progress', (progressObj) => {
-      windows.toast?.webContents.send('download-progress', { progress: progressObj });
-    });
-
-    autoUpdater.on('update-downloaded', (info) => {
-      logger.info('Update downloaded:', info.version);
-      windows.toast?.webContents.send('update-downloaded', { info });
-    });
-  }
-}
-
-async function checkForUpdates(silent = false) {
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    return {
-      success: true,
-      updateInfo: result.updateInfo,
-      versionInfo: {
-        current: app.getVersion(),
-        latest: result.updateInfo.version
-      },
-      hasUpdate: semver.gt(result.updateInfo.version, app.getVersion())
-    };
-  } catch (error) {
-    logger.error('Error checking for updates:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
+// 주요 기능
+- checkForUpdates(silent): 업데이트 확인
+- downloadUpdate(): 업데이트 다운로드 (진행률 추적)
+- installUpdate(): 업데이트 설치 (quitAndInstall)
 ```
+
+#### IPC 핸들러
+
+```javascript
+// src/main/ipc.js에서 제공하는 IPC 채널
+- 'check-for-updates': 업데이트 확인
+- 'download-update': 업데이트 다운로드
+- 'download-auto-update': 자동 다운로드
+- 'download-manual-update': 수동 다운로드
+- 'install-update': 업데이트 설치
+- 'install-auto-update': 자동 설치
+```
+
+#### 업데이트 이벤트 흐름
+
+1. **앱 시작**: 5초 후 자동 업데이트 확인 (프로덕션 모드에서만)
+2. **업데이트 발견**: 사용자에게 알림 표시
+3. **다운로드**: 사용자 확인 후 백그라운드 다운로드 (진행률 표시)
+4. **설치 준비**: 다운로드 완료 시 설치 준비 알림
+5. **설치**: 앱 재시작하여 업데이트 적용
 
 ### 전자 서명 및 코드 사인
 
