@@ -22,7 +22,8 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
 
     if (result.success) {
       // 1. 아이콘 입력 필드 업데이트
-      iconInput.value = result.iconUrl;
+      // Convert iconPath (which is in tilde format) to file:// URL
+      iconInput.value = `file://${result.iconPath}`;
 
       // 2. 버튼 이름 업데이트 (비어있을 때만)
       if (nameInput && !nameInput.value.trim()) {

@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 const { createLogger } = require('../logger');
 
@@ -269,9 +270,46 @@ function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   }
 }
 
+/**
+ * 절대 경로를 ~/... 형태로 변환
+ * @param {string} absolutePath - 절대 경로
+ * @returns {string} - ~/... 형태의 경로
+ */
+function convertToTildePath(absolutePath) {
+  if (!absolutePath) {
+    return absolutePath;
+  }
+  
+  const homeDir = os.homedir();
+  if (absolutePath.startsWith(homeDir)) {
+    return absolutePath.replace(homeDir, '~');
+  }
+  
+  return absolutePath;
+}
+
+/**
+ * ~/... 경로를 절대 경로로 변환
+ * @param {string} tildePath - ~/... 형태의 경로
+ * @returns {string} - 절대 경로
+ */
+function resolveTildePath(tildePath) {
+  if (!tildePath) {
+    return tildePath;
+  }
+  
+  if (tildePath.startsWith('~/')) {
+    return path.join(os.homedir(), tildePath.slice(2));
+  }
+  
+  return tildePath;
+}
+
 module.exports = {
   extractAppIcon,
   extractAppNameFromPath,
   getExistingIconPath,
   cleanupOldIcons,
+  convertToTildePath,
+  resolveTildePath,
 };

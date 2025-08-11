@@ -141,16 +141,44 @@ export function createButtonElement(button) {
   }
   // URL type and icon is not empty, use icon
   else if (button.icon && isURL(button.icon)) {
-    // Create image tag if icon is a URL image
-    iconElement.textContent = '';
-    const img = document.createElement('img');
-    img.src = button.icon;
-    img.alt = button.name || 'Button icon';
-    img.onerror = function () {
-      // Replace with default icon if image load fails
-      iconElement.textContent = '🔘';
-    };
-    iconElement.appendChild(img);
+    // Handle file:// URLs with tilde paths
+    if (button.icon.startsWith('file://~/')) {
+      const tildePath = button.icon.substring(7); // Remove 'file://' prefix
+      window.toast.resolveTildePath(tildePath)
+        .then(resolvedPath => {
+          iconElement.textContent = '';
+          const img = document.createElement('img');
+          img.src = `file://${resolvedPath}`;
+          img.alt = button.name || 'Button icon';
+          img.onerror = function () {
+            iconElement.textContent = '🔘';
+          };
+          iconElement.appendChild(img);
+        })
+        .catch(err => {
+          console.warn('Failed to resolve tilde path:', err);
+          // Fallback to original URL
+          iconElement.textContent = '';
+          const img = document.createElement('img');
+          img.src = button.icon;
+          img.alt = button.name || 'Button icon';
+          img.onerror = function () {
+            iconElement.textContent = '🔘';
+          };
+          iconElement.appendChild(img);
+        });
+    } else {
+      // Create image tag if icon is a regular URL
+      iconElement.textContent = '';
+      const img = document.createElement('img');
+      img.src = button.icon;
+      img.alt = button.name || 'Button icon';
+      img.onerror = function () {
+        // Replace with default icon if image load fails
+        iconElement.textContent = '🔘';
+      };
+      iconElement.appendChild(img);
+    }
   }
   // Other types and icon is not empty, use icon
   else if (button.icon && button.icon.trim() !== '') {
