@@ -49,6 +49,9 @@ contextBridge.exposeInMainWorld('settings', {
 
   // App icon extraction
   extractAppIcon: (applicationPath, forceRefresh = false) => ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh),
+  
+  // Path utilities
+  resolveTildePath: tildePath => ipcRenderer.invoke('resolve-tilde-path', tildePath),
 
   // App control
   restartApp: () => ipcRenderer.send('restart-app'),

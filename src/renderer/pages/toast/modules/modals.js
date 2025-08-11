@@ -887,10 +887,29 @@ function updateIconPreview() {
   }
   // URL 형태의 아이콘 (file://, http://, https://)
   else if (iconValue && (iconValue.startsWith('file://') || iconValue.startsWith('http://') || iconValue.startsWith('https://'))) {
-    previewImg.src = iconValue;
-    previewImg.style.display = 'block';
-    placeholder.style.display = 'none';
-    iconPreview.classList.add('has-icon');
+    // Handle file:// URLs with tilde paths
+    if (iconValue.startsWith('file://~/')) {
+      const tildePath = iconValue.substring(7); // Remove 'file://' prefix
+      window.toast.resolveTildePath(tildePath)
+        .then(resolvedPath => {
+          previewImg.src = `file://${resolvedPath}`;
+          previewImg.style.display = 'block';
+          placeholder.style.display = 'none';
+          iconPreview.classList.add('has-icon');
+        })
+        .catch(err => {
+          console.warn('Failed to resolve tilde path:', err);
+          previewImg.src = iconValue; // Fallback to original
+          previewImg.style.display = 'block';
+          placeholder.style.display = 'none';
+          iconPreview.classList.add('has-icon');
+        });
+    } else {
+      previewImg.src = iconValue;
+      previewImg.style.display = 'block';
+      placeholder.style.display = 'none';
+      iconPreview.classList.add('has-icon');
+    }
 
     // 이미지 로딩 실패 시 기본 아이콘으로 대체
     previewImg.onerror = function () {

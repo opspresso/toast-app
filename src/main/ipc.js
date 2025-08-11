@@ -16,7 +16,7 @@ const authManager = require('./auth-manager');
 const userDataManager = require('./user-data-manager');
 const updater = require('./updater');
 const { createLogger, handleIpcLogging } = require('./logger');
-const { extractAppIcon, extractAppNameFromPath } = require('./utils/app-icon-extractor');
+const { extractAppIcon, extractAppNameFromPath, convertToTildePath, resolveTildePath } = require('./utils/app-icon-extractor');
 
 // 모듈별 로거 생성
 const logger = createLogger('IPC');
@@ -1017,10 +1017,11 @@ function setupIpcHandlers(windows) {
         return { success: false, error: '아이콘을 추출할 수 없습니다' };
       }
 
+      const tildePath = convertToTildePath(iconPath);
       return {
         success: true,
         iconUrl: `file://${iconPath}`,
-        iconPath,
+        iconPath: tildePath,
         appName,
       };
     } catch (err) {
@@ -1028,6 +1029,16 @@ function setupIpcHandlers(windows) {
         success: false,
         error: `아이콘 추출 중 오류 발생: ${err.message}`,
       };
+    }
+  });
+
+  // Resolve tilde path to absolute path
+  ipcMain.handle('resolve-tilde-path', (event, tildePath) => {
+    try {
+      return resolveTildePath(tildePath);
+    } catch (err) {
+      logger.error(`Failed to resolve tilde path: ${err.message}`);
+      return tildePath; // Return original path if resolution fails
     }
   });
 }

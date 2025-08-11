@@ -89,8 +89,12 @@ export function createButtonElement(button) {
   // Set button icon
   const iconElement = buttonElement.querySelector('.button-icon');
 
-  // Process FlatColorIcons format icon
-  if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
+  // Handle file:// URLs with tilde paths first (applies to all action types)
+  if (button.icon && button.icon.startsWith('file://~/')) {
+    handleTildeIconPath(iconElement, button);
+    return buttonElement;
+  } else if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
+    // Process FlatColorIcons format icon
     const iconName = button.icon.split('.')[1]; // 'FlatColorIcons.home' -> 'home'
     if (window.AllIcons && window.AllIcons[iconName]) {
       iconElement.textContent = '';
@@ -129,7 +133,7 @@ export function createButtonElement(button) {
   // Exec type and icon is empty but command exists, try to extract app icon from command
   else if (button.action === 'exec' && (!button.icon || button.icon.trim() === '') && button.command) {
     // Check if it's an 'open -a AppName' command
-    const openAppMatch = button.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
+    const openAppMatch = button.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\\w\\s.-]+))/);
     if (openAppMatch) {
       const appName = (openAppMatch[1] || openAppMatch[2]).trim();
       const appPath = `/Applications/${appName}.app`;
@@ -139,9 +143,9 @@ export function createButtonElement(button) {
       iconElement.textContent = '⚡';
     }
   }
-  // URL type and icon is not empty, use icon
+  // URL type and icon is not empty, use icon (non-tilde URLs)
   else if (button.icon && isURL(button.icon)) {
-    // Create image tag if icon is a URL image
+    // Create image tag for regular URLs
     iconElement.textContent = '';
     const img = document.createElement('img');
     img.src = button.icon;
@@ -428,5 +432,62 @@ function extractAppNameFromPath(applicationPath) {
     return applicationPath.split('/').pop().split('.')[0];
   } catch (err) {
     return null;
+  }
+}
+
+/**
+ * Handle file:// URLs with tilde paths (applies to all action types)
+ * @param {HTMLElement} iconElement - Icon element to update
+ * @param {Object} button - Button configuration
+ */
+function handleTildeIconPath(iconElement, button) {
+  const tildePath = button.icon.substring(7); // Remove 'file://' prefix
+  window.toast.resolveTildePath(tildePath)
+    .then(resolvedPath => {
+      iconElement.textContent = '';
+      const img = document.createElement('img');
+      img.src = `file://${resolvedPath}`;
+      img.alt = button.name || 'Button icon';
+      img.onerror = function () {
+        // Use action-specific default icon if image loading fails
+        const defaultIcon = getDefaultIconForAction(button.action);
+        iconElement.textContent = defaultIcon;
+      };
+      iconElement.appendChild(img);
+    })
+    .catch(err => {
+      console.warn('Failed to resolve tilde path:', err);
+      // Fallback to original URL
+      iconElement.textContent = '';
+      const img = document.createElement('img');
+      img.src = button.icon;
+      img.alt = button.name || 'Button icon';
+      img.onerror = function () {
+        const defaultIcon = getDefaultIconForAction(button.action);
+        iconElement.textContent = defaultIcon;
+      };
+      iconElement.appendChild(img);
+    });
+}
+
+/**
+ * Get default icon for action type
+ * @param {string} action - Action type
+ * @returns {string} Default icon
+ */
+function getDefaultIconForAction(action) {
+  switch (action) {
+    case 'exec':
+      return '⚡';
+    case 'application':
+      return '🚀';
+    case 'open':
+      return '🌐';
+    case 'script':
+      return '📜';
+    case 'chain':
+      return '🔗';
+    default:
+      return '🔘';
   }
 }
