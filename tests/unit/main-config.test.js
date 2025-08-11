@@ -405,8 +405,9 @@ describe('Main Config Module (P0)', () => {
 
       expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
         lastSyncedDevice: 'device-123',
-        lastModifiedDevice: 'device-123',
         isConflicted: false,
+        dataHash: expect.any(String),
+        lastSyncedAt: expect.any(Number),
       }));
     });
 

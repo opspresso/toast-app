@@ -128,6 +128,8 @@ const mockOs = {
 const mockAppIconExtractor = {
   extractAppIcon: jest.fn(),
   extractAppNameFromPath: jest.fn(),
+  convertToTildePath: jest.fn(),
+  resolveTildePath: jest.fn(),
 };
 
 // Mock modules
@@ -644,6 +646,7 @@ describe('IPC Handlers', () => {
       setupIpcHandlers(mockWindows);
       mockAppIconExtractor.extractAppNameFromPath.mockReturnValue('TestApp');
       mockAppIconExtractor.extractAppIcon.mockResolvedValue('/path/to/icon.png');
+      mockAppIconExtractor.convertToTildePath.mockReturnValue('/path/to/icon.png');
 
       const handler = mockIpcMain.handle.mock.calls
         .find(([event]) => event === 'extract-app-icon')[1];
