@@ -319,10 +319,25 @@ function setupIpcHandlers(windows) {
     window.setSize(width, height);
   }
 
-  // Save configuration (specific changes)
+  // Save configuration (specific changes) with duplicate prevention
+  let lastSaveTime = 0;
+  let lastSaveData = null;
+  
   ipcMain.handle('save-config', (event, changes) => {
     try {
       logger.info('=== save-config called ===');
+      
+      // Prevent rapid duplicates (within 100ms)
+      const now = Date.now();
+      const dataString = JSON.stringify(changes);
+      if (now - lastSaveTime < 100 && lastSaveData === dataString) {
+        logger.info('Duplicate save-config call detected, ignoring');
+        return true;
+      }
+      
+      lastSaveTime = now;
+      lastSaveData = dataString;
+      
       logger.info('Changes keys:', Object.keys(changes || {}));
       if (changes && changes.pages) {
         logger.info('Pages being updated via save-config. Length:', Array.isArray(changes.pages) ? changes.pages.length : 'Not array');
@@ -330,7 +345,13 @@ function setupIpcHandlers(windows) {
       if (typeof changes === 'object') {
         // Apply each change to config
         Object.keys(changes).forEach(key => {
+          const oldValue = config.get(key);
+          logger.info(`IPC: Setting config key "${key}" - Config ID: ${config.path || 'unknown'}`);
+          logger.info(`Old value hash: ${JSON.stringify(oldValue).slice(0, 100)}...`);
           config.set(key, changes[key]);
+          const newValue = config.get(key);
+          logger.info(`New value hash: ${JSON.stringify(newValue).slice(0, 100)}...`);
+          logger.info(`Values equal: ${JSON.stringify(oldValue) === JSON.stringify(newValue)}`);
         });
 
         // Immediately notify toast window when settings change
@@ -543,14 +564,24 @@ function setupIpcHandlers(windows) {
   // Get sync status
   ipcMain.handle('get-sync-status', async () => {
     try {
-      // 이미 초기화된 cloudSyncManager 사용
+      // CloudSyncManager 초기화 확인 및 필요 시 초기화
+      if (!cloudSyncManager && authManager && userDataManager) {
+        logger.info('Initializing CloudSyncManager for get-sync-status...');
+        const cloudSync = require('./cloud-sync');
+        cloudSyncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
+      }
+
       if (cloudSyncManager) {
         // getCurrentStatus() 메서드로 현재 상태 조회
         return cloudSyncManager.getCurrentStatus();
       } else {
-        logger.warn('Cloud sync manager not initialized, returning default status');
+        // CloudSyncManager 초기화할 수 없으면 Config Store에서 실제 상태 읽기
+        const savedEnabled = config.get('cloudSync.enabled');
+        const actualEnabled = savedEnabled !== undefined ? savedEnabled : true;
+        
+        logger.info(`Cloud sync manager not initialized, returning config-based status: ${actualEnabled}`);
         return {
-          enabled: false,
+          enabled: actualEnabled,
           deviceId: getDeviceIdentifier(),
           lastSyncTime: 0,
           lastChangeType: null,
@@ -558,11 +589,27 @@ function setupIpcHandlers(windows) {
       }
     } catch (error) {
       logger.error('Error getting sync status:', error);
-      return {
-        enabled: false,
-        deviceId: getDeviceIdentifier(),
-        lastSyncTime: Date.now(),
-      };
+      
+      // 오류 시에도 Config Store에서 상태 읽기 시도
+      try {
+        const savedEnabled = config.get('cloudSync.enabled');
+        const actualEnabled = savedEnabled !== undefined ? savedEnabled : false;
+        
+        return {
+          enabled: actualEnabled,
+          deviceId: getDeviceIdentifier(),
+          lastSyncTime: 0,
+          lastChangeType: null,
+        };
+      } catch (configError) {
+        logger.error('Error reading config for sync status:', configError);
+        return {
+          enabled: false,
+          deviceId: getDeviceIdentifier(),
+          lastSyncTime: 0,
+          lastChangeType: null,
+        };
+      }
     }
   });
 
@@ -587,10 +634,7 @@ function setupIpcHandlers(windows) {
           cloudSyncManager.disable();
         }
 
-        // 구성 저장소에도 설정 저장
-        config.set('cloudSync.enabled', enabled);
-
-        // 현재 상태 반환
+        // 현재 상태 반환 (CloudSyncManager가 단일 진실 원천)
         return {
           success: true,
           status: cloudSyncManager.getCurrentStatus(),
