@@ -107,6 +107,8 @@ jest.mock('../../src/main/logger', () => ({
 jest.mock('../../src/main/utils/app-icon-extractor', () => ({
   extractAppIcon: jest.fn(),
   extractAppNameFromPath: jest.fn(),
+  convertToTildePath: jest.fn(),
+  resolveTildePath: jest.fn(),
 }));
 
 describe('Main IPC Handlers (P0)', () => {
@@ -490,9 +492,10 @@ describe('Main IPC Handlers (P0)', () => {
       const applicationPath = '/Applications/Calculator.app';
       const forceRefresh = false;
       
-      const { extractAppIcon, extractAppNameFromPath } = require('../../src/main/utils/app-icon-extractor');
+      const { extractAppIcon, extractAppNameFromPath, convertToTildePath } = require('../../src/main/utils/app-icon-extractor');
       extractAppNameFromPath.mockReturnValue('Calculator');
       extractAppIcon.mockResolvedValue('/path/to/icon.png');
+      convertToTildePath.mockReturnValue('/path/to/icon.png');
 
       const result = await ipcHandlers['extract-app-icon'](mockEvent, applicationPath, forceRefresh);
 
