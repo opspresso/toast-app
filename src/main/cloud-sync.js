@@ -665,6 +665,12 @@ function setEnabled(enabled) {
   state.enabled = enabled;
   logger.info(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
 
+  // Config Store와 동기화 (CloudSyncManager가 단일 진실 원천)
+  if (configStore) {
+    configStore.set('cloudSync.enabled', enabled);
+    logger.info('Config store updated with sync enabled state');
+  }
+
   if (enabled) {
     startPeriodicSync();
   } else {
@@ -678,7 +684,7 @@ function setEnabled(enabled) {
 function setupConfigListeners() {
   // 설정 변경 감지 함수 (공통 로직)
   async function handleConfigChange(changeType, _key) {
-    logger.info(`=== ${changeType} change detected ===`);
+    logger.info(`=== [DEBUG_TEST] ${changeType} change detected ===`);
 
     // 동기화 가능 여부 확인
     if (!state.enabled) {
@@ -691,23 +697,26 @@ function setupConfigListeners() {
       return;
     }
 
-    // 설정이 실제로 변경되었는지 확인
-    if (!hasUnsyncedChanges(configStore)) {
-      logger.info('No unsynced changes detected, skipping sync');
-      return;
-    }
+    logger.info(`${changeType} settings change confirmed (onDidChange event fired), proceeding with sync`);
+    
+    // onDidChange 이벤트가 발생했다는 것은 값이 실제로 변경되었다는 증거
+    // hasUnsyncedChanges 체크를 건너뛰고 바로 동기화 진행
 
-    logger.info(`${changeType} settings change confirmed, marking as modified`);
-
-    // 동기화 예약 (markAsModified 전에 실행하여 해시 비교가 제대로 작동하도록 함)
-    scheduleSync(changeType);
-
-    // ConfigStore의 메타데이터 업데이트 (이것이 추가 이벤트를 트리거할 수 있음)
+    // 변경사항을 ConfigStore 메타데이터에 반영
     markAsModified(configStore);
+
+    // 동기화 예약
+    scheduleSync(changeType);
   }
 
   // 페이지 설정 변경 감지
+  logger.info('Registering onDidChange listener for pages...');
   configStore.onDidChange('pages', async (newValue, oldValue) => {
+    logger.info('🎯 onDidChange event fired for pages!');
+    logger.info('Event triggered at:', new Date().toISOString());
+    logger.info('NewValue length:', Array.isArray(newValue) ? newValue.length : 'Not array');
+    logger.info('OldValue length:', Array.isArray(oldValue) ? oldValue.length : 'Not array');
+    
     // 변경 유형 자세히 감지
     let changeType = 'pages_modified';
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
@@ -718,8 +727,10 @@ function setupConfigListeners() {
       }
     }
 
+    logger.info(`Change type detected: ${changeType}`);
     await handleConfigChange(changeType, 'pages');
   });
+  logger.info('onDidChange listener for pages registered successfully');
 
   // 외관 설정 변경 감지
   configStore.onDidChange('appearance', async () => {
@@ -755,26 +766,31 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
   // 설정 저장소 설정 (외부에서 전달받은 인스턴스 사용 또는 새로 생성)
   if (configStoreInstance) {
     configStore = configStoreInstance;
-    logger.info('Using provided config store instance');
+    logger.info('Using provided config store instance - ID:', configStore.path || 'unknown');
   } else {
     configStore = createConfigStore();
-    logger.info('Created new config store instance');
+    logger.info('Created new config store instance - ID:', configStore.path || 'unknown');
   }
 
   // 장치 정보 초기화
   state.deviceId = getDeviceId();
   logger.info(`Device ID: ${state.deviceId}`);
 
-  // 동기화 기본 활성화 (중요: 기본값을 true로 설정)
-  state.enabled = true;
-  logger.info('Cloud sync enabled by default');
+  // 동기화 상태 초기화 (Config Store에서 읽어오거나 기본값 사용)
+  const savedEnabled = configStore.get('cloudSync.enabled');
+  state.enabled = savedEnabled !== undefined ? savedEnabled : true;
+  logger.info(`Cloud sync initialized: ${state.enabled ? 'enabled' : 'disabled'} (from ${savedEnabled !== undefined ? 'config' : 'default'})`);
 
   // 설정 변경 감지 이벤트 등록
   setupConfigListeners();
 
-  // 주기적 동기화 자동 시작 (중요!)
-  logger.info('Starting periodic sync automatically');
-  startPeriodicSync();
+  // 주기적 동기화 조건부 시작
+  if (state.enabled) {
+    logger.info('Starting periodic sync (enabled)');
+    startPeriodicSync();
+  } else {
+    logger.info('Periodic sync not started (disabled)');
+  }
 
   // 인터페이스 객체 생성
   const syncManager = {

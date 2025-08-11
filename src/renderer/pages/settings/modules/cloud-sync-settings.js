@@ -95,323 +95,45 @@ export function handleCloudSyncToggle() {
 
 /**
  * Handle manual sync upload
+ * @deprecated This function is now handled by cloud-sync.js to avoid duplicate operations
  */
 export function handleManualSyncUpload() {
-  window.settings.log.info('수동 동기화 - 업로드 시작');
-
-  try {
-    // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) {
-      setLoading(syncLoading, true);
-    }
-    if (manualSyncUploadButton) {
-      manualSyncUploadButton.disabled = true;
-    }
-    if (manualSyncDownloadButton) {
-      manualSyncDownloadButton.disabled = true;
-    }
-    if (manualSyncResolveButton) {
-      manualSyncResolveButton.disabled = true;
-    }
-
-    // 업로드 실행
-    window.settings
-      .manualSync('upload')
-      .then(result => {
-        if (result.success) {
-          // 성공 메시지
-          if (manualSyncUploadButton) {
-            manualSyncUploadButton.textContent = 'Upload Complete!';
-          }
-        } else {
-          // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
-          let errorMessage = '알 수 없는 오류';
-          if (result.error) {
-            if (typeof result.error === 'object') {
-              errorMessage = result.error.message || JSON.stringify(result.error);
-            } else {
-              errorMessage = result.error;
-            }
-          }
-          throw new Error(errorMessage);
-        }
-      })
-      .catch(error => {
-        window.settings.log.error('수동 동기화 업로드 오류:', error);
-
-        // 오류 메시지
-        if (manualSyncUploadButton) {
-          manualSyncUploadButton.textContent = 'Upload Failed';
-        }
-      })
-      .finally(() => {
-        // 상태 복원
-        if (syncLoading) {
-          setLoading(syncLoading, false);
-        }
-
-        setTimeout(() => {
-          if (manualSyncUploadButton) {
-            manualSyncUploadButton.textContent = 'Upload to Server';
-            manualSyncUploadButton.disabled = false;
-          }
-          if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.disabled = false;
-          }
-          if (manualSyncResolveButton) {
-            manualSyncResolveButton.disabled = false;
-          }
-        }, 1500);
-      });
-  } catch (error) {
-    window.settings.log.error('수동 동기화 업로드 처리 중 오류:', error);
-
-    // 로딩 및 버튼 상태 복원
-    if (syncLoading) {
-      setLoading(syncLoading, false);
-    }
-    if (manualSyncUploadButton) {
-      manualSyncUploadButton.disabled = false;
-    }
-    if (manualSyncDownloadButton) {
-      manualSyncDownloadButton.disabled = false;
-    }
-    if (manualSyncResolveButton) {
-      manualSyncResolveButton.disabled = false;
-    }
-  }
+  // This function is deprecated and should not be called
+  // All sync operations are handled by cloud-sync.js module
+  window.settings.log.warn('handleManualSyncUpload in cloud-sync-settings.js is deprecated - use cloud-sync.js instead');
+  return;
 }
 
 /**
  * Handle manual sync download
+ * @deprecated This function is now handled by cloud-sync.js to avoid duplicate confirmations
  */
 export function handleManualSyncDownload() {
-  window.settings.log.info('수동 동기화 - 다운로드 시작');
-
-  try {
-    // 확인 대화상자
-    if (!confirm('Downloading settings from the server will overwrite your local settings. Do you want to continue?')) {
-      return;
-    }
-
-    // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) {
-      setLoading(syncLoading, true);
-    }
-    if (manualSyncUploadButton) {
-      manualSyncUploadButton.disabled = true;
-    }
-    if (manualSyncDownloadButton) {
-      manualSyncDownloadButton.disabled = true;
-    }
-    if (manualSyncResolveButton) {
-      manualSyncResolveButton.disabled = true;
-    }
-
-    // 다운로드 실행
-    window.settings
-      .manualSync('download')
-      .then(result => {
-        if (result.success) {
-          // 성공 메시지
-          if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.textContent = 'Download Complete!';
-          }
-
-          // 설정 다시 로드
-          return window.settings.getConfig();
-        } else {
-          // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
-          let errorMessage = '알 수 없는 오류';
-          if (result.error) {
-            if (typeof result.error === 'object') {
-              errorMessage = result.error.message || JSON.stringify(result.error);
-            } else {
-              errorMessage = result.error;
-            }
-          }
-          throw new Error(errorMessage);
-        }
-      })
-      .then(loadedConfig => {
-        updateConfig(loadedConfig);
-        // UI 초기화는 동적 import로 처리
-        import('../index.js').then(({ initializeUI }) => {
-          initializeUI();
-        });
-      })
-      .catch(error => {
-        window.settings.log.error('수동 동기화 다운로드 오류:', error);
-
-        // 오류 메시지
-        if (manualSyncDownloadButton) {
-          manualSyncDownloadButton.textContent = 'Download Failed';
-        }
-      })
-      .finally(() => {
-        // 상태 복원
-        if (syncLoading) {
-          setLoading(syncLoading, false);
-        }
-
-        setTimeout(() => {
-          if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.textContent = 'Download from Server';
-            manualSyncDownloadButton.disabled = false;
-          }
-          if (manualSyncUploadButton) {
-            manualSyncUploadButton.disabled = false;
-          }
-          if (manualSyncResolveButton) {
-            manualSyncResolveButton.disabled = false;
-          }
-        }, 1500);
-      });
-  } catch (error) {
-    window.settings.log.error('수동 동기화 다운로드 처리 중 오류:', error);
-
-    // 로딩 및 버튼 상태 복원
-    if (syncLoading) {
-      setLoading(syncLoading, false);
-    }
-    if (manualSyncUploadButton) {
-      manualSyncUploadButton.disabled = false;
-    }
-    if (manualSyncDownloadButton) {
-      manualSyncDownloadButton.disabled = false;
-    }
-    if (manualSyncResolveButton) {
-      manualSyncResolveButton.disabled = false;
-    }
-  }
+  // This function is deprecated and should not be called
+  // All sync operations are handled by cloud-sync.js module
+  window.settings.log.warn('handleManualSyncDownload in cloud-sync-settings.js is deprecated - use cloud-sync.js instead');
+  return;
 }
 
 /**
  * Handle manual sync resolve
+ * @deprecated This function is now handled by cloud-sync.js to avoid duplicate confirmations
  */
 export function handleManualSyncResolve() {
-  window.settings.log.info('수동 동기화 - 충돌 해결 시작');
-
-  try {
-    // 확인 대화상자
-    if (
-      !confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')
-    ) {
-      return;
-    }
-
-    // 로딩 표시 및 버튼 비활성화
-    if (syncLoading) {
-      setLoading(syncLoading, true);
-    }
-    if (manualSyncUploadButton) {
-      manualSyncUploadButton.disabled = true;
-    }
-    if (manualSyncDownloadButton) {
-      manualSyncDownloadButton.disabled = true;
-    }
-    if (manualSyncResolveButton) {
-      manualSyncResolveButton.disabled = true;
-    }
-
-    // 충돌 해결 실행
-    window.settings
-      .manualSync('resolve')
-      .then(result => {
-        if (result.success) {
-          // 성공 메시지
-          if (manualSyncResolveButton) {
-            manualSyncResolveButton.textContent = 'Conflict Resolution Complete!';
-          }
-
-          // 설정 다시 로드
-          return window.settings.getConfig();
-        } else {
-          // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
-          let errorMessage = '알 수 없는 오류';
-          if (result.error) {
-            if (typeof result.error === 'object') {
-              errorMessage = result.error.message || JSON.stringify(result.error);
-            } else {
-              errorMessage = result.error;
-            }
-          }
-          throw new Error(errorMessage);
-        }
-      })
-      .then(loadedConfig => {
-        updateConfig(loadedConfig);
-        // UI 초기화는 동적 import로 처리
-        import('../index.js').then(({ initializeUI }) => {
-          initializeUI();
-        });
-      })
-      .catch(error => {
-        window.settings.log.error('수동 동기화 충돌 해결 오류:', error);
-
-        // 오류 메시지
-        if (manualSyncResolveButton) {
-          manualSyncResolveButton.textContent = 'Conflict Resolution Failed';
-        }
-      })
-      .finally(() => {
-        // 상태 복원
-        if (syncLoading) {
-          setLoading(syncLoading, false);
-        }
-
-        setTimeout(() => {
-          if (manualSyncResolveButton) {
-            manualSyncResolveButton.textContent = 'Resolve Conflicts';
-            manualSyncResolveButton.disabled = false;
-          }
-          if (manualSyncUploadButton) {
-            manualSyncUploadButton.disabled = false;
-          }
-          if (manualSyncDownloadButton) {
-            manualSyncDownloadButton.disabled = false;
-          }
-        }, 1500);
-      });
-  } catch (error) {
-    window.settings.log.error('수동 동기화 충돌 해결 처리 중 오류:', error);
-
-    // 로딩 및 버튼 상태 복원
-    if (syncLoading) {
-      setLoading(syncLoading, false);
-    }
-    if (manualSyncUploadButton) {
-      manualSyncUploadButton.disabled = false;
-    }
-    if (manualSyncDownloadButton) {
-      manualSyncDownloadButton.disabled = false;
-    }
-    if (manualSyncResolveButton) {
-      manualSyncResolveButton.disabled = false;
-    }
-  }
+  // This function is deprecated and should not be called
+  // All sync operations are handled by cloud-sync.js module
+  window.settings.log.warn('handleManualSyncResolve in cloud-sync-settings.js is deprecated - use cloud-sync.js instead');
+  return;
 }
 
 /**
  * Setup cloud sync event listeners
+ * Note: Event listeners are now handled by cloud-sync.js to avoid duplicates
  */
 export function setupCloudSyncEventListeners() {
-  // Cloud Sync 관련 버튼
-  if (enableCloudSyncCheckbox) {
-    enableCloudSyncCheckbox.addEventListener('change', handleCloudSyncToggle);
-  }
-
-  if (manualSyncUploadButton) {
-    manualSyncUploadButton.addEventListener('click', handleManualSyncUpload);
-  }
-
-  if (manualSyncDownloadButton) {
-    manualSyncDownloadButton.addEventListener('click', handleManualSyncDownload);
-  }
-
-  if (manualSyncResolveButton) {
-    manualSyncResolveButton.addEventListener('click', handleManualSyncResolve);
-  }
+  // Event listeners for cloud sync buttons are now managed by cloud-sync.js
+  // This function is kept for compatibility but no longer registers duplicate listeners
+  window.settings.log.info('Cloud sync event listeners are managed by cloud-sync.js module');
 }
 
 /**
