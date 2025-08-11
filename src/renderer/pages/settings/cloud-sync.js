@@ -75,20 +75,21 @@ function initializeCloudSyncUI(config, authState, logger) {
       logger.info('VIP user verified - cloud sync enabled');
     }
 
-    // 클라우드 동기화 활성화/비활성화 상태 설정
-    const cloudSyncEnabled = config.cloudSync?.enabled !== false;
-    DOM.enableCloudSyncCheckbox.checked = cloudSyncEnabled;
-    logger.info(`Cloud sync initial state: ${cloudSyncEnabled ? 'enabled' : 'disabled'}`);
-
-    // 현재 동기화 상태 가져오기
+    // 현재 동기화 상태 가져오기 (단일 진실 원천)
     window.settings
       .getSyncStatus()
       .then(status => {
         logger.info('Sync status query result:', status);
+        logger.info(`Cloud sync initial state: ${status.enabled ? 'enabled' : 'disabled'}`);
+        // 실제 상태로 체크박스 설정
+        DOM.enableCloudSyncCheckbox.checked = status.enabled;
         updateSyncStatusUI(status, authState, logger);
       })
       .catch(error => {
         logger.error('동기화 상태 가져오기 오류:', error);
+        // 오류 시 기본값으로 설정
+        DOM.enableCloudSyncCheckbox.checked = false;
+        logger.info('Cloud sync initial state: disabled (fallback due to error)');
       });
 
     // 이벤트 리스너 설정
