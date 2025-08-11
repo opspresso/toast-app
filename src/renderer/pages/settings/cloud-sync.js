@@ -12,6 +12,7 @@ const cloudSyncState = {
   deviceId: null,
   lastSyncTime: 0,
   hasPermission: false,
+  eventListenersInitialized: false, // 이벤트 리스너 초기화 상태 추적
 };
 
 // DOM 요소 참조
@@ -123,23 +124,41 @@ function ensureCloudSyncFeature(subscription) {
  * @param {Object} logger - 로거
  */
 function setupEventListeners(authState, logger) {
+  // 이미 이벤트 리스너가 등록되었으면 중복 등록 방지
+  if (cloudSyncState.eventListenersInitialized) {
+    logger.info('Cloud sync event listeners already initialized, skipping duplicate registration');
+    return;
+  }
+
   // 클라우드 동기화 활성화/비활성화 토글
-  DOM.enableCloudSyncCheckbox.addEventListener('change', () => {
-    handleCloudSyncToggle(authState, logger);
-  });
+  if (DOM.enableCloudSyncCheckbox) {
+    DOM.enableCloudSyncCheckbox.addEventListener('change', () => {
+      handleCloudSyncToggle(authState, logger);
+    });
+  }
 
   // 수동 동기화 버튼
-  DOM.manualSyncUploadButton.addEventListener('click', () => {
-    handleManualSyncUpload(logger);
-  });
+  if (DOM.manualSyncUploadButton) {
+    DOM.manualSyncUploadButton.addEventListener('click', () => {
+      handleManualSyncUpload(logger);
+    });
+  }
 
-  DOM.manualSyncDownloadButton.addEventListener('click', () => {
-    handleManualSyncDownload(logger);
-  });
+  if (DOM.manualSyncDownloadButton) {
+    DOM.manualSyncDownloadButton.addEventListener('click', () => {
+      handleManualSyncDownload(logger);
+    });
+  }
 
-  DOM.manualSyncResolveButton.addEventListener('click', () => {
-    handleManualSyncResolve(logger);
-  });
+  if (DOM.manualSyncResolveButton) {
+    DOM.manualSyncResolveButton.addEventListener('click', () => {
+      handleManualSyncResolve(logger);
+    });
+  }
+
+  // 이벤트 리스너 초기화 완료 표시
+  cloudSyncState.eventListenersInitialized = true;
+  logger.info('Cloud sync event listeners registered successfully');
 }
 
 /**
