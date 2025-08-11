@@ -433,12 +433,22 @@ function markAsModified(config, deviceId = null) {
   };
   const dataHash = generateDataHash(currentData);
 
+  // Debug logging
+  const { createLogger } = require('./logger');
+  const logger = createLogger('ConfigDebug');
+  logger.info('=== markAsModified Debug ===');
+  logger.info('New hash:', dataHash);
+  logger.info('Timestamp:', new Date(timestamp).toISOString());
+  logger.info('Device:', device);
+
   updateSyncMetadata(config, {
     lastModifiedAt: timestamp,
     lastModifiedDevice: device,
     dataHash,
     isConflicted: false, // Reset conflict flag when locally modified
   });
+  
+  logger.info('Sync metadata updated successfully');
 }
 
 /**
@@ -461,8 +471,7 @@ function markAsSynced(config, deviceId = null) {
   updateSyncMetadata(config, {
     lastSyncedAt: timestamp,
     lastSyncedDevice: device,
-    lastModifiedAt: timestamp, // Also update modified time
-    lastModifiedDevice: device,
+    // lastModifiedAt는 업데이트하지 않음 - 실제 수정 시간을 보존
     dataHash,
     isConflicted: false,
   });
@@ -481,8 +490,25 @@ function hasUnsyncedChanges(config) {
     advanced: config.get('advanced'),
   };
   const currentHash = generateDataHash(currentData);
+  
+  // Debug logging
+  const { createLogger } = require('./logger');
+  const logger = createLogger('ConfigDebug');
+  
+  const hashDifferent = currentHash !== syncMeta.dataHash;
+  const timeCondition = syncMeta.lastModifiedAt > syncMeta.lastSyncedAt;
+  const result = hashDifferent || timeCondition;
+  
+  logger.info('=== hasUnsyncedChanges Debug ===');
+  logger.info('Current hash:', currentHash);
+  logger.info('Stored hash:', syncMeta.dataHash);
+  logger.info('Hash different:', hashDifferent);
+  logger.info('Last modified:', new Date(syncMeta.lastModifiedAt).toISOString());
+  logger.info('Last synced:', new Date(syncMeta.lastSyncedAt).toISOString());
+  logger.info('Time condition (modified > synced):', timeCondition);
+  logger.info('Final result:', result);
 
-  return currentHash !== syncMeta.dataHash || syncMeta.lastModifiedAt > syncMeta.lastSyncedAt;
+  return result;
 }
 
 /**

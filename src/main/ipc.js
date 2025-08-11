@@ -319,10 +319,25 @@ function setupIpcHandlers(windows) {
     window.setSize(width, height);
   }
 
-  // Save configuration (specific changes)
+  // Save configuration (specific changes) with duplicate prevention
+  let lastSaveTime = 0;
+  let lastSaveData = null;
+  
   ipcMain.handle('save-config', (event, changes) => {
     try {
       logger.info('=== save-config called ===');
+      
+      // Prevent rapid duplicates (within 100ms)
+      const now = Date.now();
+      const dataString = JSON.stringify(changes);
+      if (now - lastSaveTime < 100 && lastSaveData === dataString) {
+        logger.info('Duplicate save-config call detected, ignoring');
+        return true;
+      }
+      
+      lastSaveTime = now;
+      lastSaveData = dataString;
+      
       logger.info('Changes keys:', Object.keys(changes || {}));
       if (changes && changes.pages) {
         logger.info('Pages being updated via save-config. Length:', Array.isArray(changes.pages) ? changes.pages.length : 'Not array');
@@ -330,7 +345,13 @@ function setupIpcHandlers(windows) {
       if (typeof changes === 'object') {
         // Apply each change to config
         Object.keys(changes).forEach(key => {
+          const oldValue = config.get(key);
+          logger.info(`IPC: Setting config key "${key}" - Config ID: ${config.path || 'unknown'}`);
+          logger.info(`Old value hash: ${JSON.stringify(oldValue).slice(0, 100)}...`);
           config.set(key, changes[key]);
+          const newValue = config.get(key);
+          logger.info(`New value hash: ${JSON.stringify(newValue).slice(0, 100)}...`);
+          logger.info(`Values equal: ${JSON.stringify(oldValue) === JSON.stringify(newValue)}`);
         });
 
         // Immediately notify toast window when settings change
