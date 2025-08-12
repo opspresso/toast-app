@@ -92,7 +92,6 @@ export function createButtonElement(button) {
   // Handle file:// URLs with tilde paths first (applies to all action types)
   if (button.icon && button.icon.startsWith('file://~/')) {
     handleTildeIconPath(iconElement, button);
-    return buttonElement;
   } else if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
     // Process FlatColorIcons format icon
     const iconName = button.icon.split('.')[1]; // 'FlatColorIcons.home' -> 'home'
