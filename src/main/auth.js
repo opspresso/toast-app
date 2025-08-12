@@ -802,7 +802,7 @@ async function updatePageGroupSettings(subscription) {
     // Calculate number of page groups
     let pageGroups = PAGE_GROUPS.ANONYMOUS;
     if (isActive || isVip) {
-      if (subscription.plan === 'premium' || subscription.plan === 'pro' || isVip) {
+      if (subscription.plan === 'premium' || isVip) {
         pageGroups = PAGE_GROUPS.PREMIUM;
       } else {
         pageGroups = PAGE_GROUPS.AUTHENTICATED;

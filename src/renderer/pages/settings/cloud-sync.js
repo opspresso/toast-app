@@ -57,10 +57,10 @@ function initializeCloudSyncUI(config, authState, logger) {
     logger.info('Starting cloud sync UI initialization');
     initElements();
 
-    // Premium/Pro 구독 사용자는 항상 Cloud Sync 기능 활성화
+    // Premium 구독 사용자는 항상 Cloud Sync 기능 활성화
     if (authState.subscription?.plan) {
       const plan = authState.subscription.plan.toLowerCase();
-      if (plan.includes('premium') || plan.includes('pro')) {
+      if (plan.includes('premium')) {
         DOM.enableCloudSyncCheckbox.disabled = false;
 
         // 구독 정보에 cloud_sync 기능 활성화 설정
@@ -342,10 +342,10 @@ function checkCloudSyncPermission(authState) {
     hasPermission = true;
   }
 
-  // 3. Premium/Pro 플랜 확인
+  // 3. Premium 플랜 확인
   if (authState.subscription.plan) {
     const plan = authState.subscription.plan.toLowerCase();
-    if (plan.includes('premium') || plan.includes('pro')) {
+    if (plan.includes('premium')) {
       hasPermission = true;
     }
   }
