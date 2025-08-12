@@ -436,13 +436,13 @@ export async function fetchSubscriptionInfo() {
       window.settings.log.info('수신된 구독 정보:', JSON.stringify(subscription));
 
       // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
-      if (subscription.plan && (subscription.plan.toLowerCase().includes('premium') || subscription.plan.toLowerCase().includes('pro'))) {
+      if (subscription.plan && subscription.plan.toLowerCase().includes('premium')) {
         if (!subscription.features) {
           subscription.features = {};
         }
-        // 프리미엄/프로 사용자라면 cloud_sync 기능 활성화
+        // 프리미엄 사용자라면 cloud_sync 기능 활성화
         subscription.features.cloud_sync = true;
-        window.settings.log.info('프리미엄 구독 감지, cloud_sync 활성화');
+        window.settings.log.info('Premium 구독 감지, cloud_sync 활성화');
       }
 
       updateAuthState({ subscription });

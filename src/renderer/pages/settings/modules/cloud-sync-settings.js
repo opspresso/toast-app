@@ -164,12 +164,12 @@ export function updateSyncStatusUI(status) {
     window.settings.log.info('VIP 상태 확인됨 - 클라우드 싱크 권한 부여됨');
   }
 
-  // 2. 구독 플랜 확인 (premium/pro 플랜은 cloud_sync 기능을 기본 제공)
+  // 2. 구독 플랜 확인 (premium 플랜은 cloud_sync 기능을 기본 제공)
   if (authState.subscription?.plan) {
     const plan = authState.subscription.plan.toLowerCase();
-    if (plan.includes('premium') || plan.includes('pro')) {
+    if (plan.includes('premium')) {
       hasCloudSyncPermission = true;
-      window.settings.log.info('Premium/Pro 플랜 확인됨');
+      window.settings.log.info('Premium 플랜 확인됨');
     }
   }
 

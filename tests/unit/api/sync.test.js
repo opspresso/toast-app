@@ -157,7 +157,7 @@ describe('API Sync Module (P1)', () => {
       mockConfigStore.get.mockReturnValue({
         isSubscribed: true,
         active: true,
-        plan: 'pro',
+        plan: 'premium',
         isVip: true,
       });
 
