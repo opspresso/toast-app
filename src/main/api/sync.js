@@ -57,8 +57,8 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
     // 2. cloud_sync 기능 확인 (features 객체 우선, additionalFeatures 대체)
     const hasCloudSyncFeature = subscription.features?.cloud_sync === true || subscription.additionalFeatures?.cloudSync === true;
 
-    // 3. Premium/Pro/VIP 플랜 확인
-    const isPremiumPlan = subscription.isVip === true || (subscription.plan && ['premium', 'pro', 'vip'].includes(subscription.plan.toLowerCase()));
+    // 3. Premium/VIP 플랜 확인
+    const isPremiumPlan = subscription.isVip === true || (subscription.plan && ['premium', 'vip'].includes(subscription.plan.toLowerCase()));
 
     // 구독자이고 cloud_sync 기능이 있거나 Premium 플랜인 경우 활성화
     if (isSubscribed && (hasCloudSyncFeature || isPremiumPlan)) {
