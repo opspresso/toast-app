@@ -1,10 +1,17 @@
 {
   "name": "toast-app",
-  "version": "0.8.18",
+  "version": "0.8.19",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
-  "license": "MIT",
   "homepage": "https://toastapp.io",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opspresso/toast-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/opspresso/toast-app/issues"
+  },
   "keywords": [
     "electron",
     "shortcut",
@@ -13,13 +20,6 @@
     "desktop",
     "utility"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/opspresso/toast-app.git"
-  },
-  "bugs": {
-    "url": "https://github.com/opspresso/toast-app/issues"
-  },
   "main": "src/index.js",
   "scripts": {
     "start": "electron .",
@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@electron/notarize": "^3.0.1",
-    "electron": "^35.1.5",
+    "electron": "^35.7.5",
     "electron-builder": "^26.0.12",
     "electron-builder-notarize": "^1.5.2",
     "eslint": "^8.57.0",
