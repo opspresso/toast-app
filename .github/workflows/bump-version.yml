@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js 🐍
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Bump Version and Save PR Message 🏷️
         id: bump
