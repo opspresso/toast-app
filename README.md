@@ -1,7 +1,7 @@
 # Toast 앱
 
 <p align="center">
-  <img src="https://toastapp.io/logo192.png" alt="Toast 앱 로고" width="192" height="192">
+  <img src="https://app.toast.sh/logo192.png" alt="Toast 앱 로고" width="192" height="192">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://toastapp.io/images/screenshot-light.png" alt="Toast 앱 스크린샷" width="500">
+  <img src="https://app.toast.sh/images/screenshot-light.png" alt="Toast 앱 스크린샷" width="500">
 </p>
 
 ## ✨ 주요 기능

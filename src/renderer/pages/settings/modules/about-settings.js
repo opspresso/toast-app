@@ -450,7 +450,7 @@ export function setupAboutEventListeners() {
   // About 탭 관련 버튼
   if (homepageButton) {
     homepageButton.addEventListener('click', () => {
-      window.settings.openUrl('https://toastapp.io');
+      window.settings.openUrl('https://app.toast.sh');
     });
   }
 

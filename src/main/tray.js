@@ -78,19 +78,19 @@ function updateTrayMenu(tray, windows) {
     {
       label: 'How to use',
       click: () => {
-        shell.openExternal('https://toastapp.io/how-to-use');
+        shell.openExternal('https://app.toast.sh/how-to-use');
       },
     },
     {
       label: 'Dashboard',
       click: () => {
-        shell.openExternal('https://toastapp.io/dashboard');
+        shell.openExternal('https://app.toast.sh/dashboard');
       },
     },
     {
       label: 'Subscription',
       click: () => {
-        shell.openExternal('https://toastapp.io/subscription');
+        shell.openExternal('https://app.toast.sh/subscription');
       },
     },
     { type: 'separator' },
