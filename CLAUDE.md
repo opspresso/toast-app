@@ -181,6 +181,6 @@ When storing subscription data in ConfigStore, ensure consistency:
 - Create `.env` file in `src/main/config/` for local configuration
 - Key variables:
   - `CLIENT_ID`, `CLIENT_SECRET`: OAuth authentication
-  - `TOAST_URL`: API endpoint (default: https://toastapp.io)
+  - `TOAST_URL`: API endpoint (default: https://app.toast.sh)
   - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 2592000)
   - `NODE_ENV`: Set to 'development' for dev mode

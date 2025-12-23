@@ -62,7 +62,7 @@ npm run dev
 # .env 예시
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
-TOAST_URL=https://toastapp.io
+TOAST_URL=https://app.toast.sh
 TOKEN_EXPIRES_IN=2592000
 ```
 

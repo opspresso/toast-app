@@ -9,7 +9,7 @@ const { getEnv } = require('../config/env');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // Base URL and endpoint configuration
-const TOAST_URL = getEnv('TOAST_URL', 'https://toastapp.io');
+const TOAST_URL = getEnv('TOAST_URL', 'https://app.toast.sh');
 const API_BASE_URL = `${TOAST_URL}/api`;
 
 // API endpoints

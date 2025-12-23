@@ -13,7 +13,7 @@ describe('Constants', () => {
         name: 'Toast',
         version: 'v0.0.0',
         description: expect.stringContaining('customizable shortcut launcher'),
-        homepage: 'https://toastapp.io',
+        homepage: 'https://app.toast.sh',
         license: 'MIT',
         repository: 'https://github.com/opspresso/toast-app',
         author: expect.stringContaining('nalbam')
@@ -30,10 +30,10 @@ describe('Constants', () => {
     test('should have mutable object structure', () => {
       // JavaScript objects are mutable by default
       const originalName = constants.APP_DEFAULT_INFO.name;
-      
+
       constants.APP_DEFAULT_INFO.name = 'Modified';
       expect(constants.APP_DEFAULT_INFO.name).toBe('Modified');
-      
+
       // Restore original value for other tests
       constants.APP_DEFAULT_INFO.name = originalName;
       expect(constants.APP_DEFAULT_INFO.name).toBe('Toast');
@@ -66,7 +66,7 @@ describe('Constants', () => {
   describe('DEFAULT_ANONYMOUS_SUBSCRIPTION', () => {
     test('should have correct subscription structure', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
-      
+
       expect(subscription).toEqual(expect.objectContaining({
         id: 'sub_free_anonymous',
         userId: 'anonymous',
@@ -79,7 +79,7 @@ describe('Constants', () => {
 
     test('should have correct features configuration', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
-      
+
       expect(subscription.features).toEqual(expect.objectContaining({
         page_groups: constants.PAGE_GROUPS.ANONYMOUS
       }));
@@ -88,7 +88,7 @@ describe('Constants', () => {
 
     test('should have valid timestamps', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
-      
+
       expect(subscription.created_at).toEqual(expect.any(String));
       expect(subscription.updated_at).toEqual(expect.any(String));
       expect(new Date(subscription.created_at)).toBeInstanceOf(Date);
@@ -99,7 +99,7 @@ describe('Constants', () => {
 
     test('should have null expiration fields for free tier', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
-      
+
       expect(subscription.expiresAt).toBeNull();
       expect(subscription.subscribed_until).toBeNull();
       expect(subscription.isVip).toBe(false);
@@ -107,7 +107,7 @@ describe('Constants', () => {
 
     test('should have array of features', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
-      
+
       expect(Array.isArray(subscription.features_array)).toBe(true);
       expect(subscription.features_array.length).toBeGreaterThan(0);
     });
@@ -116,7 +116,7 @@ describe('Constants', () => {
   describe('DEFAULT_ANONYMOUS', () => {
     test('should have correct user profile structure', () => {
       const anonymous = constants.DEFAULT_ANONYMOUS;
-      
+
       expect(anonymous).toBeDefined();
       expect(anonymous.id).toBe('anonymous');
       expect(anonymous.email).toBe('anonymous@user.com');
@@ -127,22 +127,22 @@ describe('Constants', () => {
 
     test('should have valid profile image URL', () => {
       const anonymous = constants.DEFAULT_ANONYMOUS;
-      
+
       expect(anonymous.image).toBeDefined();
-      expect(anonymous.image).toContain('toastapp.io');
+      expect(anonymous.image).toContain('app.toast.sh');
       expect(anonymous.image).toMatch(/^https?:\/\//);
     });
 
     test('should include subscription information', () => {
       const anonymous = constants.DEFAULT_ANONYMOUS;
-      
+
       expect(anonymous.subscription).toBeDefined();
       expect(anonymous.subscription).toBe(constants.DEFAULT_ANONYMOUS_SUBSCRIPTION);
     });
 
     test('should have valid timestamps', () => {
       const anonymous = constants.DEFAULT_ANONYMOUS;
-      
+
       expect(anonymous.created_at).toBeDefined();
       expect(anonymous.updated_at).toBeDefined();
       expect(new Date(anonymous.created_at)).toBeInstanceOf(Date);
@@ -161,11 +161,11 @@ describe('Constants', () => {
     test('should not export unexpected properties', () => {
       const expectedKeys = [
         'APP_DEFAULT_INFO',
-        'PAGE_GROUPS', 
+        'PAGE_GROUPS',
         'DEFAULT_ANONYMOUS',
         'DEFAULT_ANONYMOUS_SUBSCRIPTION'
       ];
-      
+
       const actualKeys = Object.keys(constants);
       expect(actualKeys.sort()).toEqual(expectedKeys.sort());
     });
@@ -198,7 +198,7 @@ describe('Constants', () => {
     test('should handle string concatenation', () => {
       const info = constants.APP_DEFAULT_INFO;
       const title = `${info.name} ${info.version}`;
-      
+
       expect(title).toContain(info.name);
       expect(title).toContain(info.version);
     });
@@ -206,21 +206,21 @@ describe('Constants', () => {
     test('should handle URL construction', () => {
       const info = constants.APP_DEFAULT_INFO;
       const fullUrl = `${info.homepage}/about`;
-      
-      expect(fullUrl).toBe('https://toastapp.io/about');
+
+      expect(fullUrl).toBe('https://app.toast.sh/about');
     });
 
     test('should handle feature checking', () => {
       const subscription = constants.DEFAULT_ANONYMOUS_SUBSCRIPTION;
       const hasBasicFeatures = subscription.features_array.includes('basic_shortcuts');
-      
+
       expect(hasBasicFeatures).toBe(true);
     });
 
     test('should handle subscription status checking', () => {
       const user = constants.DEFAULT_ANONYMOUS;
       const isSubscribed = user.subscription.is_subscribed && user.subscription.active;
-      
+
       expect(isSubscribed).toBe(false);
     });
   });

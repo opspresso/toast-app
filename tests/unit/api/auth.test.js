@@ -38,11 +38,11 @@ const mockStore = {
 
 const mockClientModule = {
   ENDPOINTS: {
-    OAUTH_AUTHORIZE: 'https://toastapp.io/api/oauth/authorize',
-    OAUTH_TOKEN: 'https://toastapp.io/api/oauth/token',
-    OAUTH_REVOKE: 'https://toastapp.io/api/oauth/revoke',
-    USER_PROFILE: 'https://toastapp.io/api/users/profile',
-    SETTINGS: 'https://toastapp.io/api/users/settings'
+    OAUTH_AUTHORIZE: 'https://app.toast.sh/api/oauth/authorize',
+    OAUTH_TOKEN: 'https://app.toast.sh/api/oauth/token',
+    OAUTH_REVOKE: 'https://app.toast.sh/api/oauth/revoke',
+    USER_PROFILE: 'https://app.toast.sh/api/users/profile',
+    SETTINGS: 'https://app.toast.sh/api/users/settings'
   },
   createApiClient: jest.fn(() => mockClient),
   getAuthHeaders: jest.fn(() => ({ Authorization: 'Bearer mock-token' })),
@@ -61,17 +61,17 @@ describe('API Auth Module (P0)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
-    
+
     // Re-setup Store mock after clearing
     const Store = require('electron-store');
     Store.mockImplementation(() => mockStore);
-    
+
     // Setup default mock responses
     mockStore.get.mockReturnValue(null);
     mockClient.get.mockResolvedValue({ data: {} });
     mockClient.post.mockResolvedValue({ data: {} });
     mockClientModule.authenticatedRequest.mockResolvedValue({ data: {} });
-    
+
     // Get fresh module instance
     authApi = require('../../../src/main/api/auth');
   });
@@ -79,7 +79,7 @@ describe('API Auth Module (P0)', () => {
   describe('Login Process Management', () => {
     test('should check login process status', () => {
       const result = authApi.isLoginProcessActive();
-      
+
       expect(typeof result).toBe('boolean');
     });
   });
@@ -87,7 +87,7 @@ describe('API Auth Module (P0)', () => {
   describe('OAuth Login Initiation', () => {
     test('should handle login initiation', () => {
       const result = authApi.initiateLogin('test-client-id');
-      
+
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');
       if (result.success) {
@@ -98,7 +98,7 @@ describe('API Auth Module (P0)', () => {
 
     test('should handle missing client ID', () => {
       const result = authApi.initiateLogin();
-      
+
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');
     });
@@ -111,7 +111,7 @@ describe('API Auth Module (P0)', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret'
       };
-      
+
       mockClient.post.mockResolvedValue({
         data: {
           access_token: 'access-token-123',
@@ -121,7 +121,7 @@ describe('API Auth Module (P0)', () => {
       });
 
       const result = await authApi.exchangeCodeForToken(params);
-      
+
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');
       expect(mockClient.post).toHaveBeenCalled();
@@ -133,11 +133,11 @@ describe('API Auth Module (P0)', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret'
       };
-      
+
       mockClient.post.mockRejectedValue(new Error('Network error'));
 
       const result = await authApi.exchangeCodeForToken(params);
-      
+
       expect(result).toHaveProperty('success');
       expect(typeof result.success).toBe('boolean');
     });
@@ -150,7 +150,7 @@ describe('API Auth Module (P0)', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret'
       };
-      
+
       mockClient.post.mockResolvedValue({
         data: {
           access_token: 'new-access-token',
@@ -160,18 +160,18 @@ describe('API Auth Module (P0)', () => {
       });
 
       const result = await authApi.refreshAccessToken(params);
-      
+
       expect(result).toEqual({
         success: true,
         access_token: 'new-access-token',
         refresh_token: 'new-refresh-token'
       });
-      expect(mockClient.post).toHaveBeenCalledWith('https://toastapp.io/api/oauth/token', expect.any(URLSearchParams), expect.objectContaining({
+      expect(mockClient.post).toHaveBeenCalledWith('https://app.toast.sh/api/oauth/token', expect.any(URLSearchParams), expect.objectContaining({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       }));
-      
+
       // Verify the URLSearchParams contains the expected data
       const calledWith = mockClient.post.mock.calls[0][1];
       expect(calledWith.get('grant_type')).toBe('refresh_token');
@@ -184,11 +184,11 @@ describe('API Auth Module (P0)', () => {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret'
       };
-      
+
       mockClient.post.mockRejectedValue(new Error('Invalid refresh token'));
 
       const result = await authApi.refreshAccessToken(params);
-      
+
       expect(result).toEqual({
         success: false,
         error: expect.stringContaining('Invalid refresh token'),
@@ -206,23 +206,23 @@ describe('API Auth Module (P0)', () => {
           tokens: { accessToken: 'token-123' }
         })
       };
-      
+
       // Clear any previous mock calls
       mockStore.get.mockClear();
-      
+
       // Set up specific mock calls for state validation
       const currentTime = Date.now();
       mockStore.get
-        .mockReturnValueOnce('mock-uuid-12345')     // First call for 'oauth-state'  
+        .mockReturnValueOnce('mock-uuid-12345')     // First call for 'oauth-state'
         .mockReturnValueOnce(currentTime - 10000); // Second call for 'state-created-at'
 
       const result = await authApi.handleAuthRedirect(params);
-      
+
       // Verify the mock was called correctly
       expect(mockStore.get).toHaveBeenCalledTimes(2);
       expect(mockStore.get).toHaveBeenNthCalledWith(1, 'oauth-state');
       expect(mockStore.get).toHaveBeenNthCalledWith(2, 'state-created-at');
-      
+
       expect(result).toEqual({
         success: true,
         tokens: { accessToken: 'token-123' }
@@ -236,7 +236,7 @@ describe('API Auth Module (P0)', () => {
       };
 
       const result = await authApi.handleAuthRedirect(params);
-      
+
       expect(result).toEqual({
         success: false,
         error: expect.any(String)
@@ -256,7 +256,7 @@ describe('API Auth Module (P0)', () => {
       });
 
       const result = await authApi.fetchUserProfile();
-      
+
       expect(result).toBeDefined();
     });
 
@@ -283,7 +283,7 @@ describe('API Auth Module (P0)', () => {
       });
 
       const result = await authApi.fetchSubscription();
-      
+
       expect(result).toBeDefined();
     });
 
@@ -304,7 +304,7 @@ describe('API Auth Module (P0)', () => {
       mockClientModule.authenticatedRequest.mockResolvedValue({ data: {} });
 
       const result = await authApi.logout();
-      
+
       expect(result).toBeDefined();
     });
 
@@ -312,7 +312,7 @@ describe('API Auth Module (P0)', () => {
       mockClientModule.authenticatedRequest.mockRejectedValue(new Error('Network error'));
 
       const result = await authApi.logout();
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -326,7 +326,7 @@ describe('API Auth Module (P0)', () => {
         clientId: 'test-id',
         clientSecret: 'test-secret'
       });
-      
+
       expect(result).toBeDefined();
     });
 
@@ -336,15 +336,15 @@ describe('API Auth Module (P0)', () => {
         status: 400,
         data: { error: 'invalid_request' }
       };
-      
+
       mockClient.post.mockRejectedValue(apiError);
 
       const result = await authApi.exchangeCodeForToken({
         code: 'test-code',
-        clientId: 'test-id', 
+        clientId: 'test-id',
         clientSecret: 'test-secret'
       });
-      
+
       expect(result).toBeDefined();
     });
   });
@@ -368,7 +368,7 @@ describe('API Auth Module (P0)', () => {
         clientId: 'test-client',
         clientSecret: 'test-secret'
       });
-      
+
       expect(tokenResult).toBeDefined();
 
       // Fetch profile

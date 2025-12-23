@@ -162,7 +162,7 @@ describe('API Client', () => {
       const axiosInstance = client.createApiClient();
 
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://toastapp.io/api',
+        baseURL: 'https://app.toast.sh/api',
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ describe('API Client', () => {
       client.createApiClient(customOptions);
 
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://toastapp.io/api',
+        baseURL: 'https://app.toast.sh/api',
         timeout: 5000,
         headers: {
           'Custom-Header': 'custom-value',
@@ -214,7 +214,7 @@ describe('API Client', () => {
       client.createApiClient({});
 
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://toastapp.io/api',
+        baseURL: 'https://app.toast.sh/api',
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -343,12 +343,12 @@ describe('API Client', () => {
       const mockApiCall = jest.fn().mockRejectedValue({
         response: { status: 401 }
       });
-      
+
       const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
 
       // First call - should trigger refresh
       await client.authenticatedRequest(mockApiCall, { onUnauthorized });
-      
+
       // Second call immediately - should hit rate limit
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
 
@@ -361,7 +361,7 @@ describe('API Client', () => {
       const mockApiCall = jest.fn().mockRejectedValue({
         response: { status: 401 }
       });
-      
+
       const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
 
       // Force refresh attempts to trigger loop or rate limit detection
@@ -381,11 +381,11 @@ describe('API Client', () => {
       const mockApiCall = jest.fn()
         .mockRejectedValueOnce({ response: { status: 401 } })
         .mockResolvedValueOnce({ data: 'success' });
-      
-      const onUnauthorized = jest.fn().mockResolvedValue({ 
-        success: true, 
-        throttled: true, 
-        tokenValid: true 
+
+      const onUnauthorized = jest.fn().mockResolvedValue({
+        success: true,
+        throttled: true,
+        tokenValid: true
       });
 
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
@@ -398,15 +398,15 @@ describe('API Client', () => {
       client.setAccessToken('valid-token');
       const mockApiCall = jest.fn()
         .mockRejectedValueOnce({ response: { status: 401 } })
-        .mockRejectedValueOnce({ 
+        .mockRejectedValueOnce({
           response: { status: 500 },
           message: 'Internal server error'
         });
-      
-      const onUnauthorized = jest.fn().mockResolvedValue({ 
-        success: true, 
-        throttled: true, 
-        tokenValid: true 
+
+      const onUnauthorized = jest.fn().mockResolvedValue({
+        success: true,
+        throttled: true,
+        tokenValid: true
       });
 
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
@@ -421,7 +421,7 @@ describe('API Client', () => {
       const mockApiCall = jest.fn()
         .mockRejectedValueOnce({ response: { status: 401 } })
         .mockRejectedValueOnce({ response: { status: 401 } });
-      
+
       const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
 
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
@@ -435,7 +435,7 @@ describe('API Client', () => {
       const mockApiCall = jest.fn()
         .mockRejectedValueOnce({ response: { status: 401 } })
         .mockResolvedValueOnce({ data: 'success' });
-      
+
       const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
 
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
@@ -449,7 +449,7 @@ describe('API Client', () => {
       const mockApiCall = jest.fn().mockRejectedValue({
         response: { status: 401 }
       });
-      
+
       const onUnauthorized = jest.fn().mockResolvedValue({ success: false });
 
       const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
@@ -467,7 +467,7 @@ describe('API Client', () => {
 
       expect(mockAxios.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: 'https://toastapp.io/api'
+          baseURL: 'https://app.toast.sh/api'
         })
       );
     });
@@ -493,7 +493,7 @@ describe('API Client', () => {
       client.createApiClient(undefined);
 
       expect(mockAxios.create).toHaveBeenCalledWith(expect.objectContaining({
-        baseURL: 'https://toastapp.io/api',
+        baseURL: 'https://app.toast.sh/api',
         timeout: 10000,
       }));
     });
@@ -529,8 +529,8 @@ describe('API Client', () => {
         response: { status: 401 }
       });
 
-      const result = await client.authenticatedRequest(mockApiCall, { 
-        onUnauthorized: null 
+      const result = await client.authenticatedRequest(mockApiCall, {
+        onUnauthorized: null
       });
 
       expect(result.error).toBeDefined();
@@ -542,8 +542,8 @@ describe('API Client', () => {
         response: { status: 401 }
       });
 
-      const result = await client.authenticatedRequest(mockApiCall, { 
-        onUnauthorized: undefined 
+      const result = await client.authenticatedRequest(mockApiCall, {
+        onUnauthorized: undefined
       });
 
       expect(result.error).toBeDefined();
