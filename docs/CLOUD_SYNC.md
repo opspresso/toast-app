@@ -145,7 +145,7 @@ sequenceDiagram
 
 ```http
 GET /api/users/settings HTTP/1.1
-Host: toastapp.io
+Host: app.toast.sh
 Authorization: Bearer {access_token}
 ```
 
@@ -176,7 +176,7 @@ Authorization: Bearer {access_token}
 
 ```http
 PUT /api/users/settings HTTP/1.1
-Host: toastapp.io
+Host: app.toast.sh
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -242,7 +242,7 @@ Content-Type: application/json
 // 설정 다운로드
 async function downloadSettingsFromServer() {
   try {
-    const response = await fetch('https://toastapp.io/api/users/settings', {
+    const response = await fetch('https://app.toast.sh/api/users/settings', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${getAccessToken()}`,
@@ -298,7 +298,7 @@ async function uploadSettingsToServer() {
       clientLastModifiedDevice: getDeviceId() // 현재 기기 ID
     };
 
-    const response = await fetch('https://toastapp.io/api/users/settings', {
+    const response = await fetch('https://app.toast.sh/api/users/settings', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${getAccessToken()}`,

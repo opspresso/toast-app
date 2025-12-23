@@ -259,7 +259,7 @@ export function handleLogout() {
  */
 export function handleManageSubscription() {
   window.settings.log.info('구독 관리 페이지 열기');
-  window.settings.openUrl('https://toastapp.io/subscription');
+  window.settings.openUrl('https://app.toast.sh/subscription');
 }
 
 /**

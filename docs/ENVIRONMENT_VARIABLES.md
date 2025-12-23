@@ -21,7 +21,7 @@
 # .env 파일 예시
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
-TOAST_URL=https://toastapp.io
+TOAST_URL=https://app.toast.sh
 TOKEN_EXPIRES_IN=2592000
 ```
 
@@ -96,13 +96,13 @@ TOKEN_EXPIRES_IN=3600
 
 | 변수명 | 기본값 | 설명 | 예시 |
 |--------|--------|------|------|
-| `TOAST_URL` | `https://toastapp.io` | Toast 웹 서비스 URL | `https://toastapp.io` |
+| `TOAST_URL` | `https://app.toast.sh` | Toast 웹 서비스 URL | `https://app.toast.sh` |
 
 ### 애플리케이션 설정 예시
 
 ```bash
 # 프로덕션 환경
-TOAST_URL=https://toastapp.io
+TOAST_URL=https://app.toast.sh
 
 # 개발 환경 (로컬 서버 사용 시)
 TOAST_URL=http://localhost:3000
@@ -124,7 +124,7 @@ TOKEN_EXPIRES_IN=86400
 ```bash
 CLIENT_ID=production_client_id
 CLIENT_SECRET=production_client_secret
-TOAST_URL=https://toastapp.io
+TOAST_URL=https://app.toast.sh
 TOKEN_EXPIRES_IN=0
 ```
 
