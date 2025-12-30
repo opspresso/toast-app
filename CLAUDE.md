@@ -86,7 +86,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 5. Update `docs/CONFIG_SCHEMA.md` and `docs/SETTINGS.md`
 
 ### Testing & Quality Assurance
-- **Unit Tests**: Currently 2 tests (config, app-icon-extractor)
+- **Unit Tests**: 27 test suites, 789 unit tests (all passing)
 - **Manual Testing**: Use dev mode with `npm run dev`
 - **Coverage**: Run `npm run test` to generate coverage report
 - **Linting**: `npm run lint` to check code style
@@ -125,9 +125,11 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Framework**: Jest with coverage reporting
 - **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
 - **Coverage**: Enabled by default, reports in `coverage/` directory
-- **Current Tests**: 2 unit tests
-  - `tests/unit/config.test.js` - Configuration store testing
-  - `tests/unit/app-icon-extractor.test.js` - Icon extraction utility
+- **Current Tests**: 27 test suites, 789 unit tests (all passing)
+  - Main process modules (executor, config, shortcuts, windows, etc.)
+  - Actions (application, chain, exec, open, script)
+  - API clients (auth, client, sync)
+  - Preload scripts (toast, settings)
 
 ### Test Structure
 ```
@@ -135,7 +137,12 @@ tests/
 ├── mocks/
 │   └── electron.js        # Electron API mocks
 ├── setup.js               # Jest setup configuration
-├── unit/                  # Unit tests (current: 2 tests)
+├── unit/                  # Unit tests (789 tests in 27 suites)
+│   ├── actions/           # Action handler tests
+│   ├── api/               # API client tests
+│   ├── config/            # Configuration tests
+│   ├── preload/           # Preload script tests
+│   └── utils/             # Utility function tests
 ├── integration/           # Integration tests (empty)
 └── e2e/                   # End-to-end tests (empty)
 ```
