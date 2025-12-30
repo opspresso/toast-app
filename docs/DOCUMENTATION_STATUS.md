@@ -91,7 +91,7 @@
 | `README.md` | 100% | ✅ 개선완료 | 중복 제거, 개요 중심으로 재구성 |
 | `docs/README.md` | 100% | ✅ 개선완료 | 카테고리별 분류, 사용자별 경로 추가 |
 | `ARCHITECTURE.md` | 100% | ✅ 정확 | 시스템 아키텍처 (실제 구현과 완전 일치) |
-| `DATABASE.md` | 100% | ✅ 정확 | 논리적 데이터 구조 (electron-store 기반) |
+| `DATA_MODEL.md` | 100% | ✅ 정확 | 논리적 데이터 구조 (electron-store 기반) |
 | `PAGES.md` | 95% | ✅ 양호 | UI 레이아웃 및 네비게이션 |
 | `SCENARIOS.md` | 85% | ✅ 양호 | 사용자 시나리오 |
 
@@ -123,7 +123,7 @@
 - 플랫폼별 고려사항 잘 문서화됨
 
 ### 2. 개선 필요 사항
-- `DATABASE.md` → "데이터 모델" 또는 "논리적 데이터 구조"로 제목 변경
+- ~~`DATABASE.md` → `DATA_MODEL.md`로 파일명 변경~~ ✅ 완료
 - `jest.config.js`의 중복된 moduleNameMapper 수정 필요
 - 테스트 구현 확대 필요
 
