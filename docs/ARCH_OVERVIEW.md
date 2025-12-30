@@ -434,4 +434,4 @@ Toast 앱은 사용자에게 페이지라는 개념을 통해 버튼을 구성�
 3. **구성 저장소 통합**: 변경 이벤트 감지 및 설정 적용
 4. **인증 관리자 연계**: 사용자 권한 및 토큰 관리
 
-> **상세 정보**: 클라우드 동기화 구현 세부사항은 [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md)를 참조하세요.
+> **상세 정보**: 클라우드 동기화 구현 세부사항은 [docs/FEATURE_CLOUD_SYNC.md](docs/FEATURE_CLOUD_SYNC.md)를 참조하세요.

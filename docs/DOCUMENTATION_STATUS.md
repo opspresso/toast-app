@@ -8,7 +8,7 @@
 
 ### 📋 자동 업데이트 기능 상세 검증
 1. **updater.js 분석**: 완전한 업데이트 시스템 구현 확인 (체크, 다운로드, 설치)
-2. **AUTO_UPDATE.md 수정**: 실제 구현과 일치하도록 문서 업데이트
+2. **FEATURE_AUTO_UPDATE.md 수정**: 실제 구현과 일치하도록 문서 업데이트
 3. **구현 특징 문서화**: autoDownload: false, 진행률 표시, IPC 핸들러 등
 
 ## 🔄 이전 변경사항 (2025-08-09)
@@ -45,34 +45,34 @@
 
 - **주요 기능**
   - `BUTTON_ACTIONS.md` - 모든 액션 타입 (exec, open, script, chain, application) 구현됨
-  - `CLOUD_SYNC.md` - OAuth 인증 및 동기화 완전 구현
-  - `AUTO_UPDATE.md` - electron-updater 기반 자동 업데이트 완전 구현 (2025-08-10 검증 및 수정)
-  - `SETTINGS.md` - 다중 탭 설정 UI 구현
+  - `FEATURE_CLOUD_SYNC.md` - OAuth 인증 및 동기화 완전 구현
+  - `FEATURE_AUTO_UPDATE.md` - electron-updater 기반 자동 업데이트 완전 구현 (2025-08-10 검증 및 수정)
+  - `FEATURE_SETTINGS.md` - 다중 탭 설정 UI 구현
 
 - **시스템 구성**
   - `CONFIG_SCHEMA.md` - electron-store 기반 설정 관리
-  - `DATA_STORAGE.md` - 데이터 저장 위치 및 구조
-  - `ENVIRONMENT_VARIABLES.md` - 환경 변수 설정
-  - `PLATFORM_SPECIFIC.md` - macOS/Windows 플랫폼별 기능
+  - `CONFIG_DATA_STORAGE.md` - 데이터 저장 위치 및 구조
+  - `CONFIG_ENV.md` - 환경 변수 설정
+  - `ARCH_PLATFORM.md` - macOS/Windows 플랫폼별 기능
 
 - **사용자 가이드**
-  - `USER_GUIDE.md` - 상세 사용자 가이드
+  - `GUIDE_USER.md` - 상세 사용자 가이드
   - `BUTTON_SHORTCUTS.md` - 자동 단축키 할당 시스템
 
 - **개발 문서**
-  - `DEVELOPMENT.md` - 개발 환경 설정
-  - `SCRIPTS.md` - 사용자 정의 스크립트 지원
-  - `SECURITY.md` - 보안 모델 및 인증
-  - `INTEGRATION.md` - 외부 서비스 통합
+  - `DEV_SETUP.md` - 개발 환경 설정
+  - `FEATURE_SCRIPTS.md` - 사용자 정의 스크립트 지원
+  - `ARCH_SECURITY.md` - 보안 모델 및 인증
+  - `DEV_INTEGRATION.md` - 외부 서비스 통합
 
 - **기타**
-  - `WINDOW_VISIBILITY.md` - 윈도우 표시/숨김 동작
-  - `ICON_EXTRACTION.md` - macOS 앱 아이콘 추출 (macOS만)
-  - `DEPENDENCY_MANAGEMENT.md` - 의존성 관리 정책
+  - `FEATURE_WINDOW.md` - 윈도우 표시/숨김 동작
+  - `FEATURE_ICON_EXTRACTION.md` - macOS 앱 아이콘 추출 (macOS만)
+  - `DEV_DEPENDENCIES.md` - 의존성 관리 정책
 
 ### ⚠️ 부분적으로 구현된 기능 문서 (1개)
 
-- `TESTING.md` - 단위 테스트는 충분히 구현되어 있으나, 통합/E2E 테스트는 미구현
+- `DEV_TESTING.md` - 단위 테스트는 충분히 구현되어 있으나, 통합/E2E 테스트는 미구현
   - Jest 설정 완료
   - 27개 테스트 스위트, 789개 단위 테스트 구현
   - 모든 테스트 통과 (2024년 12월 기준)
@@ -90,10 +90,10 @@
 |------|--------|------|------|
 | `README.md` | 100% | ✅ 개선완료 | 중복 제거, 개요 중심으로 재구성 |
 | `docs/README.md` | 100% | ✅ 개선완료 | 카테고리별 분류, 사용자별 경로 추가 |
-| `ARCHITECTURE.md` | 100% | ✅ 정확 | 시스템 아키텍처 (실제 구현과 완전 일치) |
-| `DATA_MODEL.md` | 100% | ✅ 정확 | 논리적 데이터 구조 (electron-store 기반) |
-| `PAGES.md` | 95% | ✅ 양호 | UI 레이아웃 및 네비게이션 |
-| `SCENARIOS.md` | 85% | ✅ 양호 | 사용자 시나리오 |
+| `ARCH_OVERVIEW.md` | 100% | ✅ 정확 | 시스템 아키텍처 (실제 구현과 완전 일치) |
+| `CONFIG_DATA_MODEL.md` | 100% | ✅ 정확 | 논리적 데이터 구조 (electron-store 기반) |
+| `GUIDE_PAGES.md` | 95% | ✅ 양호 | UI 레이아웃 및 네비게이션 |
+| `GUIDE_SCENARIOS.md` | 85% | ✅ 양호 | 사용자 시나리오 |
 
 ## 🚀 구현된 주요 기능 (2025-08-09 검증)
 
@@ -123,7 +123,7 @@
 - 플랫폼별 고려사항 잘 문서화됨
 
 ### 2. 개선 필요 사항
-- ~~`DATABASE.md` → `DATA_MODEL.md`로 파일명 변경~~ ✅ 완료
+- ~~`DATABASE.md` → `CONFIG_DATA_MODEL.md`로 파일명 변경~~ ✅ 완료
 - `jest.config.js`의 중복된 moduleNameMapper 수정 필요
 - 테스트 구현 확대 필요
 

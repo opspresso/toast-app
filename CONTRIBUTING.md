@@ -259,9 +259,9 @@ npm run test -- -t "test name pattern"
 ### 문서 파일
 
 - `README.md`: 프로젝트 개요 및 빠른 시작
-- `ARCHITECTURE.md`: 시스템 설계 및 컴포넌트
+- `ARCH_OVERVIEW.md`: 시스템 설계 및 컴포넌트
 - `API_DOCUMENTATION.md`: API 참조
-- `USER_GUIDE.md`: 사용자 지침
+- `GUIDE_USER.md`: 사용자 지침
 - `CONTRIBUTING.md`: 기여 가이드라인(이 파일)
 
 ## 이슈 보고

@@ -83,7 +83,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. Add settings module in `src/renderer/pages/settings/modules/`
 3. Update settings UI in `src/renderer/pages/settings/index.html`
 4. Add IPC handlers in `src/main/ipc.js` if needed
-5. Update `docs/CONFIG_SCHEMA.md` and `docs/SETTINGS.md`
+5. Update `docs/CONFIG_SCHEMA.md` and `docs/FEATURE_SETTINGS.md`
 
 ### Testing & Quality Assurance
 - **Unit Tests**: 27 test suites, 789 unit tests (all passing)

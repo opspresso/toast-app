@@ -130,8 +130,8 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 
 - [구성 스키마](./CONFIG_SCHEMA.md): 상세한 구성 옵션
 - [버튼 액션](./BUTTON_ACTIONS.md): 지원되는 버튼 액션 유형
-- [보안](./SECURITY.md): 보안 모델 및 고려사항
-- [테스트](./TESTING.md): API 테스트 전략
+- [보안](./ARCH_SECURITY.md): 보안 모델 및 고려사항
+- [테스트](./DEV_TESTING.md): API 테스트 전략
 
 ## 버전 정보
 
