@@ -35,7 +35,7 @@ async function executeCommand(action) {
   }
 
   // Special handling for 'open -a AppName' pattern with workingDir
-  const openAppMatch = action.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))(.*)$/);
+  const openAppMatch = action.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))(.*)$/);
   if (openAppMatch && action.workingDir && process.platform === 'darwin') {
     const appName = (openAppMatch[1] || openAppMatch[2]).trim();
     const remainingArgs = (openAppMatch[3] || '').trim();
@@ -56,7 +56,8 @@ async function executeCommand(action) {
     if (remainingArgs) {
       // If there are additional arguments, keep them and add workingDir
       modifiedCommand = `open -a ${quotedAppName} ${remainingArgs} "${expandedWorkingDir}"`;
-    } else {
+    }
+    else {
       // If no additional arguments, just add workingDir
       modifiedCommand = `open -a ${quotedAppName} "${expandedWorkingDir}"`;
     }
@@ -139,7 +140,7 @@ async function openInTerminal(command, workingDir) {
     let finalCommand = command;
 
     // Special handling for 'open -a AppName' pattern with workingDir on macOS
-    const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))(.*)$/);
+    const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))(.*)$/);
     if (openAppMatch && expandedWorkingDir && process.platform === 'darwin') {
       const appName = (openAppMatch[1] || openAppMatch[2]).trim();
       const remainingArgs = (openAppMatch[3] || '').trim();
@@ -150,7 +151,8 @@ async function openInTerminal(command, workingDir) {
         const quotedAppName = appName.includes(' ') && !openAppMatch[1] ? `"${appName}"` : appName;
         if (remainingArgs) {
           finalCommand = `open -a ${quotedAppName} ${remainingArgs} "${expandedWorkingDir}"`;
-        } else {
+        }
+        else {
           finalCommand = `open -a ${quotedAppName} "${expandedWorkingDir}"`;
         }
       }
@@ -163,9 +165,11 @@ async function openInTerminal(command, workingDir) {
         expandedWorkingDir && !openAppMatch
           ? `osascript -e 'tell application "Terminal" to do script "cd ${expandedWorkingDir} && ${finalCommand}"'`
           : `osascript -e 'tell application "Terminal" to do script "${finalCommand}"'`;
-    } else if (process.platform === 'win32') {
+    }
+    else if (process.platform === 'win32') {
       terminalCommand = expandedWorkingDir ? `start cmd.exe /K "cd /d ${expandedWorkingDir} && ${finalCommand}"` : `start cmd.exe /K "${finalCommand}"`;
-    } else {
+    }
+    else {
       const terminal = 'x-terminal-emulator';
       terminalCommand = expandedWorkingDir
         ? `${terminal} -e "bash -c 'cd ${expandedWorkingDir} && ${finalCommand}; exec bash'"`

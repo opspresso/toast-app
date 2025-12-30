@@ -42,7 +42,8 @@ function storeStateParam(state) {
     stateStore.set('state-created-at', Date.now());
     logger.info('Auth state stored:', state);
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to store state parameter:', error);
     throw error;
   }
@@ -68,7 +69,8 @@ function retrieveStoredState() {
     }
 
     return state;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to retrieve stored state:', error);
     return null;
   }
@@ -105,7 +107,8 @@ function setLoginInProgress(status) {
     // Record login start time
     loginStartTimestamp = Date.now();
     logger.info('Login process started');
-  } else {
+  }
+  else {
     logger.info('Login process ended');
   }
 }
@@ -150,7 +153,8 @@ function initiateLogin(clientId) {
       url: authUrl.toString(),
       state,
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to initiate login:', error);
 
     // Reset login state if error occurs
@@ -221,7 +225,8 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
       refresh_token,
       expires_in,
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error exchanging token:', error);
     logger.error('Detailed error information:', error.response?.data || 'No detailed information');
 
@@ -300,7 +305,8 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         access_token,
         refresh_token,
       };
-    } catch (tokenRequestError) {
+    }
+    catch (tokenRequestError) {
       logger.error('Token renewal request failed:', tokenRequestError.message);
 
       if (tokenRequestError.response?.status === 401) {
@@ -323,7 +329,8 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         code: 'REFRESH_FAILED',
       };
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Exception occurred during token refresh process:', error);
 
     // Critical error but keep app running
@@ -407,7 +414,8 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       success: true,
       code,
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to handle auth redirect:', error);
     setLoginInProgress(false); // Reset login state
     return {
@@ -472,7 +480,8 @@ async function fetchSubscription(onUnauthorized) {
       let profileData;
       if (response.data && response.data.success === true && response.data.data) {
         profileData = response.data.data;
-      } else {
+      }
+      else {
         profileData = response.data;
       }
 
@@ -516,7 +525,8 @@ async function fetchSubscription(onUnauthorized) {
       }
 
       return normalizedSubscription;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error retrieving subscription information:', error);
       return defaultSubscription;
     }
@@ -540,7 +550,8 @@ async function logout() {
       success: true,
       message: 'API logout successful',
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error during API logout:', error);
     return {
       success: false,

@@ -71,13 +71,15 @@ async function loadEnvironmentConfig() {
         });
         logger.info('Authentication state update notification sent');
       }
-    } else {
+    }
+    else {
       logger.info('No valid token, initializing authentication state');
       authManager.notifyAuthStateChange({
         isAuthenticated: false,
       });
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error loading environment configuration files:', error);
   }
   logger.info('Environment configuration files loading complete');
@@ -160,7 +162,8 @@ function initialize() {
               logger.error('Authentication code exchange error:', err);
               authManager.notifyLoginError(err.message || 'An error occurred during authentication processing');
             });
-        } else if (action === 'reload_auth' && token && userId) {
+        }
+        else if (action === 'reload_auth' && token && userId) {
           // connect 페이지에서 온 딥링크 처리
           logger.info('Processing auth reload request with token:', token);
           auth
@@ -172,16 +175,19 @@ function initialize() {
               logger.error('Auth reload error:', err);
               authManager.notifyLoginError(err.message || 'An error occurred during auth reload');
             });
-        } else {
+        }
+        else {
           logger.error('Authentication code or reload parameters are not in the URL');
           authManager.notifyLoginError('Authentication parameters are missing');
           return;
         }
-      } catch (error) {
+      }
+      catch (error) {
         logger.error('URL parsing error:', error);
         authManager.notifyLoginError(error.message || 'An error occurred while processing the URL');
       }
-    } else {
+    }
+    else {
       logger.info('Non-authentication URL protocol request:', url);
     }
   };
@@ -278,7 +284,8 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (!windows.toast || windows.toast.isDestroyed()) {
     createToastWindow(config);
-  } else {
+  }
+  else {
     // 이미 창이 존재하면 표시하고 포커스를 줌
     const { showToastWindow } = require('./main/windows');
     showToastWindow(config);

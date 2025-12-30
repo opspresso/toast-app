@@ -139,7 +139,8 @@ async function authenticatedRequest(apiCall, options = {}) {
 
   try {
     return await apiCall();
-  } catch (error) {
+  }
+  catch (error) {
     // Handle 401 unauthorized error
     if (error.response && error.response.status === 401) {
       // Special handling for subscription API requests
@@ -190,7 +191,8 @@ async function authenticatedRequest(apiCall, options = {}) {
               // 토큰이 여전히 유효하므로 API 호출 재시도
               const result = await apiCall();
               return result;
-            } catch (retryError) {
+            }
+            catch (retryError) {
               // 여전히 실패하면 오류 반환
               if (allowUnauthenticated && defaultValue) {
                 return defaultValue;
@@ -205,7 +207,8 @@ async function authenticatedRequest(apiCall, options = {}) {
                 },
               };
             }
-          } else {
+          }
+          else {
             try {
               // 일반적인 토큰 갱신 성공 케이스
               // Increment counter for requests after refresh
@@ -217,7 +220,8 @@ async function authenticatedRequest(apiCall, options = {}) {
               tokenRefreshTracking.requestsAfterRefresh = 0;
 
               return result;
-            } catch (retryError) {
+            }
+            catch (retryError) {
               if (allowUnauthenticated && defaultValue) {
                 return defaultValue;
               }
@@ -231,7 +235,8 @@ async function authenticatedRequest(apiCall, options = {}) {
               };
             }
           }
-        } else {
+        }
+        else {
           // Reset tokens on refresh failure
           clearTokens();
 

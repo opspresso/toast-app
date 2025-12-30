@@ -92,7 +92,8 @@ export function createButtonElement(button) {
   // Handle file:// URLs with tilde paths first (applies to all action types)
   if (button.icon && button.icon.startsWith('file://~/')) {
     handleTildeIconPath(iconElement, button);
-  } else if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
+  }
+  else if (button.icon && button.icon.startsWith('FlatColorIcons.')) {
     // Process FlatColorIcons format icon
     const iconName = button.icon.split('.')[1]; // 'FlatColorIcons.home' -> 'home'
     if (window.AllIcons && window.AllIcons[iconName]) {
@@ -105,13 +106,14 @@ export function createButtonElement(button) {
         iconElement.textContent = '🔍';
       };
       iconElement.appendChild(img);
-    } else {
+    }
+    else {
       // Display only icon name if icon not found
       iconElement.textContent = iconName || '❓';
     }
   }
-  // URL type and icon is empty but URL exists, use URL's favicon
   else if (button.action === 'open' && (!button.icon || button.icon.trim() === '') && button.url) {
+    // URL type and icon is empty but URL exists, use URL's favicon
     // Extract domain from URL and create favicon path
     const faviconUrl = getFaviconFromUrl(button.url);
     iconElement.textContent = '';
@@ -124,26 +126,27 @@ export function createButtonElement(button) {
     };
     iconElement.appendChild(img);
   }
-  // Application type and icon is empty but application path exists, try to use extracted icon
   else if (button.action === 'application' && (!button.icon || button.icon.trim() === '') && button.applicationPath) {
+    // Application type and icon is empty but application path exists, try to use extracted icon
     // Try to check if there's an extracted icon available
     tryLoadExtractedIcon(iconElement, button.applicationPath, '🚀');
   }
-  // Exec type and icon is empty but command exists, try to extract app icon from command
   else if (button.action === 'exec' && (!button.icon || button.icon.trim() === '') && button.command) {
+    // Exec type and icon is empty but command exists, try to extract app icon from command
     // Check if it's an 'open -a AppName' command
     const openAppMatch = button.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\\w\\s.-]+))/);
     if (openAppMatch) {
       const appName = (openAppMatch[1] || openAppMatch[2]).trim();
       const appPath = `/Applications/${appName}.app`;
       tryLoadExtractedIcon(iconElement, appPath, '⚡');
-    } else {
+    }
+    else {
       // Use default command icon for other exec commands
       iconElement.textContent = '⚡';
     }
   }
-  // URL type and icon is not empty, use icon (non-tilde URLs)
   else if (button.icon && isURL(button.icon)) {
+    // URL type and icon is not empty, use icon (non-tilde URLs)
     // Create image tag for regular URLs
     iconElement.textContent = '';
     const img = document.createElement('img');
@@ -155,13 +158,13 @@ export function createButtonElement(button) {
     };
     iconElement.appendChild(img);
   }
-  // Other types and icon is not empty, use icon
   else if (button.icon && button.icon.trim() !== '') {
+    // Other types and icon is not empty, use icon
     // Use as emoji or plain text
     iconElement.textContent = button.icon || '🔘';
   }
-  // Default icons for actions without icons
   else {
+    // Default icons for actions without icons
     switch (button.action) {
       case 'exec':
         iconElement.textContent = '⚡';
@@ -188,7 +191,8 @@ export function createButtonElement(button) {
   const shortcutElement = buttonElement.querySelector('.button-shortcut');
   if (button.shortcut) {
     shortcutElement.textContent = button.shortcut;
-  } else {
+  }
+  else {
     shortcutElement.style.display = 'none';
   }
 
@@ -241,7 +245,8 @@ export function executeButton(button) {
             window.toast.hideWindow();
           }
         });
-      } else {
+      }
+      else {
         showStatus(result.message || 'Action failed', 'error');
       }
     })
@@ -262,7 +267,8 @@ export function toggleSettingsMode() {
   // Show status message
   if (isSettingsMode) {
     showStatus('Settings mode activated. Click buttons to edit settings.', 'info');
-  } else {
+  }
+  else {
     showStatus('Settings mode deactivated.', 'info');
   }
 
@@ -321,7 +327,8 @@ export function navigateButtons(direction) {
   if (selectedButtonIndex === -1) {
     // No button selected, select the first one
     newIndex = 0;
-  } else {
+  }
+  else {
     // Calculate new index based on direction
     switch (direction) {
       case 'up':
@@ -350,7 +357,8 @@ export function navigateButtons(direction) {
       if (newIndex >= filteredButtons.length) {
         newIndex = filteredButtons.length - 1;
       }
-    } else if (newIndex >= filteredButtons.length) {
+    }
+    else if (newIndex >= filteredButtons.length) {
       newIndex =
         direction === 'down'
           ? selectedButtonIndex % buttonsPerRow
@@ -403,7 +411,8 @@ function tryLoadExtractedIcon(iconElement, applicationPath, fallbackIcon) {
           iconElement.textContent = fallbackIcon;
         };
         iconElement.appendChild(img);
-      } else {
+      }
+      else {
         // Use fallback icon if extraction fails
         iconElement.textContent = fallbackIcon;
       }
@@ -429,7 +438,8 @@ function extractAppNameFromPath(applicationPath) {
       return applicationPath.split('/').pop().replace('.app', '');
     }
     return applicationPath.split('/').pop().split('.')[0];
-  } catch (err) {
+  }
+  catch (err) {
     return null;
   }
 }

@@ -45,7 +45,8 @@ async function executeAction(action) {
           message: `Unsupported action type: ${action.action}`,
         };
     }
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing action: ${error.message}`,
@@ -118,7 +119,8 @@ async function validateAction(action) {
     }
 
     return { valid: true };
-  } catch (error) {
+  }
+  catch (error) {
     return {
       valid: false,
       message: `Error validating action: ${error.message}`,

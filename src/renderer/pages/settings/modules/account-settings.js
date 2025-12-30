@@ -40,7 +40,8 @@ export function initializeAccountSettings() {
     // 중복 호출 방지를 위해 인증 상태 초기화만 수행
     // initializeAuthState()는 이미 내부적으로 필요한 프로필 및 구독 정보를 로드함
     initializeAuthState();
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('계정 설정 초기화 중 오류 발생:', error);
   }
 }
@@ -69,11 +70,13 @@ export async function initializeAuthState() {
       if (!profileDataFetchInProgress && !authState.profile) {
         await loadUserDataEfficiently();
       }
-    } else {
+    }
+    else {
       // No tokens, show login UI
       updateAuthStateUI(false);
     }
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('Failed to initialize auth state:', error);
     // Show login UI when error occurs
     updateAuthStateUI(false);
@@ -120,7 +123,8 @@ export async function loadUserDataEfficiently() {
     }
 
     window.settings.log.info('사용자 프로필 및 구독 정보 로드 완료');
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('사용자 데이터 로드 중 오류:', error);
     if (authLoading) {
       setLoading(authLoading, false);
@@ -128,7 +132,8 @@ export async function loadUserDataEfficiently() {
     if (subscriptionLoading) {
       setLoading(subscriptionLoading, false);
     }
-  } finally {
+  }
+  finally {
     // 데이터 로드 완료 표시
     setProfileDataFetchInProgress(false);
   }
@@ -158,7 +163,8 @@ export function updateAuthStateUI(isLoggedIn) {
       .catch(error => {
         window.settings.log.error('Error getting sync status:', error);
       });
-  } else {
+  }
+  else {
     // Show login section, hide profile and subscription sections
     loginSection.classList.remove('hidden');
     profileSection.classList.add('hidden');
@@ -221,7 +227,8 @@ export function handleLogin() {
           loginButton.disabled = false;
         }
       });
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('로그인 처리 중 오류:', error);
     if (authLoading) {
       setLoading(authLoading, false);
@@ -249,7 +256,8 @@ export function handleLogout() {
       .catch(error => {
         window.settings.log.error('로그아웃 오류:', error);
       });
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('로그아웃 처리 중 오류:', error);
   }
 }
@@ -303,7 +311,8 @@ export function handleRefreshSubscription() {
           }, 1500);
         }
       });
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('구독 정보 새로고침 처리 중 오류:', error);
 
     // 오류 시 버튼 및 로딩 상태 복원
@@ -346,7 +355,8 @@ export async function fetchUserProfile() {
       return profile;
     }
     return null;
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('Failed to fetch user profile:', error);
     // Handle token expired case
     if (error.message && error.message.includes('token expired')) {
@@ -378,7 +388,8 @@ export function updateProfileDisplay(profile) {
     };
 
     userAvatar.appendChild(img);
-  } else {
+  }
+  else {
     // Display initials if no image available
     const initials = getInitials(profile.name || profile.display_name || 'User');
     userAvatar.textContent = initials;
@@ -460,7 +471,8 @@ export async function fetchSubscriptionInfo() {
     }
 
     return null;
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('Failed to fetch subscription info:', error);
 
     // Handle token expired case
@@ -469,7 +481,8 @@ export async function fetchSubscriptionInfo() {
     }
 
     return null;
-  } finally {
+  }
+  finally {
     // Hide loading state
     setLoading(subscriptionLoading, false);
   }
@@ -485,7 +498,8 @@ export function updateSubscriptionUI(subscription) {
     subscriptionBadge.textContent = subscription.plan || 'Premium';
     subscriptionBadge.className = 'badge premium';
     subscriptionStatus.textContent = 'Active';
-  } else {
+  }
+  else {
     subscriptionBadge.textContent = 'Free';
     subscriptionBadge.className = 'badge free';
     subscriptionStatus.textContent = 'Free Plan';
@@ -496,7 +510,8 @@ export function updateSubscriptionUI(subscription) {
     const expiryValue = subscription.expiresAt || subscription.subscribed_until;
     const expiryDate = new Date(expiryValue);
     subscriptionExpiry.textContent = `Subscription valid until: ${expiryDate.toLocaleDateString()}`;
-  } else {
+  }
+  else {
     subscriptionExpiry.textContent = '';
   }
 

@@ -35,21 +35,26 @@ async function executeApplication(action) {
       // macOS: Use the 'open' command
       if (action.applicationParameters) {
         command = `open -a "${action.applicationPath}" ${action.applicationParameters}`;
-      } else {
+      }
+      else {
         command = `open "${action.applicationPath}"`;
       }
-    } else if (process.platform === 'win32') {
+    }
+    else if (process.platform === 'win32') {
       // Windows: Just use the path directly, wrapped in quotes, with parameters
       if (action.applicationParameters) {
         command = `"${action.applicationPath}" ${action.applicationParameters}`;
-      } else {
+      }
+      else {
         command = `"${action.applicationPath}"`;
       }
-    } else {
+    }
+    else {
       // Linux: Use xdg-open or direct execution with parameters
       if (action.applicationParameters) {
         command = `"${action.applicationPath}" ${action.applicationParameters}`;
-      } else {
+      }
+      else {
         command = `xdg-open "${action.applicationPath}"`;
       }
     }
@@ -72,7 +77,8 @@ async function executeApplication(action) {
         });
       });
     });
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error launching application: ${error.message}`,

@@ -46,13 +46,16 @@ export async function initiateSignIn() {
 
       // Show user profile modal on successful login
       showUserProfile();
-    } else {
+    }
+    else {
       showStatus(`Login failed: ${result.error || 'Unknown error'}`, 'error');
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error during login:', error);
     showStatus(`Login error: ${error.message || 'Unknown error'}`, 'error');
-  } finally {
+  }
+  finally {
     // Deactivate loading screen
     hideLoginLoadingScreen();
     isLoggingIn = false;
@@ -83,7 +86,8 @@ export async function fetchUserProfileAndSubscription() {
 
         // Update subscription status
         isSubscribed = userSubscription.active || userSubscription.is_subscribed || false;
-      } else {
+      }
+      else {
         // Set default values when no subscription information exists
         userSubscription = {
           active: false,
@@ -97,7 +101,8 @@ export async function fetchUserProfileAndSubscription() {
       // UI update - display profile and subscription information
       updateUserButton();
       updateProfileDisplay();
-    } else {
+    }
+    else {
       console.error('Failed to fetch user profile information:', profileResult.error);
     }
 
@@ -105,7 +110,8 @@ export async function fetchUserProfileAndSubscription() {
       profile: userProfile,
       subscription: userSubscription,
     };
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error fetching user information:', error);
     throw error;
   }
@@ -169,7 +175,8 @@ export async function showUserProfile() {
 
         return;
       }
-    } catch (error) {
+    }
+    catch (error) {
       hideLoginLoadingScreen();
       showStatus('Failed to fetch user information. Please login again.', 'error');
 
@@ -231,7 +238,8 @@ export function updateUserButton() {
       img.onload = function () {};
 
       userButton.appendChild(img);
-    } else {
+    }
+    else {
       // Display initials if no image available
       const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
       userButton.textContent = initials;
@@ -242,7 +250,8 @@ export function updateUserButton() {
 
     // Update tooltip for logged in user
     userButton.title = 'View User Information';
-  } else {
+  }
+  else {
     // Default icon if not logged in
     userButton.textContent = '👤';
     userButton.style.fontSize = '16px';
@@ -291,7 +300,8 @@ export function updateProfileDisplay() {
       img.style.opacity = 0;
       img.style.transition = 'opacity 0.3s ease';
       profileAvatar.appendChild(img);
-    } else {
+    }
+    else {
       // Use initials if no image available
       const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
       profileAvatar.innerHTML = initials;
@@ -305,7 +315,8 @@ export function updateProfileDisplay() {
     if (logoutButton) {
       logoutButton.textContent = 'Sign Out';
     }
-  } else {
+  }
+  else {
     // When no user profile (logged out state)
     profileAvatar.innerHTML = '👤';
     profileName.textContent = 'Guest User';
@@ -360,7 +371,8 @@ export function updateProfileDisplay() {
     if (isActive && dashboardButton) {
       dashboardButton.style.display = 'block';
     }
-  } else {
+  }
+  else {
     // When no subscription information (logged out state)
     subscriptionStatus.textContent = 'Inactive';
     subscriptionPlan.textContent = 'FREE';
@@ -414,7 +426,8 @@ export async function handleLogout() {
       try {
         // Call logout (function provided in auth.js)
         await window.toast.invoke('logout');
-      } catch (resetError) {
+      }
+      catch (resetError) {
         console.error('Error resetting settings:', resetError);
 
         // Alternative method: manually reset settings
@@ -441,10 +454,12 @@ export async function handleLogout() {
 
       showStatus('Logged out successfully.', 'success');
       hideProfileModal();
-    } else {
+    }
+    else {
       showStatus('Logout failed', 'error');
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Logout error:', error);
     showStatus(`Logout error: ${error.message || 'Unknown error'}`, 'error');
   }
@@ -466,11 +481,13 @@ export async function resetToDefaults(options = { keepAppearance: true }) {
     if (result.success) {
       showStatus('Settings have been reset to defaults.', 'success');
       return { success: true };
-    } else {
+    }
+    else {
       showStatus(`Failed to reset settings: ${result.error}`, 'error');
       return { success: false, error: result.error };
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error resetting settings:', error);
     showStatus(`Error resetting settings: ${error.message || 'Unknown error'}`, 'error');
     return { success: false, error: error.message };

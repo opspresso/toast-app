@@ -42,7 +42,8 @@ export function initializeAboutSettings() {
 
     // 업데이트 상태 초기화
     resetUpdateUI();
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('정보 탭 초기화 중 오류 발생:', error);
   }
 }
@@ -170,7 +171,8 @@ export function handleCheckForUpdates() {
           fileInfo.textContent = `Update size: ${formatFileSize(result.files[0].size || 0)}`;
           updateMessage.appendChild(fileInfo);
         }
-      } else {
+      }
+      else {
         // 업데이트가 없는 경우
         if (updateMessage) {
           updateMessage.textContent = 'You are using the latest version.';
@@ -278,14 +280,16 @@ export function handleDownloadUpdate() {
           installUpdateButton.textContent = 'Restart to Install';
           installUpdateButton.disabled = false;
         }
-      } else {
+      }
+      else {
         // 다운로드 실패
         // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
         let errorMessage = '업데이트 다운로드 실패';
         if (result.error) {
           if (typeof result.error === 'object') {
             errorMessage = result.error.message || JSON.stringify(result.error);
-          } else {
+          }
+          else {
             errorMessage = result.error;
           }
         }
@@ -371,11 +375,13 @@ export function handleInstallUpdate() {
           window.settings.log.error('업데이트 설치 오류:', error);
           handleInstallError(error);
         });
-      } catch (error) {
+      }
+      catch (error) {
         window.settings.log.error('업데이트 설치 과정에서 예외 발생:', error);
         handleInstallError(error);
       }
-    } else {
+    }
+    else {
       closingMessage.textContent = `App will close automatically in ${countdown} seconds...`;
     }
   }, 1000);
