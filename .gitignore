@@ -64,3 +64,9 @@ coverage/
 
 # User configuration
 config.json
+
+# prompt
+.prompt-*.md
+.prompt.md
+prompt-*.md
+prompt.md
