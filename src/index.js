@@ -294,8 +294,47 @@ app.on('activate', () => {
 
 // Clean up before quitting
 app.on('before-quit', () => {
+  logger.info('Application quitting, starting cleanup...');
   app.isQuitting = true;
-  unregisterGlobalShortcuts();
-  destroyTray();
-  closeAllWindows();
+
+  // Stop cloud synchronization
+  try {
+    cloudSync.stopPeriodicSync();
+    logger.info('Cloud sync stopped');
+  }
+  catch (error) {
+    logger.error('Error stopping cloud sync:', error);
+  }
+
+  // Unregister global shortcuts
+  try {
+    unregisterGlobalShortcuts();
+    logger.info('Global shortcuts unregistered');
+  }
+  catch (error) {
+    logger.error('Error unregistering shortcuts:', error);
+  }
+
+  // Destroy tray icon
+  try {
+    destroyTray();
+    logger.info('Tray destroyed');
+  }
+  catch (error) {
+    logger.error('Error destroying tray:', error);
+  }
+
+  // Close all windows
+  try {
+    closeAllWindows();
+    logger.info('All windows closed');
+  }
+  catch (error) {
+    logger.error('Error closing windows:', error);
+  }
+
+  // Clear global protocol handler
+  global.handleProtocolRequest = null;
+
+  logger.info('Application cleanup completed');
 });

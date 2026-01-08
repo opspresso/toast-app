@@ -22,6 +22,39 @@ function expandTilde(filePath) {
 }
 
 /**
+ * Escape shell argument to prevent command injection
+ * @param {string} arg - Argument to escape
+ * @returns {string} Escaped argument
+ */
+function escapeShellArg(arg) {
+  if (!arg) {
+    return '';
+  }
+
+  if (process.platform === 'win32') {
+    // Windows: escape with double quotes and escape internal quotes
+    return `"${arg.replace(/"/g, '\\"')}"`;
+  }
+
+  // Unix-like: escape single quotes by ending quote, adding escaped quote, starting new quote
+  // 'it'\''s' becomes: it's
+  return `'${arg.replace(/'/g, "'\\''")}'`;
+}
+
+/**
+ * Escape AppleScript string
+ * @param {string} str - String to escape for AppleScript
+ * @returns {string} Escaped string
+ */
+function escapeAppleScript(str) {
+  if (!str) {
+    return '';
+  }
+  // Escape backslashes first, then double quotes
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/**
  * Execute a shell command
  * @param {Object} action - Action configuration
  * @param {string} action.command - Command to execute
@@ -50,16 +83,17 @@ async function executeCommand(action) {
       return { success: false, message: `Working directory path is not a directory: ${expandedWorkingDir}` };
     }
 
-    // Construct the modified command - handle quotes properly
+    // Construct the modified command - handle quotes properly with escaping
     const quotedAppName = appName.includes(' ') && !openAppMatch[1] ? `"${appName}"` : appName;
+    const escapedWorkingDir = escapeShellArg(expandedWorkingDir);
     let modifiedCommand;
     if (remainingArgs) {
       // If there are additional arguments, keep them and add workingDir
-      modifiedCommand = `open -a ${quotedAppName} ${remainingArgs} "${expandedWorkingDir}"`;
+      modifiedCommand = `open -a ${quotedAppName} ${remainingArgs} ${escapedWorkingDir}`;
     }
     else {
       // If no additional arguments, just add workingDir
-      modifiedCommand = `open -a ${quotedAppName} "${expandedWorkingDir}"`;
+      modifiedCommand = `open -a ${quotedAppName} ${escapedWorkingDir}`;
     }
 
     return new Promise((resolve, reject) => {
@@ -147,13 +181,14 @@ async function openInTerminal(command, workingDir) {
 
       // Validate working directory
       if (fs.existsSync(expandedWorkingDir) && fs.statSync(expandedWorkingDir).isDirectory()) {
-        // Construct the modified command for terminal execution - handle quotes properly
+        // Construct the modified command for terminal execution - handle quotes properly with escaping
         const quotedAppName = appName.includes(' ') && !openAppMatch[1] ? `"${appName}"` : appName;
+        const escapedWorkingDir = escapeShellArg(expandedWorkingDir);
         if (remainingArgs) {
-          finalCommand = `open -a ${quotedAppName} ${remainingArgs} "${expandedWorkingDir}"`;
+          finalCommand = `open -a ${quotedAppName} ${remainingArgs} ${escapedWorkingDir}`;
         }
         else {
-          finalCommand = `open -a ${quotedAppName} "${expandedWorkingDir}"`;
+          finalCommand = `open -a ${quotedAppName} ${escapedWorkingDir}`;
         }
       }
     }
@@ -161,19 +196,38 @@ async function openInTerminal(command, workingDir) {
     let terminalCommand;
 
     if (process.platform === 'darwin') {
-      terminalCommand =
-        expandedWorkingDir && !openAppMatch
-          ? `osascript -e 'tell application "Terminal" to do script "cd ${expandedWorkingDir} && ${finalCommand}"'`
-          : `osascript -e 'tell application "Terminal" to do script "${finalCommand}"'`;
+      // Escape for AppleScript string context
+      const escapedFinalCommand = escapeAppleScript(finalCommand);
+      if (expandedWorkingDir && !openAppMatch) {
+        const escapedDir = escapeAppleScript(expandedWorkingDir);
+        terminalCommand = `osascript -e 'tell application "Terminal" to do script "cd ${escapedDir} && ${escapedFinalCommand}"'`;
+      }
+      else {
+        terminalCommand = `osascript -e 'tell application "Terminal" to do script "${escapedFinalCommand}"'`;
+      }
     }
     else if (process.platform === 'win32') {
-      terminalCommand = expandedWorkingDir ? `start cmd.exe /K "cd /d ${expandedWorkingDir} && ${finalCommand}"` : `start cmd.exe /K "${finalCommand}"`;
+      // Escape for Windows cmd context
+      const escapedFinalCommand = finalCommand.replace(/"/g, '""');
+      if (expandedWorkingDir) {
+        const escapedDir = expandedWorkingDir.replace(/"/g, '""');
+        terminalCommand = `start cmd.exe /K "cd /d ${escapedDir} && ${escapedFinalCommand}"`;
+      }
+      else {
+        terminalCommand = `start cmd.exe /K "${escapedFinalCommand}"`;
+      }
     }
     else {
+      // Linux: escape for bash context
       const terminal = 'x-terminal-emulator';
-      terminalCommand = expandedWorkingDir
-        ? `${terminal} -e "bash -c 'cd ${expandedWorkingDir} && ${finalCommand}; exec bash'"`
-        : `${terminal} -e "bash -c '${finalCommand}; exec bash'"`;
+      const escapedFinalCommand = finalCommand.replace(/'/g, "'\\''");
+      if (expandedWorkingDir) {
+        const escapedDir = expandedWorkingDir.replace(/'/g, "'\\''");
+        terminalCommand = `${terminal} -e "bash -c 'cd ${escapedDir} && ${escapedFinalCommand}; exec bash'"`;
+      }
+      else {
+        terminalCommand = `${terminal} -e "bash -c '${escapedFinalCommand}; exec bash'"`;
+      }
     }
 
     exec(terminalCommand, { shell: true }, error => {

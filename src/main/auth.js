@@ -22,8 +22,10 @@ const apiAuth = require('./api/auth');
 // ENV
 const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
-const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
-const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
+// Security: Do not use hardcoded default credentials
+// These must be provided via environment variables or .env file
+const CLIENT_ID = getEnv('CLIENT_ID', '');
+const CLIENT_SECRET = getEnv('CLIENT_SECRET', '');
 // 토큰 만료 시간을 무기한으로 설정 (매우 긴 시간으로 설정)
 const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '31536000'), 10); // Default 1 year (365 days), can be overridden in environment variables
 const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
@@ -342,6 +344,12 @@ async function clearLocalTokenStorage() {
  */
 async function initiateLogin() {
   try {
+    // Verify CLIENT_ID is configured
+    if (!CLIENT_ID) {
+      logger.error('CLIENT_ID is not configured. Please set CLIENT_ID in environment variables or .env file.');
+      throw new Error('OAuth client configuration is missing. Please contact support.');
+    }
+
     // Generate login URL through common module
     const loginResult = apiAuth.initiateLogin(CLIENT_ID);
 
@@ -470,6 +478,15 @@ async function handleAuthRedirect(url) {
  */
 async function exchangeCodeForToken(code) {
   try {
+    // Verify OAuth credentials are configured
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+      logger.error('OAuth credentials are not configured. Please set CLIENT_ID and CLIENT_SECRET in environment variables or .env file.');
+      return {
+        success: false,
+        error: 'OAuth client configuration is missing. Please contact support.',
+      };
+    }
+
     logger.info('Starting exchange of authentication code for token:', code.substring(0, 8) + '...');
 
     // Exchange code for token through common module
@@ -594,6 +611,16 @@ async function refreshAccessToken() {
         }
 
         logger.info('Refresh token exists, attempting exchange');
+
+        // Verify OAuth credentials are configured
+        if (!CLIENT_ID || !CLIENT_SECRET) {
+          logger.error('OAuth credentials are not configured for token refresh.');
+          return {
+            success: false,
+            error: 'OAuth client configuration is missing.',
+            code: 'NO_CREDENTIALS',
+          };
+        }
 
         // Exchange refresh token through common module
         const refreshResult = await apiAuth.refreshAccessToken({
