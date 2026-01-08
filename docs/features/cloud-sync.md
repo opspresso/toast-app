@@ -388,7 +388,7 @@ function debouncedUploadSettings() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(async () => {
     await uploadSettingsToServer();
-  }, 2000); // 2초 후 업로드
+  }, 5000); // 5초 후 업로드
 }
 ```
 

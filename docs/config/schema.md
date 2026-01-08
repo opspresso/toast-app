@@ -176,16 +176,24 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 
 | 필드 | 유형 | 설명 |
 |------|------|------|
-| `clientLastModifiedAt` | 숫자 | 클라이언트에서 마지막으로 수정된 시간 (타임스탬프) |
-| `clientLastModifiedDevice` | 문자열 | 마지막으로 수정한 기기 ID |
-| `serverLastUpdatedAt` | 숫자 | 서버에서 마지막으로 업데이트된 시간 (타임스탬프) |
+| `_sync.lastModifiedAt` | 숫자 | 로컬에서 마지막으로 수정된 시간 (타임스탬프) |
+| `_sync.lastModifiedDevice` | 문자열 | 마지막으로 수정한 기기 ID |
+| `_sync.lastSyncedAt` | 숫자 | 서버와 마지막으로 동기화된 시간 (타임스탬프) |
+| `_sync.lastSyncedDevice` | 문자열 | 마지막으로 동기화한 기기 ID |
+| `_sync.dataHash` | 문자열 | 동기화 데이터의 해시값 (충돌 감지용) |
+| `_sync.isConflicted` | 불리언 | 동기화 충돌 발생 여부 |
 
 **예시**:
 ```json
 {
-  "clientLastModifiedAt": 1682932768123,
-  "clientLastModifiedDevice": "device-id-1",
-  "serverLastUpdatedAt": 1682932769000
+  "_sync": {
+    "lastModifiedAt": 1682932768123,
+    "lastModifiedDevice": "device-id-1",
+    "lastSyncedAt": 1682932769000,
+    "lastSyncedDevice": "device-id-1",
+    "dataHash": "",
+    "isConflicted": false
+  }
 }
 ```
 
@@ -259,9 +267,14 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
     "pageGroups": 1
   },
   "firstLaunchCompleted": true,
-  "clientLastModifiedAt": 1682932768123,
-  "clientLastModifiedDevice": "device-id-1",
-  "serverLastUpdatedAt": 1682932769000
+  "_sync": {
+    "lastModifiedAt": 1682932768123,
+    "lastModifiedDevice": "device-id-1",
+    "lastSyncedAt": 1682932769000,
+    "lastSyncedDevice": "device-id-1",
+    "dataHash": "",
+    "isConflicted": false
+  }
 }
 ```
 
