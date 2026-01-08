@@ -2,7 +2,7 @@
 
 이 문서는 Toast 앱의 데이터 저장 모델, 파일 구조 및 관리 방법을 설명합니다.
 
-> **참고**: 데이터 스키마와 엔티티 관계는 [CONFIG_DATA_MODEL.md](./CONFIG_DATA_MODEL.md)를 참조하세요.
+> **참고**: 데이터 스키마와 엔티티 관계는 [데이터 모델](./data-model.md)을 참조하세요.
 
 ## 목차
 
@@ -89,7 +89,7 @@ Toast 앱은 electron-store 라이브러리를 사용하여 데이터를 유지�
 }
 ```
 
-자세한 구성 옵션은 [CONFIG_SCHEMA.md](CONFIG_SCHEMA.md)를 참조하세요.
+자세한 구성 옵션은 [구성 스키마](./schema.md)를 참조하세요.
 
 ### 사용자 데이터
 

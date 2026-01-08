@@ -175,6 +175,6 @@ TOKEN_EXPIRES_IN=3600
 
 ## 관련 문서
 
-- [개발 가이드](./DEV_SETUP.md) - 개발 환경 설정
-- [클라우드 동기화](./FEATURE_CLOUD_SYNC.md) - 동기화 관련 환경 변수
-- [구성 스키마](./CONFIG_SCHEMA.md) - 애플리케이션 구성 옵션
+- [개발 가이드](../development/setup.md) - 개발 환경 설정
+- [클라우드 동기화](../features/cloud-sync.md) - 동기화 관련 환경 변수
+- [구성 스키마](./schema.md) - 애플리케이션 구성 옵션

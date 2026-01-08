@@ -7,7 +7,7 @@
 Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 
 ### 메인 프로세스 API
-- **[메인 프로세스 API](./API_MAIN_PROCESS.md)**: 메인 프로세스 모듈들의 상세 API 문서
+- **[메인 프로세스 API](./main-process.md)**: 메인 프로세스 모듈들의 상세 API 문서
   - 구성 모듈 (`config.js`)
   - 로거 모듈 (`logger.js`)
   - 업데이터 모듈 (`updater.js`)
@@ -18,7 +18,7 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
   - IPC 모듈 (`ipc.js`)
 
 ### 액션 API
-- **[액션 API](./API_ACTIONS.md)**: 액션 모듈들의 상세 API 문서
+- **[액션 API](./actions.md)**: 액션 모듈들의 상세 API 문서
   - Application 액션 (`application.js`)
   - Exec 액션 (`exec.js`)
   - Open 액션 (`open.js`)
@@ -26,7 +26,7 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
   - Chain 액션 (`chain.js`)
 
 ### 렌더러 프로세스 API
-- **[렌더러 프로세스 API](./API_RENDERER.md)**: 렌더러 프로세스 API 문서
+- **[렌더러 프로세스 API](./renderer.md)**: 렌더러 프로세스 API 문서
   - Toast 윈도우 API (`toast.js`)
   - 설정 윈도우 API (`settings.js`)
 
@@ -105,7 +105,7 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 | `show-settings` | on | 설정 윈도우 표시 |
 | `check-for-updates` | handle | 업데이트 확인 |
 
-전체 IPC 채널 목록은 [메인 프로세스 API 문서](./API_MAIN_PROCESS.md#ipc-모듈)를 참조하세요.
+전체 IPC 채널 목록은 [메인 프로세스 API 문서](./main-process.md#ipc-모듈)를 참조하세요.
 
 ## 개발 가이드라인
 
@@ -128,10 +128,10 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 
 ## 관련 문서
 
-- [구성 스키마](./CONFIG_SCHEMA.md): 상세한 구성 옵션
-- [버튼 액션](./BUTTON_ACTIONS.md): 지원되는 버튼 액션 유형
-- [보안](./ARCH_SECURITY.md): 보안 모델 및 고려사항
-- [테스트](./DEV_TESTING.md): API 테스트 전략
+- [구성 스키마](../config/schema.md): 상세한 구성 옵션
+- [버튼 액션](../guide/actions.md): 지원되는 버튼 액션 유형
+- [보안](../architecture/security.md): 보안 모델 및 고려사항
+- [테스트](../development/testing.md): API 테스트 전략
 
 ## 버전 정보
 

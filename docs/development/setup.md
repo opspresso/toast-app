@@ -66,7 +66,7 @@ TOAST_URL=https://app.toast.sh
 TOKEN_EXPIRES_IN=2592000
 ```
 
-자세한 환경 변수 설정은 [환경 변수 문서](./CONFIG_ENV.md)를 참조하세요.
+자세한 환경 변수 설정은 [환경 변수 문서](../config/environment.md)를 참조하세요.
 
 ## 프로젝트 구조
 
