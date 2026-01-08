@@ -444,35 +444,117 @@ function setupIpcHandlers(windows)
 
 ### IPC 채널
 
+#### 액션 관련
+
 | 채널 | 유형 | 설명 |
 |------|------|------|
 | `execute-action` | handle | 액션 실행 |
 | `validate-action` | handle | 액션 유효성 검사 |
-| `get-config` | handle | 구성 가져오기 |
-| `set-config` | handle | 구성 설정 |
+| `test-action` | handle | 액션 테스트 (유효성 검사 후 실행) |
+
+#### 구성 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `get-config` | handle | 구성 값 가져오기 (키 지정 또는 전체) |
+| `set-config` | handle | 구성 값 설정 |
 | `save-config` | handle | 특정 구성 변경 사항 저장 |
 | `reset-config` | handle | 구성을 기본값으로 재설정 |
 | `import-config` | handle | 파일에서 구성 가져오기 |
 | `export-config` | handle | 파일로 구성 내보내기 |
+| `get-env` | handle | 환경 변수 값 가져오기 |
+
+#### 윈도우 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `show-toast` | on | Toast 윈도우 표시 |
 | `hide-toast` | on | Toast 윈도우 숨기기 |
+| `show-window` | handle | Toast 윈도우 표시 (handle 버전) |
 | `show-settings` | on | 설정 윈도우 표시 |
+| `show-settings-tab` | on | 특정 탭이 선택된 설정 윈도우 표시 |
 | `close-settings` | on | 설정 윈도우 닫기 |
+| `modal-state-changed` | on | 모달 상태 변경 알림 |
+| `is-modal-open` | handle | 모달 열림 상태 확인 |
+| `set-always-on-top` | handle | 윈도우 alwaysOnTop 속성 설정 |
+| `get-window-position` | handle | 현재 윈도우 위치 반환 |
+| `hide-window-temporarily` | handle | 다이얼로그 표시를 위해 일시적으로 alwaysOnTop 비활성화 |
+| `show-window-after-dialog` | handle | 다이얼로그 닫힌 후 alwaysOnTop 복원 |
+
+#### 애플리케이션 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `restart-app` | on | 애플리케이션 재시작 |
 | `quit-app` | on | 애플리케이션 종료 |
+| `get-app-version` | handle | 앱 버전 가져오기 |
+| `open-url` | handle | 외부 브라우저에서 URL 열기 |
+
+#### 인증 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `initiate-login` | handle | 로그인 프로세스 시작 |
+| `exchange-code-for-token` | handle | 인증 코드를 토큰으로 교환 |
+| `logout` | handle | 로그아웃 |
+| `fetch-user-profile` | handle | 사용자 프로필 정보 가져오기 |
+| `get-user-settings` | handle | 사용자 설정 정보 가져오기 |
+| `fetch-subscription` | handle | 구독 정보 가져오기 |
+| `get-auth-token` | handle | 현재 인증 토큰 반환 |
+
+#### 클라우드 동기화 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `is-cloud-sync-enabled` | handle | 동기화 가능 여부 확인 |
+| `get-sync-status` | handle | 동기화 상태 가져오기 |
+| `set-cloud-sync-enabled` | handle | 클라우드 동기화 활성화/비활성화 |
+| `manual-sync` | handle | 수동 동기화 (upload/download/resolve) |
+| `debug-sync-status` | handle | 동기화 상태 디버그 정보 |
+| `settings-synced` | on | 설정 동기화 완료 이벤트 전달 |
+
+#### 단축키 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `temporarily-disable-shortcuts` | handle | 녹화를 위해 전역 단축키 일시적으로 비활성화 |
 | `restore-shortcuts` | handle | 녹화 후 전역 단축키 복원 |
+
+#### 대화 상자 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `show-open-dialog` | handle | 파일 열기 대화 상자 표시 |
 | `show-save-dialog` | handle | 파일 저장 대화 상자 표시 |
 | `show-message-box` | handle | 메시지 상자 표시 |
-| `test-action` | handle | 액션 테스트 |
-| `check-for-updates` | handle | 업데이트 확인 |
+
+#### 업데이트 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `check-for-updates` | handle | 업데이트 확인 (silent 옵션 지원) |
+| `check-latest-version` | handle | 최신 버전 확인 |
 | `download-update` | handle | 업데이트 다운로드 |
+| `download-auto-update` | handle | 자동 업데이트 다운로드 (확인 후 다운로드) |
+| `download-manual-update` | handle | 수동 업데이트 다운로드 |
 | `install-update` | handle | 업데이트 설치 |
+| `install-auto-update` | handle | 자동 업데이트 설치 |
+
+#### 로깅 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `log-info` | handle | 정보 로그 메시지 기록 |
 | `log-warn` | handle | 경고 로그 메시지 기록 |
 | `log-error` | handle | 오류 로그 메시지 기록 |
 | `log-debug` | handle | 디버그 로그 메시지 기록 |
+
+#### 유틸리티 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `extract-app-icon` | handle | 애플리케이션 경로에서 아이콘 추출 |
+| `resolve-tilde-path` | handle | 틸드 경로를 절대 경로로 변환 |
 
 ### 사용 예시
 

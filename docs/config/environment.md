@@ -15,14 +15,23 @@
 
 ### 1. .env 파일 사용 (권장)
 
-`src/main/config/.env` 파일을 생성하여 환경 변수를 설정합니다:
+`src/main/config/` 디렉토리에 `.env` 또는 `.env.local` 파일을 생성하여 환경 변수를 설정합니다.
+
+**로딩 우선순위**: `.env.local` (로컬 개발 환경) > `.env` (기본 환경)
 
 ```bash
 # .env 파일 예시
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
 TOAST_URL=https://app.toast.sh
-TOKEN_EXPIRES_IN=2592000
+TOKEN_EXPIRES_IN=31536000
+```
+
+```bash
+# .env.local 파일 예시 (로컬 개발 시 .env보다 우선 적용)
+CLIENT_ID=local_development_client_id
+CLIENT_SECRET=local_development_client_secret
+TOAST_URL=http://localhost:3000
 ```
 
 ### 2. 시스템 환경 변수
@@ -32,11 +41,11 @@ TOKEN_EXPIRES_IN=2592000
 ```bash
 # macOS/Linux
 export CLIENT_ID=your_client_id
-export TOKEN_EXPIRES_IN=2592000
+export TOKEN_EXPIRES_IN=31536000
 
 # Windows
 set CLIENT_ID=your_client_id
-set TOKEN_EXPIRES_IN=2592000
+set TOKEN_EXPIRES_IN=31536000
 ```
 
 ## 인증 관련 변수
@@ -66,17 +75,20 @@ CLIENT_SECRET=production_client_secret
 
 | 변수명 | 기본값 | 설명 | 예시 |
 |--------|--------|------|------|
-| `TOKEN_EXPIRES_IN` | `2592000` | 토큰 만료 시간 (초 단위, 0 이하는 무기한) | `86400` |
+| `TOKEN_EXPIRES_IN` | `31536000` | 토큰 만료 시간 (초 단위, 0 이하는 무기한) | `86400` |
 
 ### 토큰 만료 시간 설정
 
 ```bash
-# 30일 (기본값)
-TOKEN_EXPIRES_IN=2592000
+# 1년 (기본값)
+TOKEN_EXPIRES_IN=31536000
 
 # 무기한 (0 이하 값)
 TOKEN_EXPIRES_IN=0
 TOKEN_EXPIRES_IN=-1
+
+# 30일
+TOKEN_EXPIRES_IN=2592000
 
 # 1일
 TOKEN_EXPIRES_IN=86400
@@ -86,7 +98,7 @@ TOKEN_EXPIRES_IN=3600
 ```
 
 **토큰 만료 시간 설명**:
-- **2592000**: 30일 (기본 설정)
+- **31536000**: 1년 (기본 설정)
 - **0 또는 음수 값(-1)**: 무제한(사실상 영구) 토큰으로 설정
 - **양수 값**: 해당 초 단위만큼 토큰 유효
 
@@ -110,31 +122,26 @@ TOAST_URL=http://localhost:3000
 
 ## 환경별 설정 예시
 
-### 개발 환경 (.env.development)
+### 기본 환경 (.env)
 
 ```bash
+# 프로덕션 환경 기본 설정
+CLIENT_ID=production_client_id
+CLIENT_SECRET=production_client_secret
+TOAST_URL=https://app.toast.sh
+TOKEN_EXPIRES_IN=31536000
+```
+
+### 로컬 개발 환경 (.env.local)
+
+`.env.local` 파일은 `.env`보다 우선 적용되며, Git에서 무시됩니다:
+
+```bash
+# 로컬 개발 환경 설정 (프로덕션 설정 덮어쓰기)
 CLIENT_ID=development_client_id
 CLIENT_SECRET=development_client_secret
 TOAST_URL=http://localhost:3000
 TOKEN_EXPIRES_IN=86400
-```
-
-### 프로덕션 환경 (.env.production)
-
-```bash
-CLIENT_ID=production_client_id
-CLIENT_SECRET=production_client_secret
-TOAST_URL=https://app.toast.sh
-TOKEN_EXPIRES_IN=0
-```
-
-### 테스트 환경 (.env.test)
-
-```bash
-CLIENT_ID=test_client_id
-CLIENT_SECRET=test_client_secret
-TOAST_URL=http://localhost:3000
-TOKEN_EXPIRES_IN=3600
 ```
 
 ## 보안 고려사항

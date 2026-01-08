@@ -6,28 +6,74 @@
 
 Toast 윈도우 API는 Toast 윈도우가 메인 프로세스와 통신하기 위한 인터페이스를 제공합니다.
 
-### 메서드
+### 구성 관리
 
 ```javascript
-// 구성 관리
-window.toast.getConfig(key) // 구성 가져오기
-window.toast.saveConfig(config) // 구성 변경 사항 저장
+window.toast.getConfig(key)      // 구성 가져오기
+window.toast.saveConfig(config)  // 구성 변경 사항 저장
+window.toast.getEnv(key)         // 환경변수 가져오기
+window.toast.resetToDefaults(options) // 설정 초기화 (options.keepAppearance: 외관 설정 유지)
+```
 
-// 환경변수
-window.toast.getEnv(key) // 환경변수 가져오기
+### 액션 실행
 
-// 액션 실행
-window.toast.executeAction(action) // 액션 실행
+```javascript
+window.toast.executeAction(action)  // 액션 실행
+```
 
-// 윈도우 제어
-window.toast.hideWindow() // Toast 윈도우 숨기기
-window.toast.showSettings() // 설정 윈도우 표시
+### 윈도우 제어
 
-// 시스템 정보
-window.toast.platform // 플랫폼(darwin, win32, linux)
+```javascript
+window.toast.hideWindow()             // Toast 윈도우 숨기기
+window.toast.showWindow()             // Toast 윈도우 표시
+window.toast.showSettings()           // 설정 윈도우 표시
+window.toast.setModalOpen(isOpen)     // 모달 상태 설정
+window.toast.setAlwaysOnTop(value)    // alwaysOnTop 속성 설정
+window.toast.getWindowPosition()      // 현재 윈도우 위치 반환
+window.toast.hideWindowTemporarily()  // 다이얼로그 표시를 위해 일시 숨김
+window.toast.showWindowAfterDialog(position) // 다이얼로그 후 윈도우 복원
+```
 
-// 이벤트 리스너
-window.toast.onConfigUpdated(callback) // 구성 업데이트 수신
+### 인증 관련
+
+```javascript
+window.toast.initiateLogin()      // 로그인 프로세스 시작
+window.toast.logout()             // 로그아웃
+window.toast.fetchUserProfile()   // 사용자 프로필 가져오기
+window.toast.fetchSubscription()  // 구독 정보 가져오기
+window.toast.getUserSettings()    // 사용자 설정 가져오기
+```
+
+### 유틸리티
+
+```javascript
+window.toast.showOpenDialog(options)  // 파일 열기 대화 상자
+window.toast.extractAppIcon(path, forceRefresh) // 앱 아이콘 추출
+window.toast.resolveTildePath(tildePath) // 틸드 경로 변환
+window.toast.platform  // 플랫폼 정보 (darwin, win32, linux)
+```
+
+### 로깅
+
+```javascript
+window.toast.log.info(message, ...args)   // 정보 로그
+window.toast.log.warn(message, ...args)   // 경고 로그
+window.toast.log.error(message, ...args)  // 오류 로그
+window.toast.log.debug(message, ...args)  // 디버그 로그
+```
+
+### 이벤트 리스너
+
+```javascript
+// 구성 업데이트 수신
+window.toast.onConfigUpdated(callback)
+
+// 인증 이벤트
+window.toast.onLoginSuccess(callback)      // 로그인 성공
+window.toast.onLoginError(callback)        // 로그인 오류
+window.toast.onLogoutSuccess(callback)     // 로그아웃 성공
+window.toast.onAuthStateChanged(callback)  // 인증 상태 변경
+window.toast.onAuthReloadSuccess(callback) // 인증 새로고침 성공
 ```
 
 ### 이벤트
