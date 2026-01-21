@@ -25,6 +25,7 @@ CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
 TOAST_URL=https://app.toast.sh
 TOKEN_EXPIRES_IN=31536000
+NODE_ENV=production
 ```
 
 ```bash
@@ -32,6 +33,7 @@ TOKEN_EXPIRES_IN=31536000
 CLIENT_ID=local_development_client_id
 CLIENT_SECRET=local_development_client_secret
 TOAST_URL=http://localhost:3000
+NODE_ENV=development
 ```
 
 ### 2. 시스템 환경 변수
@@ -109,6 +111,29 @@ TOKEN_EXPIRES_IN=3600
 | 변수명 | 기본값 | 설명 | 예시 |
 |--------|--------|------|------|
 | `TOAST_URL` | `https://app.toast.sh` | Toast 웹 서비스 URL | `https://app.toast.sh` |
+| `NODE_ENV` | - | 실행 환경 모드 (development/production) | `development` |
+
+### NODE_ENV 설정
+
+`NODE_ENV` 환경 변수는 애플리케이션의 실행 모드를 결정합니다:
+
+- **development**: 개발 모드로 실행 (상세한 로그, 자동 업데이트 비활성화)
+- **production**: 프로덕션 모드로 실행 (최소 로그, 자동 업데이트 활성화)
+
+```bash
+# 개발 모드로 실행
+NODE_ENV=development npm start
+# 또는
+npm run dev
+
+# 프로덕션 모드로 실행
+npm start
+```
+
+**주요 영향:**
+- 자동 업데이트: `NODE_ENV !== 'development'`일 때만 활성화
+- 로그 레벨: 개발 모드에서 더 상세한 로그 출력
+- 환경 변수 로그: 테스트 모드(`NODE_ENV === 'test'`)에서는 환경 변수 로딩 로그 비활성화
 
 ### 애플리케이션 설정 예시
 
@@ -117,6 +142,7 @@ TOKEN_EXPIRES_IN=3600
 TOAST_URL=https://app.toast.sh
 
 # 개발 환경 (로컬 서버 사용 시)
+NODE_ENV=development
 TOAST_URL=http://localhost:3000
 ```
 
@@ -130,6 +156,7 @@ CLIENT_ID=production_client_id
 CLIENT_SECRET=production_client_secret
 TOAST_URL=https://app.toast.sh
 TOKEN_EXPIRES_IN=31536000
+NODE_ENV=production
 ```
 
 ### 로컬 개발 환경 (.env.local)
@@ -142,6 +169,7 @@ CLIENT_ID=development_client_id
 CLIENT_SECRET=development_client_secret
 TOAST_URL=http://localhost:3000
 TOKEN_EXPIRES_IN=86400
+NODE_ENV=development
 ```
 
 ## 보안 고려사항

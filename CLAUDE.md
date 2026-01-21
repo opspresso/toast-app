@@ -20,7 +20,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Mac App Store**: `npm run build:mas` (MAS distribution)
 
 ### Testing & Quality
-- **Run Tests**: `npm run test` (Jest with coverage - currently 2 unit tests)
+- **Run Tests**: `npm run test` (Jest with coverage - 27 test suites, 789 unit tests, all passing)
 - **Lint**: `npm run lint` (ESLint check)
 - **Format**: `npm run format` (Prettier formatting)
 
