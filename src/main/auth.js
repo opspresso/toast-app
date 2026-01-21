@@ -803,9 +803,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
  * @returns {void}
  */
 function registerProtocolHandler() {
-  if (process.platform === 'darwin' || process.platform === 'win32') {
-    app.setAsDefaultProtocolClient('toast-app');
-  }
+  // Register protocol handler for all platforms (macOS, Windows, Linux)
+  app.setAsDefaultProtocolClient('toast-app');
 }
 
 /**
