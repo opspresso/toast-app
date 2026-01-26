@@ -56,7 +56,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. **Action System**: 5 types (application, exec, open, script, chain) with validation pipeline
 3. **Configuration**: electron-store with JSON schema validation and migration support
 4. **Authentication**: OAuth 2.0 with automatic token refresh and profile management
-5. **Cloud Sync**: Real-time sync with debouncing (2s) and conflict resolution
+5. **Cloud Sync**: Real-time sync with debouncing (5s) and conflict resolution
 6. **Subscription Tiers**: Anonymous (1 page), Authenticated (3 pages), Premium (9 pages)
 
 ## Code Style
@@ -75,7 +75,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. Implement `async execute(action)` function returning `{success, message, ...}`
 3. Add validation case in `executor.js` `validateAction()` function
 4. Register action type in `executor.js` switch statement
-5. Update `docs/BUTTON_ACTIONS.md` with new action documentation
+5. Update `docs/guide/actions.md` with new action documentation
 6. Add unit tests in `tests/unit/`
 
 ### Adding New Settings
@@ -83,7 +83,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. Add settings module in `src/renderer/pages/settings/modules/`
 3. Update settings UI in `src/renderer/pages/settings/index.html`
 4. Add IPC handlers in `src/main/ipc.js` if needed
-5. Update `docs/CONFIG_SCHEMA.md` and `docs/FEATURE_SETTINGS.md`
+5. Update `docs/config/schema.md` and `docs/features/settings.md`
 
 ### Testing & Quality Assurance
 - **Unit Tests**: 27 test suites, 789 unit tests (all passing)
@@ -96,8 +96,8 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Main Process**: electron-log outputs to files + console
 - **Renderer Process**: DevTools (Ctrl+Shift+I / Cmd+Option+I)
 - **Log Locations**:
-  - macOS: `~/Library/Logs/Toast/main.log`
-  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\main.log`
+  - macOS: `~/Library/Logs/Toast/logs/toast-app.log`
+  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
 - **Debug Mode**: Set NODE_ENV=development for verbose logging
 
 ## Core Principles

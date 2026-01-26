@@ -36,6 +36,67 @@ function importConfig(config, filePath)
  * @returns {boolean} 성공 상태
  */
 function exportConfig(config, filePath)
+
+/**
+ * 구독 데이터 정제 (불필요한 필드 제거)
+ * @param {Object} subscription - 구독 데이터
+ * @returns {Object} 정제된 구독 데이터
+ */
+function sanitizeSubscription(subscription)
+
+/**
+ * 기기 ID 가져오기 (없으면 생성)
+ * @returns {string} 기기 ID
+ */
+function getDeviceId()
+
+/**
+ * 데이터 해시 생성 (동기화 충돌 감지용)
+ * @param {Object} data - 해시할 데이터
+ * @returns {string} 해시 문자열
+ */
+function generateDataHash(data)
+
+/**
+ * 동기화 메타데이터 업데이트
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {Object} metadata - 메타데이터 객체
+ */
+function updateSyncMetadata(config, metadata)
+
+/**
+ * 로컬 수정 상태로 표시
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} deviceId - 기기 ID
+ */
+function markAsModified(config, deviceId)
+
+/**
+ * 동기화 완료 상태로 표시
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} deviceId - 기기 ID
+ */
+function markAsSynced(config, deviceId)
+
+/**
+ * 동기화되지 않은 변경사항 확인
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @returns {boolean} 동기화되지 않은 변경사항 존재 여부
+ */
+function hasUnsyncedChanges(config)
+
+/**
+ * 충돌 상태로 표시
+ * @param {Store} config - 구성 저장소 인스턴스
+ */
+function markAsConflicted(config)
+
+/**
+ * 동기화 메타데이터 가져오기
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @returns {Object} 동기화 메타데이터
+ */
+function getSyncMetadata(config)
 ```
 
 ### 사용 예시
@@ -563,3 +624,220 @@ const { setupIpcHandlers } = require('./main/ipc');
 
 // IPC 핸들러 설정
 setupIpcHandlers(windows);
+```
+
+## 인증 모듈 (`src/main/auth.js`)
+
+인증 모듈은 OAuth 2.0 기반 사용자 인증을 처리합니다.
+
+### 함수
+
+```javascript
+/**
+ * 로그인 프로세스 시작 (외부 브라우저에서 OAuth 인증)
+ * @returns {Promise<void>}
+ */
+async function initiateLogin()
+
+/**
+ * 인증 코드를 토큰으로 교환
+ * @param {string} code - 인증 코드
+ * @returns {Promise<Object>} 토큰 정보
+ */
+async function exchangeCodeForToken(code)
+
+/**
+ * 인증 코드를 토큰으로 교환하고 구독 정보 업데이트
+ * @param {string} code - 인증 코드
+ * @returns {Promise<Object>} 토큰 및 구독 정보
+ */
+async function exchangeCodeForTokenAndUpdateSubscription(code)
+
+/**
+ * 사용자 프로필 정보 가져오기
+ * @returns {Promise<Object>} 사용자 프로필
+ */
+async function fetchUserProfile()
+
+/**
+ * 구독 정보 가져오기
+ * @returns {Promise<Object>} 구독 정보
+ */
+async function fetchSubscription()
+
+/**
+ * 로그아웃
+ * @returns {Promise<void>}
+ */
+async function logout()
+
+/**
+ * 유효한 토큰이 있는지 확인
+ * @returns {boolean} 토큰 유효 여부
+ */
+function hasValidToken()
+
+/**
+ * 액세스 토큰 가져오기
+ * @returns {string|null} 액세스 토큰
+ */
+function getAccessToken()
+
+/**
+ * 리프레시 토큰 가져오기
+ * @returns {string|null} 리프레시 토큰
+ */
+function getRefreshToken()
+
+/**
+ * 프로토콜 핸들러 등록 (toast:// 스킴)
+ */
+function registerProtocolHandler()
+```
+
+### 사용 예시
+
+```javascript
+const auth = require('./main/auth');
+
+// 로그인 시작
+await auth.initiateLogin();
+
+// 토큰 유효성 확인
+if (auth.hasValidToken()) {
+  const profile = await auth.fetchUserProfile();
+  console.log('User:', profile.name);
+}
+
+// 로그아웃
+await auth.logout();
+```
+
+## 클라우드 동기화 모듈 (`src/main/cloud-sync.js`)
+
+클라우드 동기화 모듈은 설정 데이터의 서버 동기화를 처리합니다.
+
+### 함수
+
+```javascript
+/**
+ * 클라우드 동기화 초기화
+ * @param {Object} authManager - 인증 매니저 인스턴스
+ * @param {Object} userDataManager - 사용자 데이터 매니저 인스턴스
+ * @param {Object} config - 구성 저장소
+ * @returns {Object} 동기화 관리 객체
+ */
+function initCloudSync(authManager, userDataManager, config)
+
+/**
+ * 설정 동기화 실행
+ * @returns {Promise<Object>} 동기화 결과
+ */
+async function syncSettings()
+
+/**
+ * 주기적 동기화 중지
+ */
+function stopPeriodicSync()
+
+/**
+ * 동기화 가능 여부 확인
+ * @returns {boolean} 동기화 가능 여부
+ */
+function canSync()
+```
+
+### 동기화 설정
+
+- **주기적 동기화 간격**: 15분
+- **Debounce 시간**: 5초
+- **최대 재시도 횟수**: 3회
+
+### 사용 예시
+
+```javascript
+const { initCloudSync, syncSettings, canSync } = require('./main/cloud-sync');
+
+// 클라우드 동기화 초기화
+const syncManager = initCloudSync(authManager, userDataManager, config);
+
+// 동기화 가능 여부 확인
+if (canSync()) {
+  const result = await syncSettings();
+  console.log('Sync result:', result);
+}
+
+// 주기적 동기화 중지
+stopPeriodicSync();
+```
+
+## API 클라이언트 모듈 (`src/main/api/client.js`)
+
+API 클라이언트 모듈은 Toast 서버와의 HTTP 통신을 처리합니다.
+
+### 함수
+
+```javascript
+/**
+ * API 클라이언트 생성
+ * @param {Object} options - 클라이언트 옵션
+ * @returns {Object} API 클라이언트 인스턴스
+ */
+function createApiClient(options)
+
+/**
+ * 액세스 토큰 설정
+ * @param {string} token - 액세스 토큰
+ */
+function setAccessToken(token)
+
+/**
+ * 리프레시 토큰 설정
+ * @param {string} token - 리프레시 토큰
+ */
+function setRefreshToken(token)
+
+/**
+ * 토큰 초기화
+ */
+function clearTokens()
+
+/**
+ * 인증 헤더 가져오기
+ * @returns {Object} 인증 헤더 객체
+ */
+function getAuthHeaders()
+
+/**
+ * 인증된 요청 실행
+ * @param {string} method - HTTP 메서드
+ * @param {string} endpoint - API 엔드포인트
+ * @param {Object} data - 요청 데이터
+ * @returns {Promise<Object>} 응답 데이터
+ */
+async function authenticatedRequest(method, endpoint, data)
+```
+
+### API 엔드포인트
+
+```javascript
+const ENDPOINTS = {
+  OAUTH_AUTHORIZE: '/oauth/authorize',
+  OAUTH_TOKEN: '/oauth/token',
+  OAUTH_REVOKE: '/oauth/revoke',
+  USER_PROFILE: '/users/profile',
+  SETTINGS: '/users/settings'
+};
+```
+
+### 사용 예시
+
+```javascript
+const { createApiClient, authenticatedRequest, ENDPOINTS } = require('./main/api/client');
+
+// API 클라이언트 생성
+const client = createApiClient({ baseURL: 'https://app.toast.sh/api' });
+
+// 인증된 요청 실행
+const profile = await authenticatedRequest('GET', ENDPOINTS.USER_PROFILE);
+console.log('User profile:', profile);

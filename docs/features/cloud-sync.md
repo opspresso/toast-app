@@ -452,8 +452,8 @@ if (expiresAt >= 8640000000000000) {
 ```
 
 **로그 확인:**
-- macOS: `~/Library/Logs/Toast-App/main.log`
-- Windows: `%USERPROFILE%\AppData\Roaming\Toast-App\logs\main.log`
+- macOS: `~/Library/Logs/Toast/logs/toast-app.log`
+- Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
 - 개발자 도구 콘솔에서도 네트워크 요청/응답 및 로그 확인 가능.
 
 ### 동기화 상태 모니터링
