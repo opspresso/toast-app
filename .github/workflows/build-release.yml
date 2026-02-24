@@ -46,6 +46,7 @@ jobs:
         run: npm ci # Install dependencies
 
       - name: Sync version from tag 🏷️
+        shell: bash
         run: |
           TAG_VERSION="${{ github.ref_name }}"
           VERSION="${TAG_VERSION#v}"
@@ -53,6 +54,7 @@ jobs:
           echo "✅ package.json version updated to $VERSION"
 
       - name: Configure environment variables 🔑
+        shell: bash
         run: |
           # Set environment variables needed for app execution
           echo "CLIENT_ID=${{ secrets.TOAST_CLIENT_ID }}" >> src/main/config/.env
