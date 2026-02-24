@@ -45,6 +45,13 @@ jobs:
       - name: Install dependencies 📦
         run: npm ci # Install dependencies
 
+      - name: Sync version from tag 🏷️
+        run: |
+          TAG_VERSION="${{ github.ref_name }}"
+          VERSION="${TAG_VERSION#v}"
+          jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "✅ package.json version updated to $VERSION"
+
       - name: Configure environment variables 🔑
         run: |
           # Set environment variables needed for app execution
