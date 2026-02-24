@@ -48,7 +48,11 @@ jobs:
       - name: Sync version from tag 🏷️
         shell: bash
         run: |
-          TAG_VERSION="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_VERSION="${{ inputs.version }}"
+          else
+            TAG_VERSION="${{ github.ref_name }}"
+          fi
           VERSION="${TAG_VERSION#v}"
           jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
           echo "✅ package.json version updated to $VERSION"
@@ -125,14 +129,23 @@ jobs:
         run: |
           echo "Fetching tag message from GitHub API..."
 
-          TAG_MESSAGE=$(curl -s \
+          # Get tag ref object (works for both annotated and lightweight tags)
+          TAG_REF=$(curl -s \
             -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${{ github.ref_name }} | \
-            jq -r '.object.sha' | \
-            xargs -I {} curl -s \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${{ github.ref_name }}")
+
+          OBJECT_TYPE=$(echo "$TAG_REF" | jq -r '.object.type')
+          OBJECT_SHA=$(echo "$TAG_REF" | jq -r '.object.sha')
+
+          TAG_MESSAGE=""
+
+          # Only annotated tags have a separate tag object with a message
+          if [ "$OBJECT_TYPE" = "tag" ]; then
+            TAG_MESSAGE=$(curl -s \
               -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
-              https://api.github.com/repos/${{ github.repository }}/git/tags/{} | \
-            jq -r '.message')
+              "https://api.github.com/repos/${{ github.repository }}/git/tags/$OBJECT_SHA" | \
+              jq -r '.message')
+          fi
 
           if [ -z "$TAG_MESSAGE" ] || [ "$TAG_MESSAGE" = "null" ]; then
             echo "⚠️ No tag message found, using default release notes"
@@ -239,43 +252,9 @@ jobs:
 
           echo "✅ Homebrew tap update triggered"
 
-  # Cleanup job: Delete existing draft releases
-  cleanup:
-    needs: [release]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete existing draft releases 🧹
-        run: |
-          echo "🔍 Checking for existing draft releases for tag ${{ github.ref_name }}..."
-
-          # Get list of releases for this tag
-          RELEASES=$(curl -s -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases" | \
-            jq -r '.[] | select(.tag_name == "${{ github.ref_name }}") | {id: .id, draft: .draft, name: .name}')
-
-          # Check if there are any draft releases
-          DRAFT_RELEASES=$(echo "$RELEASES" | jq -r 'select(.draft == true) | .id')
-
-          if [ -n "$DRAFT_RELEASES" ]; then
-            echo "🗑️ Found draft releases to delete:"
-            echo "$RELEASES" | jq -r 'select(.draft == true) | "ID: \(.id), Name: \(.name)"'
-
-            # Delete each draft release
-            for RELEASE_ID in $DRAFT_RELEASES; do
-              echo "🗑️ Deleting draft release with ID: $RELEASE_ID"
-              curl -s -X DELETE -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
-                "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
-            done
-
-            echo "✅ Successfully deleted draft releases"
-          else
-            echo "✅ No draft releases found for tag ${{ github.ref_name }}"
-          fi
-
   # Slack notification job: Send success notification
   slack-success:
-    needs: [build, release, cleanup]
+    needs: [build, release]
     if: success()
     runs-on: ubuntu-latest
     steps:
@@ -354,8 +333,8 @@ jobs:
 
   # Slack notification job: Send failure notification
   slack-failure:
-    needs: [build, release, cleanup]
-    if: failure()
+    needs: [build, release]
+    if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack failure notification ❌
