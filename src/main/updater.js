@@ -114,18 +114,20 @@ function validateUpdateConfig() {
       if (fs.existsSync(updateConfigPath)) {
         updateConfig = require('yaml').parse(fs.readFileSync(updateConfigPath, 'utf8'));
         logger.info('Found app-update.yml configuration:', JSON.stringify(updateConfig));
-      } else {
+      }
+      else {
         logger.warn('app-update.yml not found in packaged app');
       }
     }
-    // 개발 모드일 때는 dev-app-update.yml 파일 확인
     else {
+      // 개발 모드일 때는 dev-app-update.yml 파일 확인
       const devUpdateConfigPath = path.join(process.cwd(), 'dev-app-update.yml');
       logger.info(`devUpdateConfigPath: ${devUpdateConfigPath}`);
       if (fs.existsSync(devUpdateConfigPath)) {
         updateConfig = require('yaml').parse(fs.readFileSync(devUpdateConfigPath, 'utf8'));
         logger.info('Found dev-app-update.yml configuration:', JSON.stringify(updateConfig));
-      } else {
+      }
+      else {
         logger.warn('dev-app-update.yml not found in development mode');
       }
     }
@@ -139,7 +141,8 @@ function validateUpdateConfig() {
         logger.warn(`Update configuration missing required fields: ${missingFields.join(', ')}`);
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error validating update configuration:', error.toString());
   }
 }
@@ -154,7 +157,8 @@ function scheduleUpdateCheck() {
     setTimeout(() => {
       checkForUpdates(true); // silent 모드로 시작 시 자동 확인
     }, 5000);
-  } else {
+  }
+  else {
     logger.info('Skipping automatic update check in development mode');
   }
 }
@@ -302,7 +306,8 @@ function promptUserToInstall(version) {
         if (result.response === 0) {
           logger.info('User confirmed update installation');
           installUpdate();
-        } else {
+        }
+        else {
           logger.info('User postponed update installation');
         }
       })
@@ -352,7 +357,8 @@ async function checkForUpdates(silent = false) {
 
       if (hasUpdate) {
         logger.info(`Update is available (${currentVersion} → ${latestVersion})`);
-      } else {
+      }
+      else {
         logger.info(`No update needed, current version is ${currentVersion}`);
       }
 
@@ -366,7 +372,8 @@ async function checkForUpdates(silent = false) {
         hasUpdate,
         files: result.updateInfo.files,
       };
-    } else {
+    }
+    else {
       // 업데이트 정보가 없는 경우
       logger.info('Update information not found');
 
@@ -389,7 +396,8 @@ async function checkForUpdates(silent = false) {
         hasUpdate: false,
       };
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Update check error:', error.toString());
 
     // 오류 알림 (silent 모드가 아닌 경우에만)
@@ -408,7 +416,8 @@ async function checkForUpdates(silent = false) {
         latest: null,
       },
     };
-  } finally {
+  }
+  finally {
     updateCheckInProgress = false;
     lastCheckTime = Date.now();
   }
@@ -453,7 +462,8 @@ async function downloadUpdate() {
       if (compareVersions(updateVersion, currentVersion) <= 0 && process.env.NODE_ENV !== 'development') {
         logger.warn(`Warning: Update version (${updateVersion}) is not newer than current version (${currentVersion})`);
       }
-    } catch (checkError) {
+    }
+    catch (checkError) {
       logger.error('Error verifying update before download:', checkError.toString());
       throw new Error(`Update verification failed: ${checkError.message}`);
     }
@@ -477,7 +487,8 @@ async function downloadUpdate() {
       // 실제 다운로드 수행
       await autoUpdater.downloadUpdate();
       logger.info('Update download completed successfully');
-    } catch (downloadError) {
+    }
+    catch (downloadError) {
       // 다운로드 중 오류 발생 시 상세 정보 로깅
       logger.error(`Download error: ${downloadError.toString()}`);
 
@@ -497,7 +508,8 @@ async function downloadUpdate() {
       message: 'Update download completed successfully',
       version: updateCheckResult.updateInfo.version,
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Update download error:', error.toString());
 
     sendStatusToWindows('update-error', {
@@ -509,7 +521,8 @@ async function downloadUpdate() {
       success: false,
       error: error.toString(),
     };
-  } finally {
+  }
+  finally {
     // 다운로드 상태 갱신
     if (!autoUpdater.isUpdaterActive()) {
       updateDownloadInProgress = false;
@@ -562,7 +575,8 @@ async function installUpdate() {
     return {
       success: true,
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Update installation error:', error.toString());
 
     sendStatusToWindows('update-error', {

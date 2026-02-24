@@ -65,8 +65,8 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       hasSyncFeature = true;
       logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 구독 활성화 및 기능 확인됨');
     }
-    // 개발 모드에서 cloud_sync 기능이 활성화된 경우 허용
     else if (process.env.NODE_ENV === 'development' && hasCloudSyncFeature && subscription.plan === 'Basic') {
+      // 개발 모드에서 cloud_sync 기능이 활성화된 경우 허용
       hasSyncFeature = true;
       logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 개발 모드에서 Basic 플랜 허용됨');
     }
@@ -79,7 +79,8 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
       plan: subscription.plan,
     });
     return hasSyncFeature;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('동기화 가능 여부 확인 중 오류 발생:', error);
     return false;
   }
@@ -128,7 +129,8 @@ async function uploadSettings({ hasValidToken: _hasValidToken, onUnauthorized, c
       },
       { onUnauthorized },
     );
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 업로드 오류:', error);
 
     state.lastSyncStatus = {
@@ -148,10 +150,12 @@ async function uploadSettings({ hasValidToken: _hasValidToken, onUnauthorized, c
           errorDetails = JSON.stringify(error.response.data);
           if (error.response.data.message) {
             errorMessage = error.response.data.message;
-          } else if (error.response.data.error) {
+          }
+          else if (error.response.data.error) {
             errorMessage = error.response.data.error;
           }
-        } else if (typeof error.response.data === 'string') {
+        }
+        else if (typeof error.response.data === 'string') {
           errorMessage = error.response.data;
         }
       }
@@ -170,7 +174,8 @@ async function uploadSettings({ hasValidToken: _hasValidToken, onUnauthorized, c
       errorDetails,
       statusCode: error.response?.status,
     };
-  } finally {
+  }
+  finally {
     state.isSyncing = false;
   }
 }
@@ -243,14 +248,16 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
           if (settings.lastModifiedDevice) {
             syncMetadata.lastModifiedDevice = settings.lastModifiedDevice;
           }
-        } else if (settings.data) {
+        }
+        else if (settings.data) {
           // 1.2 중첩된 data 객체 처리 (레거시 API 형식)
           logger.info('중첩된 데이터 구조 발견');
           const data = settings.data;
 
           if (Array.isArray(data.pages)) {
             pagesData = data.pages;
-          } else if (Array.isArray(data)) {
+          }
+          else if (Array.isArray(data)) {
             pagesData = data;
           }
 
@@ -270,11 +277,13 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
           if (data.lastModifiedDevice) {
             syncMetadata.lastModifiedDevice = data.lastModifiedDevice;
           }
-        } else if (Array.isArray(settings)) {
+        }
+        else if (Array.isArray(settings)) {
           // 1.3 배열 자체가 응답인 경우 (단순 API 형식)
           logger.info('배열 전용 구조 발견');
           pagesData = settings;
-        } else {
+        }
+        else {
           // 1.4 기타 구조 - 모든 배열 필드 검색
           logger.info('알 수 없는 구조에서 페이지 배열 검색 중');
           const arrayFields = Object.entries(settings)
@@ -294,7 +303,8 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
           Object.entries(settings).forEach(([key, value]) => {
             if (key === 'appearance' && typeof value === 'object') {
               appearanceData = value;
-            } else if (key === 'advanced' && typeof value === 'object') {
+            }
+            else if (key === 'advanced' && typeof value === 'object') {
               advancedData = value;
             }
           });
@@ -334,7 +344,8 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             configStore.set('advanced', advancedData);
             logger.info('고급 설정을 ConfigStore에 저장 완료');
           }
-        } else {
+        }
+        else {
           logger.info('ConfigStore not provided - data downloaded but not saved locally');
         }
 
@@ -357,7 +368,8 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
       },
       { onUnauthorized },
     );
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 다운로드 오류:', error);
 
     state.lastSyncStatus = {
@@ -377,10 +389,12 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
           errorDetails = JSON.stringify(error.response.data);
           if (error.response.data.message) {
             errorMessage = error.response.data.message;
-          } else if (error.response.data.error) {
+          }
+          else if (error.response.data.error) {
             errorMessage = error.response.data.error;
           }
-        } else if (typeof error.response.data === 'string') {
+        }
+        else if (typeof error.response.data === 'string') {
           errorMessage = error.response.data;
         }
       }
@@ -399,7 +413,8 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
       errorDetails,
       statusCode: error.response?.status,
     };
-  } finally {
+  }
+  finally {
     state.isSyncing = false;
   }
 }

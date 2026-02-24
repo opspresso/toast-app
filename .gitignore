@@ -64,3 +64,11 @@ coverage/
 
 # User configuration
 config.json
+
+# claude
+.claude/
+.prompt-*.md
+.prompt.md
+prompt-*.md
+prompt.md
+docs/plans/

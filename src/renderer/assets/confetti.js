@@ -125,7 +125,8 @@ function createConfetti(container, position = null) {
   let left;
   if (position) {
     left = position.x;
-  } else {
+  }
+  else {
     // 전체 화면에 고르게 분포
     left = `${random(0, 100)}%`;
   }

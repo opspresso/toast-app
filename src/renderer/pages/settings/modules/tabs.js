@@ -48,7 +48,8 @@ export function switchTab(tabId) {
     for (const tab of contentTabs) {
       if (tab.id === tabId) {
         tab.classList.add('active');
-      } else {
+      }
+      else {
         tab.classList.remove('active');
       }
     }
@@ -74,11 +75,13 @@ export function switchTab(tabId) {
       const activeContent = document.querySelector('.settings-tab.active');
       if (activeContent) {
         window.settings.log.info(`활성 컨텐츠: [${activeContent.id}]`);
-      } else {
+      }
+      else {
         window.settings.log.error('활성화된 컨텐츠 탭이 없습니다.');
       }
     }, 10);
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error(`탭 전환 중 오류 발생: ${error.message}`, error);
   }
 }

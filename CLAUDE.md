@@ -20,7 +20,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Mac App Store**: `npm run build:mas` (MAS distribution)
 
 ### Testing & Quality
-- **Run Tests**: `npm run test` (Jest with coverage - currently 2 unit tests)
+- **Run Tests**: `npm run test` (Jest with coverage - 27 test suites, 789 unit tests, all passing)
 - **Lint**: `npm run lint` (ESLint check)
 - **Format**: `npm run format` (Prettier formatting)
 
@@ -56,7 +56,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. **Action System**: 5 types (application, exec, open, script, chain) with validation pipeline
 3. **Configuration**: electron-store with JSON schema validation and migration support
 4. **Authentication**: OAuth 2.0 with automatic token refresh and profile management
-5. **Cloud Sync**: Real-time sync with debouncing (2s) and conflict resolution
+5. **Cloud Sync**: Real-time sync with debouncing (5s) and conflict resolution
 6. **Subscription Tiers**: Anonymous (1 page), Authenticated (3 pages), Premium (9 pages)
 
 ## Code Style
@@ -75,7 +75,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. Implement `async execute(action)` function returning `{success, message, ...}`
 3. Add validation case in `executor.js` `validateAction()` function
 4. Register action type in `executor.js` switch statement
-5. Update `docs/BUTTON_ACTIONS.md` with new action documentation
+5. Update `docs/guide/actions.md` with new action documentation
 6. Add unit tests in `tests/unit/`
 
 ### Adding New Settings
@@ -83,10 +83,10 @@ Toast App is an Electron-based desktop application that provides a customizable 
 2. Add settings module in `src/renderer/pages/settings/modules/`
 3. Update settings UI in `src/renderer/pages/settings/index.html`
 4. Add IPC handlers in `src/main/ipc.js` if needed
-5. Update `docs/CONFIG_SCHEMA.md` and `docs/SETTINGS.md`
+5. Update `docs/config/schema.md` and `docs/features/settings.md`
 
 ### Testing & Quality Assurance
-- **Unit Tests**: Currently 2 tests (config, app-icon-extractor)
+- **Unit Tests**: 27 test suites, 789 unit tests (all passing)
 - **Manual Testing**: Use dev mode with `npm run dev`
 - **Coverage**: Run `npm run test` to generate coverage report
 - **Linting**: `npm run lint` to check code style
@@ -96,8 +96,8 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Main Process**: electron-log outputs to files + console
 - **Renderer Process**: DevTools (Ctrl+Shift+I / Cmd+Option+I)
 - **Log Locations**:
-  - macOS: `~/Library/Logs/Toast/main.log`
-  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\main.log`
+  - macOS: `~/Library/Logs/Toast/logs/toast-app.log`
+  - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
 - **Debug Mode**: Set NODE_ENV=development for verbose logging
 
 ## Core Principles
@@ -125,9 +125,11 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Framework**: Jest with coverage reporting
 - **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
 - **Coverage**: Enabled by default, reports in `coverage/` directory
-- **Current Tests**: 2 unit tests
-  - `tests/unit/config.test.js` - Configuration store testing
-  - `tests/unit/app-icon-extractor.test.js` - Icon extraction utility
+- **Current Tests**: 27 test suites, 789 unit tests (all passing)
+  - Main process modules (executor, config, shortcuts, windows, etc.)
+  - Actions (application, chain, exec, open, script)
+  - API clients (auth, client, sync)
+  - Preload scripts (toast, settings)
 
 ### Test Structure
 ```
@@ -135,7 +137,12 @@ tests/
 ├── mocks/
 │   └── electron.js        # Electron API mocks
 ├── setup.js               # Jest setup configuration
-├── unit/                  # Unit tests (current: 2 tests)
+├── unit/                  # Unit tests (789 tests in 27 suites)
+│   ├── actions/           # Action handler tests
+│   ├── api/               # API client tests
+│   ├── config/            # Configuration tests
+│   ├── preload/           # Preload script tests
+│   └── utils/             # Utility function tests
 ├── integration/           # Integration tests (empty)
 └── e2e/                   # End-to-end tests (empty)
 ```
@@ -173,7 +180,7 @@ When storing subscription data in ConfigStore, ensure consistency:
 ### Common Issues
 1. **Cloud sync not enabling**: Check if subscription data is properly stored in ConfigStore
 2. **API authentication**: Verify CLIENT_ID and CLIENT_SECRET in environment variables
-3. **Token expiration**: Default is 30 days, can be set to unlimited with TOKEN_EXPIRES_IN=0
+3. **Token expiration**: Default is 1 year (365 days), can be set to unlimited with TOKEN_EXPIRES_IN=0
 
 ## Environment Configuration
 
@@ -182,5 +189,5 @@ When storing subscription data in ConfigStore, ensure consistency:
 - Key variables:
   - `CLIENT_ID`, `CLIENT_SECRET`: OAuth authentication
   - `TOAST_URL`: API endpoint (default: https://app.toast.sh)
-  - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 2592000)
+  - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 31536000 = 1 year)
   - `NODE_ENV`: Set to 'development' for dev mode

@@ -11,7 +11,8 @@ export function setLoading(loadingElement, isLoading) {
   if (loadingElement) {
     if (isLoading) {
       loadingElement.classList.remove('hidden');
-    } else {
+    }
+    else {
       loadingElement.classList.add('hidden');
     }
   }
@@ -45,7 +46,8 @@ export function applyTheme(theme) {
   // Apply the selected theme
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
-  } else if (theme === 'dark') {
+  }
+  else if (theme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
   }
 
@@ -85,12 +87,12 @@ export function saveSubscriptionToConfig(subscription) {
     if (expiresValue instanceof Date) {
       expiresAtStr = expiresValue.toISOString();
     }
-    // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
     else if (typeof expiresValue === 'number') {
+      // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
       expiresAtStr = new Date(expiresValue).toISOString();
     }
-    // 이미 문자열인 경우 그대로 사용
     else if (typeof expiresValue === 'string') {
+      // 이미 문자열인 경우 그대로 사용
       expiresAtStr = expiresValue;
     }
   }

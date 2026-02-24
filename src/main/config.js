@@ -196,20 +196,23 @@ function createConfigStore() {
 
         logger.info('Legacy subscription data migrated successfully');
       }
-    } catch (migrationError) {
+    }
+    catch (migrationError) {
       logger.error('Error during subscription data migration:', migrationError);
       // 마이그레이션 오류 발생시 구독 정보 재설정
       try {
         migrationStore.set('subscription', schema.subscription.default);
         logger.info('Reset subscription data to defaults due to migration error');
-      } catch (resetError) {
+      }
+      catch (resetError) {
         logger.error('Failed to reset subscription data:', resetError);
       }
     }
 
     // 이제 정상적인 스키마 검증으로 Store 객체 생성
     return new Store({ schema });
-  } catch (error) {
+  }
+  catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
     logger.error('Error creating config store with schema, falling back to schema-less store:', error);
     return new Store({
@@ -263,13 +266,15 @@ function importConfig(config, filePath) {
     // Import each section with validation
     if (importedConfig.globalHotkey && typeof importedConfig.globalHotkey === 'string') {
       config.set('globalHotkey', importedConfig.globalHotkey);
-    } else {
+    }
+    else {
       config.set('globalHotkey', schema.globalHotkey.default);
     }
 
     if (Array.isArray(importedConfig.pages)) {
       config.set('pages', importedConfig.pages);
-    } else {
+    }
+    else {
       config.set('pages', schema.pages.default);
     }
 
@@ -278,7 +283,8 @@ function importConfig(config, filePath) {
         ...schema.appearance.default,
         ...importedConfig.appearance,
       });
-    } else {
+    }
+    else {
       config.set('appearance', schema.appearance.default);
     }
 
@@ -287,12 +293,14 @@ function importConfig(config, filePath) {
         ...schema.advanced.default,
         ...importedConfig.advanced,
       });
-    } else {
+    }
+    else {
       config.set('advanced', schema.advanced.default);
     }
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error importing configuration:', error);
     return false;
   }
@@ -316,7 +324,8 @@ function exportConfig(config, filePath) {
 
     fs.writeFileSync(filePath, JSON.stringify(configData, null, 2), 'utf8');
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error exporting configuration:', error);
     return false;
   }
@@ -343,17 +352,21 @@ function sanitizeSubscription(subscription) {
   if (result.expiresAt !== undefined) {
     if (typeof result.expiresAt === 'string') {
       // 이미 문자열이면 그대로 사용
-    } else if (result.expiresAt instanceof Date) {
+    }
+    else if (result.expiresAt instanceof Date) {
       // Date 객체인 경우 ISO 문자열로 변환
       result.expiresAt = result.expiresAt.toISOString();
-    } else if (typeof result.expiresAt === 'number') {
+    }
+    else if (typeof result.expiresAt === 'number') {
       // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
       result.expiresAt = new Date(result.expiresAt).toISOString();
-    } else {
+    }
+    else {
       // 기타 타입은 빈 문자열로 설정
       result.expiresAt = '';
     }
-  } else {
+  }
+  else {
     // undefined인 경우 빈 문자열로 설정
     result.expiresAt = '';
   }
@@ -369,7 +382,8 @@ function sanitizeSubscription(subscription) {
   // pageGroups 필드는 숫자여야 함
   if (result.pageGroups !== undefined) {
     result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
-  } else {
+  }
+  else {
     result.pageGroups = schema.subscription.properties.pageGroups.default;
   }
 

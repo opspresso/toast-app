@@ -2,7 +2,7 @@
 
 이 문서는 Toast 앱의 데이터 저장 모델, 파일 구조 및 관리 방법을 설명합니다.
 
-> **참고**: 데이터 스키마와 엔티티 관계는 [DATABASE.md](../DATABASE.md)를 참조하세요.
+> **참고**: 데이터 스키마와 엔티티 관계는 [데이터 모델](./data-model.md)을 참조하세요.
 
 ## 목차
 
@@ -89,42 +89,75 @@ Toast 앱은 electron-store 라이브러리를 사용하여 데이터를 유지�
 }
 ```
 
-자세한 구성 옵션은 [CONFIG_SCHEMA.md](CONFIG_SCHEMA.md)를 참조하세요.
+자세한 구성 옵션은 [구성 스키마](./schema.md)를 참조하세요.
 
 ### 사용자 데이터
 
 **위치**:
-- **macOS**: `~/Library/Application Support/toast-app/userData/`
-- **Windows**: `%APPDATA%\toast-app\userData\`
-- **Linux**: `~/.config/toast-app/userData/`
+- **macOS**: `~/Library/Application Support/toast-app/`
+- **Windows**: `%APPDATA%\toast-app\`
+- **Linux**: `~/.config/toast-app/`
 
 **구조**:
-이 디렉토리는 사용자 데이터와 관련된 파일을 포함합니다:
+사용자 데이터는 애플리케이션 데이터 디렉토리에 직접 저장됩니다:
 
 ```
-userData/
-  ├── profile.json           # 사용자 프로필 정보
-  ├── sync-metadata.json     # 클라우드 동기화 메타데이터
-  └── custom-scripts/        # 사용자 정의 스크립트 저장소
-      ├── script1.js
-      └── script2.js
+toast-app/
+  ├── config.json            # 메인 구성 파일 (electron-store)
+  ├── user-profile.json      # 사용자 프로필 정보
+  ├── user-settings.json     # 사용자 설정 및 동기화 메타데이터
+  └── auth-tokens.json       # 인증 토큰
+```
+
+**user-profile.json 구조**:
+```json
+{
+  "name": "사용자 이름",
+  "email": "user@example.com",
+  "is_authenticated": true,
+  "isAuthenticated": true,
+  "subscription": {
+    "plan": "free",
+    "active": false,
+    "is_subscribed": false,
+    "features": {
+      "page_groups": 1,
+      "advanced_actions": false,
+      "cloud_sync": false
+    }
+  }
+}
+```
+
+**user-settings.json 구조**:
+```json
+{
+  "lastSyncedAt": 1682932769000,
+  "lastModifiedAt": 1682932768123,
+  "lastSyncedDevice": "device-id-1",
+  "lastModifiedDevice": "device-id-1"
+}
 ```
 
 ### 인증 토큰
 
 **위치**:
-- **macOS**: `~/Library/Application Support/toast-app/auth/`
-- **Windows**: `%APPDATA%\toast-app\auth\`
-- **Linux**: `~/.config/toast-app/auth/`
+- **macOS**: `~/Library/Application Support/toast-app/auth-tokens.json`
+- **Windows**: `%APPDATA%\toast-app\auth-tokens.json`
+- **Linux**: `~/.config/toast-app/auth-tokens.json`
 
 **구조**:
-이 디렉토리는 암호화된 인증 토큰 및 관련 데이터를 저장합니다:
+인증 토큰은 JSON 형식으로 저장됩니다:
 
+```json
+{
+  "auth-token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh-token": "eyJhbGciOiJIUzI1NiIs...",
+  "token-expires-at": 1715000000000
+}
 ```
-auth/
-  ├── tokens.enc           # 암호화된 인증 토큰
-  └── session-data.json    # 세션 관련 메타데이터
-```
+
+> **참고**: 토큰은 현재 평문 JSON으로 저장됩니다. 파일 시스템 권한으로 보호되며, 운영체제의 사용자 데이터 디렉토리에 저장됩니다.
 
 ### 로그 파일
 

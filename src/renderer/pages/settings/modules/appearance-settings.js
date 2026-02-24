@@ -38,7 +38,8 @@ export function initializeAppearanceSettings() {
     }
 
     window.settings.log.info('모양 설정 탭 초기화 완료');
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('모양 설정 탭 초기화 중 오류 발생:', error);
   }
 }

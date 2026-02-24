@@ -25,7 +25,8 @@ export function initializeCloudSyncUI() {
   try {
     // cloud-sync.js의 초기화 함수 호출
     window.cloudSyncUI.initializeCloudSyncUI(config, authState, window.settings.log);
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('Error initializing Cloud Sync UI:', error);
   }
 }
@@ -79,7 +80,8 @@ export function handleCloudSyncToggle() {
           setLoading(syncLoading, false);
         }
       });
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('클라우드 동기화 상태 변경 처리 중 오류:', error);
 
     // 오류 시 UI 복원
@@ -221,7 +223,8 @@ export function updateSyncStatusUI(status) {
     const spinner = document.createElement('div');
     spinner.className = 'spinner-inline';
     syncStatusBadge.appendChild(spinner);
-  } else {
+  }
+  else {
     // 비활성화된 경우에는 멈춘 이모티콘 표시
     syncStatusBadge.textContent = '⏹️';
     syncStatusBadge.className = 'badge secondary';

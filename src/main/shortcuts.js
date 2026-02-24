@@ -56,18 +56,23 @@ function convertHotkeyToElectronFormat(hotkey) {
     // 모디파이어 키 처리
     if (part === 'Ctrl' || part === 'Control') {
       modifiers.push('CommandOrControl');
-    } else if (part === 'Alt') {
+    }
+    else if (part === 'Alt') {
       modifiers.push('Alt');
-    } else if (part === 'Shift') {
+    }
+    else if (part === 'Shift') {
       modifiers.push('Shift');
-    } else if (part === 'Meta' || part === 'Command' || part === 'Super') {
+    }
+    else if (part === 'Meta' || part === 'Command' || part === 'Super') {
       modifiers.push('Super');
-    } else {
+    }
+    else {
       // 일반 키 처리 (소문자로 변환)
       // Space 키는 그대로 space로 변환
       if (part === 'Space') {
         mainKey = 'space';
-      } else {
+      }
+      else {
         mainKey = part.toLowerCase();
       }
     }
@@ -133,7 +138,8 @@ function registerGlobalShortcuts(config, windows) {
 
     logger.info(`Registered global hotkey: ${originalHotkey} (converted: ${electronHotkey})`);
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error registering global shortcuts:', error);
     return false;
   }
@@ -152,7 +158,8 @@ function toggleToastWindow(toastWindow, config) {
 
   if (toastWindow.isVisible()) {
     toastWindow.hide();
-  } else {
+  }
+  else {
     // Position the window before showing it
     positionToastWindow(toastWindow, config);
 

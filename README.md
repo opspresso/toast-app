@@ -42,16 +42,16 @@ brew install --cask opspresso/tap/toast
 3. **버튼 클릭**: 원하는 액션 버튼을 클릭하거나 키보드 단축키 사용
 4. **설정**: 트레이 아이콘 우클릭 → 설정에서 버튼과 액션을 구성
 
-> 💡 **자세한 사용법**은 [사용자 가이드](docs/USER_GUIDE.md)를 참조하세요.
+> 💡 **자세한 사용법**은 [사용자 가이드](docs/guide/user.md)를 참조하세요.
 
 ## 📚 문서
 
 | 문서 | 설명 |
 |------|------|
-| [📖 사용자 가이드](docs/USER_GUIDE.md) | 상세한 기능 및 사용법 안내 |
-| [🔧 개발 가이드](docs/DEVELOPMENT.md) | 개발 환경 설정 및 빌드 과정 |
-| [🏗️ 아키텍처](docs/ARCHITECTURE.md) | 시스템 구조 및 설계 원칙 |
-| [⌨️ 단축키 규칙](docs/BUTTON_SHORTCUTS.md) | 버튼 단축키 자동 할당 시스템 |
+| [📖 사용자 가이드](docs/guide/user.md) | 상세한 기능 및 사용법 안내 |
+| [🔧 개발 가이드](docs/development/setup.md) | 개발 환경 설정 및 빌드 과정 |
+| [🏗️ 아키텍처](docs/architecture/overview.md) | 시스템 구조 및 설계 원칙 |
+| [⌨️ 단축키 규칙](docs/guide/shortcuts.md) | 버튼 단축키 자동 할당 시스템 |
 | [📋 전체 문서 목록](docs/README.md) | 모든 문서의 인덱스 |
 
 ## 🛠️ 개발자를 위한 빠른 시작
@@ -68,7 +68,7 @@ npm install
 npm run dev
 ```
 
-> 📝 **상세한 개발 정보**는 [개발 가이드](docs/DEVELOPMENT.md)를 참조하세요.
+> 📝 **상세한 개발 정보**는 [개발 가이드](docs/development/setup.md)를 참조하세요.
 
 ## 🤝 기여하기
 

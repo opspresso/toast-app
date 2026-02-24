@@ -22,8 +22,10 @@ const apiAuth = require('./api/auth');
 // ENV
 const { getEnv } = require('./config/env');
 const NODE_ENV = getEnv('NODE_ENV', 'development');
-const CLIENT_ID = getEnv('CLIENT_ID', NODE_ENV === 'production' ? '' : 'toast-app-client');
-const CLIENT_SECRET = getEnv('CLIENT_SECRET', NODE_ENV === 'production' ? '' : 'toast-app-secret');
+// Security: Do not use hardcoded default credentials
+// These must be provided via environment variables or .env file
+const CLIENT_ID = getEnv('CLIENT_ID', '');
+const CLIENT_SECRET = getEnv('CLIENT_SECRET', '');
 // 토큰 만료 시간을 무기한으로 설정 (매우 긴 시간으로 설정)
 const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '31536000'), 10); // Default 1 year (365 days), can be overridden in environment variables
 const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
@@ -56,7 +58,8 @@ async function initializeTokensFromStorage() {
     }
 
     return { accessToken, refreshToken };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error initializing tokens:', error);
     return { accessToken: null, refreshToken: null };
   }
@@ -74,7 +77,8 @@ function readTokenFile() {
 
     const data = fs.readFileSync(TOKEN_FILE_PATH, 'utf8');
     return JSON.parse(data);
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error reading token file:', error);
     return null;
   }
@@ -102,7 +106,8 @@ function writeTokenFile(tokenData) {
     try {
       const verifyData = fs.readFileSync(tempFilePath, 'utf8');
       JSON.parse(verifyData); // Ensure it's valid JSON
-    } catch (verifyError) {
+    }
+    catch (verifyError) {
       logger.error('Error verifying written token data:', verifyError);
       fs.unlinkSync(tempFilePath); // Clean up corrupted temp file
       return false;
@@ -115,7 +120,8 @@ function writeTokenFile(tokenData) {
       if (process.platform === 'win32') {
         try {
           fs.unlinkSync(TOKEN_FILE_PATH);
-        } catch (unlinkError) {
+        }
+        catch (unlinkError) {
           logger.error('Error removing existing token file:', unlinkError);
         }
       }
@@ -124,7 +130,8 @@ function writeTokenFile(tokenData) {
     fs.renameSync(tempFilePath, TOKEN_FILE_PATH);
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error saving token file:', error);
     return false;
   }
@@ -138,7 +145,8 @@ async function getStoredToken() {
   try {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[TOKEN_KEY] : null;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to get token from local file:', error);
     return null;
   }
@@ -152,7 +160,8 @@ async function getStoredRefreshToken() {
   try {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[REFRESH_TOKEN_KEY] : null;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to get refresh token from local file:', error);
     return null;
   }
@@ -175,7 +184,8 @@ async function storeTokenExpiry(expiresAt) {
     if (!writeTokenFile(tokenData)) {
       throw new Error('Failed to save token expiration time');
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to store token expiration time:', error);
     throw error;
   }
@@ -189,7 +199,8 @@ async function getStoredTokenExpiry() {
   try {
     const tokenData = readTokenFile();
     return tokenData ? tokenData[TOKEN_EXPIRES_KEY] : null;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to get token expiration time:', error);
     return null;
   }
@@ -232,7 +243,8 @@ async function isTokenExpired() {
     logger.info(`Current token validity: approximately ${remainingMinutes} minutes remaining`);
 
     return false;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error checking token expiration:', error);
     // Consider expired if error occurs, for safety
     return true;
@@ -262,7 +274,8 @@ async function storeToken(token, expiresIn = 31536000) {
       // Treat negative or zero values as unlimited expiration time (use a very distant future date)
       expiresAt = 8640000000000000; // Maximum date supported by JavaScript (about 270 million years)
       logger.info('Token expiration time set to unlimited.');
-    } else {
+    }
+    else {
       expiresAt = Date.now() + expiresIn * 1000;
     }
     tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
@@ -273,7 +286,8 @@ async function storeToken(token, expiresIn = 31536000) {
     }
 
     logger.info(`Token saved successfully, expiration time: ${new Date(expiresAt).toLocaleString()}`);
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to save token:', error);
     throw error;
   }
@@ -299,7 +313,8 @@ async function storeRefreshToken(refreshToken) {
     if (!writeTokenFile(tokenData)) {
       throw new Error('Failed to save refresh token file');
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to save refresh token:', error);
     throw error;
   }
@@ -316,7 +331,8 @@ async function clearLocalTokenStorage() {
       fs.unlinkSync(TOKEN_FILE_PATH);
       logger.info('Local token file cleared');
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to delete local token file:', error);
     throw error;
   }
@@ -328,6 +344,12 @@ async function clearLocalTokenStorage() {
  */
 async function initiateLogin() {
   try {
+    // Verify CLIENT_ID is configured
+    if (!CLIENT_ID) {
+      logger.error('CLIENT_ID is not configured. Please set CLIENT_ID in environment variables or .env file.');
+      throw new Error('OAuth client configuration is missing. Please contact support.');
+    }
+
     // Generate login URL through common module
     const loginResult = apiAuth.initiateLogin(CLIENT_ID);
 
@@ -339,7 +361,8 @@ async function initiateLogin() {
     await shell.openExternal(loginResult.url);
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to initiate login:', error);
     throw error;
   }
@@ -379,7 +402,8 @@ async function handleAuthRedirect(url) {
           message: 'Authentication refreshed',
           subscription,
         };
-      } else {
+      }
+      else {
         // If not authenticated, start login process
         logger.info('Not authenticated, initiating login process');
         return await initiateLogin();
@@ -422,7 +446,8 @@ async function handleAuthRedirect(url) {
             message: 'Authentication refreshed',
             subscription,
           };
-        } else {
+        }
+        else {
           // If not authenticated, start login process
           logger.info('Not authenticated, initiating login process');
           return await initiateLogin();
@@ -436,7 +461,8 @@ async function handleAuthRedirect(url) {
       success: false,
       error: 'Invalid URL parameters',
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to handle auth redirect:', error);
     return {
       success: false,
@@ -452,6 +478,15 @@ async function handleAuthRedirect(url) {
  */
 async function exchangeCodeForToken(code) {
   try {
+    // Verify OAuth credentials are configured
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+      logger.error('OAuth credentials are not configured. Please set CLIENT_ID and CLIENT_SECRET in environment variables or .env file.');
+      return {
+        success: false,
+        error: 'OAuth client configuration is missing. Please contact support.',
+      };
+    }
+
     logger.info('Starting exchange of authentication code for token:', code.substring(0, 8) + '...');
 
     // Exchange code for token through common module
@@ -485,12 +520,14 @@ async function exchangeCodeForToken(code) {
     const storedToken = await getStoredToken();
     if (!storedToken) {
       logger.error('Failed to verify token storage. Token not found in storage');
-    } else {
+    }
+    else {
       logger.info('Token storage verification successful');
     }
 
     return tokenResult;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error occurred during token exchange:', error);
 
     return {
@@ -528,7 +565,8 @@ async function refreshAccessToken() {
         // 토큰이 유효하면 성공으로 처리
         logger.info('Current token is still valid. Returning success.');
         return { success: true, throttled: true, tokenValid: true };
-      } else {
+      }
+      else {
         // 토큰이 만료되었지만 스로틀링 중이면 오류 반환
         logger.warn('Token is expired but refresh is throttled. Returning error.');
         return {
@@ -574,6 +612,16 @@ async function refreshAccessToken() {
 
         logger.info('Refresh token exists, attempting exchange');
 
+        // Verify OAuth credentials are configured
+        if (!CLIENT_ID || !CLIENT_SECRET) {
+          logger.error('OAuth credentials are not configured for token refresh.');
+          return {
+            success: false,
+            error: 'OAuth client configuration is missing.',
+            code: 'NO_CREDENTIALS',
+          };
+        }
+
         // Exchange refresh token through common module
         const refreshResult = await apiAuth.refreshAccessToken({
           refreshToken,
@@ -614,14 +662,16 @@ async function refreshAccessToken() {
         }
 
         return { success: true };
-      } catch (error) {
+      }
+      catch (error) {
         logger.error('Exception in token refresh:', error);
         return {
           success: false,
           error: error.message || 'Unknown error in token refresh',
           code: 'REFRESH_EXCEPTION',
         };
-      } finally {
+      }
+      finally {
         // Reset refresh state
         isRefreshing = false;
         refreshPromise = null;
@@ -630,7 +680,8 @@ async function refreshAccessToken() {
 
     // Return the shared promise
     return refreshPromise;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Exception occurred during token refresh process:', error);
     isRefreshing = false; // Reset state even on error
 
@@ -674,7 +725,8 @@ async function logout() {
     logger.info('Logged out and reset page group settings to defaults');
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Logout error:', error);
     return false;
   }
@@ -687,7 +739,8 @@ async function logout() {
 async function fetchUserProfile() {
   try {
     return await apiAuth.fetchUserProfile(refreshAccessToken);
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error retrieving profile information:', error);
     return {
       error: {
@@ -723,7 +776,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         success: true,
         subscription,
       };
-    } catch (subError) {
+    }
+    catch (subError) {
       logger.error('Failed to retrieve subscription information:', subError);
 
       // Token exchange was successful, so treat as success with warning
@@ -733,7 +787,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         error_details: subError.message,
       };
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error during authentication code exchange and subscription update:', error);
     return {
       success: false,
@@ -748,9 +803,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
  * @returns {void}
  */
 function registerProtocolHandler() {
-  if (process.platform === 'darwin' || process.platform === 'win32') {
-    app.setAsDefaultProtocolClient('toast-app');
-  }
+  // Register protocol handler for all platforms (macOS, Windows, Linux)
+  app.setAsDefaultProtocolClient('toast-app');
 }
 
 /**
@@ -772,7 +826,8 @@ async function hasValidToken() {
     }
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Token validation error:', error);
     return false;
   }
@@ -804,10 +859,12 @@ async function updatePageGroupSettings(subscription) {
     if (isActive || isVip) {
       if (subscription.plan === 'premium' || isVip) {
         pageGroups = PAGE_GROUPS.PREMIUM;
-      } else {
+      }
+      else {
         pageGroups = PAGE_GROUPS.AUTHENTICATED;
       }
-    } else if (subscription.userId && subscription.userId !== 'anonymous') {
+    }
+    else if (subscription.userId && subscription.userId !== 'anonymous') {
       // User is authenticated but not active subscription
       pageGroups = PAGE_GROUPS.AUTHENTICATED;
     }
@@ -818,7 +875,8 @@ async function updatePageGroupSettings(subscription) {
       if (subscription.subscribed_until) {
         // Explicitly convert to string and verify valid string
         expiresAtStr = typeof subscription.subscribed_until === 'string' ? subscription.subscribed_until : String(subscription.subscribed_until);
-      } else if (subscription.expiresAt) {
+      }
+      else if (subscription.expiresAt) {
         // Explicitly convert to string and verify valid string
         expiresAtStr = typeof subscription.expiresAt === 'string' ? subscription.expiresAt : String(subscription.expiresAt);
       }
@@ -827,7 +885,8 @@ async function updatePageGroupSettings(subscription) {
       if (expiresAtStr === 'undefined' || expiresAtStr === 'null') {
         expiresAtStr = '';
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error converting expiresAt value:', error);
       expiresAtStr = ''; // Use empty string if error occurs
     }
@@ -865,7 +924,8 @@ async function updatePageGroupSettings(subscription) {
       plan: subscription.plan || 'free',
       pageGroups: subscription.features?.page_groups || pageGroups,
     });
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error updating page group settings:', error);
     throw error;
   }
@@ -888,14 +948,17 @@ async function fetchSubscription() {
     if (profileData && profileData.subscription) {
       // Successfully retrieved profile data with subscription information
       return profileData.subscription;
-    } else if (profileData.error) {
+    }
+    else if (profileData.error) {
       // Error case
       return profileData;
-    } else {
+    }
+    else {
       // Profile exists but no subscription information, return default
       return DEFAULT_ANONYMOUS_SUBSCRIPTION;
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to retrieve subscription information:', error);
     // Handle as anonymous user if error occurs
     return DEFAULT_ANONYMOUS_SUBSCRIPTION;

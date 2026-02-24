@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * Toast - Settings Window Preload Script
  *
@@ -99,7 +100,8 @@ window.addEventListener('DOMContentLoaded', () => {
       console.log('=== Sync Debug Status ===');
       console.log(status);
       return status;
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error getting sync status:', error);
     }
   };
@@ -110,7 +112,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const result = await window.settings.manualSync(action);
       console.log('Manual sync result:', result);
       return result;
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error triggering manual sync:', error);
     }
   };
@@ -130,11 +133,13 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('Icon change test completed. Check logs for sync activity.');
 
         return { success: true, message: 'Icon change triggered' };
-      } else {
+      }
+      else {
         console.log('No buttons found to test icon change');
         return { success: false, message: 'No buttons found' };
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error testing icon change:', error);
       return { success: false, error: error.message };
     }

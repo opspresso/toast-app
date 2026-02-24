@@ -35,7 +35,7 @@ Toast 앱은 민감한 사용자 데이터(인증 토큰, 사용자 프로필, �
 
 ## 인증 시스템
 
-Toast 앱은 OAuth 2.0 프로토콜을 사용하여 안전한 사용자 인증을 제공합니다. 상세한 인증 흐름과 API 연동에 대해서는 [INTEGRATION.md](./INTEGRATION.md) 문서를 참조하세요.
+Toast 앱은 OAuth 2.0 프로토콜을 사용하여 안전한 사용자 인증을 제공합니다. 상세한 인증 흐름과 API 연동에 대해서는 [연동 가이드](../development/integration.md) 문서를 참조하세요.
 
 ### OAuth 인증 흐름
 
@@ -299,6 +299,6 @@ Toast 앱에서 보안 취약점을 발견한 경우:
 
 ## 관련 문서
 
-- **인증 시스템 전체 개요**: [INTEGRATION.md](./INTEGRATION.md)
-- **클라우드 동기화 구현**: [CLOUD_SYNC.md](./CLOUD_SYNC.md)
-- **API 문서**: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+- **인증 시스템 전체 개요**: [연동 가이드](../development/integration.md)
+- **클라우드 동기화 구현**: [클라우드 동기화](../features/cloud-sync.md)
+- **API 문서**: [API 개요](../api/overview.md)

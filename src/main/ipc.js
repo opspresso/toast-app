@@ -86,20 +86,24 @@ function setupIpcHandlers(windows) {
               subscription: result.subscription,
               message: 'Authentication information has been refreshed.',
             });
-          } else {
+          }
+          else {
             // Regular login success notification
             authManager.notifyLoginSuccess(result.subscription);
           }
-        } else {
+        }
+        else {
           // Login failure notification
           authManager.notifyLoginError(result.error || 'Unknown error');
         }
-      } catch (error) {
+      }
+      catch (error) {
         logger.error('Error handling auth redirect:', error);
         // Notification when error occurs
         authManager.notifyLoginError(error.message || 'Unknown error');
       }
-    } else if (windows.settings && !windows.settings.isDestroyed()) {
+    }
+    else if (windows.settings && !windows.settings.isDestroyed()) {
       // Deliver other protocol data
       windows.settings.webContents.send('protocol-data', url);
     }
@@ -121,7 +125,8 @@ function setupIpcHandlers(windows) {
         return true;
       }
       return false;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error setting alwaysOnTop:', error);
       return false;
     }
@@ -134,7 +139,8 @@ function setupIpcHandlers(windows) {
         return windows.toast.getPosition();
       }
       return null;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error getting window position:', error);
       return null;
     }
@@ -149,7 +155,8 @@ function setupIpcHandlers(windows) {
         return true;
       }
       return false;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error disabling alwaysOnTop temporarily:', error);
       return false;
     }
@@ -173,7 +180,8 @@ function setupIpcHandlers(windows) {
         return true;
       }
       return false;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error restoring alwaysOnTop after dialog:', error);
       return false;
     }
@@ -183,7 +191,8 @@ function setupIpcHandlers(windows) {
   ipcMain.handle('execute-action', async (event, action) => {
     try {
       return await executeAction(action);
-    } catch (error) {
+    }
+    catch (error) {
       return {
         success: false,
         message: `Error executing action: ${error.message}`,
@@ -196,7 +205,8 @@ function setupIpcHandlers(windows) {
   ipcMain.handle('validate-action', async (event, action) => {
     try {
       return await validateAction(action);
-    } catch (error) {
+    }
+    catch (error) {
       return {
         valid: false,
         message: `Error validating action: ${error.message}`,
@@ -210,10 +220,12 @@ function setupIpcHandlers(windows) {
     try {
       if (key) {
         return config.get(key);
-      } else {
+      }
+      else {
         return config.store;
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error getting config:', error);
       return null;
     }
@@ -224,7 +236,8 @@ function setupIpcHandlers(windows) {
     try {
       const { getEnv } = require('./config/env');
       return getEnv(key);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error getting environment variable:', error);
       return null;
     }
@@ -243,14 +256,16 @@ function setupIpcHandlers(windows) {
         Object.keys(value).forEach(k => {
           config.set(k, value[k]);
         });
-      } else if (key === 'subscription' && typeof value === 'object') {
+      }
+      else if (key === 'subscription' && typeof value === 'object') {
         // sanitizeSubscription 함수를 사용하여 객체 정리
         const { sanitizeSubscription } = require('./config');
         const subscriptionValue = sanitizeSubscription(value);
 
         // 정리된 subscription 객체 저장
         config.set(key, subscriptionValue);
-      } else {
+      }
+      else {
         // Set specific key
         config.set(key, value);
       }
@@ -288,7 +303,8 @@ function setupIpcHandlers(windows) {
       }
 
       return true;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error setting config:', error);
       return false;
     }
@@ -386,7 +402,8 @@ function setupIpcHandlers(windows) {
         return true;
       }
       return false;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error saving config:', error);
       return false;
     }
@@ -412,7 +429,8 @@ function setupIpcHandlers(windows) {
       }
 
       return true;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error resetting config:', error);
       return false;
     }
@@ -423,7 +441,8 @@ function setupIpcHandlers(windows) {
     try {
       const { importConfig } = require('./config');
       return await importConfig(config, filePath);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error importing config:', error);
       return false;
     }
@@ -434,7 +453,8 @@ function setupIpcHandlers(windows) {
     try {
       const { exportConfig } = require('./config');
       return await exportConfig(config, filePath);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error exporting config:', error);
       return false;
     }
@@ -457,7 +477,8 @@ function setupIpcHandlers(windows) {
         return true;
       }
       return false;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error showing window:', error);
       return false;
     }
@@ -574,7 +595,8 @@ function setupIpcHandlers(windows) {
       if (cloudSyncManager) {
         // getCurrentStatus() 메서드로 현재 상태 조회
         return cloudSyncManager.getCurrentStatus();
-      } else {
+      }
+      else {
         // CloudSyncManager 초기화할 수 없으면 Config Store에서 실제 상태 읽기
         const savedEnabled = config.get('cloudSync.enabled');
         const actualEnabled = savedEnabled !== undefined ? savedEnabled : true;
@@ -587,7 +609,8 @@ function setupIpcHandlers(windows) {
           lastChangeType: null,
         };
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error getting sync status:', error);
       
       // 오류 시에도 Config Store에서 상태 읽기 시도
@@ -601,7 +624,8 @@ function setupIpcHandlers(windows) {
           lastSyncTime: 0,
           lastChangeType: null,
         };
-      } catch (configError) {
+      }
+      catch (configError) {
         logger.error('Error reading config for sync status:', configError);
         return {
           enabled: false,
@@ -630,7 +654,8 @@ function setupIpcHandlers(windows) {
         // enable/disable 메서드를 사용하여 클라우드 동기화 활성화/비활성화
         if (enabled) {
           cloudSyncManager.enable();
-        } else {
+        }
+        else {
           cloudSyncManager.disable();
         }
 
@@ -639,7 +664,8 @@ function setupIpcHandlers(windows) {
           success: true,
           status: cloudSyncManager.getCurrentStatus(),
         };
-      } else {
+      }
+      else {
         // 매니저가 초기화되지 않은 경우
         logger.warn('Cloud sync manager not initialized, cannot enable/disable');
         return {
@@ -647,7 +673,8 @@ function setupIpcHandlers(windows) {
           error: 'Cloud sync manager not initialized',
         };
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error setting cloud sync enabled:', error);
       return {
         success: false,
@@ -696,7 +723,8 @@ function setupIpcHandlers(windows) {
         }
 
         return result;
-      } else {
+      }
+      else {
         // 매니저가 초기화되지 않은 경우
         logger.warn('Cloud sync manager not initialized, cannot perform manual sync');
         return {
@@ -704,7 +732,8 @@ function setupIpcHandlers(windows) {
           error: 'Cloud sync manager not initialized',
         };
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error(`Error performing manual sync (${action}):`, error);
       return {
         success: false,
@@ -747,15 +776,16 @@ function setupIpcHandlers(windows) {
             hasValidToken,
             subscription: subscription
               ? {
-                  active: subscription.active,
-                  isSubscribed: subscription.isSubscribed,
-                  features: subscription.features,
-                  plan: subscription.plan,
-                }
+                active: subscription.active,
+                isSubscribed: subscription.isSubscribed,
+                features: subscription.features,
+                plan: subscription.plan,
+              }
               : null,
           },
         };
-      } else {
+      }
+      else {
         return {
           success: false,
           error: 'Cloud sync manager not initialized - authManager or userDataManager missing',
@@ -765,7 +795,8 @@ function setupIpcHandlers(windows) {
           },
         };
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error getting debug sync status:', error);
       return {
         success: false,
@@ -779,7 +810,8 @@ function setupIpcHandlers(windows) {
     try {
       await shell.openExternal(url);
       return true;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error opening URL:', error);
       return false;
     }
@@ -792,7 +824,8 @@ function setupIpcHandlers(windows) {
       // Disable all currently set global shortcuts
       unregisterGlobalShortcuts();
       return true;
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error disabling shortcuts:', error);
       return false;
     }
@@ -803,7 +836,8 @@ function setupIpcHandlers(windows) {
     try {
       // Register global shortcuts again
       return registerGlobalShortcuts(config, windows);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error restoring shortcuts:', error);
       return false;
     }
@@ -819,7 +853,8 @@ function setupIpcHandlers(windows) {
         parent: windows.toast,
       };
       return await dialog.showOpenDialog(windows.toast, modalOptions);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error showing open dialog:', error);
       return { canceled: true, error: error.toString() };
     }
@@ -836,7 +871,8 @@ function setupIpcHandlers(windows) {
         parent: windows.toast,
       };
       return await dialog.showSaveDialog(modalOptions);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error showing save dialog:', error);
       return { canceled: true, error: error.toString() };
     }
@@ -853,7 +889,8 @@ function setupIpcHandlers(windows) {
         parent: windows.toast,
       };
       return await dialog.showMessageBox(modalOptions);
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('Error showing message box:', error);
       return { response: 0, error: error.toString() };
     }
@@ -864,7 +901,8 @@ function setupIpcHandlers(windows) {
     try {
       const { app } = require('electron');
       return app.getVersion();
-    } catch (error) {
+    }
+    catch (error) {
       return '0.0.0';
     }
   });
@@ -915,7 +953,8 @@ function setupIpcHandlers(windows) {
 
       // 업데이트가 확인되면 다운로드 진행
       return await updater.downloadUpdate();
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('자동 업데이트 다운로드 중 오류 발생:', error);
       return {
         success: false,
@@ -950,7 +989,8 @@ function setupIpcHandlers(windows) {
 
       // 업데이트가 확인되면 다운로드 진행
       return await updater.downloadUpdate();
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('수동 업데이트 다운로드 중 오류 발생:', error);
       return {
         success: false,
@@ -995,7 +1035,8 @@ function setupIpcHandlers(windows) {
 
       // Then execute it
       return await executeAction(action);
-    } catch (error) {
+    }
+    catch (error) {
       return {
         success: false,
         message: `Error testing action: ${error.message}`,
@@ -1024,7 +1065,8 @@ function setupIpcHandlers(windows) {
         iconPath: tildePath,
         appName,
       };
-    } catch (err) {
+    }
+    catch (err) {
       return {
         success: false,
         error: `아이콘 추출 중 오류 발생: ${err.message}`,
@@ -1036,7 +1078,8 @@ function setupIpcHandlers(windows) {
   ipcMain.handle('resolve-tilde-path', (event, tildePath) => {
     try {
       return resolveTildePath(tildePath);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error(`Failed to resolve tilde path: ${err.message}`);
       return tildePath; // Return original path if resolution fails
     }
