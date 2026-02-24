@@ -180,7 +180,7 @@ When storing subscription data in ConfigStore, ensure consistency:
 ### Common Issues
 1. **Cloud sync not enabling**: Check if subscription data is properly stored in ConfigStore
 2. **API authentication**: Verify CLIENT_ID and CLIENT_SECRET in environment variables
-3. **Token expiration**: Default is 30 days, can be set to unlimited with TOKEN_EXPIRES_IN=0
+3. **Token expiration**: Default is 1 year (365 days), can be set to unlimited with TOKEN_EXPIRES_IN=0
 
 ## Environment Configuration
 
@@ -189,5 +189,5 @@ When storing subscription data in ConfigStore, ensure consistency:
 - Key variables:
   - `CLIENT_ID`, `CLIENT_SECRET`: OAuth authentication
   - `TOAST_URL`: API endpoint (default: https://app.toast.sh)
-  - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 2592000)
+  - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 31536000 = 1 year)
   - `NODE_ENV`: Set to 'development' for dev mode
