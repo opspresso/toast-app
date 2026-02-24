@@ -22,9 +22,9 @@
 
 Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩니다:
 
-- **macOS**: `~/Library/Application Support/toast-app/config.json`
-- **Windows**: `%APPDATA%\toast-app\config.json`
-- **Linux**: `~/.config/toast-app/config.json`
+- **macOS**: `~/Library/Application Support/Toast/config.json`
+- **Windows**: `%APPDATA%\Toast\config.json`
+- **Linux**: `~/.config/Toast/config.json`
 
 구성 파일은 JSON 형식으로 저장되며, 앱의 설정 UI를 통해 수정하거나 직접 텍스트 에디터로 편집할 수 있습니다.
 
@@ -306,8 +306,8 @@ config.reset();
 Toast 앱은 구성 스키마 변경 시 자동 마이그레이션을 지원합니다. 이전 버전의 구성 파일은 자동으로 현재 스키마로 업데이트됩니다.
 
 구성 백업은 다음 위치에 저장됩니다:
-- **macOS**: `~/Library/Application Support/toast-app/config.backup.json`
-- **Windows**: `%APPDATA%\toast-app\config.backup.json`
-- **Linux**: `~/.config/toast-app/config.backup.json`
+- **macOS**: `~/Library/Application Support/Toast/config.backup.json`
+- **Windows**: `%APPDATA%\Toast\config.backup.json`
+- **Linux**: `~/.config/Toast/config.backup.json`
 
 구성 마이그레이션 오류가 발생하면 백업 파일을 원래 config.json 파일로 복원할 수 있습니다.

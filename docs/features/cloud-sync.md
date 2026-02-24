@@ -436,8 +436,8 @@ async function onLogin() {
 ### 토큰 관련 문제 해결
 
 **토큰 파일 확인:**
-- macOS: `~/Library/Application Support/Toast-App/auth-tokens.json`
-- Windows: `%APPDATA%\Toast-App\auth-tokens.json`
+- macOS: `~/Library/Application Support/Toast/auth-tokens.json`
+- Windows: `%APPDATA%\Toast\auth-tokens.json`
 
 **토큰 상태 확인:**
 ```javascript
@@ -452,8 +452,8 @@ if (expiresAt >= 8640000000000000) {
 ```
 
 **로그 확인:**
-- macOS: `~/Library/Logs/Toast/logs/toast-app.log`
-- Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
+- macOS: `~/Library/Application Support/Toast/logs/toast-app.log`
+- Windows: `%APPDATA%\Toast\logs\toast-app.log`
 - 개발자 도구 콘솔에서도 네트워크 요청/응답 및 로그 확인 가능.
 
 ### 동기화 상태 모니터링

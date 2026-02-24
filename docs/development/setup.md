@@ -18,7 +18,7 @@
 
 ### 필수 조건
 
-- **Node.js**: v16 이상
+- **Node.js**: v22 이상
 - **npm** (v7 이상) 또는 **yarn**
 - **Git**
 - Electron, JavaScript 및 데스크톱 애플리케이션 개발에 대한 기본 지식
@@ -83,14 +83,19 @@ toast-app/
 │   │   ├── actions/       # 액션 구현
 │   │   ├── api/           # API 클라이언트
 │   │   ├── config/        # 환경 구성
+│   │   ├── utils/         # 유틸리티 (앱 아이콘 추출 등)
 │   │   ├── auth.js        # 인증 처리
+│   │   ├── auth-manager.js # 인증 상태 동기화
+│   │   ├── cloud-sync.js  # 클라우드 동기화
 │   │   ├── config.js      # 구성 관리
+│   │   ├── constants.js   # 상수 정의
 │   │   ├── executor.js    # 액션 실행
 │   │   ├── ipc.js         # IPC 처리
 │   │   ├── logger.js      # 로깅 시스템
 │   │   ├── shortcuts.js   # 글로벌 단축키
 │   │   ├── tray.js        # 시스템 트레이
 │   │   ├── updater.js     # 자동 업데이트
+│   │   ├── user-data-manager.js # 사용자 데이터 관리
 │   │   └── windows.js     # 윈도우 관리
 │   ├── renderer/          # 렌더러 프로세스 코드
 │   │   ├── assets/        # 렌더러 자산
@@ -117,13 +122,16 @@ toast-app/
 
 - **index.js**: 애플리케이션 진입점
 - **config.js**: 사용자 구성 관리 (electron-store 사용)
+- **constants.js**: 앱 전역 상수 정의
 - **windows.js**: 애플리케이션 창 관리
 - **tray.js**: 시스템 트레이 아이콘 관리
 - **shortcuts.js**: 글로벌 단축키 관리
 - **executor.js**: 액션 실행 로직
 - **ipc.js**: IPC 채널 및 핸들러
 - **auth.js**: 인증 및 토큰 관리
+- **auth-manager.js**: 인증 상태 동기화 및 UI 알림
 - **cloud-sync.js**: 클라우드 동기화 로직
+- **user-data-manager.js**: 사용자 데이터 관리
 - **logger.js**: 애플리케이션 로깅 시스템
 - **updater.js**: 자동 업데이트 관리
 
@@ -195,9 +203,6 @@ npm run test
 # 코드 린팅
 npm run lint
 
-# 린팅 문제 자동 수정
-npm run lint:fix
-
 # 코드 포맷팅
 npm run format
 ```
@@ -261,8 +266,8 @@ Toast 앱은 `electron-log` 패키지를 사용하여 일관되고 효율적인 
 - 개발/운영 환경에 따른 로그 레벨 자동 조정
 
 로그 파일은 다음 위치에 저장됩니다:
-- **macOS**: `~/Library/Logs/Toast/toast-app.log`
-- **Windows**: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
+- **macOS**: `~/Library/Application Support/Toast/logs/toast-app.log`
+- **Windows**: `%APPDATA%\Toast\logs\toast-app.log`
 - **Linux**: `~/.config/Toast/logs/toast-app.log`
 
 ### 로거 사용 방법
