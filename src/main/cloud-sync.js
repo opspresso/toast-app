@@ -101,7 +101,8 @@ async function canSync() {
 
     logger.info('isCloudSyncEnabled result (cached):', result);
     return result;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error checking if sync is possible:', error);
     return false;
   }
@@ -204,7 +205,8 @@ async function uploadSettingsWithRetry() {
       state.retryCount = 0;
       state.pendingSync = false;
       state.lastChangeHash = null; // 성공 시 해시 초기화
-    } else {
+    }
+    else {
       state.retryCount++;
 
       logger.info(`Synchronization failed reason: ${result.error}`);
@@ -216,13 +218,15 @@ async function uploadSettingsWithRetry() {
         setTimeout(() => {
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
-      } else {
+      }
+      else {
         logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
         state.retryCount = 0;
         state.pendingSync = false;
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 업로드 중 오류 발생:', error);
     state.retryCount++;
 
@@ -233,12 +237,14 @@ async function uploadSettingsWithRetry() {
       setTimeout(() => {
         uploadSettingsWithRetry();
       }, RETRY_DELAY_MS);
-    } else {
+    }
+    else {
       logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload canceled`);
       state.retryCount = 0;
       state.pendingSync = false;
     }
-  } finally {
+  }
+  finally {
     state.isSyncing = false;
 
     // 대기 중인 동기화가 있다면 처리
@@ -327,18 +333,21 @@ async function uploadSettings(isInternalCall = false) {
       markAsSynced(configStore);
 
       logger.info('Settings upload successful and sync metadata updated in ConfigStore');
-    } else {
+    }
+    else {
       logger.error('Upload failed:', result.error);
     }
 
     return result;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 업로드 오류:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
     };
-  } finally {
+  }
+  finally {
     // 내부 호출이 아닌 경우에만 sync 상태 해제
     if (!isInternalCall) {
       state.isSyncing = false;
@@ -401,7 +410,8 @@ async function downloadSettings() {
         });
 
         logger.info(`Server data synced - last modified: ${new Date(serverMetadata.lastModifiedAt || timestamp).toISOString()}`);
-      } else {
+      }
+      else {
         logger.info('No server metadata found, marking as synced with current timestamp');
 
         // ConfigStore에 동기화 완료 마킹
@@ -424,18 +434,21 @@ async function downloadSettings() {
         authManager.notifySettingsSynced(configData);
         logger.info('UI update notification sent to toast window');
       }
-    } else {
+    }
+    else {
       logger.error('Settings download failed:', result.error);
     }
 
     return result;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 다운로드 오류:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
     };
-  } finally {
+  }
+  finally {
     state.isSyncing = false;
   }
 }
@@ -451,9 +464,11 @@ async function syncSettings(action = 'resolve') {
   try {
     if (action === 'upload') {
       return await uploadSettings();
-    } else if (action === 'download') {
+    }
+    else if (action === 'download') {
       return await downloadSettings();
-    } else {
+    }
+    else {
       // 스마트 충돌 해결 (해시 및 타임스탬프 기반)
       logger.info('Starting intelligent conflict resolution');
 
@@ -490,11 +505,13 @@ async function syncSettings(action = 'resolve') {
         // 로컬이 더 최신 - 서버로 업로드
         logger.info('Local changes are newer, uploading to server');
         return await uploadSettings();
-      } else if (conflictResolution.action === 'download_server') {
+      }
+      else if (conflictResolution.action === 'download_server') {
         // 서버가 더 최신 - 서버에서 다운로드
         logger.info('Server changes are newer, downloading from server');
         return await downloadSettings();
-      } else if (conflictResolution.action === 'merge_required') {
+      }
+      else if (conflictResolution.action === 'merge_required') {
         // 병합 필요
         logger.info('Complex conflict detected, performing merge');
 
@@ -504,13 +521,15 @@ async function syncSettings(action = 'resolve') {
           return await uploadSettings();
         }
         return mergeResult;
-      } else {
+      }
+      else {
         // 변경사항 없음
         logger.info('No synchronization needed');
         return { success: true, message: 'No changes to synchronize' };
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('수동 동기화 오류:', error);
     return {
       success: false,
@@ -540,7 +559,8 @@ function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
   if (!hasLocalChanges) {
     if (serverTime > localTime) {
       return { action: 'download_server', reason: 'No local changes, server is newer' };
-    } else {
+    }
+    else {
       return { action: 'no_action', reason: 'No changes needed' };
     }
   }
@@ -553,9 +573,11 @@ function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
   // 3. 타임스탬프 비교
   if (localTime > serverTime + TIME_THRESHOLD) {
     return { action: 'upload_local', reason: 'Local changes are significantly newer' };
-  } else if (serverTime > localTime + TIME_THRESHOLD) {
+  }
+  else if (serverTime > localTime + TIME_THRESHOLD) {
     return { action: 'download_server', reason: 'Server changes are significantly newer' };
-  } else {
+  }
+  else {
     // 시간이 비슷하면 병합 시도
     return { action: 'merge_required', reason: 'Concurrent changes detected, merge required' };
   }
@@ -611,7 +633,8 @@ async function performIntelligentMerge(serverData, _serverMeta) {
         advanced: Object.keys(mergedData.advanced).length,
       },
     };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Intelligent merge failed:', error);
     return {
       success: false,
@@ -673,7 +696,8 @@ function setEnabled(enabled) {
 
   if (enabled) {
     startPeriodicSync();
-  } else {
+  }
+  else {
     stopPeriodicSync();
   }
 }
@@ -722,7 +746,8 @@ function setupConfigListeners() {
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
       if (newValue.length > oldValue.length) {
         changeType = 'page_added';
-      } else if (newValue.length < oldValue.length) {
+      }
+      else if (newValue.length < oldValue.length) {
         changeType = 'page_deleted';
       }
     }
@@ -767,7 +792,8 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
   if (configStoreInstance) {
     configStore = configStoreInstance;
     logger.info('Using provided config store instance - ID:', configStore.path || 'unknown');
-  } else {
+  }
+  else {
     configStore = createConfigStore();
     logger.info('Created new config store instance - ID:', configStore.path || 'unknown');
   }
@@ -788,7 +814,8 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
   if (state.enabled) {
     logger.info('Starting periodic sync (enabled)');
     startPeriodicSync();
-  } else {
+  }
+  else {
     logger.info('Periodic sync not started (disabled)');
   }
 

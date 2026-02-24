@@ -36,6 +36,67 @@ function importConfig(config, filePath)
  * @returns {boolean} 성공 상태
  */
 function exportConfig(config, filePath)
+
+/**
+ * 구독 데이터 정제 (불필요한 필드 제거)
+ * @param {Object} subscription - 구독 데이터
+ * @returns {Object} 정제된 구독 데이터
+ */
+function sanitizeSubscription(subscription)
+
+/**
+ * 기기 ID 가져오기 (없으면 생성)
+ * @returns {string} 기기 ID
+ */
+function getDeviceId()
+
+/**
+ * 데이터 해시 생성 (동기화 충돌 감지용)
+ * @param {Object} data - 해시할 데이터
+ * @returns {string} 해시 문자열
+ */
+function generateDataHash(data)
+
+/**
+ * 동기화 메타데이터 업데이트
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {Object} metadata - 메타데이터 객체
+ */
+function updateSyncMetadata(config, metadata)
+
+/**
+ * 로컬 수정 상태로 표시
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} deviceId - 기기 ID
+ */
+function markAsModified(config, deviceId)
+
+/**
+ * 동기화 완료 상태로 표시
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} deviceId - 기기 ID
+ */
+function markAsSynced(config, deviceId)
+
+/**
+ * 동기화되지 않은 변경사항 확인
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @returns {boolean} 동기화되지 않은 변경사항 존재 여부
+ */
+function hasUnsyncedChanges(config)
+
+/**
+ * 충돌 상태로 표시
+ * @param {Store} config - 구성 저장소 인스턴스
+ */
+function markAsConflicted(config)
+
+/**
+ * 동기화 메타데이터 가져오기
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @returns {Object} 동기화 메타데이터
+ */
+function getSyncMetadata(config)
 ```
 
 ### 사용 예시
@@ -444,35 +505,117 @@ function setupIpcHandlers(windows)
 
 ### IPC 채널
 
+#### 액션 관련
+
 | 채널 | 유형 | 설명 |
 |------|------|------|
 | `execute-action` | handle | 액션 실행 |
 | `validate-action` | handle | 액션 유효성 검사 |
-| `get-config` | handle | 구성 가져오기 |
-| `set-config` | handle | 구성 설정 |
+| `test-action` | handle | 액션 테스트 (유효성 검사 후 실행) |
+
+#### 구성 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `get-config` | handle | 구성 값 가져오기 (키 지정 또는 전체) |
+| `set-config` | handle | 구성 값 설정 |
 | `save-config` | handle | 특정 구성 변경 사항 저장 |
 | `reset-config` | handle | 구성을 기본값으로 재설정 |
 | `import-config` | handle | 파일에서 구성 가져오기 |
 | `export-config` | handle | 파일로 구성 내보내기 |
+| `get-env` | handle | 환경 변수 값 가져오기 |
+
+#### 윈도우 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `show-toast` | on | Toast 윈도우 표시 |
 | `hide-toast` | on | Toast 윈도우 숨기기 |
+| `show-window` | handle | Toast 윈도우 표시 (handle 버전) |
 | `show-settings` | on | 설정 윈도우 표시 |
+| `show-settings-tab` | on | 특정 탭이 선택된 설정 윈도우 표시 |
 | `close-settings` | on | 설정 윈도우 닫기 |
+| `modal-state-changed` | on | 모달 상태 변경 알림 |
+| `is-modal-open` | handle | 모달 열림 상태 확인 |
+| `set-always-on-top` | handle | 윈도우 alwaysOnTop 속성 설정 |
+| `get-window-position` | handle | 현재 윈도우 위치 반환 |
+| `hide-window-temporarily` | handle | 다이얼로그 표시를 위해 일시적으로 alwaysOnTop 비활성화 |
+| `show-window-after-dialog` | handle | 다이얼로그 닫힌 후 alwaysOnTop 복원 |
+
+#### 애플리케이션 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `restart-app` | on | 애플리케이션 재시작 |
 | `quit-app` | on | 애플리케이션 종료 |
+| `get-app-version` | handle | 앱 버전 가져오기 |
+| `open-url` | handle | 외부 브라우저에서 URL 열기 |
+
+#### 인증 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `initiate-login` | handle | 로그인 프로세스 시작 |
+| `exchange-code-for-token` | handle | 인증 코드를 토큰으로 교환 |
+| `logout` | handle | 로그아웃 |
+| `fetch-user-profile` | handle | 사용자 프로필 정보 가져오기 |
+| `get-user-settings` | handle | 사용자 설정 정보 가져오기 |
+| `fetch-subscription` | handle | 구독 정보 가져오기 |
+| `get-auth-token` | handle | 현재 인증 토큰 반환 |
+
+#### 클라우드 동기화 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `is-cloud-sync-enabled` | handle | 동기화 가능 여부 확인 |
+| `get-sync-status` | handle | 동기화 상태 가져오기 |
+| `set-cloud-sync-enabled` | handle | 클라우드 동기화 활성화/비활성화 |
+| `manual-sync` | handle | 수동 동기화 (upload/download/resolve) |
+| `debug-sync-status` | handle | 동기화 상태 디버그 정보 |
+| `settings-synced` | on | 설정 동기화 완료 이벤트 전달 |
+
+#### 단축키 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `temporarily-disable-shortcuts` | handle | 녹화를 위해 전역 단축키 일시적으로 비활성화 |
 | `restore-shortcuts` | handle | 녹화 후 전역 단축키 복원 |
+
+#### 대화 상자 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `show-open-dialog` | handle | 파일 열기 대화 상자 표시 |
 | `show-save-dialog` | handle | 파일 저장 대화 상자 표시 |
 | `show-message-box` | handle | 메시지 상자 표시 |
-| `test-action` | handle | 액션 테스트 |
-| `check-for-updates` | handle | 업데이트 확인 |
+
+#### 업데이트 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `check-for-updates` | handle | 업데이트 확인 (silent 옵션 지원) |
+| `check-latest-version` | handle | 최신 버전 확인 |
 | `download-update` | handle | 업데이트 다운로드 |
+| `download-auto-update` | handle | 자동 업데이트 다운로드 (확인 후 다운로드) |
+| `download-manual-update` | handle | 수동 업데이트 다운로드 |
 | `install-update` | handle | 업데이트 설치 |
+| `install-auto-update` | handle | 자동 업데이트 설치 |
+
+#### 로깅 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
 | `log-info` | handle | 정보 로그 메시지 기록 |
 | `log-warn` | handle | 경고 로그 메시지 기록 |
 | `log-error` | handle | 오류 로그 메시지 기록 |
 | `log-debug` | handle | 디버그 로그 메시지 기록 |
+
+#### 유틸리티 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `extract-app-icon` | handle | 애플리케이션 경로에서 아이콘 추출 |
+| `resolve-tilde-path` | handle | 틸드 경로를 절대 경로로 변환 |
 
 ### 사용 예시
 
@@ -481,3 +624,220 @@ const { setupIpcHandlers } = require('./main/ipc');
 
 // IPC 핸들러 설정
 setupIpcHandlers(windows);
+```
+
+## 인증 모듈 (`src/main/auth.js`)
+
+인증 모듈은 OAuth 2.0 기반 사용자 인증을 처리합니다.
+
+### 함수
+
+```javascript
+/**
+ * 로그인 프로세스 시작 (외부 브라우저에서 OAuth 인증)
+ * @returns {Promise<void>}
+ */
+async function initiateLogin()
+
+/**
+ * 인증 코드를 토큰으로 교환
+ * @param {string} code - 인증 코드
+ * @returns {Promise<Object>} 토큰 정보
+ */
+async function exchangeCodeForToken(code)
+
+/**
+ * 인증 코드를 토큰으로 교환하고 구독 정보 업데이트
+ * @param {string} code - 인증 코드
+ * @returns {Promise<Object>} 토큰 및 구독 정보
+ */
+async function exchangeCodeForTokenAndUpdateSubscription(code)
+
+/**
+ * 사용자 프로필 정보 가져오기
+ * @returns {Promise<Object>} 사용자 프로필
+ */
+async function fetchUserProfile()
+
+/**
+ * 구독 정보 가져오기
+ * @returns {Promise<Object>} 구독 정보
+ */
+async function fetchSubscription()
+
+/**
+ * 로그아웃
+ * @returns {Promise<void>}
+ */
+async function logout()
+
+/**
+ * 유효한 토큰이 있는지 확인
+ * @returns {boolean} 토큰 유효 여부
+ */
+function hasValidToken()
+
+/**
+ * 액세스 토큰 가져오기
+ * @returns {string|null} 액세스 토큰
+ */
+function getAccessToken()
+
+/**
+ * 리프레시 토큰 가져오기
+ * @returns {string|null} 리프레시 토큰
+ */
+function getRefreshToken()
+
+/**
+ * 프로토콜 핸들러 등록 (toast:// 스킴)
+ */
+function registerProtocolHandler()
+```
+
+### 사용 예시
+
+```javascript
+const auth = require('./main/auth');
+
+// 로그인 시작
+await auth.initiateLogin();
+
+// 토큰 유효성 확인
+if (auth.hasValidToken()) {
+  const profile = await auth.fetchUserProfile();
+  console.log('User:', profile.name);
+}
+
+// 로그아웃
+await auth.logout();
+```
+
+## 클라우드 동기화 모듈 (`src/main/cloud-sync.js`)
+
+클라우드 동기화 모듈은 설정 데이터의 서버 동기화를 처리합니다.
+
+### 함수
+
+```javascript
+/**
+ * 클라우드 동기화 초기화
+ * @param {Object} authManager - 인증 매니저 인스턴스
+ * @param {Object} userDataManager - 사용자 데이터 매니저 인스턴스
+ * @param {Object} config - 구성 저장소
+ * @returns {Object} 동기화 관리 객체
+ */
+function initCloudSync(authManager, userDataManager, config)
+
+/**
+ * 설정 동기화 실행
+ * @returns {Promise<Object>} 동기화 결과
+ */
+async function syncSettings()
+
+/**
+ * 주기적 동기화 중지
+ */
+function stopPeriodicSync()
+
+/**
+ * 동기화 가능 여부 확인
+ * @returns {boolean} 동기화 가능 여부
+ */
+function canSync()
+```
+
+### 동기화 설정
+
+- **주기적 동기화 간격**: 15분
+- **Debounce 시간**: 5초
+- **최대 재시도 횟수**: 3회
+
+### 사용 예시
+
+```javascript
+const { initCloudSync, syncSettings, canSync } = require('./main/cloud-sync');
+
+// 클라우드 동기화 초기화
+const syncManager = initCloudSync(authManager, userDataManager, config);
+
+// 동기화 가능 여부 확인
+if (canSync()) {
+  const result = await syncSettings();
+  console.log('Sync result:', result);
+}
+
+// 주기적 동기화 중지
+stopPeriodicSync();
+```
+
+## API 클라이언트 모듈 (`src/main/api/client.js`)
+
+API 클라이언트 모듈은 Toast 서버와의 HTTP 통신을 처리합니다.
+
+### 함수
+
+```javascript
+/**
+ * API 클라이언트 생성
+ * @param {Object} options - 클라이언트 옵션
+ * @returns {Object} API 클라이언트 인스턴스
+ */
+function createApiClient(options)
+
+/**
+ * 액세스 토큰 설정
+ * @param {string} token - 액세스 토큰
+ */
+function setAccessToken(token)
+
+/**
+ * 리프레시 토큰 설정
+ * @param {string} token - 리프레시 토큰
+ */
+function setRefreshToken(token)
+
+/**
+ * 토큰 초기화
+ */
+function clearTokens()
+
+/**
+ * 인증 헤더 가져오기
+ * @returns {Object} 인증 헤더 객체
+ */
+function getAuthHeaders()
+
+/**
+ * 인증된 요청 실행
+ * @param {string} method - HTTP 메서드
+ * @param {string} endpoint - API 엔드포인트
+ * @param {Object} data - 요청 데이터
+ * @returns {Promise<Object>} 응답 데이터
+ */
+async function authenticatedRequest(method, endpoint, data)
+```
+
+### API 엔드포인트
+
+```javascript
+const ENDPOINTS = {
+  OAUTH_AUTHORIZE: '/oauth/authorize',
+  OAUTH_TOKEN: '/oauth/token',
+  OAUTH_REVOKE: '/oauth/revoke',
+  USER_PROFILE: '/users/profile',
+  SETTINGS: '/users/settings'
+};
+```
+
+### 사용 예시
+
+```javascript
+const { createApiClient, authenticatedRequest, ENDPOINTS } = require('./main/api/client');
+
+// API 클라이언트 생성
+const client = createApiClient({ baseURL: 'https://app.toast.sh/api' });
+
+// 인증된 요청 실행
+const profile = await authenticatedRequest('GET', ENDPOINTS.USER_PROFILE);
+console.log('User profile:', profile);

@@ -50,7 +50,8 @@ async function executeChainedActions(action) {
       message: hasErrors ? 'Chain execution stopped due to an error' : 'Chain executed successfully',
       results,
     };
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing chain action: ${error.message || error}`,

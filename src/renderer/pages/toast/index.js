@@ -160,7 +160,8 @@ function initializeApp() {
       // Page settings
       if (config.pages) {
         initializePages(config.pages);
-      } else {
+      }
+      else {
         // Create default page if no pages exist
         const newPage = {
           name: 'Page 1',
@@ -203,7 +204,8 @@ function initializeApp() {
           updateUserButton();
         });
     });
-  } else {
+  }
+  else {
     // If window.toast doesn't exist, just show default buttons
     const newPage = {
       name: 'Page 1',
@@ -223,7 +225,8 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 // Also try to initialize clock immediately in case DOMContentLoaded already fired
 if (document.readyState === 'loading') {
   // Document is still loading, wait for DOMContentLoaded
-} else {
+}
+else {
   // Document is already loaded, initialize immediately
   initializeApp();
 }

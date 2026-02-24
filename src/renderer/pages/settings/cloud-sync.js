@@ -97,7 +97,8 @@ function initializeCloudSyncUI(config, authState, logger) {
     setupEventListeners(authState, logger);
 
     logger.info('Cloud sync UI initialization completed');
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Cloud sync UI initialization error:', error);
   }
 }
@@ -214,7 +215,8 @@ function updateSyncStatusUI(status, authState, logger) {
     updateButtonStyles(buttonDisabled);
 
     logger.info('Sync status UI update completed');
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Sync status UI update error:', error);
   }
 }
@@ -232,7 +234,8 @@ function updateStatusBadge(enabled) {
     const spinner = document.createElement('div');
     spinner.className = 'spinner-inline';
     DOM.syncStatusBadge.appendChild(spinner);
-  } else {
+  }
+  else {
     // 비활성화 상태 - 정지 아이콘 표시
     DOM.syncStatusBadge.textContent = '⏹️';
     DOM.syncStatusBadge.className = 'badge secondary';
@@ -277,7 +280,8 @@ function updateButtonStyles(disabled) {
       button.style.backgroundColor = '#cccccc';
       button.style.color = '#666666';
       button.style.cursor = 'not-allowed';
-    } else {
+    }
+    else {
       button.style.backgroundColor = '';
       button.style.color = '';
       button.style.cursor = '';
@@ -314,7 +318,8 @@ function disableCloudSyncUI(logger) {
     updateButtonStyles(true);
 
     logger.info('Cloud sync UI disable completed');
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Cloud sync UI disable error:', error);
   }
 }
@@ -367,7 +372,8 @@ function setLoading(isLoading) {
 
   if (isLoading) {
     DOM.syncLoading.classList.remove('hidden');
-  } else {
+  }
+  else {
     DOM.syncLoading.classList.add('hidden');
   }
 }
@@ -452,14 +458,16 @@ function handleManualSyncUpload(logger) {
       if (result.success) {
         logger.info('Settings upload successful');
         DOM.manualSyncUploadButton.textContent = 'Upload Complete!';
-      } else {
+      }
+      else {
         logger.error('Settings upload failed:', result.error);
         // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
         let errorMessage = 'Unknown error';
         if (result.error) {
           if (typeof result.error === 'object') {
             errorMessage = result.error.message || JSON.stringify(result.error);
-          } else {
+          }
+          else {
             errorMessage = result.error;
           }
         }
@@ -507,14 +515,16 @@ function handleManualSyncDownload(logger) {
 
         // 설정 다시 로드
         return window.settings.getConfig();
-      } else {
+      }
+      else {
         logger.error('Settings download failed:', result.error);
         // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
         let errorMessage = 'Unknown error';
         if (result.error) {
           if (typeof result.error === 'object') {
             errorMessage = result.error.message || JSON.stringify(result.error);
-          } else {
+          }
+          else {
             errorMessage = result.error;
           }
         }
@@ -569,14 +579,16 @@ function handleManualSyncResolve(logger) {
 
         // 설정 다시 로드
         return window.settings.getConfig();
-      } else {
+      }
+      else {
         logger.error('Settings conflict resolution failed:', result.error);
         // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
         let errorMessage = 'Unknown error';
         if (result.error) {
           if (typeof result.error === 'object') {
             errorMessage = result.error.message || JSON.stringify(result.error);
-          } else {
+          }
+          else {
             errorMessage = result.error;
           }
         }

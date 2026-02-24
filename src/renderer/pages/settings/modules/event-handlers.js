@@ -134,7 +134,8 @@ export function setupEventListeners() {
           if (confirm('You have unsaved changes. Do you want to close without saving?')) {
             window.settings.closeWindow();
           }
-        } else {
+        }
+        else {
           window.settings.closeWindow();
         }
 
@@ -209,7 +210,8 @@ export function confirmCancel() {
     if (confirm('You have unsaved changes. Do you want to close without saving?')) {
       window.settings.closeWindow();
     }
-  } else {
+  }
+  else {
     window.settings.closeWindow();
   }
 }
@@ -260,7 +262,8 @@ export function saveSettings() {
     });
 
     window.settings.log.info('설정 저장 완료');
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('설정 저장 중 오류:', error);
   }
 }

@@ -74,7 +74,8 @@ export function getFaviconFromUrl(url) {
     const urlObj = new URL(url);
     // Return default favicon URL (domain/favicon.ico)
     return `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
-  } catch (e) {
+  }
+  catch (e) {
     // Use Google's favicon service when URL parsing fails (fallback)
     if (url && url.includes('://')) {
       const domain = url.split('://')[1].split('/')[0];

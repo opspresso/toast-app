@@ -33,7 +33,8 @@ export function initializeAdvancedSettings() {
     }
 
     window.settings.log.info('고급 설정 탭 초기화 완료');
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('고급 설정 탭 초기화 중 오류 발생:', error);
   }
 }

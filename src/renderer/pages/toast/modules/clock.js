@@ -36,7 +36,8 @@ export function updateClock() {
     if (toastClock) {
       const timeString = `<span class="ampm">${ampm}</span> ${hours12Str}:${minutes}<span class="seconds">:${seconds}</span>`;
       toastClock.innerHTML = timeString;
-    } else {
+    }
+    else {
       // Try again after a short delay if element not found
       setTimeout(() => {
         const retryElement = document.getElementById('toast-clock');
@@ -46,7 +47,8 @@ export function updateClock() {
         }
       }, 500);
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error updating clock:', error);
   }
 }

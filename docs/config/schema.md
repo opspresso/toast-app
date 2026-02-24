@@ -2,7 +2,7 @@
 
 이 문서는 Toast 앱의 구성 옵션과 스키마를 설명합니다. 구성 파일 위치, 형식, 사용 가능한 옵션 및 예시를 제공합니다.
 
-버튼 액션 유형에 대한 자세한 설명은 [BUTTON_ACTIONS.md](./BUTTON_ACTIONS.md)를 참조하세요.
+버튼 액션 유형에 대한 자세한 설명은 [버튼 액션](../guide/actions.md)을 참조하세요.
 
 ## 목차
 
@@ -69,7 +69,7 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 | `icon` | 문자열 | 아니오 | 버튼에 표시할 이모지 또는 아이콘 |
 | `action` | 문자열 | 예 | 액션 유형 (`application`, `exec`, `open`, `script`, `chain`) |
 
-> **액션별 매개변수**: 각 액션 유형별 필수 및 선택 매개변수에 대한 자세한 설명은 [BUTTON_ACTIONS.md](./BUTTON_ACTIONS.md)를 참조하세요.
+> **액션별 매개변수**: 각 액션 유형별 필수 및 선택 매개변수에 대한 자세한 설명은 [버튼 액션](../guide/actions.md)을 참조하세요.
 
 > **버튼 단축키 규칙**: 버튼의 단축키는 페이지 내 위치에 따라 순서대로 qwertasdfgzxcvb로 자동 할당됩니다. 버튼 위치가 변경되면 변경된 순서에 따라 단축키가 자동으로 재설정됩니다.
 
@@ -172,20 +172,28 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
 
 클라우드 동기화 기능 사용 시 자동으로 관리되는 메타데이터 필드들입니다. 이 필드들은 사용자가 직접 수정하지 않으며, 동기화 시스템에서 자동으로 설정됩니다.
 
-클라우드 동기화에 대한 자세한 내용은 [CLOUD_SYNC.md](./CLOUD_SYNC.md)를 참조하세요.
+클라우드 동기화에 대한 자세한 내용은 [클라우드 동기화](../features/cloud-sync.md)를 참조하세요.
 
 | 필드 | 유형 | 설명 |
 |------|------|------|
-| `clientLastModifiedAt` | 숫자 | 클라이언트에서 마지막으로 수정된 시간 (타임스탬프) |
-| `clientLastModifiedDevice` | 문자열 | 마지막으로 수정한 기기 ID |
-| `serverLastUpdatedAt` | 숫자 | 서버에서 마지막으로 업데이트된 시간 (타임스탬프) |
+| `_sync.lastModifiedAt` | 숫자 | 로컬에서 마지막으로 수정된 시간 (타임스탬프) |
+| `_sync.lastModifiedDevice` | 문자열 | 마지막으로 수정한 기기 ID |
+| `_sync.lastSyncedAt` | 숫자 | 서버와 마지막으로 동기화된 시간 (타임스탬프) |
+| `_sync.lastSyncedDevice` | 문자열 | 마지막으로 동기화한 기기 ID |
+| `_sync.dataHash` | 문자열 | 동기화 데이터의 해시값 (충돌 감지용) |
+| `_sync.isConflicted` | 불리언 | 동기화 충돌 발생 여부 |
 
 **예시**:
 ```json
 {
-  "clientLastModifiedAt": 1682932768123,
-  "clientLastModifiedDevice": "device-id-1",
-  "serverLastUpdatedAt": 1682932769000
+  "_sync": {
+    "lastModifiedAt": 1682932768123,
+    "lastModifiedDevice": "device-id-1",
+    "lastSyncedAt": 1682932769000,
+    "lastSyncedDevice": "device-id-1",
+    "dataHash": "",
+    "isConflicted": false
+  }
 }
 ```
 
@@ -259,9 +267,14 @@ Toast 앱의 구성 파일은 운영체제에 따라 다음 위치에 저장됩�
     "pageGroups": 1
   },
   "firstLaunchCompleted": true,
-  "clientLastModifiedAt": 1682932768123,
-  "clientLastModifiedDevice": "device-id-1",
-  "serverLastUpdatedAt": 1682932769000
+  "_sync": {
+    "lastModifiedAt": 1682932768123,
+    "lastModifiedDevice": "device-id-1",
+    "lastSyncedAt": 1682932769000,
+    "lastSyncedDevice": "device-id-1",
+    "dataHash": "",
+    "isConflicted": false
+  }
 }
 ```
 

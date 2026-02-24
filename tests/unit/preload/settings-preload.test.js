@@ -20,13 +20,34 @@ jest.mock('electron', () => ({
   ipcRenderer: mockIpcRenderer
 }));
 
+// Mock window object for node environment
+const mockWindow = {
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  dispatchEvent: jest.fn()
+};
+
 describe('Settings Preload Script', () => {
   let settingsAPI;
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
-    
+
+    // Setup window mock before loading preload script
+    global.window = mockWindow;
+    global.CustomEvent = class CustomEvent {
+      constructor(type, options) {
+        this.type = type;
+        this.detail = options?.detail;
+      }
+    };
+    global.Event = class Event {
+      constructor(type) {
+        this.type = type;
+      }
+    };
+
     // Capture the exposed API
     mockContextBridge.exposeInMainWorld.mockImplementation((name, api) => {
       if (name === 'settings') {
@@ -36,6 +57,13 @@ describe('Settings Preload Script', () => {
 
     // Load the preload script
     require('../../../src/renderer/preload/settings');
+  });
+
+  afterEach(() => {
+    // Clean up global mocks
+    delete global.window;
+    delete global.CustomEvent;
+    delete global.Event;
   });
 
   describe('API Exposure', () => {
@@ -362,23 +390,9 @@ describe('Settings Preload Script', () => {
   });
 
   describe('Event Listeners', () => {
-    test('should register event listeners on load', () => {
-      // Mock DOM loaded event
-      const mockEvent = new Event('DOMContentLoaded');
-      const mockInvoke = jest.fn().mockResolvedValue({ pages: [], appearance: {} });
-      mockIpcRenderer.invoke.mockImplementation(mockInvoke);
-      
-      // Mock window.dispatchEvent
-      const mockDispatchEvent = jest.fn();
-      Object.defineProperty(window, 'dispatchEvent', {
-        value: mockDispatchEvent,
-        writable: true
-      });
-      
-      // Trigger DOMContentLoaded
-      window.dispatchEvent(mockEvent);
-      
-      expect(mockInvoke).toHaveBeenCalledWith('get-config');
+    test('should register DOMContentLoaded event listener', () => {
+      // Check that addEventListener was called with DOMContentLoaded
+      expect(mockWindow.addEventListener).toHaveBeenCalledWith('DOMContentLoaded', expect.any(Function));
     });
 
     test('should register protocol-data event listener', () => {

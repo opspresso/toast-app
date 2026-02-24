@@ -50,7 +50,8 @@ async function executeScript(action) {
           message: `Unsupported script type: ${action.scriptType}`,
         };
     }
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing script: ${error.message}`,
@@ -111,7 +112,8 @@ async function executeJavaScript(script, params = {}) {
       success: true,
       message: 'JavaScript executed successfully',
     };
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing JavaScript: ${error.message}`,
@@ -147,7 +149,8 @@ async function executeAppleScript(script) {
         // Clean up the temporary file
         try {
           fs.unlinkSync(tempFile);
-        } catch (e) {
+        }
+        catch (e) {
           logger.error('Error removing temporary AppleScript file:', e);
         }
 
@@ -169,7 +172,8 @@ async function executeAppleScript(script) {
         });
       });
     });
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing AppleScript: ${error.message}`,
@@ -205,7 +209,8 @@ async function executePowerShell(script) {
         // Clean up the temporary file
         try {
           fs.unlinkSync(tempFile);
-        } catch (e) {
+        }
+        catch (e) {
           logger.error('Error removing temporary PowerShell file:', e);
         }
 
@@ -227,7 +232,8 @@ async function executePowerShell(script) {
         });
       });
     });
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing PowerShell script: ${error.message}`,
@@ -266,7 +272,8 @@ async function executeBash(script) {
         // Clean up the temporary file
         try {
           fs.unlinkSync(tempFile);
-        } catch (e) {
+        }
+        catch (e) {
           logger.error('Error removing temporary Bash file:', e);
         }
 
@@ -288,7 +295,8 @@ async function executeBash(script) {
         });
       });
     });
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error executing Bash script: ${error.message}`,

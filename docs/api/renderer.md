@@ -6,28 +6,74 @@
 
 Toast 윈도우 API는 Toast 윈도우가 메인 프로세스와 통신하기 위한 인터페이스를 제공합니다.
 
-### 메서드
+### 구성 관리
 
 ```javascript
-// 구성 관리
-window.toast.getConfig(key) // 구성 가져오기
-window.toast.saveConfig(config) // 구성 변경 사항 저장
+window.toast.getConfig(key)      // 구성 가져오기
+window.toast.saveConfig(config)  // 구성 변경 사항 저장
+window.toast.getEnv(key)         // 환경변수 가져오기
+window.toast.resetToDefaults(options) // 설정 초기화 (options.keepAppearance: 외관 설정 유지)
+```
 
-// 환경변수
-window.toast.getEnv(key) // 환경변수 가져오기
+### 액션 실행
 
-// 액션 실행
-window.toast.executeAction(action) // 액션 실행
+```javascript
+window.toast.executeAction(action)  // 액션 실행
+```
 
-// 윈도우 제어
-window.toast.hideWindow() // Toast 윈도우 숨기기
-window.toast.showSettings() // 설정 윈도우 표시
+### 윈도우 제어
 
-// 시스템 정보
-window.toast.platform // 플랫폼(darwin, win32, linux)
+```javascript
+window.toast.hideWindow()             // Toast 윈도우 숨기기
+window.toast.showWindow()             // Toast 윈도우 표시
+window.toast.showSettings()           // 설정 윈도우 표시
+window.toast.setModalOpen(isOpen)     // 모달 상태 설정
+window.toast.setAlwaysOnTop(value)    // alwaysOnTop 속성 설정
+window.toast.getWindowPosition()      // 현재 윈도우 위치 반환
+window.toast.hideWindowTemporarily()  // 다이얼로그 표시를 위해 일시 숨김
+window.toast.showWindowAfterDialog(position) // 다이얼로그 후 윈도우 복원
+```
 
-// 이벤트 리스너
-window.toast.onConfigUpdated(callback) // 구성 업데이트 수신
+### 인증 관련
+
+```javascript
+window.toast.initiateLogin()      // 로그인 프로세스 시작
+window.toast.logout()             // 로그아웃
+window.toast.fetchUserProfile()   // 사용자 프로필 가져오기
+window.toast.fetchSubscription()  // 구독 정보 가져오기
+window.toast.getUserSettings()    // 사용자 설정 가져오기
+```
+
+### 유틸리티
+
+```javascript
+window.toast.showOpenDialog(options)  // 파일 열기 대화 상자
+window.toast.extractAppIcon(path, forceRefresh) // 앱 아이콘 추출
+window.toast.resolveTildePath(tildePath) // 틸드 경로 변환
+window.toast.platform  // 플랫폼 정보 (darwin, win32, linux)
+```
+
+### 로깅
+
+```javascript
+window.toast.log.info(message, ...args)   // 정보 로그
+window.toast.log.warn(message, ...args)   // 경고 로그
+window.toast.log.error(message, ...args)  // 오류 로그
+window.toast.log.debug(message, ...args)  // 디버그 로그
+```
+
+### 이벤트 리스너
+
+```javascript
+// 구성 업데이트 수신
+window.toast.onConfigUpdated(callback)
+
+// 인증 이벤트
+window.toast.onLoginSuccess(callback)      // 로그인 성공
+window.toast.onLoginError(callback)        // 로그인 오류
+window.toast.onLogoutSuccess(callback)     // 로그아웃 성공
+window.toast.onAuthStateChanged(callback)  // 인증 상태 변경
+window.toast.onAuthReloadSuccess(callback) // 인증 새로고침 성공
 ```
 
 ### 이벤트
@@ -147,21 +193,54 @@ window.settings.temporarilyDisableShortcuts() // 전역 단축키 일시적으�
 window.settings.restoreShortcuts() // 전역 단축키 복원
 ```
 
+### 인증 관련
+
+```javascript
+window.settings.initiateLogin()       // 로그인 프로세스 시작
+window.settings.exchangeCodeForToken(code) // 인증 코드를 토큰으로 교환
+window.settings.logout()              // 로그아웃
+window.settings.fetchUserProfile()    // 사용자 프로필 가져오기
+window.settings.fetchSubscription()   // 구독 정보 가져오기
+window.settings.getAuthToken()        // 인증 토큰 가져오기
+window.settings.openUrl(url)          // 외부 브라우저에서 URL 열기
+```
+
+### 클라우드 동기화
+
+```javascript
+window.settings.getSyncStatus()       // 동기화 상태 가져오기
+window.settings.setCloudSyncEnabled(enabled) // 클라우드 동기화 활성화/비활성화
+window.settings.manualSync(action)    // 수동 동기화 (upload/download/resolve)
+window.settings.debugSyncStatus()     // 동기화 디버그 정보
+```
+
+### 유틸리티
+
+```javascript
+window.settings.extractAppIcon(path, forceRefresh) // 앱 아이콘 추출
+window.settings.resolveTildePath(tildePath) // 틸드 경로 변환
+```
+
 ### 시스템 정보
 
 ```javascript
-// 시스템 정보 조회
-window.settings.getPlatform() // 플랫폼 가져오기(darwin, win32, linux)
-window.settings.getVersion() // 애플리케이션 버전 가져오기
+window.settings.getPlatform()         // 플랫폼 가져오기 (darwin, win32, linux)
+window.settings.getVersion()          // 애플리케이션 버전 가져오기
+window.settings.checkLatestVersion()  // 최신 버전 확인
 ```
 
 ### 업데이트 관리
 
 ```javascript
-// 자동 업데이트
+// 업데이트 확인 및 다운로드
 window.settings.checkForUpdates(silent) // 업데이트 확인
-window.settings.downloadUpdate() // 업데이트 다운로드
-window.settings.installUpdate() // 업데이트 설치
+window.settings.downloadUpdate()        // 업데이트 다운로드
+window.settings.downloadAutoUpdate()    // 자동 업데이트 다운로드 (확인 후 다운로드)
+window.settings.downloadManualUpdate()  // 수동 업데이트 다운로드
+
+// 업데이트 설치
+window.settings.installUpdate()         // 업데이트 설치
+window.settings.installAutoUpdate()     // 자동 업데이트 설치
 ```
 
 ### 로깅
@@ -177,10 +256,35 @@ window.settings.log.debug(message, ...args) // 디버그 로그 기록
 ### 이벤트
 
 ```javascript
-// 구성 로드 이벤트
+// 구성 이벤트
 window.addEventListener('config-loaded', (event) => {
-  const config = event.detail;
-  // 전체 구성 객체 포함
+  const config = event.detail;  // 전체 구성 객체
+});
+
+window.addEventListener('config-updated', (event) => {
+  const config = event.detail;  // 업데이트된 구성
+});
+
+// 인증 이벤트
+window.addEventListener('login-success', (event) => {
+  const data = event.detail;  // 로그인 성공 데이터
+});
+
+window.addEventListener('login-error', (event) => {
+  const data = event.detail;  // 로그인 오류 정보
+});
+
+window.addEventListener('logout-success', (event) => {
+  const data = event.detail;  // 로그아웃 정보
+});
+
+window.addEventListener('auth-state-changed', (event) => {
+  const data = event.detail;  // 인증 상태 변경
+});
+
+// 동기화 이벤트
+window.addEventListener('settings-synced', (event) => {
+  const data = event.detail;  // 동기화 결과
 });
 
 // 업데이트 이벤트
@@ -189,22 +293,41 @@ window.addEventListener('checking-for-update', (event) => {
 });
 
 window.addEventListener('update-available', (event) => {
-  // 사용 가능한 업데이트가 있음
-  const updateInfo = event.detail.info;
+  const updateInfo = event.detail.info;  // 업데이트 정보
+});
+
+window.addEventListener('update-not-available', (event) => {
+  // 사용 가능한 업데이트 없음
+});
+
+window.addEventListener('download-started', (event) => {
+  // 다운로드 시작됨
 });
 
 window.addEventListener('download-progress', (event) => {
-  // 다운로드 진행 상황
-  const progress = event.detail.progress;
+  const { percent, bytesPerSecond } = event.detail.progress;
 });
 
 window.addEventListener('update-downloaded', (event) => {
   // 업데이트 다운로드 완료
 });
 
+window.addEventListener('install-started', (event) => {
+  // 설치 시작됨
+});
+
 window.addEventListener('update-error', (event) => {
-  // 업데이트 오류
-  const error = event.detail.error;
+  const error = event.detail.error;  // 오류 정보
+});
+
+// 탭 선택 이벤트
+window.addEventListener('select-settings-tab', (event) => {
+  const tabName = event.detail;  // 선택할 탭 이름
+});
+
+// 프로토콜 데이터 이벤트
+window.addEventListener('protocol-data', (event) => {
+  const url = event.detail;  // 프로토콜 URL
 });
 ```
 

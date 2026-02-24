@@ -30,7 +30,7 @@ module.exports = {
     // Best practices
     'eqeqeq': ['error', 'always'],
     'curly': ['error', 'all'],
-    'brace-style': ['error', '1tbs'],
+    'brace-style': ['error', 'stroustrup'],
     'prefer-const': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',

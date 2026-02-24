@@ -12,7 +12,8 @@ const { app } = require('electron');
 let userDataPath;
 try {
   userDataPath = app.getPath('userData');
-} catch (e) {
+}
+catch (e) {
   // In case app is not ready yet
   userDataPath = path.join(process.env.HOME || process.env.USERPROFILE, '.toast-app');
 }

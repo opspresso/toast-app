@@ -89,7 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         window.settings.log.info('초기화 완료');
-      } catch (error) {
+      }
+      catch (error) {
         window.settings.log.error('초기화 오류:', error);
       }
     })
@@ -124,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (launchAtLoginCheckbox) {
             launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
           }
-        } else if (tabId === 'appearance') {
+        }
+        else if (tabId === 'appearance') {
           const themeSelect = document.getElementById('theme');
           const positionSelect = document.getElementById('position');
           const sizeSelect = document.getElementById('size');
@@ -146,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
               opacityValue.textContent = opacityRange.value;
             }
           }
-        } else if (tabId === 'advanced') {
+        }
+        else if (tabId === 'advanced') {
           const hideAfterActionCheckbox = document.getElementById('hide-after-action');
           const hideOnBlurCheckbox = document.getElementById('hide-on-blur');
           const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');

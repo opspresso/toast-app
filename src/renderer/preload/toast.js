@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * Toast - Toast Window Preload Script
  *
@@ -54,7 +55,8 @@ contextBridge.exposeInMainWorld('toast', {
       }
 
       return { success: true, message: 'Settings have been reset to defaults.' };
-    } catch (error) {
+    }
+    catch (error) {
       window.toast.log.error('Settings reset error:', error);
       return {
         success: false,

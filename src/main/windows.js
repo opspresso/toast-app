@@ -309,11 +309,13 @@ function showToastWindow(config) {
     if (process.platform === 'darwin') {
       // macOS 전용
       windows.toast.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    } else if (process.platform === 'win32') {
+    }
+    else if (process.platform === 'win32') {
       // Windows 전용
       // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
       windows.toast.setAlwaysOnTop(true, 'screen-saver', 1);
-    } else if (process.platform === 'linux') {
+    }
+    else if (process.platform === 'linux') {
       // Linux 전용
       // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
       // 다양한 윈도우 매니저에 따라 다르게 동작할 수 있음
@@ -323,7 +325,8 @@ function showToastWindow(config) {
         if (win) {
           logger.info('Setting special window type for Linux fullscreen');
         }
-      } catch (error) {
+      }
+      catch (error) {
         logger.error('Error setting Linux fullscreen behavior:', error);
       }
     }
@@ -370,7 +373,8 @@ function positionSettingsWindowOnToastDisplay(settingsWindow) {
     const toastPosition = windows.toast.getPosition();
     // Find the display containing the toast window
     targetDisplay = screen.getDisplayNearestPoint({ x: toastPosition[0], y: toastPosition[1] });
-  } else {
+  }
+  else {
     // Fallback to the cursor's current display if toast window is not available
     const cursorPosition = screen.getCursorScreenPoint();
     targetDisplay = screen.getDisplayNearestPoint(cursorPosition);
@@ -414,7 +418,8 @@ function showSettingsWindow(config, tabName) {
         }, 300); // Add time for complete loading
       });
     }
-  } else {
+  }
+  else {
     settingsWindow = windows.settings;
 
     // 현재 포커스된 창이 있는지 확인하고 전체 화면 상태를 저장
@@ -432,11 +437,13 @@ function showSettingsWindow(config, tabName) {
       if (process.platform === 'darwin') {
         // macOS 전용
         settingsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-      } else if (process.platform === 'win32') {
+      }
+      else if (process.platform === 'win32') {
         // Windows 전용
         // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
         settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-      } else if (process.platform === 'linux') {
+      }
+      else if (process.platform === 'linux') {
         // Linux 전용
         // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
         try {
@@ -445,7 +452,8 @@ function showSettingsWindow(config, tabName) {
           if (win) {
             logger.info('Setting special window type for Linux fullscreen');
           }
-        } catch (error) {
+        }
+        catch (error) {
           logger.error('Error setting Linux fullscreen behavior for settings window:', error);
         }
       }

@@ -36,7 +36,8 @@ let authManagerRef = null;
 function fileExists(filePath) {
   try {
     return fs.existsSync(filePath);
-  } catch (error) {
+  }
+  catch (error) {
     logger.error(`파일 존재 여부 확인 중 오류 (${filePath}):`, error);
     return false;
   }
@@ -56,7 +57,8 @@ function readFromFile(filePath) {
 
     const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
-  } catch (error) {
+  }
+  catch (error) {
     logger.error(`파일 읽기 오류 (${filePath}):`, error);
     return null;
   }
@@ -81,7 +83,8 @@ function writeToFile(filePath, data) {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
     logger.info(`파일 저장 성공: ${filePath}`);
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error(`파일 저장 오류 (${filePath}):`, error);
     return false;
   }
@@ -100,7 +103,8 @@ function deleteFile(filePath) {
       return true;
     }
     return false;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error(`파일 삭제 오류 (${filePath}):`, error);
     return false;
   }
@@ -216,7 +220,8 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
     }
 
     return profileData;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('프로필 정보 가져오기 오류:', error);
 
     // 오류 발생 시 파일에서 시도
@@ -318,7 +323,8 @@ async function getUserSettings(forceRefresh = false) {
 
     logger.info('API에서 설정을 가져오지 못함, 기본 설정 반환');
     return { isAuthenticated: false };
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 정보 가져오기 오류:', error);
 
     // 오류 발생 시 파일에서 시도
@@ -362,12 +368,14 @@ function updateSettings(settings) {
       try {
         const verifyData = fs.readFileSync(tempFilePath, 'utf8');
         JSON.parse(verifyData); // 유효한 JSON인지 확인
-      } catch (verifyError) {
+      }
+      catch (verifyError) {
         logger.error('작성된 설정 데이터 검증 오류:', verifyError);
         // 손상된 임시 파일 정리
         try {
           fs.unlinkSync(tempFilePath);
-        } catch (cleanupError) {
+        }
+        catch (cleanupError) {
           logger.error('임시 파일 정리 오류:', cleanupError);
         }
         return false;
@@ -379,7 +387,8 @@ function updateSettings(settings) {
         if (process.platform === 'win32') {
           try {
             fs.unlinkSync(SETTINGS_FILE_PATH);
-          } catch (unlinkError) {
+          }
+          catch (unlinkError) {
             logger.error('기존 설정 파일 제거 오류:', unlinkError);
           }
         }
@@ -388,11 +397,13 @@ function updateSettings(settings) {
       fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
       logger.info('원자적 작업을 통해 설정 파일 업데이트 성공');
       return true;
-    } catch (fileError) {
+    }
+    catch (fileError) {
       logger.error('설정 업데이트 중 파일 작업 오류:', fileError);
       return false;
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('설정 업데이트 오류:', error);
     return false;
   }
@@ -436,7 +447,8 @@ function updateSyncMetadata(metadata) {
         fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(newSettings, null, 2), 'utf8');
         logger.info('동기화 메타데이터 업데이트 성공');
         return true;
-      } catch (writeError) {
+      }
+      catch (writeError) {
         logger.error('동기화 메타데이터 파일 저장 오류:', writeError);
         return false;
       }
@@ -457,11 +469,13 @@ function updateSyncMetadata(metadata) {
       fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updatedSettings, null, 2), 'utf8');
       logger.info('동기화 메타데이터 업데이트 성공');
       return true;
-    } catch (writeError) {
+    }
+    catch (writeError) {
       logger.error('동기화 메타데이터 파일 저장 오류:', writeError);
       return false;
     }
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('동기화 메타데이터 업데이트 오류:', error);
     return false;
   }
@@ -490,7 +504,8 @@ function startProfileRefresh() {
       if (profile) {
         logger.info('주기적 프로필 새로고침 완료');
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('주기적 프로필 새로고침 오류:', error);
     }
   }, REFRESH_INTERVAL_MS);
@@ -530,7 +545,8 @@ function startSettingsRefresh() {
       if (settings) {
         logger.info('주기적 설정 새로고침 완료');
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.error('주기적 설정 새로고침 오류:', error);
     }
   }, REFRESH_INTERVAL_MS);
@@ -621,7 +637,8 @@ async function syncAfterLogin(authData = null) {
     startSettingsRefresh();
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('로그인 후 데이터 동기화 오류:', error);
     return false;
   }
@@ -655,14 +672,16 @@ function cleanupOnLogout() {
     if (profileExists) {
       fs.unlinkSync(PROFILE_FILE_PATH);
       logger.info('프로필 파일 삭제 성공');
-    } else {
+    }
+    else {
       logger.info('프로필 파일이 존재하지 않음 - 삭제할 필요 없음');
     }
 
     if (settingsExists) {
       fs.unlinkSync(SETTINGS_FILE_PATH);
       logger.info('설정 파일 삭제 성공');
-    } else {
+    }
+    else {
       logger.info('설정 파일이 존재하지 않음 - 삭제할 필요 없음');
     }
 
@@ -676,7 +695,8 @@ function cleanupOnLogout() {
 
     logger.info('사용자 데이터 정리 완료');
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('로그아웃 시 데이터 정리 오류:', error);
     return false;
   }

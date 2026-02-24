@@ -55,7 +55,8 @@ export function changePage(pageIndex) {
       const index = parseInt(button.dataset.page);
       if (index === currentPageIndex) {
         button.classList.add('active');
-      } else {
+      }
+      else {
         button.classList.remove('active');
       }
     });
@@ -83,7 +84,6 @@ export function addNewPage() {
   if (userProfile && userProfile.is_authenticated !== false) {
     // Authenticated user
     maxPages = userSubscription?.features?.page_groups || 3;
-  } else {
   }
 
   // Check if current page count exceeds maximum pages
@@ -95,12 +95,14 @@ export function addNewPage() {
         const { showUserProfile } = await import('./auth.js');
         showUserProfile(); // Show login modal
       }, 1500);
-    } else {
+    }
+    else {
       // Authenticated user
       if (isSubscribed || userSubscription?.active || userSubscription?.is_subscribed) {
         // Subscribed user
         showStatus(`You can only use a maximum of ${maxPages} page(s).`, 'error');
-      } else {
+      }
+      else {
         // Authenticated but not subscribed user
         showStatus(`Free users can only use a maximum of ${maxPages} page(s). Please subscribe.`, 'error');
       }
@@ -118,7 +120,8 @@ export function addNewPage() {
   // Use default app buttons for first page, empty buttons for others
   if (pages.length === 0) {
     newPage.buttons = [...defaultButtons]; // Use default button set
-  } else {
+  }
+  else {
     newPage.buttons = [...emptyButtons]; // Use empty button set
   }
 

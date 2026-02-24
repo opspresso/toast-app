@@ -36,7 +36,8 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
       return true;
     }
     return false;
-  } catch (err) {
+  }
+  catch (err) {
     console.error('아이콘 추출 오류:', err);
     return false;
   }

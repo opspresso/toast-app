@@ -23,7 +23,8 @@ export function initializeGeneralSettings() {
     }
 
     window.settings.log.info('일반 설정 탭 초기화 완료');
-  } catch (error) {
+  }
+  catch (error) {
     window.settings.log.error('일반 설정 탭 초기화 중 오류 발생:', error);
   }
 }
@@ -135,7 +136,8 @@ export function handleHotkeyRecording(event) {
   if (event.code === 'Space') {
     key = 'Space';
     window.settings.log.debug('스페이스 키 감지 및 변환');
-  } else if (key.length === 1) {
+  }
+  else if (key.length === 1) {
     key = key.toUpperCase();
   }
 

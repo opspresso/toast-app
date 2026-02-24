@@ -30,7 +30,8 @@ async function openItem(action) {
 
     // Open file or folder
     return openPath(action.path, action.application);
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error opening item: ${error.message}`,
@@ -59,7 +60,8 @@ async function openUrl(url) {
       success: true,
       message: `Opened URL: ${url}`,
     };
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error opening URL: ${error.message}`,
@@ -99,7 +101,8 @@ async function openPath(itemPath, application) {
       success: true,
       message: `Opened: ${resolvedPath}`,
     };
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error opening path: ${error.message}`,
@@ -122,10 +125,12 @@ async function openWithApplication(filePath, application) {
     if (process.platform === 'darwin') {
       // macOS
       command = `open -a "${application}" "${filePath}"`;
-    } else if (process.platform === 'win32') {
+    }
+    else if (process.platform === 'win32') {
       // Windows
       command = `start "" "${application}" "${filePath}"`;
-    } else {
+    }
+    else {
       // Linux
       command = `${application} "${filePath}"`;
     }
@@ -146,7 +151,8 @@ async function openWithApplication(filePath, application) {
       success: true,
       message: `Opened ${filePath} with ${application}`,
     };
-  } catch (error) {
+  }
+  catch (error) {
     return {
       success: false,
       message: `Error opening with application: ${error.message}`,

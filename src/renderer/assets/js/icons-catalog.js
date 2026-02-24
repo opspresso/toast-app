@@ -1,3 +1,4 @@
+/* global module */
 /**
  * Flat Color Icons Catalog
  * Icon information extracted from HTML files and organized by category
@@ -389,7 +390,8 @@ if (typeof module !== 'undefined' && module.exports) {
     AllIcons,
     searchIcons,
   };
-} else {
+}
+else {
   // In browser environment, add to window object
   window.IconsCatalog = IconsCatalog;
   window.AllIcons = AllIcons;

@@ -39,7 +39,8 @@ function loadEnv() {
     }
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error loading environment variables:', error);
     return false;
   }

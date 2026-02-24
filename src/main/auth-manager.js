@@ -54,7 +54,8 @@ function initialize(windowsRef) {
 async function initiateLogin() {
   try {
     return await auth.initiateLogin();
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error initiating login:', error);
     return false;
   }
@@ -69,7 +70,8 @@ async function exchangeCodeForToken(code) {
   try {
     const result = await auth.exchangeCodeForToken(code);
     return result;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error exchanging code for token:', error);
     return {
       success: false,
@@ -124,13 +126,13 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           hasSyncFeature = result.subscription.features.cloud_sync === true;
           logger.info('Checking cloud_sync feature in subscription features:', hasSyncFeature);
         }
-        // Check in features_array (alternative method)
         else if (Array.isArray(result.subscription?.features_array)) {
+          // Check in features_array (alternative method)
           hasSyncFeature = result.subscription.features_array.includes('cloud_sync');
           logger.info('Checking cloud_sync feature in features_array:', hasSyncFeature);
         }
-        // Subscribers can use cloud_sync by default
         else if (result.subscription?.isSubscribed === true || result.subscription?.active === true || result.subscription?.is_subscribed === true) {
+          // Subscribers can use cloud_sync by default
           hasSyncFeature = true;
           logger.info('Cloud_sync feature enabled due to active subscription status');
         }
@@ -164,7 +166,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
             if (updatedSubscription.expiresAt === 'undefined' || updatedSubscription.expiresAt === 'null') {
               updatedSubscription.expiresAt = '';
             }
-          } else {
+          }
+          else {
             updatedSubscription.expiresAt = '';
           }
 
@@ -189,13 +192,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         // Update cloud sync settings through syncManager
         if (syncManager && typeof syncManager.updateCloudSyncSettings === 'function') {
           syncManager.updateCloudSyncSettings(hasSyncFeature);
-        } else {
+        }
+        else {
           logger.warn('syncManager not properly initialized or missing updateCloudSyncSettings method');
         }
       }
 
       // 3. Integrated synchronization processing - handle profile and settings information at once
-      const syncPromise = new Promise(async resolve => {
+      const performSync = async () => {
         try {
           // Save profile information to file (prevent duplicate API calls)
           if (userProfile) {
@@ -230,30 +234,36 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
             if (syncResult && syncResult.success) {
               // Notification on successful synchronization
               notifySettingsSynced();
-            } else {
+            }
+            else {
               logger.warn('Synchronization failed after login:', syncResult?.error || 'Unknown error');
             }
-          } else {
+          }
+          else {
             logger.info('Cloud synchronization feature is disabled. Please check your subscription status.');
           }
 
-          resolve(true);
-        } catch (err) {
-          logger.error('Error during synchronization:', err);
-          resolve(false);
+          return true;
         }
-      });
+        catch (err) {
+          logger.error('Error during synchronization:', err);
+          return false;
+        }
+      };
+      const syncPromise = performSync();
 
       // Synchronization processing in background
       syncPromise.then(success => {
         logger.info('Login synchronization process completed:', success ? 'successfully' : 'with errors');
       });
-    } else {
+    }
+    else {
       notifyLoginError(result.error || 'Unknown error');
     }
 
     return result;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error in exchangeCodeForTokenAndUpdateSubscription:', error);
 
     // Send error notification to both windows
@@ -330,7 +340,8 @@ async function logout() {
     }
 
     return result;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error logging out:', error);
     return false;
   }
@@ -369,7 +380,8 @@ async function fetchSubscription(forceRefresh = false) {
   if (profileData && profileData.subscription) {
     // Successfully retrieved profile data with subscription information
     return profileData.subscription;
-  } else {
+  }
+  else {
     return DEFAULT_ANONYMOUS_SUBSCRIPTION;
   }
 }
@@ -501,7 +513,8 @@ function notifySettingsSynced(configData = null) {
   // IPC 전송을 위해 안전하게 클론 가능한 객체로 변환
   try {
     configData = JSON.parse(JSON.stringify(configData));
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to serialize config data for IPC:', error);
     // 기본값으로 fallback
     configData = {
@@ -561,7 +574,8 @@ async function syncSettings(action = 'resolve') {
     }
 
     return false;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Manual synchronization error:', error);
     return false;
   }
@@ -580,12 +594,14 @@ function updateSyncSettings(enabled) {
 
     if (enabled) {
       syncManager.enable();
-    } else {
+    }
+    else {
       syncManager.disable();
     }
 
     return true;
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Error changing synchronization settings:', error);
     return false;
   }

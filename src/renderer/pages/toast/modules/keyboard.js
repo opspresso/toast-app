@@ -46,7 +46,8 @@ export function handleKeyDown(event) {
       if (isSettingsMode && !buttonEditModal.classList.contains('show')) {
         event.preventDefault();
         toggleSettingsMode();
-      } else if (!isSettingsMode) {
+      }
+      else if (!isSettingsMode) {
         // Hide window when ESC is pressed in normal mode (if hideOnEscape is enabled)
         event.preventDefault();
         // Get hideOnEscape setting and hide window if enabled
@@ -62,7 +63,8 @@ export function handleKeyDown(event) {
       if (event.metaKey || event.ctrlKey) {
         event.preventDefault();
         window.toast.showSettings();
-      } else {
+      }
+      else {
         // Regular comma key continues to toggle settings mode
         event.preventDefault();
         toggleSettingsMode();
@@ -90,7 +92,7 @@ export function handleKeyDown(event) {
         removePage();
       }
       break;
-    default:
+    default: {
       // Check if key matches a button shortcut
       // Use event.code to get physical key location instead of event.key
       const keyCode = event.code;
@@ -104,6 +106,7 @@ export function handleKeyDown(event) {
         executeButton(filteredButtons[buttonIndex]);
       }
       break;
+    }
   }
 }
 

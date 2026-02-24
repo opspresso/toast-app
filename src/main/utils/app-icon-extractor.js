@@ -45,11 +45,13 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     if (existingIcon && !forceRefresh) {
       // logger.info(`✅ 기존 아이콘 사용: ${appName}`);
       return existingIcon;
-    } else if (existingIcon && forceRefresh) {
+    }
+    else if (existingIcon && forceRefresh) {
       logger.info(`🔄 강제 새로고침으로 기존 아이콘 삭제: ${appName}`);
       try {
         fs.unlinkSync(existingIcon);
-      } catch (error) {
+      }
+      catch (error) {
         logger.warn(`⚠️ 기존 아이콘 삭제 실패: ${error.message}`);
       }
     }
@@ -76,7 +78,8 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
           }
         }
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.warn(`⚠️ Info.plist 파싱 실패: ${error.message}`);
     }
 
@@ -103,7 +106,8 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
         if (icnsPath) {
           logger.info(`✅ find 명령어로 아이콘 파일 발견: ${icnsPath}`);
         }
-      } catch (error) {
+      }
+      catch (error) {
         logger.warn(`⚠️ find 명령어 실행 실패: ${error.message}`);
       }
     }
@@ -126,7 +130,8 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
       if (header !== 'icns') {
         logger.warn(`⚠️ 유효하지 않은 icns 파일 헤더: ${header}`);
       }
-    } catch (error) {
+    }
+    catch (error) {
       logger.warn(`⚠️ icns 파일 정보 확인 실패: ${error.message}`);
     }
 
@@ -170,7 +175,8 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
           }
         }
       }
-    } catch (iconutilError) {
+    }
+    catch (iconutilError) {
       logger.warn(`⚠️ iconutil 변환 실패, sips로 대체: ${iconutilError.message}`);
 
       // 임시 파일 정리
@@ -186,7 +192,8 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     try {
       const result = execSync(convertCommand, { stdio: 'pipe', encoding: 'utf8' });
       logger.debug(`sips 출력: ${result}`);
-    } catch (sipsError) {
+    }
+    catch (sipsError) {
       logger.error(`❌ sips 변환 실패: ${sipsError.message}`);
       return null;
     }
@@ -194,11 +201,13 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     if (fs.existsSync(outputPath)) {
       logger.info(`✅ 아이콘 추출 성공: ${appName} -> ${outputPath}`);
       return outputPath;
-    } else {
+    }
+    else {
       logger.error(`❌ 아이콘 변환 실패: ${appName}`);
       return null;
     }
-  } catch (err) {
+  }
+  catch (err) {
     logger.error(`❌ 아이콘 추출 오류 (${appName}): ${err.message}`);
     return null;
   }
@@ -219,7 +228,8 @@ function extractAppNameFromPath(applicationPath) {
       return path.basename(applicationPath, '.app');
     }
     return path.parse(path.basename(applicationPath)).name;
-  } catch (err) {
+  }
+  catch (err) {
     logger.error(`❌ 앱 이름 추출 오류: ${err.message}`);
     return null;
   }
@@ -236,7 +246,8 @@ function getExistingIconPath(appName, outputDir) {
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const iconPath = path.join(outputDir, `${safeAppName}.png`);
     return fs.existsSync(iconPath) ? iconPath : null;
-  } catch (err) {
+  }
+  catch (err) {
     logger.error(`❌ 기존 아이콘 확인 오류: ${err.message}`);
     return null;
   }
@@ -265,7 +276,8 @@ function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
         logger.info(`🗑️ 오래된 아이콘 파일 삭제: ${filePath}`);
       }
     });
-  } catch (err) {
+  }
+  catch (err) {
     logger.error(`❌ 아이콘 캐시 정리 오류: ${err.message}`);
   }
 }
