@@ -18,8 +18,8 @@
 
 ### 필수 조건
 
-- **Node.js**: v16 이상
-- **npm** (v7 이상) 또는 **yarn**
+- **Node.js**: v20.18 이상 (Electron 35 요구사항)
+- **npm** (v10 이상)
 - **Git**
 - Electron, JavaScript 및 데스크톱 애플리케이션 개발에 대한 기본 지식
 
@@ -84,14 +84,19 @@ toast-app/
 │   │   ├── api/           # API 클라이언트
 │   │   ├── config/        # 환경 구성
 │   │   ├── auth.js        # 인증 처리
+│   │   ├── auth-manager.js # 인증 상태 관리
+│   │   ├── cloud-sync.js  # 클라우드 동기화
 │   │   ├── config.js      # 구성 관리
+│   │   ├── constants.js   # 상수 정의
 │   │   ├── executor.js    # 액션 실행
 │   │   ├── ipc.js         # IPC 처리
 │   │   ├── logger.js      # 로깅 시스템
 │   │   ├── shortcuts.js   # 글로벌 단축키
 │   │   ├── tray.js        # 시스템 트레이
 │   │   ├── updater.js     # 자동 업데이트
+│   │   ├── user-data-manager.js # 사용자 데이터 관리
 │   │   └── windows.js     # 윈도우 관리
+│   │   └── utils/         # 유틸리티 (아이콘 추출 등)
 │   ├── renderer/          # 렌더러 프로세스 코드
 │   │   ├── assets/        # 렌더러 자산
 │   │   ├── pages/         # 애플리케이션 페이지
@@ -196,7 +201,7 @@ npm run test
 npm run lint
 
 # 린팅 문제 자동 수정
-npm run lint:fix
+npm run lint:fix   # ESLint --fix
 
 # 코드 포맷팅
 npm run format
@@ -285,17 +290,13 @@ logger.debug('디버그 정보', { data: 'someValue' });
 #### IPC를 통한 렌더러 프로세스 로깅
 
 ```javascript
-// 렌더러 프로세스 (preload 스크립트에서 노출됨)
-window.logger.info('UI에서 로그 메시지');
-window.logger.error('UI 오류', errorDetails);
+// Toast 윈도우 (preload/toast.js에서 노출됨)
+window.toast.log.info('UI에서 로그 메시지');
+window.toast.log.error('UI 오류', errorDetails);
 
-// 프리로드 스크립트
-contextBridge.exposeInMainWorld('logger', {
-  info: (message, ...args) => ipcRenderer.invoke('log-info', message, ...args),
-  warn: (message, ...args) => ipcRenderer.invoke('log-warn', message, ...args),
-  error: (message, ...args) => ipcRenderer.invoke('log-error', message, ...args),
-  debug: (message, ...args) => ipcRenderer.invoke('log-debug', message, ...args),
-});
+// Settings 윈도우 (preload/settings.js에서 노출됨)
+window.settings.log.info('설정 UI 로그 메시지');
+window.settings.log.error('설정 UI 오류', errorDetails);
 ```
 
 ## 자동 업데이트
@@ -363,29 +364,28 @@ await updater.installUpdate();
 
 #### 렌더러 측 처리
 
-렌더러 프로세스에서는 다음과 같이 업데이트 이벤트를 처리합니다:
+렌더러 프로세스에서는 preload 스크립트에서 노출된 API를 통해 업데이트 이벤트를 처리합니다:
 
 ```javascript
-// 프리로드 스크립트에서 노출된 이벤트 리스너
-window.addEventListener('checking-for-update', event => {
+// Settings 윈도우에서 업데이트 이벤트 수신 (preload/settings.js)
+window.settings.onCheckingForUpdate(() => {
   // 업데이트 확인 중 UI 표시
 });
 
-window.addEventListener('update-available', event => {
+window.settings.onUpdateAvailable((info) => {
   // 사용 가능한 업데이트 알림 표시
-  const version = event.detail.info.version;
-  showUpdateNotification(version);
+  showUpdateNotification(info.version);
 });
 
-window.addEventListener('update-downloaded', event => {
+window.settings.onUpdateDownloaded((info) => {
   // 다운로드 완료 알림 및 설치 옵션 제공
   showInstallPrompt();
 });
 
-// 업데이트 설치 함수
-function installUpdate() {
-  window.updater.installUpdate();
-}
+// 업데이트 확인, 다운로드, 설치
+await window.settings.checkForUpdates();
+await window.settings.downloadUpdate();
+await window.settings.installUpdate();
 ```
 
 ## 디버깅
@@ -445,7 +445,7 @@ function installUpdate() {
 
 ## 코드 작성 가이드라인
 
-### JavaScript/TypeScript 스타일
+### JavaScript 스타일
 
 - **ESLint 및 Prettier** 규칙 준수
 - **명확한 변수 및 함수 이름** 사용

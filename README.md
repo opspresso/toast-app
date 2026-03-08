@@ -26,7 +26,7 @@
 ## 📦 설치
 
 ### 직접 다운로드
-[**GitHub Releases**](https://github.com/opspresso/toast-app/releases)에서 최신 버전을 다운로드하세요:
+[**GitHub Releases**](https://github.com/opspresso/toast/releases)에서 최신 버전을 다운로드하세요:
 - **macOS**: `Toast-App-mac.dmg`
 - **Windows**: `Toast-App-win.exe`
 

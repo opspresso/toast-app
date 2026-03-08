@@ -20,6 +20,10 @@
     "desktop",
     "utility"
   ],
+  "engines": {
+    "node": ">=20.18.0",
+    "npm": ">=10.0.0"
+  },
   "main": "src/index.js",
   "scripts": {
     "start": "electron .",
@@ -31,6 +35,7 @@
     "build:mas": "electron-builder --mac mas",
     "test": "jest",
     "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,html}\""
   },
   "dependencies": {
