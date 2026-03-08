@@ -81,9 +81,9 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 ```
 
 ### 플랫폼별 차이점
-- **macOS**: Terminal.app을 사용하여 명령어 실행
+- **macOS**: Terminal.app을 사용하여 명령어 실행 (osascript 경유)
 - **Windows**: cmd.exe를 사용하여 명령어 실행
-- **Linux**: 시스템에서 감지된 터미널 애플리케이션을 사용
+- **Linux**: `x-terminal-emulator` 명령을 사용하여 실행
 
 ## 3. open (파일/URL 열기)
 
