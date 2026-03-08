@@ -29,10 +29,10 @@ function loadEnv() {
       }
     }
 
-    // Additionally load .env.local file if it exists (takes precedence)
+    // Additionally load .env.local file if it exists (takes precedence over .env)
     const localEnvPath = path.join(configDir, '.env.local');
     if (fs.existsSync(localEnvPath)) {
-      dotenv.config({ path: localEnvPath });
+      dotenv.config({ path: localEnvPath, override: true });
       if (process.env.NODE_ENV !== 'test') {
         logger.info('Local environment variable settings loaded.');
       }

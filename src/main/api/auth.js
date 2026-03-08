@@ -287,7 +287,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
       });
 
       logger.info('Token renewal response status:', response.status);
-      const { access_token, refresh_token } = response.data;
+      const { access_token, refresh_token, expires_in } = response.data;
 
       if (!access_token) {
         logger.error('Access token missing in response');
@@ -304,6 +304,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         success: true,
         access_token,
         refresh_token,
+        expires_in,
       };
     }
     catch (tokenRequestError) {

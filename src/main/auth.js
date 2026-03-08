@@ -504,11 +504,10 @@ async function exchangeCodeForToken(code) {
     const { access_token, refresh_token, expires_in } = tokenResult;
 
     // Store token and expiration time in secure storage
-    // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 1 year
-    await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 31536000);
-    logger.info(
-      `Access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 86400 + ' days' : expires_in ? expires_in / 86400 + ' days' : '1 year'})`,
-    );
+    // Use server's expires_in first (reflects actual JWT expiration), then TOKEN_EXPIRES_IN env var as fallback
+    const tokenExpiresIn = expires_in || TOKEN_EXPIRES_IN || 31536000;
+    await storeToken(access_token, tokenExpiresIn);
+    logger.info(`Access token saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
 
     // Store refresh token (if available)
     if (refresh_token) {
@@ -649,11 +648,10 @@ async function refreshAccessToken() {
         // On success, store new tokens
         const { access_token, refresh_token, expires_in } = refreshResult;
 
-        // Use TOKEN_EXPIRES_IN from environment variables first, then server response, otherwise default to 1 year
-        await storeToken(access_token, TOKEN_EXPIRES_IN || expires_in || 31536000);
-        logger.info(
-          `New access token saved successfully (expiration period: ${TOKEN_EXPIRES_IN ? TOKEN_EXPIRES_IN / 86400 + ' days' : expires_in ? expires_in / 86400 + ' days' : '1 year'})`,
-        );
+        // Use server's expires_in first (reflects actual JWT expiration), then TOKEN_EXPIRES_IN env var as fallback
+        const tokenExpiresIn = expires_in || TOKEN_EXPIRES_IN || 31536000;
+        await storeToken(access_token, tokenExpiresIn);
+        logger.info(`New access token saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
 
         // Store new refresh token (if available)
         if (refresh_token) {
