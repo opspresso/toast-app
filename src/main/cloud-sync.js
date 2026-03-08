@@ -546,8 +546,9 @@ async function syncSettings(action = 'resolve') {
  * @returns {Object} 해결 전략
  */
 function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
-  const localTime = localMeta.lastModifiedAt || 0;
-  const serverTime = serverMeta.lastModifiedAt || 0;
+  // Use lastModifiedAt if available, fall back to lastSyncedAt for server compatibility
+  const localTime = localMeta.lastModifiedAt || localMeta.lastSyncedAt || 0;
+  const serverTime = serverMeta.lastModifiedAt || serverMeta.lastSyncedAt || 0;
   const timeDifference = Math.abs(localTime - serverTime);
 
   // 시간 차이가 1분 미만이면 동일한 것으로 간주
