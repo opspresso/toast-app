@@ -157,9 +157,8 @@ jobs:
 
       - name: Create Release in Releases Repo 🚀
         uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
         with:
+          token: ${{ secrets.GHP_TOKEN }}
           repository: opspresso/toast
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
@@ -177,9 +176,8 @@ jobs:
 
       - name: Create Release in This Repo 🚀
         uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GHP_TOKEN }}
         with:
+          token: ${{ secrets.GHP_TOKEN }}
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
