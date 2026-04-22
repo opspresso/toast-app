@@ -39,17 +39,17 @@
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,html}\""
   },
   "dependencies": {
-    "axios": "^1.11.0",
+    "axios": "^1.15.0",
     "dotenv": "^16.5.0",
     "electron-log": "^5.3.4",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.6.2",
     "uuid": "^11.1.0",
-    "yaml": "^2.7.1"
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@electron/notarize": "^3.0.1",
-    "electron": "^35.7.5",
+    "electron": "^39.8.5",
     "electron-builder": "^26.6.0",
     "electron-builder-notarize": "^1.5.2",
     "eslint": "^8.57.0",
