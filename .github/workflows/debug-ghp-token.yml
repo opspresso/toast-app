@@ -1,0 +1,57 @@
+name: Debug GHP_TOKEN
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect secret and test API access
+        env:
+          GHP_TOKEN: ${{ secrets.GHP_TOKEN }}
+        run: |
+          set -u
+
+          echo "=== Secret presence ==="
+          echo "GHP_TOKEN non-empty: ${{ secrets.GHP_TOKEN != '' }}"
+          echo "Raw length:          ${#GHP_TOKEN}"
+          TRIMMED=$(printf '%s' "$GHP_TOKEN" | tr -d '[:space:]')
+          echo "Trimmed length:      ${#TRIMMED}"
+          if [ "${#GHP_TOKEN}" -ne "${#TRIMMED}" ]; then
+            echo "WARNING: token contains whitespace or newline characters"
+          fi
+
+          echo ""
+          echo "=== /user (who is this token?) ==="
+          curl -sS -o /tmp/user.json -w "HTTP %{http_code}\n" \
+            -H "Authorization: token $GHP_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/user
+          jq '{login, id, type}' /tmp/user.json || cat /tmp/user.json
+
+          echo ""
+          echo "=== /repos/opspresso/toast (read) ==="
+          curl -sS -o /tmp/repo.json -w "HTTP %{http_code}\n" \
+            -H "Authorization: token $GHP_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/opspresso/toast
+          jq '{full_name, private, permissions, message}' /tmp/repo.json || cat /tmp/repo.json
+
+          echo ""
+          echo "=== POST /repos/opspresso/toast/releases (dry-run as draft) ==="
+          curl -sS -o /tmp/rel.json -w "HTTP %{http_code}\n" \
+            -X POST \
+            -H "Authorization: token $GHP_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"tag_name":"debug-ghp-token-probe","name":"probe","draft":true}' \
+            https://api.github.com/repos/opspresso/toast/releases
+          cat /tmp/rel.json
+
+          echo ""
+          echo "=== Response headers (to inspect X-Accepted-OAuth-Scopes, X-OAuth-Scopes) ==="
+          curl -sS -D - -o /dev/null \
+            -H "Authorization: token $GHP_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/opspresso/toast \
+            | grep -iE 'x-(oauth|accepted-oauth|github)|x-ratelimit-resource'
