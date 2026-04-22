@@ -32,12 +32,12 @@ jobs:
 
     steps:
       - name: Checkout code 🛎️
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Fetch complete history
 
       - name: Setup Node.js 🐍
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: 'npm' # Use npm cache
@@ -67,29 +67,42 @@ jobs:
           echo "TOAST_URL=${{ vars.TOAST_URL }}" >> src/main/config/.env
           echo "TOKEN_EXPIRES_IN=${{ vars.TOKEN_EXPIRES_IN }}" >> src/main/config/.env
 
-      - name: Prepare for app notarization 🔑
-        if: matrix.os == 'macos-latest' # Only run for macOS builds
-        run: |
-          # Setup keys for macOS app notarization
-          mkdir -p ~/private_keys/
-          echo '${{ secrets.API_KEY_SECRET }}' > ~/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8
-
-      - name: Build/release Electron app 📦
-        uses: samuelmeuli/action-electron-builder@v1
+      - name: Import macOS codesign certificate 🔐
+        if: matrix.os == 'macos-latest'
+        uses: apple-actions/import-codesign-certs@v7
         with:
-          github_token: ${{ secrets.GHP_TOKEN }}
-          mac_certs: ${{ secrets.APPLE_CERTIFICATE_BASE64_DEV }} # macOS code signing certificate
-          mac_certs_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }} # Certificate password
-          release: ${{ startsWith(github.ref, 'refs/tags/v') }} # Only release when tag starts with v
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64_DEV }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Prepare for app notarization 🔑
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          # Write App Store Connect API key to disk
+          mkdir -p "$HOME/private_keys/"
+          echo '${{ secrets.API_KEY_SECRET }}' > "$HOME/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8"
+
+          # Export electron-builder notarization env vars for subsequent steps
+          echo "APPLE_API_KEY=$HOME/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8" >> "$GITHUB_ENV"
+          echo "APPLE_API_KEY_ID=${{ secrets.API_KEY_ID }}" >> "$GITHUB_ENV"
+          echo "APPLE_API_ISSUER=${{ secrets.API_KEY_ISSUER_ID }}" >> "$GITHUB_ENV"
+
+      - name: Build Electron app on macOS 📦
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac --publish never
         env:
-          # macOS notarization API keys
-          API_KEY_ID: ${{ secrets.API_KEY_ID }}
-          API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}
-          # Additional notarization variables
+          GH_TOKEN: ${{ secrets.GHP_TOKEN }}
+          # Fallback notarization via Apple ID (APPLE_API_KEY takes priority if present)
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          # Windows Signing
+
+      - name: Build Electron app on Windows 📦
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: npx electron-builder --win --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GHP_TOKEN }}
           CSC_LINK: ${{ secrets.WINDOWS_CERTS }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
@@ -102,7 +115,7 @@ jobs:
         run: dir dist
 
       - name: Upload artifacts 🚚
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}-artifacts # Distinguish artifacts by OS
           path: |
@@ -120,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts 🚚
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts # Download all artifacts to artifacts directory
 
@@ -257,7 +270,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack success notification 🎉
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v3
         with:
           webhook-type: incoming-webhook
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -336,7 +349,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack failure notification ❌
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v3
         with:
           webhook-type: incoming-webhook
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
