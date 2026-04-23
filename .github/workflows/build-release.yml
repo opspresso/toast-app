@@ -92,10 +92,6 @@ jobs:
         run: npx electron-builder --mac --publish never
         env:
           GH_TOKEN: ${{ secrets.GHP_TOKEN }}
-          # Fallback notarization via Apple ID (APPLE_API_KEY takes priority if present)
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
 
       - name: Build Electron app on Windows 📦
         if: matrix.os == 'windows-latest'
