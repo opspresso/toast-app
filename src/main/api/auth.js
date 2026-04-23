@@ -6,7 +6,7 @@
  */
 
 const { URL } = require('url');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const Store = require('electron-store');
 const { createLogger } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest, clearTokens } = require('./client');
@@ -121,7 +121,7 @@ function setLoginInProgress(status) {
 function initiateLogin(clientId) {
   try {
     // State value is used to prevent CSRF attacks
-    const state = uuidv4();
+    const state = randomUUID();
 
     // Store state value
     const stored = storeStateParam(state);

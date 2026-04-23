@@ -6,8 +6,9 @@
 
 // Mock dependencies
 jest.mock('electron-store');
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'mock-uuid-12345')
+jest.mock('crypto', () => ({
+  ...jest.requireActual('crypto'),
+  randomUUID: jest.fn(() => 'mock-uuid-12345')
 }));
 jest.mock('../../../src/main/logger', () => ({
   createLogger: jest.fn(() => ({
