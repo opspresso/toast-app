@@ -39,22 +39,21 @@ Toast 앱은 npm을 사용하여 의존성을 관리하며, 패키지 정보는 
 
 | 의존성 | 버전 | 목적 |
 |--------|------|------|
-| axios | ^1.8.4 | API 요청을 위한 HTTP 클라이언트 |
+| axios | ^1.15.0 | API 요청을 위한 HTTP 클라이언트 |
 | dotenv | ^16.5.0 | 환경 변수 관리 |
 | electron-log | ^5.3.4 | Electron용 로깅 유틸리티 |
 | electron-store | ^8.1.0 | Electron 앱용 간단한 데이터 지속성 |
 | electron-updater | ^6.6.2 | 자동 업데이트 기능 |
-| uuid | ^11.1.0 | 고유 식별자 생성 |
-| yaml | ^2.7.1 | YAML 파싱 및 생성 |
+| yaml | ^2.8.3 | YAML 파싱 및 생성 |
+
+> 고유 식별자는 Node.js 내장 `crypto.randomUUID()`를 사용합니다.
 
 ### 개발 의존성
 
 | 의존성 | 버전 | 목적 |
 |--------|------|------|
-| @electron/notarize | ^3.0.1 | macOS용 코드 서명 |
-| electron | ^35.1.5 | Electron 프레임워크 |
-| electron-builder | ^26.0.12 | 애플리케이션 패키징 및 배포 |
-| electron-builder-notarize | ^1.5.2 | electron-builder용 공증 헬퍼 |
+| electron | ^39.8.5 | Electron 프레임워크 |
+| electron-builder | ^26.6.0 | 애플리케이션 패키징 및 배포 |
 | eslint | ^8.57.0 | JavaScript 린팅 |
 | eslint-config-prettier | ^9.1.0 | Prettier용 ESLint 구성 |
 | jest | ^29.7.0 | 테스팅 프레임워크 |

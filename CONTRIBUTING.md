@@ -19,14 +19,14 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 
 ## 행동 강령
 
-이 프로젝트와 참여하는 모든 사람은 [행동 강령](CODE_OF_CONDUCT.md)에 의해 관리됩니다. 참여함으로써 이 코드를 준수할 것으로 기대됩니다. 용납할 수 없는 행동은 [project-email@example.com](mailto:project-email@example.com)으로 신고해 주세요.
+서로를 존중하는 태도로 협업해 주세요. 부적절한 행동을 발견하면 [GitHub Issues](https://github.com/opspresso/toast-app/issues) 또는 저장소 메인테이너에게 비공개로 신고해 주세요.
 
 ## 시작하기
 
 ### 필수 조건
 
-- Node.js (v16 이상)
-- npm (v7 이상) 또는 yarn
+- Node.js (v20.18 이상, `package.json` 의 `engines.node` 기준)
+- npm (v10 이상)
 - Git
 - Electron, JavaScript 및 데스크톱 애플리케이션 개발에 대한 기본 지식
 

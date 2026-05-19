@@ -5,8 +5,8 @@
 > **중요**: Toast App은 전통적인 데이터베이스를 사용하지 않고, electron-store를 통해 JSON 형식으로 설정을 저장합니다. 이 문서는 물리적 데이터베이스 스키마가 아닌 논리적 데이터 구조를 설명합니다.
 
 > **참고**:
-> - 실제 데이터 저장 방식은 [docs/CONFIG_DATA_STORAGE.md](docs/CONFIG_DATA_STORAGE.md)를 참조하세요.
-> - 상세한 구성 스키마는 [docs/CONFIG_SCHEMA.md](docs/CONFIG_SCHEMA.md)를 참조하세요.
+> - 실제 데이터 저장 방식은 [데이터 저장소](./data-storage.md)를 참조하세요.
+> - 상세한 구성 스키마는 [구성 스키마](./schema.md)를 참조하세요.
 
 ## 엔티티 관계
 
@@ -61,10 +61,10 @@ Toast App에서 지원하는 버튼 액션 유형:
 - `script`: 사용자 정의 스크립트 실행
 - `chain`: 일련의 액션을 순차적으로 실행
 
-> **상세 정보**: 각 액션 유형의 자세한 설명은 [docs/BUTTON_ACTIONS.md](docs/BUTTON_ACTIONS.md)를 참조하세요.
+> **상세 정보**: 각 액션 유형의 자세한 설명은 [버튼 액션](../guide/actions.md)을 참조하세요.
 
 ## 관련 문서
 
-- [데이터 저장소](docs/CONFIG_DATA_STORAGE.md): 저장소 구현 및 파일 구조
-- [구성 스키마](docs/CONFIG_SCHEMA.md): 상세한 구성 옵션 및 스키마
-- [버튼 액션](docs/BUTTON_ACTIONS.md): 액션 유형별 상세 정보
+- [데이터 저장소](./data-storage.md): 저장소 구현 및 파일 구조
+- [구성 스키마](./schema.md): 상세한 구성 옵션 및 스키마
+- [버튼 액션](../guide/actions.md): 액션 유형별 상세 정보

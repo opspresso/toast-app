@@ -36,6 +36,7 @@ Toast 앱이 공식적으로 지원하는 플랫폼:
 
 - **macOS**: 10.14 (Mojave) 이상
 - **Windows**: Windows 10 이상
+- **Linux**: AppImage 및 deb 패키지 빌드 제공 (실험적)
 
 ## macOS 전용 기능
 
@@ -133,37 +134,25 @@ async function runScript(script, type) {
 }
 ```
 
-### 코드 서명 및 공증
+### 코드 서명
 
 macOS 전용 보안 요구사항:
 
-- 유효한 Developer ID로 애플리케이션 코드 서명
-- Apple의 공증 서비스로 앱 공증
-- Hardened Runtime 활성화
-- 필요한 기능에 대한 Entitlements 구성
-- 샌드박싱 고려사항 문서화
+- 유효한 Developer ID 인증서로 애플리케이션 코드 서명 (CI 빌드 시점)
+- `entitlements.mac.plist` 로 필요한 기능 선언
+- Hardened Runtime 활성화 (`package.json` 의 `build.mac.hardenedRuntime: true`)
+- Mac App Store 빌드(`mas` 타깃)는 `entitlements.mac.mas.plist` 와 App Sandbox 사용
 
-**구현**:
-```javascript
-// notarize.js
-module.exports = async function (params) {
-  if (process.platform !== 'darwin') {
-    return;
-  }
-
-  // 공증 프로세스
-  // ...
-};
-```
+> 공증(notarization) 단계는 현재 빌드 파이프라인에 포함되어 있지 않습니다.
 
 ### 설치 및 업데이트
 
 macOS 전용 설치 고려사항:
 
-- DMG 기반 설치 프로세스
-- 사용자 정의 tap을 통한 Homebrew 배포
-- Squirrel.Mac을 사용한 자동 업데이트
-- 설정 및 로그를 위한 macOS 전용 파일 위치
+- DMG 및 ZIP 패키지 배포 (`package.json` 의 `build.mac.target`)
+- 사용자 정의 tap 을 통한 Homebrew 배포 (`brew install --cask opspresso/tap/toast`)
+- `electron-updater` 를 사용한 자동 업데이트 (ZIP 형식 필요)
+- 설정은 `~/Library/Application Support/toast-app/`, 로그는 `~/Library/Logs/toast-app/` 에 저장
 
 ## Windows 전용 기능
 
@@ -263,25 +252,20 @@ async function runScript(script, type) {
 
 Windows 전용 보안 요구사항:
 
-- 유효한 코드 서명 인증서로 애플리케이션 서명
-- SmartScreen 필터 고려사항
-- Windows Defender 호환성
+- 유효한 코드 서명 인증서로 애플리케이션 서명 (CI 빌드 시점)
+- SmartScreen 경고를 줄이기 위해 EV/OV 인증서 권장
+- Windows Defender 호환성 확인
 
-**구현**:
-```javascript
-// electron-builder.yml (구성)
-win:
-  sign: './sign.js'
-```
+서명 설정은 `package.json` 의 `build.win` 섹션에서 관리됩니다.
 
 ### 설치 및 업데이트
 
 Windows 전용 설치 고려사항:
 
-- MSI 및 EXE 설치 프로그램 형식
-- Squirrel.Windows를 사용한 자동 업데이트
-- 설정 및 로그를 위한 Windows 전용 파일 위치
-- 시작 프로그램 레지스트리 항목
+- NSIS 설치 프로그램 및 portable EXE 형식 (`package.json` 의 `build.win.target`)
+- `electron-updater` 를 사용한 자동 업데이트
+- 설정 및 로그는 `%APPDATA%\toast-app\` 에 저장
+- 시작 프로그램 항목은 OS 표준 메커니즘 사용
 
 ## 플랫폼별 분기를 가진 공통 코드
 

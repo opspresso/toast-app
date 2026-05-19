@@ -251,7 +251,7 @@ if (result.success && result.hasUpdate) {
 
 ## 실행기 모듈 (`src/main/executor.js`)
 
-실행기 모듈은 액션 실행을 처리합니다.
+실행기 모듈은 액션 실행을 처리합니다. `chain` 액션의 순차 실행 로직은 `src/main/actions/chain.js` 에 분리되어 있으며, `executor.js` 는 `action.action` 값에 따라 해당 핸들러로 디스패치합니다.
 
 ### 함수
 
@@ -264,15 +264,7 @@ if (result.success && result.hasUpdate) {
 async function executeAction(action)
 
 /**
- * 일련의 액션을 순차적으로 실행
- * @param {Object} chainAction - 체인 액션 구성
- * @param {Array} chainAction.actions - 실행할 액션 배열
- * @returns {Promise<Object>} 결과 객체
- */
-async function executeChainedActions(chainAction)
-
-/**
- * 실행하지 않고 액션 테스트
+ * 실행하지 않고 액션 유효성 검사
  * @param {Object} action - 액션 구성
  * @returns {Promise<Object>} 유효성 검사 결과
  */
@@ -323,12 +315,6 @@ if (validation.valid) {
  * @returns {boolean} 성공 상태
  */
 function registerGlobalShortcuts(config, windows)
-
-/**
- * Toast 윈도우의 가시성 전환
- * @param {BrowserWindow} toastWindow - Toast 윈도우
- */
-function toggleToastWindow(toastWindow)
 
 /**
  * 구성에 따라 Toast 윈도우 위치 지정
@@ -426,24 +412,11 @@ destroyTray();
 function createToastWindow(config)
 
 /**
- * Toast 윈도우에 대한 이벤트 핸들러 설정
- * @param {BrowserWindow} toastWindow - Toast 윈도우
- * @param {Object} config - 구성 저장소
- */
-function setupToastWindowEvents(toastWindow, config)
-
-/**
  * 설정 윈도우 생성
  * @param {Object} config - 구성 저장소
  * @returns {BrowserWindow} 설정 윈도우
  */
 function createSettingsWindow(config)
-
-/**
- * 설정 윈도우에 대한 이벤트 핸들러 설정
- * @param {BrowserWindow} settingsWindow - 설정 윈도우
- */
-function setupSettingsWindowEvents(settingsWindow)
 
 /**
  * Toast 윈도우 표시
@@ -463,10 +436,17 @@ function hideToastWindow()
 function showSettingsWindow(config)
 
 /**
+ * Toast 윈도우가 표시될 디스플레이에 맞춰 설정 윈도우 위치 조정
+ */
+function positionSettingsWindowOnToastDisplay()
+
+/**
  * 모든 윈도우 닫기
  */
 function closeAllWindows()
 ```
+
+`windows` 객체(`toast`, `settings` 참조)도 export 되어 다른 모듈에서 직접 접근할 수 있습니다.
 
 ### 윈도우 크기 옵션
 
@@ -678,21 +658,34 @@ async function logout()
 function hasValidToken()
 
 /**
- * 액세스 토큰 가져오기
- * @returns {string|null} 액세스 토큰
+ * 액세스 토큰 가져오기 (필요 시 자동 갱신)
+ * @returns {Promise<string|null>} 액세스 토큰
  */
-function getAccessToken()
+async function getAccessToken()
 
 /**
- * 리프레시 토큰 가져오기
- * @returns {string|null} 리프레시 토큰
+ * 액세스 토큰 강제 갱신
+ * @returns {Promise<string|null>} 새 액세스 토큰
  */
-function getRefreshToken()
+async function refreshAccessToken()
 
 /**
- * 프로토콜 핸들러 등록 (toast:// 스킴)
+ * 구독 상태에 따른 페이지 그룹 설정 업데이트
+ * @param {Object} subscription - 구독 정보
+ */
+function updatePageGroupSettings(subscription)
+
+/**
+ * 프로토콜 핸들러 등록 (`toast-app://` 스킴)
  */
 function registerProtocolHandler()
+
+/**
+ * 프로토콜 리다이렉트(예: `toast-app://auth?code=...`) 처리
+ * @param {string} url - 수신한 프로토콜 URL
+ * @returns {Promise<Object>} 처리 결과
+ */
+async function handleAuthRedirect(url)
 ```
 
 ### 사용 예시
@@ -722,18 +715,23 @@ await auth.logout();
 ```javascript
 /**
  * 클라우드 동기화 초기화
- * @param {Object} authManager - 인증 매니저 인스턴스
- * @param {Object} userDataManager - 사용자 데이터 매니저 인스턴스
- * @param {Object} config - 구성 저장소
+ * @param {Object} authManagerInstance - 인증 매니저 인스턴스
+ * @param {Object} _userDataManagerInstance - 사용자 데이터 매니저 인스턴스 (예약)
+ * @param {Object} [configStoreInstance] - 구성 저장소 (없으면 새로 생성)
  * @returns {Object} 동기화 관리 객체
  */
-function initCloudSync(authManager, userDataManager, config)
+function initCloudSync(authManagerInstance, _userDataManagerInstance, configStoreInstance)
 
 /**
- * 설정 동기화 실행
- * @returns {Promise<Object>} 동기화 결과
+ * 인증 매니저 교체
+ * @param {Object} manager - 인증 매니저 인스턴스
  */
-async function syncSettings()
+function setAuthManager(manager)
+
+/**
+ * 주기적 동기화 시작
+ */
+function startPeriodicSync()
 
 /**
  * 주기적 동기화 중지
@@ -741,34 +739,51 @@ async function syncSettings()
 function stopPeriodicSync()
 
 /**
- * 동기화 가능 여부 확인
- * @returns {boolean} 동기화 가능 여부
+ * 설정을 서버에 업로드
+ * @returns {Promise<Object>} 업로드 결과
  */
-function canSync()
+async function uploadSettings()
+
+/**
+ * 서버에서 설정 다운로드
+ * @returns {Promise<Object>} 다운로드 결과
+ */
+async function downloadSettings()
+
+/**
+ * 동기화 실행 (충돌 해결 포함)
+ * @param {string} [action='resolve'] - 'upload' | 'download' | 'resolve'
+ * @returns {Promise<Object>} 동기화 결과
+ */
+async function syncSettings(action)
+
+/**
+ * 클라우드 동기화 활성화 / 비활성화
+ * @param {boolean} enabled
+ */
+function updateCloudSyncSettings(enabled)
 ```
 
 ### 동기화 설정
 
-- **주기적 동기화 간격**: 15분
-- **Debounce 시간**: 5초
-- **최대 재시도 횟수**: 3회
+- **주기적 동기화 간격**: 15분 (`SYNC_INTERVAL_MS`)
+- **Debounce 시간**: 5초 (`SYNC_DEBOUNCE_MS`)
+- **최대 재시도 횟수**: 3회 (`MAX_RETRY_COUNT`)
 
 ### 사용 예시
 
 ```javascript
-const { initCloudSync, syncSettings, canSync } = require('./main/cloud-sync');
+const { initCloudSync, syncSettings, updateCloudSyncSettings } = require('./main/cloud-sync');
 
 // 클라우드 동기화 초기화
 const syncManager = initCloudSync(authManager, userDataManager, config);
 
-// 동기화 가능 여부 확인
-if (canSync()) {
-  const result = await syncSettings();
-  console.log('Sync result:', result);
-}
+// 수동 동기화 (resolve: 충돌 자동 해결)
+const result = await syncSettings('resolve');
+console.log('Sync result:', result);
 
-// 주기적 동기화 중지
-stopPeriodicSync();
+// 클라우드 동기화 비활성화
+updateCloudSyncSettings(false);
 ```
 
 ## API 클라이언트 모듈 (`src/main/api/client.js`)

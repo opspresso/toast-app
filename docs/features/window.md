@@ -95,20 +95,18 @@ document.addEventListener('keydown', (event) => {
 버튼 액션이 성공적으로 완료된 후 창이 자동으로 숨겨집니다:
 
 ```javascript
-function executeButton(button) {
+async function executeButton(button) {
   // ... 액션 실행 코드 ...
 
-  window.toast.executeAction(action)
-    .then(result => {
-      if (result.success) {
-        // 성공 처리
-        if (window.toast.config.get('advanced.hideAfterAction')) {
-          window.toast.hideWindow();
-        }
-      } else {
-        // 실패 처리
-      }
-    });
+  const result = await window.toast.executeAction(action);
+  if (result.success) {
+    const hideAfterAction = await window.toast.getConfig('advanced.hideAfterAction');
+    if (hideAfterAction) {
+      window.toast.hideWindow();
+    }
+  } else {
+    // 실패 처리
+  }
 }
 ```
 

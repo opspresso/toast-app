@@ -18,8 +18,8 @@
 
 ### 필수 조건
 
-- **Node.js**: v22 이상
-- **npm** (v10 이상)
+- **Node.js**: v20.18 이상 (`package.json` 의 `engines.node` 기준)
+- **npm**: v10 이상
 - **Git**
 - Electron, JavaScript 및 데스크톱 애플리케이션 개발에 대한 기본 지식
 
@@ -55,8 +55,8 @@ npm run dev
 
 개발 환경에서 로컬 환경 변수를 설정하려면:
 
-1. `src/main/config` 디렉토리에 `.env` 파일 생성
-2. 참조용으로 제공된 `.env.example` 파일을 기반으로 필요한 환경 변수 설정
+1. `src/main/config/` 디렉토리에 `.env` 또는 `.env.local` 파일을 생성합니다.
+2. `.env.local` 은 `.env` 보다 우선 적용되며 Git 에서 무시됩니다.
 
 ```bash
 # .env 예시
@@ -97,7 +97,6 @@ toast-app/
 │   │   ├── updater.js     # 자동 업데이트
 │   │   ├── user-data-manager.js # 사용자 데이터 관리
 │   │   └── windows.js     # 윈도우 관리
-│   │   └── utils/         # 유틸리티 (아이콘 추출 등)
 │   ├── renderer/          # 렌더러 프로세스 코드
 │   │   ├── assets/        # 렌더러 자산
 │   │   ├── pages/         # 애플리케이션 페이지
@@ -271,9 +270,9 @@ Toast 앱은 `electron-log` 패키지를 사용하여 일관되고 효율적인 
 - 개발/운영 환경에 따른 로그 레벨 자동 조정
 
 로그 파일은 다음 위치에 저장됩니다:
-- **macOS**: `~/Library/Application Support/Toast/logs/toast-app.log`
-- **Windows**: `%APPDATA%\Toast\logs\toast-app.log`
-- **Linux**: `~/.config/Toast/logs/toast-app.log`
+- **macOS**: `~/Library/Logs/toast-app/toast-app.log`
+- **Windows**: `%APPDATA%\toast-app\logs\toast-app.log`
+- **Linux**: `~/.config/toast-app/logs/toast-app.log`
 
 ### 로거 사용 방법
 
