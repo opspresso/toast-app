@@ -69,11 +69,8 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 ### 환경 설정
 
 1. 권장 도구 설치
-2. 에디터에서 ESLint 및 Prettier 구성
-3. 개발 환경 설정:
-   ```
-   npm run setup-dev
-   ```
+2. 에디터에서 ESLint 및 Prettier 구성 (저장소 루트의 `.eslintrc.js`, `.prettierrc` 사용)
+3. 의존성 설치: `npm install`
 
 ### 애플리케이션 실행
 
@@ -94,7 +91,7 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 
 ## 프로젝트 구조
 
-프로젝트 구조에 대한 자세한 개요는 [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) 문서를 참조하세요.
+프로젝트 구조에 대한 자세한 개요는 [docs/development/setup.md](docs/development/setup.md) 문서를 참조하세요.
 
 주요 디렉토리:
 - `src/` - 소스 코드
@@ -223,14 +220,16 @@ docs: update README with new features
 npm run test
 
 # 커버리지가 있는 테스트 실행
-npm run test:coverage
+npx jest --coverage
 
 # 감시 모드에서 테스트 실행
-npm run test:watch
+npx jest --watch
 
-# 특정 테스트 실행
-npm run test -- -t "test name pattern"
+# 특정 테스트 실행 (이름 패턴 매칭)
+npx jest -t "test name pattern"
 ```
+
+> `test` 외의 변형은 `package.json`에 별도 스크립트로 등록돼 있지 않으므로 `npx jest`를 직접 호출합니다.
 
 ### 테스트 커버리지
 
@@ -285,7 +284,7 @@ npm run test -- -t "test name pattern"
 
 ### 보안 이슈
 
-보안 이슈의 경우 공개 이슈를 만들지 마세요. 대신 취약점에 대한 세부 정보와 함께 [security@toast-app.example.com](mailto:security@toast-app.example.com)로 이메일을 보내주세요.
+보안 이슈의 경우 공개 이슈를 만들지 마세요. 대신 GitHub 저장소의 **Security → Report a vulnerability** 메뉴([Security Advisories](https://github.com/opspresso/toast-app/security/advisories/new))를 통해 비공개로 신고해 주세요.
 
 ## 기능 요청
 
