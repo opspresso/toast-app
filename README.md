@@ -54,6 +54,16 @@ brew install --cask opspresso/tap/toast
 | [⌨️ 단축키 규칙](docs/guide/shortcuts.md) | 버튼 단축키 자동 할당 시스템 |
 | [📋 전체 문서 목록](docs/README.md) | 모든 문서의 인덱스 |
 
+## 📂 관련 저장소
+
+Toast 프로젝트는 다음 저장소들로 구성되어 있습니다:
+
+| 저장소 | 공개 여부 | 설명 |
+|--------|-----------|------|
+| [opspresso/toast](https://github.com/opspresso/toast) | Public | 배포 및 대표 저장소 (릴리스 배포, 홈페이지, 이슈 트래킹) |
+| [opspresso/toast-app](https://github.com/opspresso/toast-app) | Public | 데스크톱 앱 소스 (현재 저장소) |
+| [opspresso/toast-web](https://github.com/opspresso/toast-web) | Private | 웹 서비스 소스 (인증·동기화 API 및 웹 콘솔) |
+
 ## 🛠️ 개발자를 위한 빠른 시작
 
 ```bash
