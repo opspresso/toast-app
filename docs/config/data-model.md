@@ -35,10 +35,11 @@ Toast App의 주요 엔티티는 다음과 같은 관계를 가집니다:
 │       ├── icon
 │       ├── action
 │       └── 액션별 매개변수
-└── 동기화 메타데이터
-    ├── clientLastModifiedAt
-    ├── clientLastModifiedDevice
-    └── serverLastUpdatedAt
+└── 동기화 메타데이터 (_sync)
+    ├── lastModifiedAt
+    ├── lastModifiedDevice
+    ├── lastSyncedAt
+    └── lastSyncedDevice
 ```
 
 ## 페이지 제한 정책

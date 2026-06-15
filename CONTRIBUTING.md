@@ -97,9 +97,8 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 - `src/` - 소스 코드
   - `main/` - 메인 프로세스 코드
   - `renderer/` - 렌더러 프로세스 코드
-  - `common/` - 공유 코드
+  - `index.js` - 애플리케이션 진입점
 - `assets/` - 정적 자산
-- `build/` - 빌드 구성
 - `tests/` - 테스트 파일
 
 ## 워크플로우
@@ -258,9 +257,9 @@ npx jest -t "test name pattern"
 ### 문서 파일
 
 - `README.md`: 프로젝트 개요 및 빠른 시작
-- `ARCH_OVERVIEW.md`: 시스템 설계 및 컴포넌트
-- `API_DOCUMENTATION.md`: API 참조
-- `GUIDE_USER.md`: 사용자 지침
+- `docs/architecture/overview.md`: 시스템 설계 및 컴포넌트
+- `docs/api/`: API 참조
+- `docs/guide/user.md`: 사용자 지침
 - `CONTRIBUTING.md`: 기여 가이드라인(이 파일)
 
 ## 이슈 보고

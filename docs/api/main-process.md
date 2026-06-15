@@ -142,19 +142,6 @@ function createLogger(namespace)
  * @returns {boolean} 성공 상태
  */
 function handleIpcLogging(level, message, ...args)
-
-/**
- * 로그 파일 경로 가져오기
- * @returns {string} 로그 파일 경로
- */
-function getLogFilePath()
-
-/**
- * 로그 파일 내용 가져오기
- * @param {number} [maxLines=1000] - 반환할 최대 줄 수
- * @returns {Promise<string>} 로그 파일 내용
- */
-async function getLogFileContent(maxLines)
 ```
 
 ### 상수
