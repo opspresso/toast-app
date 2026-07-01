@@ -144,19 +144,7 @@ function createLogger(namespace)
 function handleIpcLogging(level, message, ...args)
 ```
 
-### 상수
-
-```javascript
-// 로그 레벨
-const LOG_LEVELS = {
-  ERROR: 'error',
-  WARN: 'warn',
-  INFO: 'info',
-  DEBUG: 'debug',
-  VERBOSE: 'verbose',
-  SILLY: 'silly'
-};
-```
+`createLogger(namespace)`가 반환하는 로거 객체는 `info`, `warn`, `error`, `debug`, `verbose`, `silly` 메서드를 제공합니다.
 
 ### 사용 예시
 
@@ -204,21 +192,6 @@ async function downloadUpdate()
  * @returns {Promise<Object>} 설치 결과
  */
 async function installUpdate()
-```
-
-### 이벤트
-
-```javascript
-const UPDATE_EVENTS = {
-  CHECKING: 'checking-for-update',
-  AVAILABLE: 'update-available',
-  NOT_AVAILABLE: 'update-not-available',
-  PROGRESS: 'download-progress',
-  DOWNLOADED: 'update-downloaded',
-  ERROR: 'update-error',
-  START_DOWNLOAD: 'download-started',
-  START_INSTALL: 'install-started'
-};
 ```
 
 ### 사용 예시
@@ -593,9 +566,41 @@ const { setupIpcHandlers } = require('./main/ipc');
 setupIpcHandlers(windows);
 ```
 
+## 인증 매니저 모듈 (`src/main/auth-manager.js`)
+
+인증 매니저 모듈은 런타임 인증 처리의 진입점입니다. `src/main/ipc.js`의 모든 인증 관련 IPC는 이 모듈로 위임되며, 로그인/로그아웃 처리를 중앙화하고 Toast·설정 두 윈도우에 이벤트를 전달합니다. 토큰 발급·저장·갱신 같은 저수준 처리는 하위 계층인 `src/main/auth.js`에 위임합니다.
+
+### 함수
+
+```javascript
+initiateLogin()                 // 로그인 프로세스 시작
+exchangeCodeForToken(code)      // 인증 코드를 토큰으로 교환
+logout()                        // 로그아웃
+fetchUserProfile(forceRefresh)  // 사용자 프로필 가져오기
+getUserSettings(forceRefresh)   // 사용자 설정 가져오기
+fetchSubscription(forceRefresh) // 구독 정보 가져오기
+getAccessToken()                // 액세스 토큰 반환
+syncSettings(action)            // 설정 동기화 (upload/download/resolve)
+updateSyncSettings(enabled)     // 클라우드 동기화 활성화/비활성화
+```
+
+### 이벤트 알림
+
+두 윈도우에 인증/동기화 상태를 전달합니다:
+
+```javascript
+notifyLoginSuccess(subscription) // 로그인 성공 알림
+notifyLoginError(errorMessage)   // 로그인 오류 알림
+notifyLogout()                   // 로그아웃 알림
+notifyAuthStateChange(authState) // 인증 상태 변경 알림
+notifySettingsSynced(configData) // 설정 동기화 완료 알림
+```
+
+사용자 프로필·설정·구독 정보의 캐싱은 `src/main/user-data-manager.js`가 담당합니다.
+
 ## 인증 모듈 (`src/main/auth.js`)
 
-인증 모듈은 OAuth 2.0 기반 사용자 인증을 처리합니다.
+인증 모듈은 OAuth 2.0 기반 사용자 인증의 저수준 계층으로, 토큰 발급·저장·갱신을 처리합니다. 런타임 진입점은 `auth-manager.js`이며, 일반적으로 이 모듈을 직접 호출하기보다 `auth-manager.js`를 통해 사용됩니다.
 
 ### 함수
 
@@ -640,9 +645,9 @@ async function logout()
 
 /**
  * 유효한 토큰이 있는지 확인
- * @returns {boolean} 토큰 유효 여부
+ * @returns {Promise<boolean>} 토큰 유효 여부
  */
-function hasValidToken()
+async function hasValidToken()
 
 /**
  * 액세스 토큰 가져오기 (필요 시 자동 갱신)
@@ -659,8 +664,9 @@ async function refreshAccessToken()
 /**
  * 구독 상태에 따른 페이지 그룹 설정 업데이트
  * @param {Object} subscription - 구독 정보
+ * @returns {Promise<void>}
  */
-function updatePageGroupSettings(subscription)
+async function updatePageGroupSettings(subscription)
 
 /**
  * 프로토콜 핸들러 등록 (`toast-app://` 스킴)
@@ -684,7 +690,7 @@ const auth = require('./main/auth');
 await auth.initiateLogin();
 
 // 토큰 유효성 확인
-if (auth.hasValidToken()) {
+if (await auth.hasValidToken()) {
   const profile = await auth.fetchUserProfile();
   console.log('User:', profile.name);
 }
@@ -812,23 +818,24 @@ function getAuthHeaders()
 
 /**
  * 인증된 요청 실행
- * @param {string} method - HTTP 메서드
- * @param {string} endpoint - API 엔드포인트
- * @param {Object} data - 요청 데이터
+ * @param {Function} apiCall - 실제 API 호출을 수행하는 콜백 (예: `(client) => client.get(url)`)
+ * @param {Object} [options] - 옵션 (allowUnauthenticated, defaultValue, isSubscriptionRequest, onUnauthorized)
  * @returns {Promise<Object>} 응답 데이터
  */
-async function authenticatedRequest(method, endpoint, data)
+async function authenticatedRequest(apiCall, options)
 ```
 
 ### API 엔드포인트
 
+`ENDPOINTS` 값은 `API_BASE_URL`을 기준으로 구성된 절대 URL입니다. `API_BASE_URL = ${TOAST_URL}/api`이며 `TOAST_URL` 기본값은 `https://app.toast.sh`입니다.
+
 ```javascript
 const ENDPOINTS = {
-  OAUTH_AUTHORIZE: '/oauth/authorize',
-  OAUTH_TOKEN: '/oauth/token',
-  OAUTH_REVOKE: '/oauth/revoke',
-  USER_PROFILE: '/users/profile',
-  SETTINGS: '/users/settings'
+  OAUTH_AUTHORIZE: `${API_BASE_URL}/oauth/authorize`,
+  OAUTH_TOKEN: `${API_BASE_URL}/oauth/token`,
+  OAUTH_REVOKE: `${API_BASE_URL}/oauth/revoke`,
+  USER_PROFILE: `${API_BASE_URL}/users/profile`,
+  SETTINGS: `${API_BASE_URL}/users/settings`
 };
 ```
 
@@ -838,8 +845,8 @@ const ENDPOINTS = {
 const { createApiClient, authenticatedRequest, ENDPOINTS } = require('./main/api/client');
 
 // API 클라이언트 생성
-const client = createApiClient({ baseURL: 'https://app.toast.sh/api' });
+const client = createApiClient();
 
-// 인증된 요청 실행
-const profile = await authenticatedRequest('GET', ENDPOINTS.USER_PROFILE);
+// 인증된 요청 실행 (첫 번째 인자는 실제 호출을 수행하는 콜백)
+const profile = await authenticatedRequest(() => client.get(ENDPOINTS.USER_PROFILE));
 console.log('User profile:', profile);

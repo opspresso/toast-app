@@ -305,13 +305,13 @@ Toast 앱은 자동 업데이트 시스템을 통해 최신 버전을 유지할 
 
 1. **설정 초기화**: Advanced 탭에서 'Reset to Defaults' 버튼을 사용하여 모든 설정을 기본값으로 초기화할 수 있습니다.
 2. **설정 파일 위치**: 설정 파일은 다음 위치에 저장됩니다:
-   - Windows: `%APPDATA%\toast\config.json`
-   - macOS: `~/Library/Application Support/toast/config.json`
-   - Linux: `~/.config/toast/config.json`
+   - Windows: `%APPDATA%\Toast\config.json`
+   - macOS: `~/Library/Application Support/Toast/config.json`
+   - Linux: `~/.config/Toast/config.json`
 3. **로그 확인**: 문제 진단을 위해 로그 파일을 확인할 수 있습니다:
-   - Windows: `%APPDATA%\toast\logs`
-   - macOS: `~/Library/Logs/toast`
-   - Linux: `~/.config/toast/logs`
+   - Windows: `%APPDATA%\Toast\logs`
+   - macOS: `~/Library/Application Support/Toast/logs`
+   - Linux: `~/.config/Toast/logs`
 4. **클라우드 동기화 문제**: 동기화 오류 발생 시 'Resolve Conflicts' 기능을 사용하거나, 동기화를 비활성화한 후 재활성화해볼 수 있습니다.
 
 ## 결론

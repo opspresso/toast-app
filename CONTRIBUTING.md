@@ -145,7 +145,7 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 2. 필요에 따라 문서 업데이트
 3. 새 기능 또는 버그 수정에 대한 테스트 포함
 4. 모든 테스트가 통과하는지 확인
-5. 풀 리퀘스트 템플릿을 완전히 작성
+5. 풀 리퀘스트 설명에 변경 내용과 이유를 명확하게 작성
 6. 메인테이너로부터 리뷰 요청
 7. 리뷰어의 피드백 반영
 8. 승인되면 메인테이너가 풀 리퀘스트를 병합할 것입니다
@@ -157,7 +157,7 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 ### JavaScript/TypeScript
 
 - 코드 포맷팅 및 린팅을 위해 ESLint 및 Prettier 사용
-- Airbnb JavaScript 스타일 가이드 준수
+- ESLint 권장 규칙(`eslint:recommended`)과 Prettier 설정 준수
 - 적절한 곳에 ES6+ 기능 사용
 - 비동기 코드에 async/await 사용
 - JSDoc 주석으로 코드 문서화
@@ -279,8 +279,6 @@ npx jest -t "test name pattern"
    - Node.js 버전
    - 관련 시스템 정보
 
-새 이슈를 만들 때 버그 보고서 템플릿을 사용하세요.
-
 ### 보안 이슈
 
 보안 이슈의 경우 공개 이슈를 만들지 마세요. 대신 GitHub 저장소의 **Security → Report a vulnerability** 메뉴([Security Advisories](https://github.com/opspresso/toast-app/security/advisories/new))를 통해 비공개로 신고해 주세요.
@@ -290,10 +288,9 @@ npx jest -t "test name pattern"
 기능 요청을 환영합니다! 새로운 기능을 제안할 때:
 
 1. 기능이 이미 제안되거나 구현되었는지 확인
-2. 기능 요청 템플릿 사용
-3. 기능이 해결할 문제를 명확하게 설명
-4. 가능하면 해결책 제안
-5. 기능이 어떻게 사용될지 예제 제공
+2. 기능이 해결할 문제를 명확하게 설명
+3. 가능하면 해결책 제안
+4. 기능이 어떻게 사용될지 예제 제공
 
 ## 커뮤니티
 
@@ -301,8 +298,6 @@ npx jest -t "test name pattern"
 
 - **GitHub Issues**: 버그 보고서 및 기능 요청용
 - **GitHub Discussions**: 일반적인 질문 및 토론용
-- **Discord**: 실시간 커뮤니케이션용(README에 링크)
-- **메일링 리스트**: 공지 및 뉴스레터용
 
 ### 코드 리뷰
 
@@ -316,7 +311,6 @@ npx jest -t "test name pattern"
 우리는 크고 작은 모든 기여를 소중히 여깁니다. 기여자는 다음에서 인정받습니다:
 - 프로젝트 README
 - 릴리스 노트
-- CONTRIBUTORS.md 파일
 
 ## 개발 팁
 

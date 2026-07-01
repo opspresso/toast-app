@@ -152,7 +152,7 @@ macOS 전용 설치 고려사항:
 - DMG 및 ZIP 패키지 배포 (`package.json` 의 `build.mac.target`)
 - 사용자 정의 tap 을 통한 Homebrew 배포 (`brew install --cask opspresso/tap/toast`)
 - `electron-updater` 를 사용한 자동 업데이트 (ZIP 형식 필요)
-- 설정은 `~/Library/Application Support/toast-app/`, 로그는 `~/Library/Logs/toast-app/` 에 저장
+- 설정은 `~/Library/Application Support/Toast/`, 로그는 `~/Library/Application Support/Toast/logs/toast-app.log` 에 저장
 
 ## Windows 전용 기능
 
@@ -264,7 +264,7 @@ Windows 전용 설치 고려사항:
 
 - NSIS 설치 프로그램 및 portable EXE 형식 (`package.json` 의 `build.win.target`)
 - `electron-updater` 를 사용한 자동 업데이트
-- 설정 및 로그는 `%APPDATA%\toast-app\` 에 저장
+- 설정 및 로그는 `%APPDATA%\Toast\` 에 저장 (로그는 `%APPDATA%\Toast\logs\toast-app.log`)
 - 시작 프로그램 항목은 OS 표준 메커니즘 사용
 
 ## 플랫폼별 분기를 가진 공통 코드

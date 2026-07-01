@@ -16,6 +16,9 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
   - 트레이 모듈 (`tray.js`)
   - 윈도우 모듈 (`windows.js`)
   - IPC 모듈 (`ipc.js`)
+  - 인증 모듈 (`auth-manager.js`, `auth.js`)
+  - 클라우드 동기화 모듈 (`cloud-sync.js`)
+  - API 클라이언트 모듈 (`api/client.js`)
 
 ### 액션 API
 - **[액션 API](./actions.md)**: 액션 모듈들의 상세 API 문서

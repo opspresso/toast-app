@@ -37,7 +37,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Main Process** (`src/main/`): Handles application lifecycle, window management, system integration
   - `actions/`: 5 action handlers (application, chain, exec, open, script)
   - `api/`: Cloud sync API client (auth.js, client.js, sync.js)
-  - `config/`: Configuration with electron-store schema validation
+  - `config/`: Environment variable loading (env.js); electron-store schema validation lives in `config.js`
   - `executor.js`: Central action dispatcher with validation
   - `windows.js`: Toast/Settings window lifecycle management
   - `auth-manager.js`: Authentication state synchronization
@@ -48,14 +48,14 @@ Toast App is an Electron-based desktop application that provides a customizable 
 
 - **Renderer Process** (`src/renderer/`): Modular UI implementation
   - `pages/toast/`: Main popup with ES6 modules
-  - `pages/settings/`: 6-tab settings interface (General, Appearance, Account, Advanced, Cloud Sync, About)
+  - `pages/settings/`: 6-tab settings interface (General, Appearance, Account & Subscription, Cloud Sync, Advanced, About)
   - `preload/`: Secure IPC bridges (toast.js, settings.js)
   - `assets/flat-color-icons/`: 200+ SVG icons library
 
 ### Key Architectural Patterns
 1. **IPC Communication**: Structured handlers in `src/main/ipc.js` with secure preload scripts
 2. **Action System**: 5 types (application, exec, open, script, chain) with validation pipeline
-3. **Configuration**: electron-store with JSON schema validation and migration support
+3. **Configuration**: electron-store with JSON schema validation and subscription data sanitization on load
 4. **Authentication**: OAuth 2.0 with automatic token refresh and profile management
 5. **Cloud Sync**: Real-time sync with debouncing (5s) and conflict resolution
 6. **Subscription Tiers**: Anonymous (1 page), Authenticated (3 pages), Premium (9 pages)
@@ -97,7 +97,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Main Process**: electron-log outputs to files + console
 - **Renderer Process**: DevTools (Ctrl+Shift+I / Cmd+Option+I)
 - **Log Locations**:
-  - macOS: `~/Library/Logs/Toast/logs/toast-app.log`
+  - macOS: `~/Library/Application Support/Toast/logs/toast-app.log`
   - Windows: `%USERPROFILE%\AppData\Roaming\Toast\logs\toast-app.log`
 - **Debug Mode**: Set NODE_ENV=development for verbose logging
 

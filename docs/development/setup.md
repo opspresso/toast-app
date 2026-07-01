@@ -270,9 +270,9 @@ Toast 앱은 `electron-log` 패키지를 사용하여 일관되고 효율적인 
 - 개발/운영 환경에 따른 로그 레벨 자동 조정
 
 로그 파일은 다음 위치에 저장됩니다:
-- **macOS**: `~/Library/Logs/toast-app/toast-app.log`
-- **Windows**: `%APPDATA%\toast-app\logs\toast-app.log`
-- **Linux**: `~/.config/toast-app/logs/toast-app.log`
+- **macOS**: `~/Library/Application Support/Toast/logs/toast-app.log`
+- **Windows**: `%APPDATA%\Toast\logs\toast-app.log`
+- **Linux**: `~/.config/Toast/logs/toast-app.log`
 
 ### 로거 사용 방법
 

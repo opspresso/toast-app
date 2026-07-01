@@ -11,11 +11,11 @@ Toast 앱은 `src/main/executor.js`에서 중앙 관리되는 5가지 액션 타
 4. **script** - 사용자 정의 스크립트 실행 (JavaScript, AppleScript, PowerShell, Bash)
 5. **chain** - 여러 액션을 순차적으로 실행
 
-모든 액션은 실행 전 `validateAction()` 함수로 검증됩니다.
+액션 유효성 검사(`validateAction()`)는 `test-action` IPC 경로에서 실행됩니다. 일반 실행(`execute-action`) 시에는 `validateAction()`이 호출되지 않으며, 각 액션 모듈이 실행 시점에 자체적으로 필수 필드를 검증합니다.
 
 ## Exec 액션 (`src/main/actions/exec.js`)
 
-Exec 액션 모듈은 셸 명령 실행을 처리합니다.
+Exec 액션 모듈은 셸 명령 실행을 처리합니다. 공개 진입점은 `executeCommand(action)` 하나이며, 이 함수만 export 됩니다.
 
 ### 함수
 
@@ -29,15 +29,9 @@ Exec 액션 모듈은 셸 명령 실행을 처리합니다.
  * @returns {Promise<Object>} 결과 객체
  */
 async function executeCommand(action)
-
-/**
- * 터미널에서 명령 열기
- * @param {string} command - 실행할 명령
- * @param {string} [workingDir] - 작업 디렉토리
- * @returns {Promise<Object>} 결과 객체
- */
-async function openInTerminal(command, workingDir)
 ```
+
+> `runInTerminal: true`일 때 터미널 실행은 내부 헬퍼(`openInTerminal`)로 처리됩니다. 이 헬퍼는 export 되지 않는 내부 구현입니다.
 
 ### 사용 예시
 
@@ -49,13 +43,17 @@ const result = await executeCommand({
   runInTerminal: false
 });
 
-// 터미널에서 명령 열기
-const terminalResult = await openInTerminal('npm start', '/Users/username/project');
+// 터미널에서 명령 실행
+const terminalResult = await executeCommand({
+  command: 'npm start',
+  workingDir: '/Users/username/project',
+  runInTerminal: true
+});
 ```
 
 ## Open 액션 (`src/main/actions/open.js`)
 
-Open 액션 모듈은 URL, 파일 및 폴더 열기를 처리합니다.
+Open 액션 모듈은 URL, 파일 및 폴더 열기를 처리합니다. 공개 진입점은 `openItem(action)` 하나이며, 이 함수만 export 됩니다.
 
 ### 함수
 
@@ -69,52 +67,33 @@ Open 액션 모듈은 URL, 파일 및 폴더 열기를 처리합니다.
  * @returns {Promise<Object>} 결과 객체
  */
 async function openItem(action)
-
-/**
- * 기본 브라우저에서 URL 열기
- * @param {string} url - 열 URL
- * @returns {Promise<Object>} 결과 객체
- */
-async function openUrl(url)
-
-/**
- * 파일 또는 폴더 열기
- * @param {string} itemPath - 파일 또는 폴더 경로
- * @param {string} [application] - 열기에 사용할 애플리케이션
- * @returns {Promise<Object>} 결과 객체
- */
-async function openPath(itemPath, application)
-
-/**
- * 특정 애플리케이션으로 파일 열기
- * @param {string} filePath - 파일 경로
- * @param {string} application - 사용할 애플리케이션
- * @returns {Promise<Object>} 결과 객체
- */
-async function openWithApplication(filePath, application)
 ```
+
+> `openItem`은 입력에 따라 내부 헬퍼(`openUrl`, `openPath`, `openWithApplication`)로 위임합니다. 이 헬퍼들은 export 되지 않는 내부 구현입니다.
 
 ### 사용 예시
 
 ```javascript
 // URL 열기
-const urlResult = await openUrl('https://github.com');
+const urlResult = await openItem({
+  url: 'https://github.com'
+});
 
 // 파일 열기
-const fileResult = await openPath('/Users/username/document.pdf');
+const fileResult = await openItem({
+  path: '/Users/username/document.pdf'
+});
 
 // 특정 애플리케이션으로 파일 열기
-const appResult = await openWithApplication('/Users/username/image.png', 'Preview');
-
-// 액션 객체로 열기
-const result = await openItem({
-  url: 'https://example.com'
+const appResult = await openItem({
+  path: '/Users/username/image.png',
+  application: 'Preview'
 });
 ```
 
 ## Script 액션 (`src/main/actions/script.js`)
 
-Script 액션 모듈은 다양한 언어로 사용자 정의 스크립트 실행을 처리합니다.
+Script 액션 모듈은 다양한 언어로 사용자 정의 스크립트 실행을 처리합니다. 공개 진입점은 `executeScript(action)` 하나이며, 이 함수만 export 됩니다.
 
 ### 함수
 
@@ -128,36 +107,9 @@ Script 액션 모듈은 다양한 언어로 사용자 정의 스크립트 실행
  * @returns {Promise<Object>} 결과 객체
  */
 async function executeScript(action)
-
-/**
- * JavaScript 코드 실행
- * @param {string} script - JavaScript 코드
- * @param {Object} [params] - 스크립트에 전달할 매개변수
- * @returns {Promise<Object>} 결과 객체
- */
-async function executeJavaScript(script, params)
-
-/**
- * AppleScript 실행(macOS 전용)
- * @param {string} script - AppleScript 코드
- * @returns {Promise<Object>} 결과 객체
- */
-async function executeAppleScript(script)
-
-/**
- * PowerShell 스크립트 실행(Windows 전용)
- * @param {string} script - PowerShell 스크립트
- * @returns {Promise<Object>} 결과 객체
- */
-async function executePowerShell(script)
-
-/**
- * Bash 스크립트 실행(macOS/Linux 전용)
- * @param {string} script - Bash 스크립트
- * @returns {Promise<Object>} 결과 객체
- */
-async function executeBash(script)
 ```
+
+> `executeScript`는 `scriptType` 값에 따라 내부 헬퍼(`executeJavaScript`, `executeAppleScript`, `executePowerShell`, `executeBash`)로 위임합니다. 이 헬퍼들은 export 되지 않는 내부 구현입니다.
 
 ### 지원되는 스크립트 언어
 
@@ -197,10 +149,11 @@ const psResult = await executeScript({
 });
 
 // 매개변수와 함께 JavaScript 실행
-const paramResult = await executeJavaScript(
-  'return `Hello ${params.name}!`;',
-  { name: 'World' }
-);
+const paramResult = await executeScript({
+  scriptType: 'javascript',
+  script: 'return `Hello ${params.name}!`;',
+  scriptParams: { name: 'World' }
+});
 ```
 
 ## Chain 액션 (`src/main/actions/chain.js`)

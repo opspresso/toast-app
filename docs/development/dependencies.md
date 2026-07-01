@@ -39,7 +39,7 @@ Toast 앱은 npm을 사용하여 의존성을 관리하며, 패키지 정보는 
 
 | 의존성 | 버전 | 목적 |
 |--------|------|------|
-| axios | ^1.15.0 | API 요청을 위한 HTTP 클라이언트 |
+| axios | ^1.16.0 | API 요청을 위한 HTTP 클라이언트 |
 | dotenv | ^16.5.0 | 환경 변수 관리 |
 | electron-log | ^5.3.4 | Electron용 로깅 유틸리티 |
 | electron-store | ^8.1.0 | Electron 앱용 간단한 데이터 지속성 |

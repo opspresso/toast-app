@@ -50,6 +50,7 @@ window.toast.getUserSettings()    // 사용자 설정 가져오기
 window.toast.showOpenDialog(options)  // 파일 열기 대화 상자
 window.toast.extractAppIcon(path, forceRefresh) // 앱 아이콘 추출
 window.toast.resolveTildePath(tildePath) // 틸드 경로 변환
+window.toast.invoke(channel, ...args) // 허용된 채널에 한해 IPC invoke (logout, resetToDefaults, resetAppSettings)
 window.toast.platform  // 플랫폼 정보 (darwin, win32, linux)
 ```
 
@@ -73,7 +74,6 @@ window.toast.onLoginSuccess(callback)      // 로그인 성공
 window.toast.onLoginError(callback)        // 로그인 오류
 window.toast.onLogoutSuccess(callback)     // 로그아웃 성공
 window.toast.onAuthStateChanged(callback)  // 인증 상태 변경
-window.toast.onAuthReloadSuccess(callback) // 인증 새로고침 성공
 ```
 
 ### 이벤트

@@ -127,13 +127,13 @@ switch (actionType) {
  */
 async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
   if (process.platform !== 'darwin') {
-    console.warn('⚠️ App icon extraction is only supported on macOS');
+    logger.warn('⚠️ App icon extraction is only supported on macOS');
     return null;
   }
 
   const appPath = `/Applications/${appName}.app`;
   if (!fs.existsSync(appPath)) {
-    console.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
+    logger.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
     return null;
   }
 
@@ -145,31 +145,85 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
 
     fs.mkdirSync(outputDir, { recursive: true });
 
-    // 강제 새로고침이 아닌 경우 기존 아이콘 확인
-    if (!forceRefresh) {
-      const existingIcon = getExistingIconPath(appName, outputDir);
-      if (existingIcon) return existingIcon;
+    // 캐시 확인: forceRefresh가 아니면 기존 아이콘 재사용, 맞으면 삭제 후 재추출
+    const existingIcon = getExistingIconPath(appName, outputDir);
+    if (existingIcon && !forceRefresh) {
+      return existingIcon;
+    } else if (existingIcon && forceRefresh) {
+      fs.unlinkSync(existingIcon);
     }
 
-    // .icns 파일 찾기
-    const findCommand = `find "${appPath}" -name "*.icns" | head -n 1`;
-    const icnsPath = execSync(findCommand, { encoding: 'utf8' }).trim();
+    // .icns 파일 단계별 탐색
+    let icnsPath = null;
+
+    // 1) Info.plist의 CFBundleIconFile 확인
+    const infoPlistPath = path.join(appPath, 'Contents', 'Info.plist');
+    if (fs.existsSync(infoPlistPath)) {
+      const plistContent = fs.readFileSync(infoPlistPath, 'utf8');
+      const iconFileMatch = plistContent.match(/<key>CFBundleIconFile<\/key>\s*<string>([^<]+)<\/string>/);
+      if (iconFileMatch) {
+        let iconFileName = iconFileMatch[1];
+        if (!iconFileName.endsWith('.icns')) iconFileName += '.icns';
+        const potentialIconPath = path.join(appPath, 'Contents', 'Resources', iconFileName);
+        if (fs.existsSync(potentialIconPath)) icnsPath = potentialIconPath;
+      }
+    }
+
+    // 2) 일반적인 아이콘 파일명 확인
+    if (!icnsPath) {
+      const commonIconNames = ['app.icns', 'icon.icns', 'AppIcon.icns'];
+      const resourcesPath = path.join(appPath, 'Contents', 'Resources');
+      for (const iconName of commonIconNames) {
+        const potentialPath = path.join(resourcesPath, iconName);
+        if (fs.existsSync(potentialPath)) {
+          icnsPath = potentialPath;
+          break;
+        }
+      }
+    }
+
+    // 3) find 명령어로 검색 (fallback)
+    if (!icnsPath) {
+      const findCommand = `find "${appPath}" -name "*.icns" -type f | head -n 1`;
+      icnsPath = execSync(findCommand, { encoding: 'utf8' }).trim();
+    }
 
     if (!icnsPath) {
-      console.error(`❌ .icns 파일을 찾을 수 없습니다: ${appPath}`);
+      logger.error(`❌ .icns 파일을 찾을 수 없습니다: ${appPath}`);
       return null;
     }
 
-    // PNG로 변환
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const outputPath = path.join(outputDir, `${safeAppName}.png`);
-    const convertCommand = `sips -s format png "${icnsPath}" --out "${outputPath}"`;
 
-    execSync(convertCommand, { stdio: 'pipe' });
+    // 변환 1) iconutil로 iconset 변환 후 가장 큰 PNG 선택
+    const tempIconsetPath = path.join(outputDir, `${safeAppName}_temp.iconset`);
+    try {
+      execSync(`iconutil -c iconset "${icnsPath}" -o "${tempIconsetPath}"`, { stdio: 'pipe' });
+      const iconFiles = fs
+        .readdirSync(tempIconsetPath)
+        .filter(file => file.endsWith('.png'))
+        .sort((a, b) => {
+          const sizeA = parseInt(a.match(/(\d+)x\d+/)?.[1] || '0');
+          const sizeB = parseInt(b.match(/(\d+)x\d+/)?.[1] || '0');
+          return sizeB - sizeA; // 큰 것부터
+        });
+      if (iconFiles.length > 0) {
+        fs.copyFileSync(path.join(tempIconsetPath, iconFiles[0]), outputPath);
+        fs.rmSync(tempIconsetPath, { recursive: true, force: true });
+        if (fs.existsSync(outputPath)) return outputPath;
+      }
+    } catch (iconutilError) {
+      // iconutil 실패 시 임시 디렉토리 정리 후 sips로 대체
+      fs.rmSync(tempIconsetPath, { recursive: true, force: true });
+    }
+
+    // 변환 2) sips fallback (최대 512px)
+    execSync(`sips -s format png -Z 512 "${icnsPath}" --out "${outputPath}"`, { stdio: 'pipe' });
 
     return fs.existsSync(outputPath) ? outputPath : null;
   } catch (err) {
-    console.error(`❌ 아이콘 추출 오류: ${err.message}`);
+    logger.error(`❌ 아이콘 추출 오류 (${appName}): ${err.message}`);
     return null;
   }
 }
@@ -272,7 +326,8 @@ function isLocalIconExtractionSupported() {
 
 ### macOS 지원
 - **필수**: macOS 10.12 (Sierra) 이상
-- **필수**: `sips` 명령어 (시스템 기본 제공)
+- **필수**: `iconutil` 명령어 (시스템 기본 제공, 기본 변환)
+- **필수**: `sips` 명령어 (시스템 기본 제공, 대체 변환)
 - **필수**: `find` 명령어 (시스템 기본 제공)
 - **권장**: Applications 폴더에 설치된 앱들
 

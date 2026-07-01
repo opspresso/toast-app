@@ -58,6 +58,7 @@ set TOKEN_EXPIRES_IN=31536000
 |--------|--------|------|------|
 | `CLIENT_ID` | - | OAuth 클라이언트 ID | `toast_app_client_id` |
 | `CLIENT_SECRET` | - | OAuth 클라이언트 시크릿 | `your_client_secret` |
+| `CONFIG_SUFFIX` | - | 인증 토큰 파일 이름에 접미사 추가 (`auth-tokens-${CONFIG_SUFFIX}.json`, 미설정 시 `auth-tokens.json`) | `dev` |
 
 ### 인증 변수 설정 예시
 

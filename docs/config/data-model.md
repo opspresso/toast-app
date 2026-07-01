@@ -39,7 +39,9 @@ Toast App의 주요 엔티티는 다음과 같은 관계를 가집니다:
     ├── lastModifiedAt
     ├── lastModifiedDevice
     ├── lastSyncedAt
-    └── lastSyncedDevice
+    ├── lastSyncedDevice
+    ├── dataHash
+    └── isConflicted
 ```
 
 ## 페이지 제한 정책
