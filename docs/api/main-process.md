@@ -392,13 +392,16 @@ function hideToastWindow()
 /**
  * 설정 윈도우 표시
  * @param {Object} config - 구성 저장소
+ * @param {string} [tabName] - 초기 선택할 탭 이름 (선택)
+ * @returns {BrowserWindow} 설정 윈도우
  */
-function showSettingsWindow(config)
+function showSettingsWindow(config, tabName)
 
 /**
  * Toast 윈도우가 표시될 디스플레이에 맞춰 설정 윈도우 위치 조정
+ * @param {BrowserWindow} settingsWindow - 설정 윈도우
  */
-function positionSettingsWindowOnToastDisplay()
+function positionSettingsWindowOnToastDisplay(settingsWindow)
 
 /**
  * 모든 윈도우 닫기
@@ -607,7 +610,7 @@ notifySettingsSynced(configData) // 설정 동기화 완료 알림
 ```javascript
 /**
  * 로그인 프로세스 시작 (외부 브라우저에서 OAuth 인증)
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} 성공 시 true
  */
 async function initiateLogin()
 
@@ -639,7 +642,7 @@ async function fetchSubscription()
 
 /**
  * 로그아웃
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} 성공 시 true, 실패 시 false
  */
 async function logout()
 
@@ -818,7 +821,7 @@ function getAuthHeaders()
 
 /**
  * 인증된 요청 실행
- * @param {Function} apiCall - 실제 API 호출을 수행하는 콜백 (예: `(client) => client.get(url)`)
+ * @param {Function} apiCall - 실제 API 호출을 수행하는 콜백 (인자 없이 호출됨, 예: `() => client.get(url)`)
  * @param {Object} [options] - 옵션 (allowUnauthenticated, defaultValue, isSubscriptionRequest, onUnauthorized)
  * @returns {Promise<Object>} 응답 데이터
  */

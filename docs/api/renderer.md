@@ -15,6 +15,8 @@ window.toast.getEnv(key)         // 환경변수 가져오기
 window.toast.resetToDefaults(options) // 설정 초기화 (options.keepAppearance: 외관 설정 유지)
 ```
 
+> 현재 메인 프로세스는 `resetToDefaults`/`resetAppSettings` 채널에 대한 IPC 핸들러를 등록하지 않으므로, 이 API를 호출하면 "No handler registered" 오류로 실패합니다.
+
 ### 액션 실행
 
 ```javascript
@@ -74,6 +76,7 @@ window.toast.onLoginSuccess(callback)      // 로그인 성공
 window.toast.onLoginError(callback)        // 로그인 오류
 window.toast.onLogoutSuccess(callback)     // 로그아웃 성공
 window.toast.onAuthStateChanged(callback)  // 인증 상태 변경
+window.toast.onAuthReloadSuccess(callback) // 인증 재로드 성공
 ```
 
 ### 이벤트

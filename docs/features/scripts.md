@@ -12,7 +12,6 @@
   - [Bash/Shell](#bashshell)
 - [사용자 정의 스크립트 생성](#사용자-정의-스크립트-생성)
   - [스크립트 편집기](#스크립트-편집기)
-  - [스크립트 테스트](#스크립트-테스트)
   - [스크립트 버튼 구성](#스크립트-버튼-구성)
 - [스크립트 실행 환경](#스크립트-실행-환경)
   - [환경 변수](#환경-변수)
@@ -51,10 +50,12 @@ JavaScript 스크립트는 Electron 메인 프로세스 내의 Node.js 환경에
   - Node.js API 및 모듈에 대한 전체 액세스
   - 포함된 모듈에 대해 `require()` 사용 가능
   - async/await 지원
-  - Promise 기반 반환 값
+  - `result` 변수에 값을 할당하여 결과 반환 (`result = ...`, Promise 할당 시 완료 후 값 반환)
+  - `scriptParams`가 `params` 객체로 스크립트에 주입됨
 
 - **제한사항**:
   - DOM이나 렌더러 프로세스를 직접 조작할 수 없음 (메인 프로세스에서 실행)
+  - 최상위 `return` 문은 사용할 수 없음 (구문 오류 발생); 대신 `result`에 값을 할당
 
 예시:
 ```javascript
@@ -66,7 +67,7 @@ const quotes = [
 ];
 
 const randomIndex = Math.floor(Math.random() * quotes.length);
-return quotes[randomIndex];
+result = quotes[randomIndex];
 ```
 
 ### AppleScript (macOS 전용)
@@ -101,7 +102,7 @@ PowerShell 스크립트는 Windows 시스템에서 강력한 자동화 기능을
 
 - **제한사항**:
   - Windows 전용
-  - 실행 정책 고려사항
+  - 실행 시 `-ExecutionPolicy Bypass`가 적용됨 (시스템 실행 정책 우회)
   - 특정 작업에 대해 관리자 권한이 필요할 수 있음
 
 예시:
@@ -114,15 +115,15 @@ $uptime = (Get-Date) - ($os.ConvertToDateTime($os.LastBootUpTime))
 
 ### Bash/Shell
 
-Bash/Shell 스크립트는 기본 시스템 셸에서 실행되어 크로스 플랫폼 명령줄 작업을 가능하게 합니다.
+Bash/Shell 스크립트는 기본 시스템 셸에서 실행됩니다. Windows에서는 지원되지 않으며 macOS와 Linux에서만 실행됩니다.
 
 - **기능**:
-  - 크로스 플랫폼 (플랫폼별 고려사항 포함)
+  - macOS/Linux 지원 (Windows 미지원)
   - 명령줄 유틸리티에 직접 액세스
   - 명령줄 사용자에게 친숙한 구문
 
 - **제한사항**:
-  - 플랫폼별 동작
+  - Windows에서는 실행 불가 (macOS/Linux 전용)
   - 제한된 오류 처리
   - 특정 명령줄 도구가 설치되어 있어야 할 수 있음
 
@@ -138,26 +139,16 @@ echo "사용자: $(whoami)"
 
 ### 스크립트 편집기
 
-설정 창의 버튼 편집 화면에서 텍스트 입력 영역에 스크립트를 작성하거나 붙여넣을 수 있습니다.
+Toast 창의 편집 모드에서 버튼을 추가하거나 편집할 때 열리는 버튼 편집 모달의 텍스트 입력 영역에 스크립트를 작성하거나 붙여넣을 수 있습니다.
 
 스크립트 편집기에 액세스하려면:
 
-1. 설정 창 열기
-2. "버튼" 탭으로 이동
+1. 전역 단축키(기본값: Alt+Space)로 Toast 창 열기
+2. 편집 모드로 전환 (쉼표 `,` 키)
 3. 새 버튼 추가 또는 기존 버튼 편집
 4. 액션 유형으로 "사용자 정의 스크립트" 선택
 5. 드롭다운 메뉴에서 스크립트 유형 선택
 6. 스크립트 편집기를 사용하여 스크립트 작성 또는 붙여넣기
-
-### 스크립트 테스트
-
-저장하기 전에 스크립트를 테스트할 수 있습니다:
-
-1. 스크립트 편집기에서 스크립트 작성
-2. "스크립트 테스트" 버튼 클릭
-3. 테스트 결과 패널에서 출력 또는 오류 확인
-4. 필요한 경우 스크립트 수정
-5. 결과에 만족하면 저장
 
 ### 스크립트 버튼 구성
 
@@ -193,7 +184,7 @@ const arch = process.arch;         // 'x64', 'arm64' 등
 
 - JavaScript 스크립트는 Node.js 컨텍스트를 가진 Electron 메인 프로세스에서 실행
 - AppleScript, PowerShell, Bash 스크립트는 자식 프로세스에서 실행
-- 작업 디렉토리는 사용자의 홈 디렉토리로 설정
+- 작업 디렉토리는 별도로 지정되지 않으며, Toast 앱 프로세스의 작업 디렉토리를 그대로 상속
 - 표준 입력은 비어있음 (닫힘)
 - 표준 출력 및 오류는 표시를 위해 캡처됨
 
@@ -201,7 +192,7 @@ const arch = process.arch;         // 'x64', 'arm64' 등
 
 스크립트 출력은 다음과 같이 처리됩니다:
 
-- **반환 값** (JavaScript만): 마지막 표현식 또는 명시적으로 반환된 값
+- **반환 값** (JavaScript만): `result` 변수에 할당한 값 (예: `result = ...`). `result`를 설정하지 않으면 성공 메시지가 반환됨
 - **표준 출력**: 캡처되어 결과에서 사용 가능
 - **표준 오류**: 캡처되어 오류로 표시
 - **종료 코드**: 0이 아닌 종료 코드는 오류로 처리
@@ -265,7 +256,7 @@ async function getWeather(city) {
 }
 
 // 서울의 날씨 반환 (사용자 정의 가능)
-return getWeather('Seoul');
+result = getWeather('Seoul');
 ```
 
 **시스템 정보**:
@@ -289,7 +280,7 @@ const totalMem = formatBytes(os.totalmem());
 const freeMem = formatBytes(os.freemem());
 const uptime = (os.uptime() / 3600).toFixed(2);
 
-return `
+result = `
 시스템: ${os.type()} ${os.release()} ${os.arch()}
 호스트명: ${os.hostname()}
 CPU: ${cpus[0].model} (${cpus.length} 코어)
@@ -417,7 +408,7 @@ df -h | grep -v "tmpfs"
 | "명령을 찾을 수 없음" 오류 | 필요한 도구가 설치되어 있는지 확인하거나 전체 경로 제공 |
 | 권한 오류 | 파일/폴더 권한 확인 또는 필요한 권한으로 Toast 앱 실행 |
 | 네트워크 오류 | 네트워크 연결 및 URL 형식 확인 |
-| 구문 오류 | 스크립트 테스트 기능을 사용하여 구문 문제 식별 및 수정 |
+| 구문 오류 | 스크립트 구문을 검토하고 반환된 오류 메시지를 확인하여 수정 |
 | 출력 없음 | 스크립트가 데이터를 올바르게 반환하거나 출력하는지 확인 |
 
 ## 고급 사용법
@@ -453,7 +444,7 @@ async function getJoke() {
   }
 }
 
-return getJoke();
+result = getJoke();
 ```
 
 ### 영구 데이터 저장
@@ -493,7 +484,7 @@ data.counter += 1;
 data.lastRun = new Date().toISOString();
 updateData(data);
 
-return `이 스크립트는 ${data.counter}번 실행되었습니다. 마지막 실행: ${data.lastRun}`;
+result = `이 스크립트는 ${data.counter}번 실행되었습니다. 마지막 실행: ${data.lastRun}`;
 ```
 
 ### 스크립트 간 통신
@@ -530,7 +521,7 @@ const data = getSharedData() || { state: 'off' };
 data.state = data.state === 'on' ? 'off' : 'on';
 setSharedData(data);
 
-return `공유 상태를 다음으로 토글: ${data.state}`;
+result = `공유 상태를 다음으로 토글: ${data.state}`;
 ```
 
 ## 보안 고려사항

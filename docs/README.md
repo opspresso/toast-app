@@ -38,6 +38,7 @@ docs/
 | [아키텍처](./architecture/overview.md) | 시스템 구조 및 설계 원칙 | 필수 |
 | [개발 가이드](./development/setup.md) | 개발 환경 설정 및 빌드 | 필수 |
 | [구성 스키마](./config/schema.md) | 설정 옵션 및 데이터 구조 | 권장 |
+| [데이터 모델](./config/data-model.md) | 핵심 데이터 구조 및 관계 | 권장 |
 | [데이터 저장소](./config/data-storage.md) | 파일 구조 및 데이터 관리 | 권장 |
 
 [전체 개발 문서 보기](./development/README.md)

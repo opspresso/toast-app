@@ -62,52 +62,51 @@ if (process.platform === 'darwin') {
 
 ### 전역 키보드 단축키
 
-macOS 전용 키보드 단축키 처리:
+macOS 키보드 단축키 처리:
 
-- Electron의 `globalShortcut` 모듈을 통해 macOS 시스템 API 사용
-- macOS 전용 수정자 키(Command, Option) 처리
-- 키보드 동작에 대한 시스템 환경설정 존중
-- 시스템 단축키와의 충돌 방지를 위한 유효성 검사
+- Electron의 `globalShortcut` 모듈을 통해 전역 단축키를 등록 (`registerGlobalShortcuts`)
+- 사용자 정의 단축키는 `convertHotkeyToElectronFormat` 로 Electron accelerator 형식으로 변환 (변환 로직은 플랫폼 공통)
+- `Ctrl`/`Control` 은 `CommandOrControl`, `Command`/`Meta`/`Super` 는 `Super` 로 매핑되며 `Alt`, `Shift` 는 그대로 유지 (macOS 에서 `CommandOrControl` 과 `Super` 는 모두 Command 키에 대응)
+- 잘못된 형식의 단축키는 등록 전 유효성 검사로 걸러냄
 
 **구현**:
 ```javascript
 // src/main/shortcuts.js
-function registerGlobalShortcut(shortcut) {
-  let modifiedShortcut = shortcut;
-  if (process.platform === 'darwin') {
-    // 일반 단축키를 macOS 형식으로 변환
-    modifiedShortcut = shortcut.replace('Alt', 'Option');
-    // 추가 macOS 전용 처리
-  }
-  // 단축키 등록
+// 단축키 변환은 플랫폼 독립적으로 동작
+function convertHotkeyToElectronFormat(hotkey) {
+  // Ctrl/Control -> CommandOrControl (macOS에서는 Command 키)
+  // Command/Meta/Super -> Super
+  // Alt, Shift는 변환 없이 그대로 유지
+  // ...
 }
 ```
 
 ### 윈도우 관리
 
-macOS 전용 윈도우 동작:
+macOS 윈도우 동작:
 
-- 네이티브 윈도우 컨트롤(신호등 버튼) 지원
-- 가능한 경우 vibrancy 및 투명도 효과 사용
-- Spaces 및 전체화면 애플리케이션 처리
+- 프레임 없는(`frame: false`) 투명(`transparent: true`) 윈도우로 표시 (모든 플랫폼 공통)
+- macOS 에서는 창 `type` 을 `'normal'` 로 설정하여 패널 관련 경고를 방지
+- Spaces 및 전체화면 애플리케이션과 함께 표시 (`visibleOnAllWorkspaces: true`, `simpleFullscreen` 은 macOS 전용 속성)
 - 포커스 및 활성화 적절한 관리
 
 **구현**:
 ```javascript
 // src/main/windows.js
-function createToastWindow() {
-  const windowOptions = {
-    // 공통 옵션
-  };
-
-  if (process.platform === 'darwin') {
-    windowOptions.vibrancy = 'under-window';
-    windowOptions.titleBarStyle = 'hiddenInset';
-    // 기타 macOS 전용 옵션
-  }
-
-  return new BrowserWindow(windowOptions);
-}
+windows.toast = new BrowserWindow({
+  width,
+  height,
+  frame: false,
+  transparent: true,
+  resizable: false,
+  alwaysOnTop: true,
+  alwaysOnTopLevel: 'screen-saver',
+  // macOS에서는 'normal', 그 외 플랫폼에서는 'panel' 타입 사용
+  type: process.platform === 'darwin' ? 'normal' : 'panel',
+  visibleOnAllWorkspaces: true,
+  simpleFullscreen: false, // macOS 전용 속성
+  // ...
+});
 ```
 
 ### 네이티브 스크립팅
@@ -121,16 +120,18 @@ macOS 전용 스크립팅 기능:
 **구현**:
 ```javascript
 // src/main/actions/script.js
-async function runScript(script, type) {
-  if (process.platform === 'darwin' && type === 'applescript') {
-    return new Promise((resolve, reject) => {
-      exec(`osascript -e '${script.replace(/'/g, "'\\''")}'`, (error, stdout) => {
-        if (error) reject(error);
-        else resolve(stdout);
-      });
+async function executeAppleScript(script) {
+  // 스크립트를 임시 파일에 기록한 뒤 파일 경로로 실행
+  const tempFile = path.join(os.tmpdir(), `toast-applescript-${Date.now()}.scpt`);
+  fs.writeFileSync(tempFile, script);
+
+  return new Promise((resolve, reject) => {
+    exec(`osascript "${tempFile}"`, (error, stdout, stderr) => {
+      fs.unlinkSync(tempFile); // 임시 파일 정리
+      if (error) reject(error);
+      else resolve(stdout);
     });
-  }
-  // 기타 스크립트 유형
+  });
 }
 ```
 
@@ -143,7 +144,7 @@ macOS 전용 보안 요구사항:
 - Hardened Runtime 활성화 (`package.json` 의 `build.mac.hardenedRuntime: true`)
 - Mac App Store 빌드(`mas` 타깃)는 `entitlements.mac.mas.plist` 와 App Sandbox 사용
 
-> 공증(notarization) 단계는 현재 빌드 파이프라인에 포함되어 있지 않습니다.
+> 공증(notarization)은 GitHub Actions 빌드 파이프라인(`.github/workflows/build-release.yml`)에서 App Store Connect API 키를 준비하고 electron-builder 공증 환경 변수(`APPLE_API_KEY` 등)를 설정하여 수행됩니다.
 
 ### 설치 및 업데이트
 
@@ -176,52 +177,47 @@ if (process.platform === 'win32') {
 
 ### 전역 키보드 단축키
 
-Windows 전용 키보드 단축키 처리:
+Windows 키보드 단축키 처리:
 
-- Electron의 `globalShortcut` 모듈을 통해 Windows 전용 API 사용
-- Windows 전용 수정자 키(Alt, Windows 키) 처리
-- Windows 키 조합에 대한 특별 처리
-- 일반적인 Windows 단축키에 대한 유효성 검사
+- Electron의 `globalShortcut` 모듈을 통해 전역 단축키를 등록 (`registerGlobalShortcuts`)
+- 사용자 정의 단축키는 `convertHotkeyToElectronFormat` 로 Electron accelerator 형식으로 변환 (변환 로직은 플랫폼 공통)
+- `Ctrl`/`Control` 은 `CommandOrControl`, `Command`/`Meta`/`Super` 는 `Super`(Windows 키)로 매핑되며 `Alt`, `Shift` 는 그대로 유지
+- 잘못된 형식의 단축키는 등록 전 유효성 검사로 걸러냄
 
 **구현**:
 ```javascript
 // src/main/shortcuts.js
-function registerGlobalShortcut(shortcut) {
-  let modifiedShortcut = shortcut;
-  if (process.platform === 'win32') {
-    // 일반 단축키를 Windows 형식으로 변환
-    modifiedShortcut = shortcut.replace('Command', 'Super');
-    // 추가 Windows 전용 처리
-  }
-  // 단축키 등록
+// 단축키 변환은 플랫폼 독립적으로 동작
+function convertHotkeyToElectronFormat(hotkey) {
+  // Ctrl/Control -> CommandOrControl (Windows에서는 Control 키)
+  // Command/Meta/Super -> Super (Windows 키)
+  // Alt, Shift는 변환 없이 그대로 유지
+  // ...
 }
 ```
 
 ### 윈도우 관리
 
-Windows 전용 윈도우 동작:
+Windows 윈도우 동작:
 
-- 표준 Windows 윈도우 장식 사용
-- 작업 표시줄 통합 적절한 처리
+- 프레임 없는(`frame: false`) 창을 사용 (모든 플랫폼 공통 옵션)
+- 작업 표시줄 표시 여부는 `advanced.showInTaskbar` 설정으로 제어 (`skipTaskbar: !showInTaskbar`)
+- Windows 에서는 창 `type` 을 `'panel'` 로, `thickFrame: false` 로 설정하여 기본 창 프레임 비활성화
 - DPI 인식을 통한 다중 모니터 설정 처리
-- 작업 관리자 친화적(적절한 프로세스 이름 지정)
 
 **구현**:
 ```javascript
 // src/main/windows.js
-function createToastWindow() {
-  const windowOptions = {
-    // 공통 옵션
-  };
-
-  if (process.platform === 'win32') {
-    windowOptions.frame = false;
-    windowOptions.skipTaskbar = true;
-    // 기타 Windows 전용 옵션
-  }
-
-  return new BrowserWindow(windowOptions);
-}
+// frame:false 등은 모든 플랫폼에 공통으로 적용되는 옵션
+windows.toast = new BrowserWindow({
+  frame: false,
+  // 작업 표시줄 표시는 advanced.showInTaskbar 설정으로 결정
+  skipTaskbar: !showInTaskbar,
+  // Windows에서는 'panel' 타입 + thickFrame:false 로 기본 프레임 비활성화
+  type: process.platform === 'darwin' ? 'normal' : 'panel',
+  thickFrame: false,
+  // ...
+});
 ```
 
 ### 네이티브 스크립팅
@@ -235,16 +231,18 @@ Windows 전용 스크립팅 기능:
 **구현**:
 ```javascript
 // src/main/actions/script.js
-async function runScript(script, type) {
-  if (process.platform === 'win32' && type === 'powershell') {
-    return new Promise((resolve, reject) => {
-      exec(`powershell -Command "${script.replace(/"/g, '`"')}"`, (error, stdout) => {
-        if (error) reject(error);
-        else resolve(stdout);
-      });
+async function executePowerShell(script) {
+  // 스크립트를 임시 파일에 기록한 뒤 파일 경로로 실행
+  const tempFile = path.join(os.tmpdir(), `toast-powershell-${Date.now()}.ps1`);
+  fs.writeFileSync(tempFile, script);
+
+  return new Promise((resolve, reject) => {
+    exec(`powershell -ExecutionPolicy Bypass -File "${tempFile}"`, (error, stdout, stderr) => {
+      fs.unlinkSync(tempFile); // 임시 파일 정리
+      if (error) reject(error);
+      else resolve(stdout);
     });
-  }
-  // 기타 스크립트 유형
+  });
 }
 ```
 

@@ -53,7 +53,7 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 ### 플랫폼별 구현
 - **macOS**: `open` 명령 사용
 - **Windows**: 직접 애플리케이션 경로 실행
-- **Linux**: `xdg-open` 명령 사용
+- **Linux**: 파라미터가 없으면 `xdg-open` 명령 사용, 파라미터가 있으면 경로를 직접 실행
 
 ## 2. exec (명령어 실행)
 
@@ -142,7 +142,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
   "shortcut": "Q",
   "icon": "👋",
   "action": "script",
-  "script": "console.log('Hello, World!'); return { message: 'Hello from JavaScript!' };",
+  "script": "console.log('Hello, World!'); result = { message: 'Hello from JavaScript!' };",
   "scriptType": "javascript"
 }
 ```
@@ -165,7 +165,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 - **Bash**: macOS 및 Linux에서만 지원
 
 ### 보안 고려사항
-- JavaScript 스크립트는 샌드박스 환경에서 실행되어 제한된 API에만 접근 가능
+- JavaScript 스크립트는 `vm.runInContext` 컨텍스트에서 실행되지만, 샌드박스에 `require`(모든 내장 모듈), `process.env`, `Buffer` 등이 노출되어 파일 시스템·네트워크·외부 프로세스 접근이 가능합니다. 시스템 수준 샌드박싱은 아니므로 신뢰할 수 있는 스크립트만 실행하세요.
 - 외부 스크립트는 임시 파일로 작성된 후 실행되며, 실행 후 임시 파일 삭제
 
 ## 5. chain (연쇄 실행)

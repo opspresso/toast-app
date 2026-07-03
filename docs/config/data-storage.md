@@ -211,13 +211,12 @@ config.set({
 const userDataManager = require('./main/user-data-manager');
 
 // 사용자 프로필 가져오기
-const profile = await userDataManager.getProfile();
+const profile = await userDataManager.getUserProfile();
 
 // 동기화 메타데이터 업데이트
 await userDataManager.updateSyncMetadata({
-  lastSyncTime: new Date().toISOString(),
-  deviceId: 'device-123',
-  syncStatus: 'success'
+  lastSyncedAt: Date.now(),
+  lastSyncedDevice: 'device-123'
 });
 ```
 

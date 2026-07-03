@@ -11,7 +11,7 @@ Toast 앱은 `src/main/executor.js`에서 중앙 관리되는 5가지 액션 타
 4. **script** - 사용자 정의 스크립트 실행 (JavaScript, AppleScript, PowerShell, Bash)
 5. **chain** - 여러 액션을 순차적으로 실행
 
-액션 유효성 검사(`validateAction()`)는 `test-action` IPC 경로에서 실행됩니다. 일반 실행(`execute-action`) 시에는 `validateAction()`이 호출되지 않으며, 각 액션 모듈이 실행 시점에 자체적으로 필수 필드를 검증합니다.
+액션 유효성 검사(`validateAction()`)는 `validate-action` 및 `test-action` IPC 경로에서 실행됩니다. 일반 실행(`execute-action`) 시에는 `validateAction()`이 호출되지 않으며, 각 액션 모듈이 실행 시점에 자체적으로 필수 필드를 검증합니다.
 
 ## Exec 액션 (`src/main/actions/exec.js`)
 
@@ -127,7 +127,7 @@ const jsResult = await executeScript({
   script: `
     const fs = require('fs');
     const files = fs.readdirSync('.');
-    return files.length + ' files found';
+    result = files.length + ' files found';
   `
 });
 
@@ -151,7 +151,7 @@ const psResult = await executeScript({
 // 매개변수와 함께 JavaScript 실행
 const paramResult = await executeScript({
   scriptType: 'javascript',
-  script: 'return `Hello ${params.name}!`;',
+  script: 'result = `Hello ${params.name}!`;',
   scriptParams: { name: 'World' }
 });
 ```
@@ -295,7 +295,6 @@ const paramResult = await executeApplication({
 1. **Try-Catch 블록**: 모든 비동기 함수는 오류를 처리하기 위해 try-catch 블록을 사용
 2. **입력 유효성 검사**: 액션 매개변수는 실행 전에 유효성 검사
 3. **플랫폼 호환성**: 플랫폼별 액션은 호환성 확인
-4. **타임아웃 처리**: 장시간 실행되는 액션에 대한 타임아웃 설정
 
 ## 플랫폼별 고려사항
 
@@ -325,5 +324,4 @@ const paramResult = await executeApplication({
 
 1. **비동기 실행**: 모든 액션은 비동기적으로 실행
 2. **리소스 관리**: 프로세스 및 파일 핸들 적절히 정리
-3. **캐싱**: 자주 사용되는 애플리케이션 경로 캐싱
-4. **배치 처리**: 체인 액션에서 효율적인 순차 실행
+3. **배치 처리**: 체인 액션에서 효율적인 순차 실행

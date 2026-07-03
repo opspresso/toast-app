@@ -78,7 +78,7 @@ CLIENT_SECRET=production_client_secret
 
 | 변수명 | 기본값 | 설명 | 예시 |
 |--------|--------|------|------|
-| `TOKEN_EXPIRES_IN` | `31536000` | 토큰 만료 시간 (초 단위, 0 이하는 무기한) | `86400` |
+| `TOKEN_EXPIRES_IN` | `31536000` | 토큰 만료 시간 (초 단위, 음수는 무기한) | `86400` |
 
 ### 토큰 만료 시간 설정
 
@@ -86,8 +86,7 @@ CLIENT_SECRET=production_client_secret
 # 1년 (기본값)
 TOKEN_EXPIRES_IN=31536000
 
-# 무기한 (0 이하 값)
-TOKEN_EXPIRES_IN=0
+# 무기한 (음수 값)
 TOKEN_EXPIRES_IN=-1
 
 # 30일
@@ -101,8 +100,10 @@ TOKEN_EXPIRES_IN=3600
 ```
 
 **토큰 만료 시간 설명**:
+- 서버 응답의 `expires_in` 값이 항상 우선 적용되며, `TOKEN_EXPIRES_IN`은 서버가 값을 주지 않을 때의 fallback입니다.
 - **31536000**: 1년 (기본 설정)
-- **0 또는 음수 값(-1)**: 무제한(사실상 영구) 토큰으로 설정
+- **음수 값(-1)**: 무제한(사실상 영구) 토큰으로 설정
+- **0**: falsy 값으로 처리되어 기본값(1년)으로 대체됨
 - **양수 값**: 해당 초 단위만큼 토큰 유효
 
 ## 애플리케이션 설정 변수
@@ -113,6 +114,7 @@ TOKEN_EXPIRES_IN=3600
 |--------|--------|------|------|
 | `TOAST_URL` | `https://app.toast.sh` | Toast 웹 서비스 URL | `https://app.toast.sh` |
 | `NODE_ENV` | - | 실행 환경 모드 (development/production) | `development` |
+| `AUTO_INSTALL_UPDATES` | - | `true`이면 업데이트 다운로드 완료 시 자동 설치 | `true` |
 
 ### NODE_ENV 설정
 

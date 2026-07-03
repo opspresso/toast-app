@@ -76,8 +76,7 @@ Toast 앱은 Electron의 메인 프로세스와 렌더러 프로세스를 분리
 toast-app/
 ├── assets/                # 애플리케이션 자산
 │   └── icons/             # 애플리케이션 아이콘
-├── docs/                  # 문서 자산
-│   └── images/            # 문서 이미지
+├── docs/                  # 문서
 ├── src/                   # 소스 코드
 │   ├── main/              # 메인 프로세스 코드
 │   │   ├── actions/       # 액션 구현
@@ -105,9 +104,11 @@ toast-app/
 │   │   └── preload/       # 프리로드 스크립트
 │   └── index.js           # 애플리케이션 진입점
 ├── tests/                 # 테스트 파일
+│   ├── mocks/             # Electron API 모의 객체
 │   ├── unit/              # 단위 테스트
 │   ├── integration/       # 통합 테스트
-│   └── e2e/               # 엔드 투 엔드 테스트
+│   ├── e2e/               # 엔드 투 엔드 테스트
+│   └── setup.js           # Jest 설정
 ├── .editorconfig          # 에디터 구성
 ├── .eslintrc.js           # ESLint 구성
 ├── .prettierrc            # Prettier 구성
@@ -120,7 +121,8 @@ toast-app/
 
 #### 메인 프로세스 (`src/main/`)
 
-- **index.js**: 애플리케이션 진입점
+애플리케이션 진입점은 `src/index.js`입니다.
+
 - **config.js**: 사용자 구성 관리 (electron-store 사용)
 - **constants.js**: 앱 전역 상수 정의
 - **windows.js**: 애플리케이션 창 관리
@@ -159,7 +161,7 @@ toast-app/
 npm run dev
 ```
 
-이 명령은 개발 모드에서 Electron 애플리케이션을 시작하며 소스 파일의 변경을 감시합니다. 변경 사항이 감지되면 애플리케이션이 자동으로 다시 로드됩니다.
+이 명령은 `NODE_ENV=development`로 Electron 애플리케이션을 시작합니다. 파일 변경 감시나 자동 리로드 기능은 없으므로, 변경 사항을 반영하려면 애플리케이션을 다시 시작해야 합니다.
 
 ### 프로덕션 빌드
 

@@ -29,6 +29,8 @@
 
 Toast 앱은 인증 토큰, 사용자 프로필, 버튼 구성 등의 사용자 데이터를 처리합니다. 이 문서는 현재 구현된 보안 조치를 사실대로 기술하며, 향후 강화 예정 항목과 현재 한계도 함께 명시합니다.
 
+또한 모든 애플리케이션 창은 Electron 보안 기본 설정을 따릅니다. 렌더러 프로세스는 `nodeIntegration: false` 와 `contextIsolation: true` 로 격리되며(`src/main/windows.js`), 메인 프로세스 기능은 `preload` 스크립트의 `contextBridge.exposeInMainWorld` 로 노출된 제한된 API 를 통해서만 접근할 수 있습니다(`src/renderer/preload/toast.js`, `settings.js`). 이를 통해 렌더러가 Node.js API 에 직접 접근하는 것을 차단합니다.
+
 ## 인증 시스템
 
 Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증을 수행합니다. 상세한 흐름과 API 연동은 [연동 가이드](../development/integration.md)를 참조하세요.
@@ -67,7 +69,8 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
 
 2. **토큰 만료 정책**:
    - 액세스 토큰 기본 만료: 1년 (`TOKEN_EXPIRES_IN=31536000`, 환경 변수로 변경 가능).
-   - `TOKEN_EXPIRES_IN=0` 또는 음수 값은 무기한 만료(`Number(8640000000000000)`) 로 처리됩니다.
+   - 서버가 반환하는 `expires_in` 값이 항상 우선하며, 이 값이 없을 때만 `TOKEN_EXPIRES_IN` 이 적용됩니다.
+   - `TOKEN_EXPIRES_IN=0` 은 falsy 값이라 1년 기본값으로 대체됩니다. 무기한 만료(`8640000000000000`, JavaScript 최대 날짜)를 적용하려면 음수 값(예: `-1`)을 사용해야 합니다.
    - 만료가 임박하면(30초 안전 마진) 리프레시 토큰으로 자동 갱신합니다.
    - 중복 요청 방지를 위해 갱신 호출에 스로틀링 로직이 적용되어 있습니다.
 
@@ -143,7 +146,7 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
 ### 셸 / 시스템 스크립트
 
 - AppleScript(`osascript`), PowerShell, Bash 스크립트는 `child_process.exec` 로 자식 프로세스에서 실행됩니다.
-- 작업 디렉토리는 사용자 홈 디렉토리이며, 실행 권한은 현재 사용자와 동일합니다.
+- 별도의 작업 디렉토리(`cwd`)를 지정하지 않으므로 스크립트는 앱 프로세스의 작업 디렉토리를 그대로 상속하며, 실행 권한은 현재 사용자와 동일합니다.
 
 ### 사용자 책임
 
@@ -175,7 +178,7 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
 
 2. **코드 서명**:
    - 배포 빌드는 Apple Developer ID 인증서로 서명됩니다.
-   - 공증(notarization)은 현재 빌드 파이프라인에 포함되어 있지 않습니다.
+   - GitHub Actions 빌드 파이프라인(`.github/workflows/build-release.yml`)에서 App Store Connect API 키를 준비하고 electron-builder 공증 환경 변수(`APPLE_API_KEY` 등)를 설정하여 공증(notarization)을 수행합니다.
 
 3. **글로벌 단축키**:
    - macOS 의 접근성 권한이 필요할 수 있습니다.

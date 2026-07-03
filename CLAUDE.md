@@ -181,7 +181,7 @@ When storing subscription data in ConfigStore, ensure consistency:
 ### Common Issues
 1. **Cloud sync not enabling**: Check if subscription data is properly stored in ConfigStore
 2. **API authentication**: Verify CLIENT_ID and CLIENT_SECRET in environment variables
-3. **Token expiration**: Default is 1 year (365 days), can be set to unlimited with TOKEN_EXPIRES_IN=0
+3. **Token expiration**: Default is 1 year (365 days), can be set to unlimited with a negative TOKEN_EXPIRES_IN (e.g. -1); the server's `expires_in` always takes priority when present
 
 ## Environment Configuration
 

@@ -245,10 +245,11 @@ ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh =
       return { success: false, error: '아이콘을 추출할 수 없습니다' };
     }
 
+    const tildePath = convertToTildePath(iconPath);
     return {
       success: true,
       iconUrl: `file://${iconPath}`,
-      iconPath,
+      iconPath: tildePath, // ~ 형식으로 변환된 경로
       appName
     };
   } catch (err) {
@@ -273,8 +274,8 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
     const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
 
     if (result.success) {
-      // 1. 아이콘 입력 필드 업데이트
-      iconInput.value = result.iconUrl;
+      // 1. 아이콘 입력 필드 업데이트 (iconPath는 ~ 형식 경로이므로 file:// URL로 변환)
+      iconInput.value = `file://${result.iconPath}`;
 
       // 2. 버튼 이름 업데이트 (비어있을 때만)
       if (nameInput && !nameInput.value.trim()) {
@@ -353,7 +354,7 @@ function getExistingIconPath(appName, outputDir) {
   }
 }
 
-// 오래된 아이콘 자동 정리 (30일)
+// 오래된 아이콘 정리 함수 (30일 기준) - 정의만 되어 있고 현재 어디에서도 호출되지 않음
 function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   try {
     if (!fs.existsSync(iconsDir)) return;
@@ -375,6 +376,8 @@ function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   }
 }
 ```
+
+> **참고**: `cleanupOldIcons` 함수는 정의되어 있지만 현재 어디에서도 호출되지 않으므로, 오래된 아이콘 캐시의 자동 정리는 수행되지 않습니다.
 
 ### 비동기 처리
 
@@ -451,8 +454,8 @@ describe('App Icon Extractor', () => {
 const testApps = ['Finder', 'Safari', 'System Preferences', 'Terminal'];
 
 for (const appName of testApps) {
-  const iconUrl = await extractLocalAppIcon(`/Applications/${appName}.app`);
-  console.log(`${appName}: ${iconUrl ? '✅' : '❌'}`);
+  const iconPath = await extractAppIcon(appName);
+  console.log(`${appName}: ${iconPath ? '✅' : '❌'}`);
 }
 ```
 

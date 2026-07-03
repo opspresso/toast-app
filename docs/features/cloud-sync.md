@@ -117,7 +117,7 @@ TOKEN_EXPIRES_IN=86400  # 1일
 ### 토큰 관리 모범 사례
 
 1. **무기한 토큰 사용**: 동기화 중단 방지를 위해 토큰을 무기한으로 설정
-2. **안전한 저장**: 토큰을 암호화된 로컬 파일에 저장
+2. **로컬 파일 저장**: 토큰을 로컬 JSON 파일(`auth-tokens.json`)에 평문으로 저장
 3. **원자적 쓰기**: 파일 손상 방지를 위한 임시 파일 사용
 4. **오류 처리**: 토큰 관련 오류 시 적절한 로깅 및 복구 로직
 5. **보안 고려**: 토큰 파일 접근 권한 제한
@@ -152,23 +152,27 @@ Authorization: Bearer {access_token}
 {
   "success": true,
   "data": {
-    "theme": "dark",
-    "language": "ko",
     "pages": [
       {
-        "id": "uuid-page-1", // 각 페이지에 고유 ID 부여 권장
         "name": "메인",
-        "buttons": [...],
-        "clientLastModifiedAt": 1682932100000 // 페이지별 최종 수정 시간
+        "buttons": [...]
       }
     ],
-    "clientLastModifiedAt": 1682932130000, // 클라이언트 전체 설정 최종 수정 시간
-    "clientLastModifiedDevice": "device-id-1", // 클라이언트 최종 수정 기기 ID
-    "serverLastUpdatedAt": 1682932134590 // 서버에서 이 설정이 마지막으로 업데이트된 시간
+    "appearance": {
+      "theme": "dark",
+      "position": "center"
+    },
+    "advanced": {
+      "launchAtLogin": true
+    },
+    "lastModifiedAt": 1682932130000,     // 마지막으로 로컬에서 설정이 수정된 시간
+    "lastModifiedDevice": "device-id-1", // 마지막으로 설정을 수정한 기기 ID
+    "lastSyncedAt": 1682932134590,       // 마지막으로 서버와 동기화된 시간
+    "lastSyncedDevice": "device-id-1"    // 마지막으로 서버와 동기화한 기기 ID
   }
 }
 ```
-*참고: 위 응답 예시는 권장되는 메타데이터 필드를 포함합니다. 실제 API 응답은 서버 구현에 따라 다를 수 있습니다.*
+*참고: 서버 응답 구조는 구현에 따라 다를 수 있으며, 클라이언트는 `pages`가 최상위 또는 `data` 하위에 오는 형식을 모두 처리합니다.*
 
 ### 설정 업데이트
 
@@ -179,27 +183,23 @@ Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "globalHotkey": "CmdOrCtrl+Shift+S",
-  "appearance": { // appearance 객체 전체를 동기화
-    "theme": "dark",
-    "position": "center",
-    // ... other appearance fields
-  },
-  "advanced": { // advanced 객체 전체를 동기화
-    "launchAtLogin": true,
-    // ... other advanced fields
-  },
-  "language": "ko", // language 필드 (로컬 스키마에 추가 가정)
   "pages": [
     {
-      "id": "uuid-page-1", // 각 페이지는 고유 ID를 가져야 함
       "name": "메인 수정됨",
-      "buttons": [...],
-      "clientLastModifiedAt": 1682932700000 // 페이지별 최종 수정 시간
+      "buttons": [...]
     }
   ],
-  "clientLastModifiedAt": 1682932768123, // 클라이언트 전체 설정 최종 수정 시간
-  "clientLastModifiedDevice": "device-id-1" // 현재 기기 ID
+  "appearance": {          // appearance 객체 전체를 동기화
+    "theme": "dark",
+    "position": "center"
+  },
+  "advanced": {            // advanced 객체 전체를 동기화
+    "launchAtLogin": true
+  },
+  "lastModifiedAt": 1682932768123,     // 마지막으로 로컬에서 설정이 수정된 시간
+  "lastModifiedDevice": "device-id-1", // 마지막으로 설정을 수정한 기기 ID
+  "lastSyncedAt": 1682932769000,       // 이번 업로드(동기화) 시간
+  "lastSyncedDevice": "device-id-1"    // 현재 기기 ID
 }
 ```
 
@@ -209,214 +209,77 @@ Content-Type: application/json
   "success": true,
   "data": {
     "message": "설정이 업데이트되었습니다",
-    "serverLastUpdatedAt": 1682932769000, // 서버에서 업데이트된 시간
+    "lastSyncedAt": 1682932769000, // 서버에서 동기화가 완료된 시간
     // 업데이트된 전체 설정 또는 주요 메타데이터를 포함할 수 있음
     "settings": {
-        "globalHotkey": "CmdOrCtrl+Shift+S",
+        "pages": [...],
         "appearance": {
-            "theme": "dark",
-            // ...
+            "theme": "dark"
         },
         "advanced": {
-            "launchAtLogin": true,
-            // ...
+            "launchAtLogin": true
         },
-        "language": "ko",
-        "pages": [...], // 각 페이지는 id, clientLastModifiedAt 포함
-        "clientLastModifiedAt": 1682932768123,
-        "clientLastModifiedDevice": "device-id-1",
-        "serverLastUpdatedAt": 1682932769000
+        "lastModifiedAt": 1682932768123,
+        "lastModifiedDevice": "device-id-1",
+        "lastSyncedAt": 1682932769000,
+        "lastSyncedDevice": "device-id-1"
     }
   }
 }
 ```
-*참고: API 응답 형식은 서버 구현에 따라 달라질 수 있으며, 클라이언트는 이에 맞춰 처리해야 합니다.*
+*참고: API 응답 형식은 서버 구현에 따라 달라질 수 있으며, 클라이언트는 이에 맞춰 처리합니다.*
 
 ## 구현 방법
 
-### 1. 기본 동기화 로직 (개선된 메타데이터 관리 포함)
+클라우드 동기화는 두 모듈로 구성됩니다:
 
-```javascript
-// 설정 다운로드
-async function downloadSettingsFromServer() {
-  try {
-    const response = await fetch('https://app.toast.sh/api/users/settings', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${getAccessToken()}`,
-        // 'If-None-Match': localETag // ETag를 활용한 조건부 요청 (서버 지원 시)
-      }
-    });
+- **`src/main/cloud-sync.js`**: 동기화 오케스트레이션 — 변경 감지, 디바운싱, 재시도, 충돌 해결을 담당합니다.
+- **`src/main/api/sync.js`**: 서버와의 HTTP 통신(`uploadSettings`, `downloadSettings`)과 동기화 가능 여부 판단(`isCloudSyncEnabled`)을 담당합니다.
 
-    // if (response.status === 304) {
-    //   return { success: true, message: 'No changes on server' };
-    // }
+ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`appearance`·`advanced`가 동기화 대상입니다.
 
-    const result = await response.json();
+### 동기화 가능 조건
 
-    if (result.success) {
-      const serverSettings = result.data;
-      // 로컬 설정과 서버 설정 병합 (충돌 해결 로직 적용)
-      const mergedSettings = resolveConflictAndMerge(configStore.getAll(), serverSettings);
+`isCloudSyncEnabled`는 다음을 모두 만족할 때 `true`를 반환합니다(`src/main/api/sync.js`):
 
-      // 병합된 설정을 로컬에 적용
-      configStore.set('theme', mergedSettings.theme);
-      configStore.set('language', mergedSettings.language);
-      configStore.set('pages', mergedSettings.pages);
-      // 관련 메타데이터 업데이트 (예: serverLastUpdatedAt)
-      updateLocalMetadata(mergedSettings);
+- 유효한 인증 토큰 보유
+- 구독 활성화(`subscription.isSubscribed` 또는 `subscription.active`)
+- `cloud_sync` 기능 보유(`features.cloud_sync` 또는 `additionalFeatures.cloudSync`) **또는** 플랜 이름이 `premium`/`vip`로 시작
 
-      return { success: true, data: mergedSettings };
-    } else {
-      // 서버에서 구체적인 오류 코드 반환 시 그에 따른 처리
-      // 예: if (result.statusCode === 401) handleAuthError();
-      return { success: false, error: result.error, statusCode: result.statusCode };
-    }
-  } catch (error) {
-    // 네트워크 오류 등
-    return { success: false, error: error.message };
-  }
-}
+### 자동 동기화
 
-// 설정 업로드
-async function uploadSettingsToServer() {
-  try {
-    const localSettings = configStore.getAll(); // 현재 로컬 설정 전체 가져오기
-    const payload = {
-      globalHotkey: localSettings.globalHotkey,
-      appearance: localSettings.appearance, // appearance 객체 전체
-      advanced: localSettings.advanced,   // advanced 객체 전체
-      language: localSettings.language || 'en', // language 필드 (없을 경우 기본값)
-      pages: localSettings.pages.map(page => ({ // 각 페이지에 id와 clientLastModifiedAt이 있는지 확인/추가
-        id: page.id || generateUUID(), // ID가 없으면 생성
-        ...page,
-        clientLastModifiedAt: page.clientLastModifiedAt || Date.now() // 수정 시간이 없으면 현재 시간
-      })),
-      clientLastModifiedAt: localSettings.clientLastModifiedAt || Date.now(), // 로컬 전체 설정 최종 수정 시간
-      clientLastModifiedDevice: getDeviceId() // 현재 기기 ID
-    };
+`cloud-sync.js`는 ConfigStore의 `pages`·`appearance`·`advanced` 변경을 `onDidChange`로 감지합니다.
 
-    const response = await fetch('https://app.toast.sh/api/users/settings', {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${getAccessToken()}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+- **디바운스 업로드**: 변경 감지 시 `scheduleSync`가 `SYNC_DEBOUNCE_MS`(5초) 뒤에 업로드를 예약합니다. 짧은 시간 내 연속 변경은 마지막 변경 기준으로 병합됩니다.
+- **재시도**: 업로드 실패 시 `uploadSettingsWithRetry`가 `RETRY_DELAY_MS`(5초) 간격으로 최대 `MAX_RETRY_COUNT`(3회)까지 재시도합니다.
+- **주기적 동기화**: `SYNC_INTERVAL_MS`(15분)마다 서버에서 설정을 다운로드합니다(`startPeriodicSync`).
 
-    const result = await response.json();
-    if (result.success) {
-      // 업로드 성공 시 서버로부터 받은 메타데이터(예: serverLastUpdatedAt)로 로컬 메타데이터 업데이트
-      if (result.data && result.data.settings) {
-         updateLocalMetadata(result.data.settings);
-      }
-      return { success: true, data: result.data };
-    } else {
-      return { success: false, error: result.error, statusCode: result.statusCode };
-    }
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
+업로드 데이터에는 `pages`·`appearance`·`advanced`와 메타데이터(`lastModifiedAt`, `lastModifiedDevice`, `lastSyncedAt`, `lastSyncedDevice`)가 포함되며, 성공 시 `markAsSynced`로 동기화 메타데이터를 갱신합니다.
 
-// 충돌 해결 및 병합 로직 (예시)
-function resolveConflictAndMerge(localSettings, serverSettings) {
-  // 단순 예시: 서버 설정을 우선으로 하되, 향후 정교한 병합 로직 구현 필요
-  // 예: 페이지별 ID와 clientLastModifiedAt을 비교하여 최신 항목 선택 또는 병합
-  // 메타데이터(clientLastModifiedAt, serverLastUpdatedAt 등)를 적극 활용
-  if (!serverSettings || !serverSettings.serverLastUpdatedAt) {
-    return localSettings; // 서버 데이터가 없거나 유효하지 않으면 로컬 유지
-  }
-  if (!localSettings || !localSettings.clientLastModifiedAt) {
-    return serverSettings; // 로컬 데이터가 없거나 유효하지 않으면 서버 데이터 사용
-  }
+### 충돌 해결
 
-  // 서버 데이터가 더 최신이면 서버 데이터 사용
-  if (serverSettings.serverLastUpdatedAt > (localSettings.serverLastUpdatedAt || 0)) {
-     // 여기에 페이지 단위 등 세부 항목 병합 로직 추가 가능
-    return { ...localSettings, ...serverSettings }; // 단순 덮어쓰기 예시
-  }
-  // 로컬에서 변경되었고, 그 변경이 서버의 마지막 업데이트보다 최신인 경우
-  if (localSettings.clientLastModifiedAt > (serverSettings.serverLastUpdatedAt || 0)) {
-    // 이 경우, 로컬 변경사항을 우선하되, 서버에서 그동안 다른 기기에 의해 변경된 사항이 있다면 병합 필요
-    // 실제로는 이 부분이 복잡한 병합 로직이 필요한 지점
-    return { ...serverSettings, ...localSettings }; // 단순 덮어쓰기 예시
-  }
-  return serverSettings; // 기본적으로 서버 우선 (또는 다른 정책 적용)
-}
+수동 동기화(`syncSettings('resolve')`)는 서버 설정을 임시로 내려받아 `analyzeConflict`로 전략을 결정합니다. 로컬 `lastModifiedAt`과 서버 타임스탬프를 비교하며, 시간 차이가 `TIME_THRESHOLD`(60초) 이내이면 동일한 것으로 간주합니다.
 
-// 로컬 메타데이터 업데이트 함수 (예시)
-function updateLocalMetadata(settings) {
-  if (settings.serverLastUpdatedAt) {
-    configStore.set('serverLastUpdatedAt', settings.serverLastUpdatedAt);
-  }
-  // 필요시 clientLastModifiedAt 등 다른 메타데이터도 업데이트
-}
+- **`upload_local`**: 로컬이 더 최신 → 서버로 업로드
+- **`download_server`**: 서버가 더 최신 → 서버에서 다운로드
+- **`merge_required`**: 시간이 비슷한 동시 변경 → 병합 후 업로드
 
-// 기기 ID 가져오기 함수 (예시)
-function getDeviceId() {
-  // 고유한 기기 ID 생성 또는 저장된 ID 반환 로직
-  return 'unique-device-identifier';
-}
-```
+병합(`performIntelligentMerge`)은 페이지를 로컬 값 그대로 유지하고(`mergePages`), `appearance`·`advanced`는 로컬 값을 우선합니다(`mergeAppearance`/`mergeAdvanced`).
 
-### 2. 자동 동기화 구현
+### 로그인 시 동기화
 
-설정 변경 감지 및 자동 동기화:
-
-```javascript
-// 설정 변경 감지 (예: pages 변경 시)
-configStore.onDidChange('pages', (newValue, oldValue) => {
-  // 로컬 메타데이터 업데이트 (clientLastModifiedAt, clientLastModifiedDevice 등)
-  configStore.set('clientLastModifiedAt', Date.now());
-  configStore.set('clientLastModifiedDevice', getDeviceId());
-  // 변경 후 일정 시간 뒤에 업로드 (디바운싱 적용 권장)
-  debouncedUploadSettings();
-});
-
-// 주기적 동기화 (서버 변경 사항 가져오기)
-setInterval(async () => {
-  await downloadSettingsFromServer();
-}, 15 * 60 * 1000); // 15분마다
-
-// 디바운스된 업로드 함수 (예시)
-let debounceTimer;
-function debouncedUploadSettings() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(async () => {
-    await uploadSettingsToServer();
-  }, 5000); // 5초 후 업로드
-}
-```
-
-### 3. 로그인 시 동기화
-
-사용자 로그인 후 설정 동기화:
-
-```javascript
-async function onLogin() {
-  // 로그인 성공 후, 로컬 설정과 서버 설정을 비교하여 병합하는 동기화 실행
-  // 예: 먼저 서버 설정을 가져온 후, 충돌 해결 로직을 통해 병합하고 필요한 경우 업로드
-  const downloadResult = await downloadSettingsFromServer();
-  if (downloadResult.success) {
-    // 병합된 설정이 로컬 변경사항을 포함하여 서버의 것과 다르고, 로컬이 최신일 경우 업로드 고려
-    // (resolveConflictAndMerge 함수 내에서 이러한 판단 로직이 포함될 수 있음)
-    // 또는, 로그인 시에는 서버 우선 동기화를 기본으로 할 수도 있음 (정책에 따라 결정)
-  }
-}
-```
+로그인 성공 후 `syncAfterLogin`이 먼저 서버 설정을 다운로드하고, 성공하면 토스트 창 UI에 갱신을 알립니다(`notifySettingsSynced`).
 
 ## 충돌 해결 전략
 
 여러 기기에서 동시에 설정을 변경할 경우 충돌이 발생할 수 있습니다. 효과적인 충돌 해결 전략이 중요합니다.
 
 1.  **타임스탬프 기반 해결:**
-    *   각 설정 항목(예: 페이지 객체) 및 전체 설정에 `clientLastModifiedAt` (클라이언트 최종 수정 시간)과 `serverLastUpdatedAt` (서버 최종 업데이트 시간) 같은 타임스탬프를 기록합니다.
+    *   각 설정 항목(예: 페이지 객체) 및 전체 설정에 `lastModifiedAt` (로컬 최종 수정 시간)과 `lastSyncedAt` (서버 최종 동기화 시간) 같은 타임스탬프를 기록합니다.
     *   동기화 시 이 타임스탬프들을 비교하여 최신 데이터를 결정합니다.
 2.  **항목 레벨 병합:**
     *   `pages`와 같은 배열 데이터의 경우, 배열 전체를 덮어쓰기보다 각 항목(페이지)에 고유 ID를 부여하고, ID별로 변경 사항(추가, 수정, 삭제)을 식별하여 병합합니다.
-    *   이를 위해 각 페이지 객체 내에도 `clientLastModifiedAt`과 같은 메타데이터를 포함하는 것이 좋습니다.
+    *   이를 위해 각 페이지 객체 내에도 `lastModifiedAt`과 같은 메타데이터를 포함하는 것이 좋습니다.
 3.  **사용자 알림 및 선택 (선택적):**
     *   자동으로 해결하기 어려운 복잡한 충돌 발생 시, 사용자에게 알리고 어떤 버전의 설정을 유지할지 선택하도록 할 수 있습니다. (구현 복잡도 높음)
 
@@ -463,7 +326,7 @@ if (expiresAt >= 8640000000000000) {
 async function checkSyncStatus() {
   const hasValidToken = await hasValidToken();
   const lastSync = configStore.get('lastSyncTime');
-  const syncEnabled = configStore.get('cloudSyncEnabled', true);
+  const syncEnabled = configStore.get('cloudSync.enabled');
 
   return {
     authenticated: hasValidToken,

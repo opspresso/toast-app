@@ -104,7 +104,7 @@ Toast 앱은 의존성에 대해 시맨틱 버전 관리(SemVer)를 사용합니
 
 Toast 앱은 npm을 주요 패키지 매니저로 사용합니다:
 
-- npm v8 이상이 권장됩니다
+- npm v10 이상이 권장됩니다
 - package-lock.json은 일관된 설치를 보장하기 위해 버전 관리에 커밋됩니다
 - 설치에는 `npm install`을 사용합니다
 - 새로운 의존성 추가에는 `npm install <package>` 및 `npm install --save-dev <package>`를 사용합니다
