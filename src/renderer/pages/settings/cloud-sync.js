@@ -615,8 +615,4 @@ function handleManualSyncResolve(logger) {
 }
 
 // 모듈 내보내기
-window.cloudSyncUI = {
-  initializeCloudSyncUI,
-  updateSyncStatusUI,
-  disableCloudSyncUI,
-};
+export { initializeCloudSyncUI, updateSyncStatusUI, disableCloudSyncUI };

@@ -29,6 +29,7 @@ import {
   setProfileDataFetchInProgress,
 } from './state.js';
 import { setLoading, getInitials, saveSubscriptionToConfig, handleTokenExpired } from './utils.js';
+import * as cloudSyncUI from '../cloud-sync.js';
 
 /**
  * 계정 설정 탭 초기화
@@ -156,9 +157,7 @@ export function updateAuthStateUI(isLoggedIn) {
     window.settings
       .getSyncStatus()
       .then(status => {
-        if (window.cloudSyncUI) {
-          window.cloudSyncUI.updateSyncStatusUI(status, authState, window.settings.log);
-        }
+        cloudSyncUI.updateSyncStatusUI(status, authState, window.settings.log);
       })
       .catch(error => {
         window.settings.log.error('Error getting sync status:', error);
@@ -181,9 +180,7 @@ export function updateAuthStateUI(isLoggedIn) {
     subscriptionFeatures.textContent = '-';
 
     // Disable Cloud Sync UI
-    if (window.cloudSyncUI) {
-      window.cloudSyncUI.disableCloudSyncUI(window.settings.log);
-    }
+    cloudSyncUI.disableCloudSyncUI(window.settings.log);
   }
 }
 

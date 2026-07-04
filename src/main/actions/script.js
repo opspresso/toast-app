@@ -68,6 +68,16 @@ async function executeScript(action) {
  */
 async function executeJavaScript(script, params = {}) {
   try {
+    // Only expose non-sensitive environment variables to user scripts
+    // (secrets like CLIENT_SECRET must stay in the main process)
+    const SAFE_ENV_KEYS = ['HOME', 'USER', 'USERPROFILE', 'PATH', 'LANG', 'SHELL', 'TMPDIR', 'TEMP', 'TMP'];
+    const safeEnv = {};
+    for (const key of SAFE_ENV_KEYS) {
+      if (process.env[key] !== undefined) {
+        safeEnv[key] = process.env[key];
+      }
+    }
+
     // Create a sandbox with limited context
     const sandbox = {
       console,
@@ -75,7 +85,7 @@ async function executeJavaScript(script, params = {}) {
       process: {
         platform: process.platform,
         arch: process.arch,
-        env: process.env,
+        env: safeEnv,
       },
       params,
       result: null,

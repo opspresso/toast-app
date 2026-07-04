@@ -344,17 +344,8 @@
         };
       }
 
-      // Mock window.cloudSyncUI for browser testing
-      if (!window.cloudSyncUI) {
-        window.cloudSyncUI = {
-          initializeCloudSyncUI: () => console.log('Cloud sync UI initialized'),
-          updateSyncStatusUI: () => console.log('Sync status UI updated'),
-          disableCloudSyncUI: () => console.log('Cloud sync UI disabled'),
-        };
-      }
     </script>
 
-    <script src="cloud-sync.js"></script>
     <script type="module" src="index.js"></script>
   </body>
 </html>

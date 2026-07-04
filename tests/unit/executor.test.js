@@ -25,7 +25,12 @@ jest.mock('../../src/main/actions/open', () => ({
   openItem: jest.fn(),
 }));
 
+jest.mock('../../src/main/action-approval', () => ({
+  ensureApproved: jest.fn().mockResolvedValue({ approved: true }),
+}));
+
 const { executeAction, validateAction } = require('../../src/main/executor');
+const { ensureApproved } = require('../../src/main/action-approval');
 const { executeApplication } = require('../../src/main/actions/application');
 const { executeChainedActions } = require('../../src/main/actions/chain');
 const { executeCommand } = require('../../src/main/actions/exec');
@@ -82,13 +87,42 @@ describe('Executor', () => {
     test('should execute exec action', async () => {
       const action = { action: 'exec', command: 'ls -la' };
       const expectedResult = { success: true, message: 'Command executed' };
-      
+
       executeCommand.mockResolvedValue(expectedResult);
-      
+
       const result = await executeAction(action);
-      
+
       expect(executeCommand).toHaveBeenCalledWith(action);
       expect(result).toEqual(expectedResult);
+    });
+
+    test('should block exec action when approval is denied', async () => {
+      const action = { action: 'exec', command: 'ls -la' };
+      ensureApproved.mockResolvedValueOnce({ approved: false, reason: 'Action blocked: pending user approval' });
+
+      const result = await executeAction(action);
+
+      expect(executeCommand).not.toHaveBeenCalled();
+      expect(result).toEqual({ success: false, message: 'Action blocked: pending user approval' });
+    });
+
+    test('should block script action when approval is denied', async () => {
+      const action = { action: 'script', script: 'result = 1', scriptType: 'javascript' };
+      ensureApproved.mockResolvedValueOnce({ approved: false, reason: 'Action blocked: pending user approval' });
+
+      const result = await executeAction(action);
+
+      expect(executeScript).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+    });
+
+    test('should not require approval for non-risky actions', async () => {
+      const action = { action: 'open', url: 'https://example.com' };
+      openItem.mockResolvedValue({ success: true });
+
+      await executeAction(action);
+
+      expect(ensureApproved).not.toHaveBeenCalled();
     });
 
     test('should execute open action', async () => {

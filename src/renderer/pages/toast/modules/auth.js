@@ -27,6 +27,15 @@ export let isSubscribed = true;
 export let isLoggingIn = false;
 
 /**
+ * Update subscription state from outside this module.
+ * Import bindings are read-only, so external callers must use this setter.
+ * @param {boolean} value - Whether the user is subscribed
+ */
+export function setIsSubscribed(value) {
+  isSubscribed = !!value;
+}
+
+/**
  * Start login process and show loading screen
  */
 export async function initiateSignIn() {

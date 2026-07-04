@@ -18,19 +18,7 @@ export function setLoading(loadingElement, isLoading) {
   }
 }
 
-/**
- * Extract initials from user name
- * @param {string} name - User name
- * @returns {string} - Initials (up to 2 characters)
- */
-export function getInitials(name) {
-  return name
-    .split(' ')
-    .map(part => part.charAt(0))
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
-}
+export { getInitials } from '../../../common/utils.js';
 
 /**
  * Apply theme to the application

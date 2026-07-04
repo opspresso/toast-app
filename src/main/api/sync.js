@@ -8,6 +8,8 @@
 const os = require('os');
 const { createLogger } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = require('./client');
+const { sanitizeRemotePages, recordRemoteChanges } = require('../action-approval');
+const { isCloudSyncAllowed } = require('../subscription');
 
 // 모듈별 로거 생성
 const logger = createLogger('ApiSync');
@@ -48,34 +50,12 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
     const subscription = configStore.get('subscription') || {};
     logger.info('isCloudSyncEnabled: 구독 정보 확인:', JSON.stringify(subscription));
 
-    // 구독 활성화 상태 확인 (간소화된 로직)
-    let hasSyncFeature = false;
+    // 동기화 시점 판정 규칙 (subscription.js 참조)
+    const hasSyncFeature = isCloudSyncAllowed(subscription, {
+      isDevelopment: process.env.NODE_ENV === 'development',
+    });
 
-    // 1. 구독 활성화 여부 확인
-    const isSubscribed = subscription.isSubscribed === true || subscription.active === true;
-
-    // 2. cloud_sync 기능 확인 (features 객체 우선, additionalFeatures 대체)
-    const hasCloudSyncFeature = subscription.features?.cloud_sync === true || subscription.additionalFeatures?.cloudSync === true;
-
-    // 3. Premium/VIP 플랜 확인 (플랜 이름이 'premium' 또는 'vip'로 시작하는 경우 포함)
-    const isPremiumPlan = subscription.isVip === true || (subscription.plan && /^(premium|vip)/i.test(subscription.plan));
-
-    // 구독자이고 cloud_sync 기능이 있거나 Premium 플랜인 경우 활성화
-    if (isSubscribed && (hasCloudSyncFeature || isPremiumPlan)) {
-      hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 구독 활성화 및 기능 확인됨');
-    }
-    else if (process.env.NODE_ENV === 'development' && hasCloudSyncFeature && subscription.plan === 'Basic') {
-      // 개발 모드에서 cloud_sync 기능이 활성화된 경우 허용
-      hasSyncFeature = true;
-      logger.info('isCloudSyncEnabled: 클라우드 동기화 활성화 - 개발 모드에서 Basic 플랜 허용됨');
-    }
-
-    // 결과 반환
     logger.info(`isCloudSyncEnabled: 동기화 기능 ${hasSyncFeature ? '활성화됨' : '비활성화됨'}`, {
-      isSubscribed,
-      hasCloudSyncFeature,
-      isPremiumPlan,
       plan: subscription.plan,
     });
     return hasSyncFeature;
@@ -330,6 +310,9 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
 
         // ConfigStore에 직접 데이터 저장 (configStore가 제공된 경우만)
         if (configStore) {
+          // 원격 액션은 구조 검증 + 신규 위험 액션 승인 대기 등록 후 저장
+          pagesData = await sanitizeRemotePages(pagesData);
+          recordRemoteChanges(configStore, pagesData);
           configStore.set('pages', pagesData);
           logger.info('페이지 데이터를 ConfigStore에 저장 완료');
 

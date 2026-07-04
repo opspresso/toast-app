@@ -190,6 +190,32 @@ describe('Script Action', () => {
       );
     });
 
+    test('should not expose sensitive environment variables in sandbox', async () => {
+      const originalSecret = process.env.CLIENT_SECRET;
+      process.env.CLIENT_SECRET = 'super-secret-value';
+
+      try {
+        const action = {
+          script: 'result = { success: true }',
+          scriptType: 'javascript',
+        };
+
+        await executeScript(action);
+
+        const sandbox = vm.createContext.mock.calls[0][0];
+        expect(sandbox.process.env.CLIENT_SECRET).toBeUndefined();
+        expect(sandbox.process.env).not.toBe(process.env);
+      }
+      finally {
+        if (originalSecret === undefined) {
+          delete process.env.CLIENT_SECRET;
+        }
+        else {
+          process.env.CLIENT_SECRET = originalSecret;
+        }
+      }
+    });
+
     test('should return script result when available', async () => {
       const action = {
         script: 'result = { success: true, data: "custom result" }',

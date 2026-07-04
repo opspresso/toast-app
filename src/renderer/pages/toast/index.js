@@ -117,10 +117,14 @@ function setupEventListeners() {
       }
 
       if (config.subscription) {
-        // Update subscription status from auth module
-        import('./modules/auth.js').then(({ isSubscribed }) => {
-          isSubscribed = config.subscription.isSubscribed;
-        });
+        // Update subscription status in auth module
+        import('./modules/auth.js')
+          .then(({ setIsSubscribed }) => {
+            setIsSubscribed(config.subscription.isSubscribed);
+          })
+          .catch(error => {
+            console.error('Failed to update subscription state:', error);
+          });
       }
     });
   }
@@ -180,9 +184,13 @@ function initializeApp() {
 
       // Check subscription status
       if (config.subscription) {
-        import('./modules/auth.js').then(({ isSubscribed }) => {
-          isSubscribed = config.subscription.isSubscribed;
-        });
+        import('./modules/auth.js')
+          .then(({ setIsSubscribed }) => {
+            setIsSubscribed(config.subscription.isSubscribed);
+          })
+          .catch(error => {
+            console.error('Failed to update subscription state:', error);
+          });
       }
 
       // Apply appearance settings

@@ -134,7 +134,7 @@ export function createButtonElement(button) {
   else if (button.action === 'exec' && (!button.icon || button.icon.trim() === '') && button.command) {
     // Exec type and icon is empty but command exists, try to extract app icon from command
     // Check if it's an 'open -a AppName' command
-    const openAppMatch = button.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\\w\\s.-]+))/);
+    const openAppMatch = button.command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))/);
     if (openAppMatch) {
       const appName = (openAppMatch[1] || openAppMatch[2]).trim();
       const appPath = `/Applications/${appName}.app`;
@@ -206,7 +206,7 @@ export function createButtonElement(button) {
 export function executeButton(button) {
   // Change button settings if in settings mode
   if (isSettingsMode) {
-    import('./modals.js').then(({ editButtonSettings }) => {
+    import('./modals-button-edit.js').then(({ editButtonSettings }) => {
       editButtonSettings(button);
     });
     return;

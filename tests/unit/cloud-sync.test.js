@@ -92,8 +92,9 @@ describe('Cloud Sync Module', () => {
       return mockData[key] || {};
     });
 
-    // Re-require the module to get fresh instance
-    delete require.cache[require.resolve('../../src/main/cloud-sync')];
+    // Re-require the module to get a fresh instance
+    // (jest.resetModules is required to reset the initCloudSync singleton guard)
+    jest.resetModules();
     cloudSync = require('../../src/main/cloud-sync');
 
     // Initialize with mocks
@@ -114,6 +115,20 @@ describe('Cloud Sync Module', () => {
 
       // Should not throw error
       expect(mockConfigStore.onDidChange).toHaveBeenCalled();
+    });
+
+    test('should not register config listeners twice on repeated initCloudSync', () => {
+      const listenerCallsAfterFirstInit = mockConfigStore.onDidChange.mock.calls.length;
+
+      const secondManager = cloudSync.initCloudSync(mockAuthManager, null, mockConfigStore);
+
+      expect(mockConfigStore.onDidChange.mock.calls.length).toBe(listenerCallsAfterFirstInit);
+      expect(secondManager).toBeDefined();
+    });
+
+    test('should return the same manager instance from getSyncManager', () => {
+      expect(cloudSync.getSyncManager()).toBeDefined();
+      expect(cloudSync.initCloudSync(mockAuthManager, null, mockConfigStore)).toBe(cloudSync.getSyncManager());
     });
   });
 

@@ -11,6 +11,8 @@
 const { createLogger } = require('./logger');
 const { sync: apiSync } = require('./api');
 const { createConfigStore, markAsModified, markAsSynced, hasUnsyncedChanges, getSyncMetadata, getDeviceId, updateSyncMetadata } = require('./config');
+const { sanitizeRemotePages, recordRemoteChanges } = require('./action-approval');
+const { analyzeConflict, mergePages, mergeAppearance, mergeAdvanced } = require('./cloud-sync/conflict-resolver');
 
 // Create logger for this module
 const logger = createLogger('CloudSync');
@@ -35,12 +37,16 @@ const state = {
   timers: {
     sync: null, // Periodic sync timer
     debounce: null, // Debounce timer
+    retry: null, // Upload retry timer
   },
 };
 
 // External module references
 let configStore = null;
 let authManager = null;
+
+// Initialized sync manager (initCloudSync is guarded to run once)
+let syncManagerInstance = null;
 
 // Cache for isCloudSyncEnabled to reduce API calls
 const cloudSyncCache = {
@@ -133,6 +139,11 @@ function stopPeriodicSync() {
     state.timers.sync = null;
     logger.info('Periodic synchronization stopped');
   }
+  if (state.timers.retry) {
+    clearTimeout(state.timers.retry);
+    state.timers.retry = null;
+    logger.info('Pending upload retry canceled');
+  }
 }
 
 /**
@@ -214,8 +225,9 @@ async function uploadSettingsWithRetry() {
       if (state.retryCount <= MAX_RETRY_COUNT) {
         logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
-        // 재시도 예약
-        setTimeout(() => {
+        // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
+        state.timers.retry = setTimeout(() => {
+          state.timers.retry = null;
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
       }
@@ -233,8 +245,9 @@ async function uploadSettingsWithRetry() {
     if (state.retryCount <= MAX_RETRY_COUNT) {
       logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
-      // 재시도 예약
-      setTimeout(() => {
+      // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
+      state.timers.retry = setTimeout(() => {
+        state.timers.retry = null;
         uploadSettingsWithRetry();
       }, RETRY_DELAY_MS);
     }
@@ -539,52 +552,6 @@ async function syncSettings(action = 'resolve') {
 }
 
 /**
- * 충돌 분석 및 해결 전략 결정
- * @param {Object} localMeta - 로컬 메타데이터
- * @param {Object} serverMeta - 서버 메타데이터
- * @param {boolean} hasLocalChanges - 로컬 변경사항 존재 여부
- * @returns {Object} 해결 전략
- */
-function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
-  // Use lastModifiedAt if available, fall back to lastSyncedAt for server compatibility
-  const localTime = localMeta.lastModifiedAt || localMeta.lastSyncedAt || 0;
-  const serverTime = serverMeta.lastModifiedAt || serverMeta.lastSyncedAt || 0;
-  const timeDifference = Math.abs(localTime - serverTime);
-
-  // 시간 차이가 1분 미만이면 동일한 것으로 간주
-  const TIME_THRESHOLD = 60000; // 1 minute
-
-  logger.info(`Analyzing conflict - Local: ${localTime}, Server: ${serverTime}, Diff: ${timeDifference}ms, HasLocalChanges: ${hasLocalChanges}`);
-
-  // 1. 로컬에 변경사항이 없는 경우
-  if (!hasLocalChanges) {
-    if (serverTime > localTime) {
-      return { action: 'download_server', reason: 'No local changes, server is newer' };
-    }
-    else {
-      return { action: 'no_action', reason: 'No changes needed' };
-    }
-  }
-
-  // 2. 서버 데이터가 없는 경우
-  if (!serverTime || serverTime === 0) {
-    return { action: 'upload_local', reason: 'No server data, upload local changes' };
-  }
-
-  // 3. 타임스탬프 비교
-  if (localTime > serverTime + TIME_THRESHOLD) {
-    return { action: 'upload_local', reason: 'Local changes are significantly newer' };
-  }
-  else if (serverTime > localTime + TIME_THRESHOLD) {
-    return { action: 'download_server', reason: 'Server changes are significantly newer' };
-  }
-  else {
-    // 시간이 비슷하면 병합 시도
-    return { action: 'merge_required', reason: 'Concurrent changes detected, merge required' };
-  }
-}
-
-/**
  * 지능형 설정 병합 수행
  * @param {Object} serverData - 서버 데이터
  * @param {Object} _serverMeta - 서버 메타데이터
@@ -616,7 +583,9 @@ async function performIntelligentMerge(serverData, _serverMeta) {
       advanced: mergeAdvanced(localBackup.advanced, normalizedServerData.advanced),
     };
 
-    // 4. 병합된 데이터를 ConfigStore에 적용
+    // 4. 병합된 데이터를 ConfigStore에 적용 (원격 액션은 구조 검증 + 신규 위험 액션 승인 대기 등록)
+    mergedData.pages = await sanitizeRemotePages(mergedData.pages);
+    recordRemoteChanges(configStore, mergedData.pages);
     configStore.set('pages', mergedData.pages);
     configStore.set('appearance', mergedData.appearance);
     configStore.set('advanced', mergedData.advanced);
@@ -642,43 +611,6 @@ async function performIntelligentMerge(serverData, _serverMeta) {
       error: 'Merge operation failed: ' + error.message,
     };
   }
-}
-
-/**
- * 페이지 데이터 병합
- * @param {Array} localPages - 로컬 페이지
- * @param {Array} serverPages - 서버 페이지
- * @returns {Array} 병합된 페이지
- */
-function mergePages(localPages = [], serverPages = []) {
-  // 페이지는 로컬 우선 (사용자가 수정한 내용 보존)
-  if (localPages.length > 0) {
-    logger.info(`Merging pages: keeping ${localPages.length} local pages, server had ${serverPages.length}`);
-    return localPages;
-  }
-  return serverPages;
-}
-
-/**
- * 외관 설정 병합
- * @param {Object} localAppearance - 로컬 외관 설정
- * @param {Object} serverAppearance - 서버 외관 설정
- * @returns {Object} 병합된 외관 설정
- */
-function mergeAppearance(localAppearance = {}, serverAppearance = {}) {
-  // 외관 설정은 최신 값 우선
-  return { ...serverAppearance, ...localAppearance };
-}
-
-/**
- * 고급 설정 병합
- * @param {Object} localAdvanced - 로컬 고급 설정
- * @param {Object} serverAdvanced - 서버 고급 설정
- * @returns {Object} 병합된 고급 설정
- */
-function mergeAdvanced(localAdvanced = {}, serverAdvanced = {}) {
-  // 고급 설정은 최신 값 우선
-  return { ...serverAdvanced, ...localAdvanced };
 }
 
 /**
@@ -784,6 +716,15 @@ function setupConfigListeners() {
  * @returns {Object} 동기화 관리자 객체
  */
 function initCloudSync(authManagerInstance, _userDataManagerInstance, configStoreInstance = null) {
+  // 재초기화 가드: 리스너/타이머 중복 등록을 막고 기존 매니저를 재사용
+  if (syncManagerInstance) {
+    logger.info('Cloud sync already initialized - reusing existing manager');
+    if (authManagerInstance) {
+      setAuthManager(authManagerInstance);
+    }
+    return syncManagerInstance;
+  }
+
   logger.info('Starting cloud synchronization initialization');
 
   // 인증 관리자 참조 설정
@@ -893,7 +834,16 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     }),
   };
 
+  syncManagerInstance = syncManager;
   return syncManager;
+}
+
+/**
+ * 초기화된 동기화 매니저 반환 (initCloudSync 이후 사용 가능)
+ * @returns {Object|null} 동기화 매니저 또는 null
+ */
+function getSyncManager() {
+  return syncManagerInstance;
 }
 
 /**
@@ -916,6 +866,7 @@ function updateCloudSyncSettings(enabled) {
 
 module.exports = {
   initCloudSync,
+  getSyncManager,
   setAuthManager,
   startPeriodicSync,
   stopPeriodicSync,

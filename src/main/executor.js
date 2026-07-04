@@ -10,6 +10,7 @@ const { executeChainedActions } = require('./actions/chain');
 const { executeCommand } = require('./actions/exec');
 const { executeScript } = require('./actions/script');
 const { openItem } = require('./actions/open');
+const { ensureApproved } = require('./action-approval');
 
 /**
  * Execute an action based on its type
@@ -25,6 +26,14 @@ async function executeAction(action) {
 
     if (!action.action) {
       return { success: false, message: 'Action type is required' };
+    }
+
+    // Risky actions downloaded from cloud sync need one-time user approval
+    if (action.action === 'exec' || action.action === 'script') {
+      const { approved, reason } = await ensureApproved(action);
+      if (!approved) {
+        return { success: false, message: reason };
+      }
     }
 
     // Execute based on action type
