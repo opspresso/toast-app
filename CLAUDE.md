@@ -14,13 +14,13 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Start Production**: `npm start` (production mode)
 
 ### Building
-- **All Platforms**: `npm run build` (creates macOS, Windows, Linux builds)
+- **Current Platform**: `npm run build` (builds for the host OS; use platform-specific scripts for cross-platform builds)
 - **macOS**: `npm run build:mac` (creates DMG and ZIP)
 - **Windows**: `npm run build:win` (creates NSIS installer and portable EXE)
 - **Mac App Store**: `npm run build:mas` (MAS distribution)
 
 ### Testing & Quality
-- **Run Tests**: `npm run test` (Jest - 27 test suites, 789 unit tests)
+- **Run Tests**: `npm run test` (Jest - 30 test suites, 865 unit tests)
 - **Lint Fix**: `npm run lint:fix` (ESLint auto-fix)
 - **Lint**: `npm run lint` (ESLint check)
 - **Format**: `npm run format` (Prettier formatting)
@@ -36,12 +36,16 @@ Toast App is an Electron-based desktop application that provides a customizable 
 ### Process Structure
 - **Main Process** (`src/main/`): Handles application lifecycle, window management, system integration
   - `actions/`: 5 action handlers (application, chain, exec, open, script)
-  - `api/`: Cloud sync API client (auth.js, client.js, sync.js)
+  - `api/`: Cloud sync API client (auth.js, client.js, sync.js, index.js)
   - `config/`: Environment variable loading (env.js); electron-store schema validation lives in `config.js`
+  - `ipc/`: Domain-specific IPC handlers (window, config, actions, auth, cloud-sync, updater, system); `ipc.js` is the orchestrator
   - `executor.js`: Central action dispatcher with validation
+  - `action-approval.js`: One-time user approval for exec/script actions downloaded via cloud sync
+  - `subscription.js`: Subscription-derived decisions (page groups, cloud sync eligibility)
+  - `broadcast.js`: Send events to both windows safely
   - `windows.js`: Toast/Settings window lifecycle management
   - `auth-manager.js`: Authentication state synchronization
-  - `cloud-sync.js`: Automatic cloud synchronization (15min intervals)
+  - `cloud-sync.js`: Automatic cloud synchronization (15min intervals); merge policies in `cloud-sync/conflict-resolver.js`
   - `shortcuts.js`: Global hotkey registration
   - `tray.js`: System tray integration
   - `updater.js`: Auto-update functionality
@@ -50,7 +54,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
   - `pages/toast/`: Main popup with ES6 modules
   - `pages/settings/`: 6-tab settings interface (General, Appearance, Account & Subscription, Cloud Sync, Advanced, About)
   - `preload/`: Secure IPC bridges (toast.js, settings.js)
-  - `assets/flat-color-icons/`: 200+ SVG icons library
+  - `assets/flat-color-icons/`: 300+ SVG icons library
 
 ### Key Architectural Patterns
 1. **IPC Communication**: Structured handlers in `src/main/ipc.js` with secure preload scripts
@@ -87,7 +91,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 5. Update `docs/config/schema.md` and `docs/features/settings.md`
 
 ### Testing & Quality Assurance
-- **Unit Tests**: 27 test suites, 789 unit tests
+- **Unit Tests**: 30 test suites, 865 unit tests
 - **Manual Testing**: Use dev mode with `npm run dev`
 - **Coverage**: Run `npm run test` to generate coverage report
 - **Linting**: `npm run lint` to check code style
@@ -126,7 +130,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Framework**: Jest with coverage reporting
 - **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
 - **Coverage**: Enabled by default, reports in `coverage/` directory
-- **Current Tests**: 27 test suites, 789 unit tests
+- **Current Tests**: 30 test suites, 865 unit tests
   - Main process modules (executor, config, shortcuts, windows, etc.)
   - Actions (application, chain, exec, open, script)
   - API clients (auth, client, sync)
@@ -138,7 +142,7 @@ tests/
 ├── mocks/
 │   └── electron.js        # Electron API mocks
 ├── setup.js               # Jest setup configuration
-├── unit/                  # Unit tests (789 tests in 27 suites)
+├── unit/                  # Unit tests (865 tests in 30 suites)
 │   ├── actions/           # Action handler tests
 │   ├── api/               # API client tests
 │   ├── config/            # Configuration tests

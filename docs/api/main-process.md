@@ -434,13 +434,23 @@ hideToastWindow();
 
 ## IPC 모듈 (`src/main/ipc.js`)
 
-IPC 모듈은 메인 프로세스와 렌더러 프로세스 간의 프로세스 간 통신을 처리합니다.
+`src/main/ipc.js`는 IPC 핸들러 등록을 조율하는 오케스트레이터이며, 실제 핸들러는 도메인별로 `src/main/ipc/` 하위 모듈에 나뉘어 있습니다.
+
+| 하위 모듈 | 담당 채널 |
+|-----------|-----------|
+| `ipc/window.js` | 윈도우 표시/숨김, 모달 상태, alwaysOnTop, 앱 재시작/종료 |
+| `ipc/config.js` | 구성 CRUD, 가져오기/내보내기, 재설정 |
+| `ipc/actions.js` | 액션 실행/검증/테스트 |
+| `ipc/auth.js` | 로그인/로그아웃, 토큰, 프로필/구독 조회 |
+| `ipc/cloud-sync.js` | 동기화 상태, 수동 동기화, 클라우드 동기화 활성화 |
+| `ipc/updater.js` | 업데이트 확인/다운로드/설치 |
+| `ipc/system.js` | URL 열기, 대화 상자, 로깅, 아이콘 추출, 경로 변환, 단축키 임시 제어 |
 
 ### 함수
 
 ```javascript
 /**
- * IPC 핸들러 설정
+ * IPC 핸들러 설정 (하위 모듈의 setup 함수들을 호출)
  * @param {Object} windows - 애플리케이션 윈도우를 포함하는 객체
  */
 function setupIpcHandlers(windows)
@@ -466,7 +476,6 @@ function setupIpcHandlers(windows)
 | `reset-config` | handle | 구성을 기본값으로 재설정 |
 | `import-config` | handle | 파일에서 구성 가져오기 |
 | `export-config` | handle | 파일로 구성 내보내기 |
-| `get-env` | handle | 환경 변수 값 가져오기 |
 
 #### 윈도우 관련
 
@@ -510,7 +519,6 @@ function setupIpcHandlers(windows)
 
 | 채널 | 유형 | 설명 |
 |------|------|------|
-| `is-cloud-sync-enabled` | handle | 동기화 가능 여부 확인 |
 | `get-sync-status` | handle | 동기화 상태 가져오기 |
 | `set-cloud-sync-enabled` | handle | 클라우드 동기화 활성화/비활성화 |
 | `manual-sync` | handle | 수동 동기화 (upload/download/resolve) |
@@ -780,6 +788,122 @@ console.log('Sync result:', result);
 
 // 클라우드 동기화 비활성화
 updateCloudSyncSettings(false);
+```
+
+## 충돌 해결 모듈 (`src/main/cloud-sync/conflict-resolver.js`)
+
+동기화 충돌 분석과 섹션별 병합 정책을 담당하는 순수 로직 모듈입니다. `cloud-sync.js`가 충돌 해결 시 이 모듈을 사용합니다.
+
+```javascript
+/**
+ * 충돌 분석 및 해결 전략 결정 (upload_local / download_server / merge_required / no_action)
+ * @param {Object} localMeta - 로컬 메타데이터
+ * @param {Object} serverMeta - 서버 메타데이터
+ * @param {boolean} hasLocalChanges - 로컬 변경사항 존재 여부
+ * @returns {Object} { action, reason }
+ */
+function analyzeConflict(localMeta, serverMeta, hasLocalChanges)
+
+/**
+ * 페이지 병합 — 로컬 값 우선 (사용자 수정 내용 보존)
+ */
+function mergePages(localPages, serverPages)
+
+/**
+ * 외관 설정 병합 — 로컬 값 우선
+ */
+function mergeAppearance(localAppearance, serverAppearance)
+
+/**
+ * 고급 설정 병합 — 로컬 값 우선
+ */
+function mergeAdvanced(localAdvanced, serverAdvanced)
+```
+
+## 액션 승인 모듈 (`src/main/action-approval.js`)
+
+클라우드 동기화로 내려받은 `exec`/`script` 액션을 기기별로 1회 사용자 승인 후에만 실행하도록 보호합니다. 로컬에서 생성·편집한 액션은 신뢰 처리되며, 원격 데이터에서 처음 나타난 위험 액션만 승인 대기 목록에 오릅니다. 신뢰 목록·대기 목록의 fingerprint 는 config `security` 키에 저장되며 **기기 로컬 전용**(클라우드 업로드 대상 아님)입니다.
+
+```javascript
+/**
+ * 위험 액션(exec/script)의 안정적 fingerprint 계산 (실행에 영향을 주는 필드만 해시)
+ * @returns {string|null} sha256 hex, 비위험 액션이면 null
+ */
+function computeFingerprint(action)
+
+/**
+ * 승인 모듈 초기화. 최초 실행 시 로컬 구성의 기존 위험 액션을 모두 신뢰 목록에 시드
+ * @param {Object} configStore
+ * @param {Object} [windows] - 다이얼로그 부모로 사용할 창 참조
+ */
+function initializeApprovals(configStore, windows)
+
+/**
+ * 원격 동기화 데이터의 위험 액션을 승인 대기열에 등록 (저장 직전 호출)
+ */
+function recordRemoteChanges(configStore, incomingPages)
+
+/**
+ * 로컬 저장 시 현재 구성의 위험 액션을 신뢰 처리 (대기 중 fingerprint 는 제외)
+ */
+function trustCurrentConfig(configStore)
+
+/**
+ * 실행 직전 승인 확인. 대기 목록에 있는 액션만 확인 다이얼로그를 띄우고, 그 외는 허용
+ * @returns {Promise<{approved: boolean, reason?: string}>}
+ */
+async function ensureApproved(action)
+
+/**
+ * 원격 페이지 저장 전 검증. 모든 버튼 액션이 executor 검증을 통과해야 하며, 실패 항목은 제거
+ * @returns {Promise<Array>} 유효하지 않은 액션이 제거된 페이지
+ */
+async function sanitizeRemotePages(pages)
+```
+
+## 구독 헬퍼 모듈 (`src/main/subscription.js`)
+
+구독 정보에서 파생되는 판정 로직을 한곳에 모은 모듈입니다.
+
+```javascript
+/**
+ * 구독 활성 여부 (active / is_subscribed / isSubscribed 별칭 모두 허용)
+ */
+function isSubscriptionActive(subscription)
+
+/**
+ * 구독에 따른 페이지 그룹 수 계산 (익명 1 / 인증 3 / 프리미엄·VIP 9)
+ */
+function calculatePageGroups(subscription)
+
+/**
+ * 만료 값을 스키마용 문자열로 정규화
+ */
+function normalizeExpiryString(value)
+
+/**
+ * 로그인 시점 규칙 — cloud_sync 기능을 부여·저장할지 결정 (활성 구독자는 기본 부여)
+ */
+function determineCloudSyncFeature(subscription, options)
+
+/**
+ * 동기화 시점 규칙 — 저장된 구독 데이터를 재검증 (활성 구독 + 기능 플래그 또는 premium/VIP 플랜)
+ */
+function isCloudSyncAllowed(subscription, options)
+```
+
+## 브로드캐스트 유틸 (`src/main/broadcast.js`)
+
+Toast·설정 두 창에 동일한 이벤트를 전송하는 의존성 없는 헬퍼입니다. `windows.js`/IPC 의존 그래프를 끌어오지 않고 `auth-manager` 등에서 사용할 수 있도록 분리되어 있습니다.
+
+```javascript
+/**
+ * 두 창에 이벤트 전송 (파괴된 창은 건너뜀)
+ * @param {Object} windowsRef - { toast, settings }
+ * @param {string} channel - IPC 채널 이름
+ * @param {*} payload - 이벤트 페이로드
+ */
+function broadcastToWindows(windowsRef, channel, payload)
 ```
 
 ## API 클라이언트 모듈 (`src/main/api/client.js`)

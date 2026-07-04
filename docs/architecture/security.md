@@ -50,6 +50,7 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
    - 앱이 등록한 `toast-app://` 프로토콜 핸들러가 인증 코드를 수신합니다 (`src/index.js`).
    - 앱은 `CLIENT_ID` / `CLIENT_SECRET`과 코드를 사용해 토큰 엔드포인트로 액세스/리프레시 토큰을 요청합니다.
    - 토큰은 로컬 파일(`auth-tokens.json`)에 저장됩니다.
+   - 딥링크 처리 로그에서 URL 의 `code`·`token` 파라미터는 마스킹되어 기록되므로, 인증 코드·토큰이 로그 파일에 평문으로 남지 않습니다.
 
 4. **프로필 검색**:
    - 토큰 저장 후 사용자 프로필 및 구독 정보 엔드포인트를 호출하여 정보를 가져옵니다.
@@ -63,7 +64,7 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
 1. **저장 방식**:
    - 토큰은 사용자 데이터 디렉토리의 `auth-tokens.json` 파일에 **평문 JSON** 으로 저장됩니다 (`src/main/auth.js`).
    - 임시 파일을 거쳐 원자적 rename 으로 기록되어 부분 쓰기로 인한 손상을 방지합니다.
-   - 파일은 운영체제의 파일 시스템 권한(사용자 홈 디렉토리 권한)으로 보호됩니다.
+   - 토큰 파일은 소유자만 읽기/쓰기 가능한 권한(`0600`)으로 저장됩니다. 같은 사용자 계정 내 다른 프로세스의 접근은 여전히 가능합니다.
 
    > **현재 한계**: macOS Keychain / Windows DPAPI / Linux Secret Service 와 같은 OS 보안 저장소는 사용하지 않습니다. 동일 사용자 계정의 다른 프로세스는 토큰 파일에 접근할 수 있으므로, 신뢰할 수 없는 코드를 실행하지 않도록 주의하세요.
 
@@ -138,15 +139,28 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
 
 - Node.js `vm.runInContext` 를 사용해 격리된 컨텍스트에서 실행되지만, 다음이 컨텍스트에 노출됩니다:
   - `require`: 모든 내장 모듈 사용 가능 (`fs`, `child_process`, `http` 등)
-  - `process`: `platform`, `arch`, `env`
+  - `process`: `platform`, `arch`, 그리고 비민감 환경 변수만 담은 `env`
   - `Buffer`, `setTimeout`, `setInterval` 등 표준 전역
-- 따라서 파일 시스템 접근, 네트워크 호출, 외부 프로세스 실행이 가능합니다.
+- `process.env` 로는 허용 목록(`HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`)에 포함된 변수만 전달됩니다. `CLIENT_SECRET` 등 메인 프로세스의 시크릿은 스크립트에 노출되지 않습니다.
+- 따라서 파일 시스템 접근, 네트워크 호출, 외부 프로세스 실행은 여전히 가능합니다.
 - 실행 시간 제한, 메모리 제한, API 화이트리스트는 적용되지 않습니다.
 
 ### 셸 / 시스템 스크립트
 
 - AppleScript(`osascript`), PowerShell, Bash 스크립트는 `child_process.exec` 로 자식 프로세스에서 실행됩니다.
 - 별도의 작업 디렉토리(`cwd`)를 지정하지 않으므로 스크립트는 앱 프로세스의 작업 디렉토리를 그대로 상속하며, 실행 권한은 현재 사용자와 동일합니다.
+
+### 클라우드 동기화 액션 보호
+
+다른 기기에서 만든 `exec`/`script` 액션이 클라우드 동기화로 내려올 때 임의 코드가 자동 실행되지 않도록 다음 보호가 적용됩니다 (`src/main/action-approval.js`):
+
+- **구조 검증**: 다운로드한 페이지는 저장 전에 `validateAction` 으로 모든 버튼 액션을 검증하며, 유효하지 않은 액션은 제거됩니다.
+- **기기별 1회 승인**: 원격 데이터에서 처음 나타난 위험 액션(`exec`/`script`)은 승인 대기 목록에 등록되고, 실행 시점에 사용자가 승인해야 실행됩니다. 로컬에서 만든 액션과 이미 신뢰된 액션은 다이얼로그 없이 실행됩니다.
+- **로컬 전용 신뢰 목록**: 신뢰·대기 상태의 fingerprint 는 config `security` 키에 기기 로컬로만 저장되며 클라우드에 업로드되지 않습니다.
+
+### open 액션 인자 처리
+
+`open` 액션의 애플리케이션 실행은 셸을 거치지 않고 `execFile` 로 인자를 배열로 전달하므로, 파일 경로·애플리케이션 이름을 통한 명령 주입을 방지합니다 (`src/main/actions/open.js`).
 
 ### 사용자 책임
 

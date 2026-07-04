@@ -231,10 +231,11 @@ Content-Type: application/json
 
 ## 구현 방법
 
-클라우드 동기화는 두 모듈로 구성됩니다:
+클라우드 동기화는 다음 모듈로 구성됩니다:
 
 - **`src/main/cloud-sync.js`**: 동기화 오케스트레이션 — 변경 감지, 디바운싱, 재시도, 충돌 해결을 담당합니다.
-- **`src/main/api/sync.js`**: 서버와의 HTTP 통신(`uploadSettings`, `downloadSettings`)과 동기화 가능 여부 판단(`isCloudSyncEnabled`)을 담당합니다.
+- **`src/main/api/sync.js`**: 서버와의 HTTP 통신(`uploadSettings`, `downloadSettings`)과 동기화 가능 여부 판단(`isCloudSyncEnabled`)을 담당합니다. 동기화 시점 자격 판정은 `src/main/subscription.js`의 `isCloudSyncAllowed`에 위임합니다.
+- **`src/main/cloud-sync/conflict-resolver.js`**: 충돌 분석(`analyzeConflict`)과 섹션별 병합(`mergePages`/`mergeAppearance`/`mergeAdvanced`)을 담당하는 순수 로직 모듈입니다.
 
 ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`appearance`·`advanced`가 동기화 대상입니다.
 
@@ -269,6 +270,15 @@ ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`app
 ### 로그인 시 동기화
 
 로그인 성공 후 `syncAfterLogin`이 먼저 서버 설정을 다운로드하고, 성공하면 토스트 창 UI에 갱신을 알립니다(`notifySettingsSynced`).
+
+### 다운로드 검증 및 액션 승인
+
+다른 기기에서 만든 `exec`/`script` 액션이 동기화로 내려와 임의 코드가 자동 실행되는 것을 막기 위해, 다운로드한 페이지에는 두 단계 보호가 적용됩니다 (`src/main/action-approval.js`).
+
+1. **구조 검증** (`sanitizeRemotePages`): 저장 전에 모든 버튼 액션을 `validateAction`으로 검증하고, 유효하지 않은 액션은 제거합니다. 형식이 잘못되었거나 악의적인 동기화 데이터가 로컬 구성에 들어오지 못하게 합니다.
+2. **기기별 1회 승인** (`recordRemoteChanges` → `ensureApproved`): 원격 데이터에서 처음 나타난 위험 액션은 승인 대기 목록(`security.pendingApprovals`)에 등록됩니다. 해당 액션을 실행하는 시점에 확인 다이얼로그가 표시되며, 사용자가 승인하면 신뢰 목록(`security.trustedActions`)으로 이동해 이후 다이얼로그 없이 실행됩니다. 사용자가 거부하면 실행이 차단됩니다.
+
+로컬에서 생성·편집한 액션은 저장 시 `trustCurrentConfig`로 신뢰 처리되므로 자신의 액션에 대해서는 승인을 요구받지 않습니다. 신뢰·대기 목록은 fingerprint 형태로 config `security` 키에 **기기 로컬로만** 저장되며 클라우드에 업로드되지 않습니다 (스키마는 [구성 스키마 – 보안](../config/schema.md#보안-기기-로컬) 참조).
 
 ## 충돌 해결 전략
 
