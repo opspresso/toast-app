@@ -165,7 +165,8 @@ describe('API Auth Module (P0)', () => {
       expect(result).toEqual({
         success: true,
         access_token: 'new-access-token',
-        refresh_token: 'new-refresh-token'
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600
       });
       expect(mockClient.post).toHaveBeenCalledWith('https://app.toast.sh/api/oauth/token', expect.any(URLSearchParams), expect.objectContaining({
         headers: {
