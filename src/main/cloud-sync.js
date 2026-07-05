@@ -226,15 +226,16 @@ async function uploadSettingsWithRetry() {
       state.lastChangeHash = null;
     }
     else if (result.statusCode === 409) {
-      // 서버에 더 최신 데이터가 있어 거부됨(stale write) — 재시도 대신 서버 데이터로 재조정
-      logger.warn('Upload rejected as stale (409); scheduling download to reconcile with server');
+      // 서버에 더 최신 데이터가 있어 거부됨(stale write) — 단순 다운로드는 로컬 변경을
+      // 덮어써 유실시키므로, 병합 경로(resolve)로 로컬 변경을 보존하며 재조정한다
+      logger.warn('Upload rejected as stale (409); scheduling conflict resolution to preserve local changes');
       state.retryCount = 0;
       state.pendingSync = false;
       state.lastChangeHash = null;
-      // isSyncing 해제(finally) 후 다운로드가 진행되도록 예약
+      // isSyncing 해제(finally) 후 병합 재조정이 진행되도록 예약
       state.timers.retry = setTimeout(() => {
         state.timers.retry = null;
-        downloadSettings();
+        reconcileStaleUpload();
       }, RETRY_DELAY_MS);
     }
     else if (result.statusCode === 400) {
@@ -584,12 +585,48 @@ async function syncSettings(action = 'resolve') {
 }
 
 /**
+ * 409(stale write) 거부 후 서버 데이터와 병합하여 로컬 변경을 보존한 채 재업로드
+ * @returns {Promise<Object>} 재조정 결과
+ */
+async function reconcileStaleUpload() {
+  try {
+    logger.info('Reconciling stale upload: fetching server data for merge');
+
+    const serverResult = await apiSync.downloadSettings({
+      hasValidToken: authManager.hasValidToken,
+      onUnauthorized: authManager.refreshAccessToken,
+      configStore: null, // ConfigStore에 저장하지 않고 병합에만 사용
+      directData: {},
+    });
+
+    if (!serverResult.success) {
+      logger.error('Stale-write reconciliation failed to fetch server data:', serverResult.error);
+      return serverResult;
+    }
+
+    const serverData = serverResult.data || {};
+    const serverMeta = serverResult.syncMetadata || serverData;
+
+    const mergeResult = await performIntelligentMerge(serverData, serverMeta);
+    if (!mergeResult.success) {
+      return mergeResult;
+    }
+
+    return await uploadSettings();
+  }
+  catch (error) {
+    logger.error('Stale-write reconciliation error:', error);
+    return { success: false, error: error.message || 'Unknown error' };
+  }
+}
+
+/**
  * 지능형 설정 병합 수행
  * @param {Object} serverData - 서버 데이터
- * @param {Object} _serverMeta - 서버 메타데이터
+ * @param {Object} serverMeta - 서버 메타데이터
  * @returns {Promise<Object>} 병합 결과
  */
-async function performIntelligentMerge(serverData, _serverMeta) {
+async function performIntelligentMerge(serverData, serverMeta) {
   try {
     logger.info('Starting intelligent merge process');
 
@@ -632,6 +669,14 @@ async function performIntelligentMerge(serverData, _serverMeta) {
 
     // 5. 병합 메타데이터 업데이트
     markAsModified(configStore);
+
+    // 서버 타임스탬프가 로컬 시계보다 앞서 있으면(시계 편차) 그보다 크게 올려
+    // 재업로드가 다시 stale(409)로 거부되는 것을 방지한다
+    const serverModifiedAt = Number(serverMeta && serverMeta.lastModifiedAt) || 0;
+    const mergedMeta = getSyncMetadata(configStore);
+    if (serverModifiedAt >= mergedMeta.lastModifiedAt) {
+      updateSyncMetadata(configStore, { lastModifiedAt: serverModifiedAt + 1 });
+    }
 
     logger.info('Intelligent merge completed successfully');
     return {
