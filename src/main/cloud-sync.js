@@ -39,6 +39,7 @@ const state = {
     sync: null, // Periodic sync timer
     debounce: null, // Debounce timer
     retry: null, // Upload retry timer
+    reconcile: null, // Stale-write (409) reconciliation timer
   },
 };
 
@@ -145,6 +146,11 @@ function stopPeriodicSync() {
     state.timers.retry = null;
     logger.info('Pending upload retry canceled');
   }
+  if (state.timers.reconcile) {
+    clearTimeout(state.timers.reconcile);
+    state.timers.reconcile = null;
+    logger.info('Pending stale-write reconciliation canceled');
+  }
 }
 
 /**
@@ -232,9 +238,13 @@ async function uploadSettingsWithRetry() {
       state.retryCount = 0;
       state.pendingSync = false;
       state.lastChangeHash = null;
-      // isSyncing 해제(finally) 후 병합 재조정이 진행되도록 예약
-      state.timers.retry = setTimeout(() => {
-        state.timers.retry = null;
+      // isSyncing 해제(finally) 후 병합 재조정이 진행되도록 예약.
+      // 재시도(retry) 슬롯과 분리된 reconcile 슬롯을 사용해 서로 덮어쓰지 않게 한다.
+      if (state.timers.reconcile) {
+        clearTimeout(state.timers.reconcile);
+      }
+      state.timers.reconcile = setTimeout(() => {
+        state.timers.reconcile = null;
         reconcileStaleUpload();
       }, RETRY_DELAY_MS);
     }
@@ -630,8 +640,11 @@ async function reconcileStaleUpload() {
   // (겹치면 applyingRemote 억제 플래그가 조기 해제되어 다운로드→재업로드 루프가 발생할 수 있음)
   if (state.isSyncing) {
     logger.info('Sync in progress; deferring stale-upload reconciliation');
-    state.timers.retry = setTimeout(() => {
-      state.timers.retry = null;
+    if (state.timers.reconcile) {
+      clearTimeout(state.timers.reconcile);
+    }
+    state.timers.reconcile = setTimeout(() => {
+      state.timers.reconcile = null;
       reconcileStaleUpload();
     }, RETRY_DELAY_MS);
     return { success: false, deferred: true, error: 'Sync in progress' };

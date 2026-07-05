@@ -31,6 +31,9 @@ function isSubscriptionActive(subscription) {
  * @returns {number}
  */
 function calculatePageGroups(subscription) {
+  if (!subscription || typeof subscription !== 'object') {
+    return PAGE_GROUPS.ANONYMOUS;
+  }
   const isActive = isSubscriptionActive(subscription);
   const isVip = subscription.isVip || false;
 

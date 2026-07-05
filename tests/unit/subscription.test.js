@@ -48,6 +48,11 @@ describe('Subscription Helpers', () => {
       expect(calculatePageGroups({ userId: 'anonymous' })).toBe(PAGE_GROUPS.ANONYMOUS);
       expect(calculatePageGroups({})).toBe(PAGE_GROUPS.ANONYMOUS);
     });
+
+    test('null/undefined subscription returns anonymous page groups', () => {
+      expect(calculatePageGroups(null)).toBe(PAGE_GROUPS.ANONYMOUS);
+      expect(calculatePageGroups(undefined)).toBe(PAGE_GROUPS.ANONYMOUS);
+    });
   });
 
   describe('normalizeExpiryString', () => {

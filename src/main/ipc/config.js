@@ -5,7 +5,12 @@
  */
 
 const { ipcMain } = require('electron');
+const crypto = require('crypto');
 const { createLogger } = require('../logger');
+
+// Log config values as short hashes, not plaintext, so secrets/commands
+// (e.g. exec/script actions in `pages`, auth state in `subscription`) are not leaked.
+const hashOfValue = value => crypto.createHash('sha256').update(JSON.stringify(value) ?? 'undefined').digest('hex').slice(0, 12);
 
 const logger = createLogger('IPC');
 
@@ -155,13 +160,10 @@ function setupConfigHandlers(windows, config) {
       if (typeof changes === 'object') {
         // Apply each change to config
         Object.keys(changes).forEach(key => {
-          const oldValue = config.get(key);
-          logger.info(`IPC: Setting config key "${key}" - Config ID: ${config.path || 'unknown'}`);
-          logger.info(`Old value hash: ${JSON.stringify(oldValue).slice(0, 100)}...`);
+          const oldHash = hashOfValue(config.get(key));
           config.set(key, changes[key]);
-          const newValue = config.get(key);
-          logger.info(`New value hash: ${JSON.stringify(newValue).slice(0, 100)}...`);
-          logger.info(`Values equal: ${JSON.stringify(oldValue) === JSON.stringify(newValue)}`);
+          const newHash = hashOfValue(config.get(key));
+          logger.info(`IPC: Setting config key "${key}" (old=${oldHash}, new=${newHash}, changed=${oldHash !== newHash})`);
         });
 
         // Actions saved locally by the user are trusted on this device

@@ -15,6 +15,21 @@ const { createLogger } = require('../logger');
 // 모듈별 로거 생성
 const logger = createLogger('ScriptAction');
 
+// Only expose non-sensitive environment variables to user scripts
+// (secrets like CLIENT_SECRET must stay in the main process). Applied to both the
+// JavaScript sandbox and the shell launchers (osascript/powershell/bash).
+const SAFE_ENV_KEYS = ['HOME', 'USER', 'USERPROFILE', 'PATH', 'LANG', 'SHELL', 'TMPDIR', 'TEMP', 'TMP'];
+
+function buildSafeEnv() {
+  const safeEnv = {};
+  for (const key of SAFE_ENV_KEYS) {
+    if (process.env[key] !== undefined) {
+      safeEnv[key] = process.env[key];
+    }
+  }
+  return safeEnv;
+}
+
 /**
  * Execute a custom script
  * @param {Object} action - Action configuration
@@ -68,15 +83,7 @@ async function executeScript(action) {
  */
 async function executeJavaScript(script, params = {}) {
   try {
-    // Only expose non-sensitive environment variables to user scripts
-    // (secrets like CLIENT_SECRET must stay in the main process)
-    const SAFE_ENV_KEYS = ['HOME', 'USER', 'USERPROFILE', 'PATH', 'LANG', 'SHELL', 'TMPDIR', 'TEMP', 'TMP'];
-    const safeEnv = {};
-    for (const key of SAFE_ENV_KEYS) {
-      if (process.env[key] !== undefined) {
-        safeEnv[key] = process.env[key];
-      }
-    }
+    const safeEnv = buildSafeEnv();
 
     // Create a sandbox with limited context
     const sandbox = {
@@ -155,7 +162,7 @@ async function executeAppleScript(script) {
 
     // Execute the script
     return new Promise((resolve, reject) => {
-      exec(`osascript "${tempFile}"`, (error, stdout, stderr) => {
+      exec(`osascript "${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
         // Clean up the temporary file
         try {
           fs.unlinkSync(tempFile);
@@ -215,7 +222,7 @@ async function executePowerShell(script) {
 
     // Execute the script
     return new Promise((resolve, reject) => {
-      exec(`powershell -ExecutionPolicy Bypass -File "${tempFile}"`, (error, stdout, stderr) => {
+      exec(`powershell -ExecutionPolicy Bypass -File "${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
         // Clean up the temporary file
         try {
           fs.unlinkSync(tempFile);
@@ -278,7 +285,7 @@ async function executeBash(script) {
 
     // Execute the script
     return new Promise((resolve, reject) => {
-      exec(`"${tempFile}"`, (error, stdout, stderr) => {
+      exec(`"${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
         // Clean up the temporary file
         try {
           fs.unlinkSync(tempFile);

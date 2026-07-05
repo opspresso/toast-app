@@ -437,11 +437,7 @@ describe('Main IPC Handlers (P0)', () => {
 
       const result = await ipcHandlers['show-save-dialog'](mockEvent, options);
 
-      expect(dialog.showSaveDialog).toHaveBeenCalledWith({
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      });
+      expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows.toast, options);
       expect(result).toEqual(mockResult);
     });
 
@@ -459,11 +455,7 @@ describe('Main IPC Handlers (P0)', () => {
 
       const result = await ipcHandlers['show-message-box'](mockEvent, options);
 
-      expect(dialog.showMessageBox).toHaveBeenCalledWith({
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      });
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(windows.toast, options);
       expect(result).toEqual(mockResult);
     });
   });

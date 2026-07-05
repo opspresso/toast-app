@@ -105,9 +105,14 @@ function setupWindowHandlers(windows) {
 
   // Show toast window
   ipcMain.on('show-toast', () => {
-    if (windows.toast) {
-      windows.toast.show();
-      windows.toast.focus();
+    if (windows.toast && !windows.toast.isDestroyed()) {
+      try {
+        windows.toast.show();
+        windows.toast.focus();
+      }
+      catch (error) {
+        logger.error('Error showing toast window:', error);
+      }
     }
   });
 
@@ -129,8 +134,13 @@ function setupWindowHandlers(windows) {
 
   // Hide toast window
   ipcMain.on('hide-toast', () => {
-    if (windows.toast && windows.toast.isVisible()) {
-      windows.toast.hide();
+    if (windows.toast && !windows.toast.isDestroyed() && windows.toast.isVisible()) {
+      try {
+        windows.toast.hide();
+      }
+      catch (error) {
+        logger.error('Error hiding toast window:', error);
+      }
     }
   });
 

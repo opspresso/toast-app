@@ -493,9 +493,7 @@ describe('IPC Handlers', () => {
       const options = { defaultPath: 'test.txt' };
       const result = await handler({}, options);
 
-      expect(mockDialog.showSaveDialog).toHaveBeenCalledWith(
-        expect.objectContaining({ modal: true, parent: mockWindows.toast, ...options })
-      );
+      expect(mockDialog.showSaveDialog).toHaveBeenCalledWith(mockWindows.toast, options);
       expect(result).toEqual({ canceled: false, filePath: '/test/save' });
     });
 

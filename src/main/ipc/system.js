@@ -75,14 +75,10 @@ function setupSystemHandlers(windows, config) {
   // Show save dialog
   ipcMain.handle('show-save-dialog', async (event, options) => {
     try {
-      // Add modal: true to options to display as modal
-      const modalOptions = {
-        ...options,
-        modal: true,
-        // Set toast window as parent to always display above toast window
-        parent: windows.toast,
-      };
-      return await dialog.showSaveDialog(modalOptions);
+      // Passing the toast window as the first argument makes the dialog modal to it.
+      // (Electron ignores modal/parent inside the options object for dialog methods.)
+      const parent = windows.toast && !windows.toast.isDestroyed() ? windows.toast : null;
+      return parent ? await dialog.showSaveDialog(parent, options) : await dialog.showSaveDialog(options);
     }
     catch (error) {
       logger.error('Error showing save dialog:', error);
@@ -93,14 +89,9 @@ function setupSystemHandlers(windows, config) {
   // Show message box
   ipcMain.handle('show-message-box', async (event, options) => {
     try {
-      // Add modal: true to options to display as modal
-      const modalOptions = {
-        ...options,
-        modal: true,
-        // Set toast window as parent to always display above toast window
-        parent: windows.toast,
-      };
-      return await dialog.showMessageBox(modalOptions);
+      // Passing the toast window as the first argument makes the dialog modal to it.
+      const parent = windows.toast && !windows.toast.isDestroyed() ? windows.toast : null;
+      return parent ? await dialog.showMessageBox(parent, options) : await dialog.showMessageBox(options);
     }
     catch (error) {
       logger.error('Error showing message box:', error);

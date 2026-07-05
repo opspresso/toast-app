@@ -141,13 +141,13 @@ Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증
   - `require`: 모든 내장 모듈 사용 가능 (`fs`, `child_process`, `http` 등)
   - `process`: `platform`, `arch`, 그리고 비민감 환경 변수만 담은 `env`
   - `Buffer`, `setTimeout`, `setInterval` 등 표준 전역
-- `process.env` 로는 허용 목록(`HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`)에 포함된 변수만 전달됩니다. `CLIENT_SECRET` 등 메인 프로세스의 시크릿은 스크립트에 노출되지 않습니다.
+- `process.env` 로는 허용 목록(`HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`)에 포함된 변수만 전달되어, `CLIENT_SECRET` 등 메인 프로세스의 시크릿은 기본적으로 스크립트에 노출되지 않습니다. 다만 스크립트가 `require('child_process')` 로 자식 프로세스를 띄우면 그 자식은 전체 환경을 다시 읽을 수 있으므로, 이 제한은 완전한 격리가 아닙니다.
 - 따라서 파일 시스템 접근, 네트워크 호출, 외부 프로세스 실행은 여전히 가능합니다.
 - 실행 시간 제한, 메모리 제한, API 화이트리스트는 적용되지 않습니다.
 
 ### 셸 / 시스템 스크립트
 
-- AppleScript(`osascript`), PowerShell, Bash 스크립트는 `child_process.exec` 로 자식 프로세스에서 실행됩니다.
+- AppleScript(`osascript`), PowerShell, Bash 스크립트는 `child_process.exec` 로 자식 프로세스에서 실행되며, JavaScript 스크립트와 동일한 허용 목록 환경 변수(`env`)만 전달받아 메인 프로세스의 시크릿 상속을 제한합니다.
 - 별도의 작업 디렉토리(`cwd`)를 지정하지 않으므로 스크립트는 앱 프로세스의 작업 디렉토리를 그대로 상속하며, 실행 권한은 현재 사용자와 동일합니다.
 
 ### 클라우드 동기화 액션 보호

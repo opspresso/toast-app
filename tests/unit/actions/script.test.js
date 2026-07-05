@@ -62,7 +62,9 @@ describe('Script Action', () => {
     originalPlatform = process.platform;
     
     // Setup default mock implementations
-    exec.mockImplementation((command, callback) => {
+    // exec is called as exec(command, options, callback); tolerate the optional options arg
+    exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
+      const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
       callback(null, 'mock stdout', 'mock stderr');
     });
     
@@ -273,6 +275,7 @@ describe('Script Action', () => {
       );
       expect(exec).toHaveBeenCalledWith(
         expect.stringContaining('osascript'),
+        expect.any(Object),
         expect.any(Function)
       );
       expect(result).toEqual({
@@ -312,7 +315,8 @@ describe('Script Action', () => {
       };
 
       const error = new Error('AppleScript error');
-      exec.mockImplementation((command, callback) => {
+      exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
+        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
         callback(error, null, 'error output');
       });
 
@@ -384,6 +388,7 @@ describe('Script Action', () => {
       );
       expect(exec).toHaveBeenCalledWith(
         expect.stringContaining('powershell -ExecutionPolicy Bypass'),
+        expect.any(Object),
         expect.any(Function)
       );
       expect(result).toEqual({
@@ -423,7 +428,8 @@ describe('Script Action', () => {
       };
 
       const error = new Error('PowerShell error');
-      exec.mockImplementation((command, callback) => {
+      exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
+        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
         callback(error, null, 'error output');
       });
 
@@ -462,6 +468,7 @@ describe('Script Action', () => {
       );
       expect(exec).toHaveBeenCalledWith(
         expect.stringContaining('/tmp/toast-bash-'),
+        expect.any(Object),
         expect.any(Function)
       );
       expect(result).toEqual({
@@ -517,7 +524,8 @@ describe('Script Action', () => {
       };
 
       const error = new Error('Bash error');
-      exec.mockImplementation((command, callback) => {
+      exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
+        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
         callback(error, null, 'error output');
       });
 
