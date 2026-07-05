@@ -485,9 +485,10 @@ for (const appName of testApps) {
 
 - `src/main/utils/app-icon-extractor.js` - 핵심 아이콘 추출 유틸리티
 - `src/renderer/pages/toast/modules/local-icon-utils.js` - 렌더러 프로세스 유틸리티
-- `src/main/ipc.js` - IPC 핸들러 (extract-app-icon)
+- `src/main/ipc/system.js` - IPC 핸들러 (extract-app-icon)
 - `src/renderer/preload/toast.js` - Preload 스크립트 확장
-- `src/renderer/pages/toast/modules/modals.js` - 버튼 설정 모달 통합
+- `src/renderer/pages/toast/modules/modals-button-edit.js` - 버튼 편집 모달 (아이콘 미리보기)
+- `src/renderer/pages/toast/modules/modals-icon-browser.js` - 아이콘 브라우저 모달
 - `src/renderer/pages/toast/styles.css` - 아이콘 미리보기 스타일
 
 ## 향후 개선 계획

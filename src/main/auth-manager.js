@@ -15,7 +15,8 @@ const logger = createLogger('AuthManager');
 const { createConfigStore } = require('./config');
 const client = require('./api/client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
-const cloudSync = require('./cloud-sync'); // Import cloud synchronization module
+const { determineCloudSyncFeature, normalizeExpiryString } = require('./subscription');
+const { broadcastToWindows } = require('./broadcast');
 
 // Store window references
 let windows = null;
@@ -92,11 +93,18 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
     // Notify both windows on login success
     if (result.success) {
-      notifyLoginSuccess(result.subscription);
-
       // 1. Get profile information only once after successful login
       logger.info('Getting user profile information after successful login');
       const userProfile = await auth.fetchUserProfile();
+
+      // Persist the profile to the local cache before notifying renderers so their
+      // profile/subscription IPC requests hit the cache instead of re-calling the API
+      if (userProfile) {
+        await userDataManager.getUserProfile(true, userProfile);
+      }
+
+      // Notify both windows on login success (profile cache is now warm)
+      notifyLoginSuccess(result.subscription);
 
       // Log subscription information
       if (userProfile) {
@@ -119,29 +127,15 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         logger.info('Starting cloud synchronization after successful login');
 
         // Add debugging information
-        logger.info('Complete subscription information:', JSON.stringify(result.subscription || {}));
+        logger.info(
+          'Subscription summary:',
+          JSON.stringify({ plan: result.subscription?.plan, active: result.subscription?.active, isVip: result.subscription?.isVip }),
+        );
 
-        // Check if features object exists
-        if (result.subscription?.features && typeof result.subscription.features === 'object') {
-          hasSyncFeature = result.subscription.features.cloud_sync === true;
-          logger.info('Checking cloud_sync feature in subscription features:', hasSyncFeature);
-        }
-        else if (Array.isArray(result.subscription?.features_array)) {
-          // Check in features_array (alternative method)
-          hasSyncFeature = result.subscription.features_array.includes('cloud_sync');
-          logger.info('Checking cloud_sync feature in features_array:', hasSyncFeature);
-        }
-        else if (result.subscription?.isSubscribed === true || result.subscription?.active === true || result.subscription?.is_subscribed === true) {
-          // Subscribers can use cloud_sync by default
-          hasSyncFeature = true;
-          logger.info('Cloud_sync feature enabled due to active subscription status');
-        }
-
-        // In development mode, enable cloud_sync for Basic plan users for testing
-        if (!hasSyncFeature && process.env.NODE_ENV === 'development' && result.subscription?.plan === 'Basic') {
-          hasSyncFeature = true;
-          logger.info('Cloud_sync feature enabled for Basic plan in development mode');
-        }
+        hasSyncFeature = determineCloudSyncFeature(result.subscription, {
+          isDevelopment: process.env.NODE_ENV === 'development',
+        });
+        logger.info('Cloud_sync feature determined from subscription:', hasSyncFeature);
 
         // Force add cloud_sync feature to subscription info (for debugging)
         if (result.subscription && typeof result.subscription === 'object') {
@@ -156,36 +150,23 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Set cloud_sync feature
           updatedSubscription.features.cloud_sync = hasSyncFeature;
 
-          // Ensure expiresAt is a string (prevent schema violation)
-          if (updatedSubscription.expiresAt !== undefined) {
-            if (typeof updatedSubscription.expiresAt !== 'string') {
-              updatedSubscription.expiresAt = String(updatedSubscription.expiresAt || '');
-            }
-
-            // Set to empty string if value is 'undefined' or 'null'
-            if (updatedSubscription.expiresAt === 'undefined' || updatedSubscription.expiresAt === 'null') {
-              updatedSubscription.expiresAt = '';
-            }
-          }
-          else {
-            updatedSubscription.expiresAt = '';
-          }
-
-          // Same for subscribed_until if it exists
+          // Ensure expiry fields are strings (prevent schema violation)
+          updatedSubscription.expiresAt = normalizeExpiryString(updatedSubscription.expiresAt);
           if (updatedSubscription.subscribed_until !== undefined) {
-            if (typeof updatedSubscription.subscribed_until !== 'string') {
-              updatedSubscription.subscribed_until = String(updatedSubscription.subscribed_until || '');
-            }
-
-            if (updatedSubscription.subscribed_until === 'undefined' || updatedSubscription.subscribed_until === 'null') {
-              updatedSubscription.subscribed_until = '';
-            }
+            updatedSubscription.subscribed_until = normalizeExpiryString(updatedSubscription.subscribed_until);
           }
 
           // Save updated subscription info to settings store
           const config = createConfigStore();
           config.set('subscription', updatedSubscription);
-          logger.info('Updated subscription information saved:', JSON.stringify(updatedSubscription));
+          logger.info(
+            'Updated subscription information saved:',
+            JSON.stringify({
+              plan: updatedSubscription.plan,
+              active: updatedSubscription.active,
+              cloud_sync: updatedSubscription.features?.cloud_sync,
+            }),
+          );
         }
 
         logger.info('Cloud synchronization feature status set:', hasSyncFeature);
@@ -201,11 +182,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
       // 3. Integrated synchronization processing - handle profile and settings information at once
       const performSync = async () => {
         try {
-          // Save profile information to file (prevent duplicate API calls)
-          if (userProfile) {
-            await userDataManager.getUserProfile(true, userProfile); // Directly pass API results to prevent duplicate calls
-            logger.info('User profile information saved successfully');
-          }
+          // Profile was already persisted to the local cache above, before notifying renderers
 
           // Get user settings information
           logger.info('Getting user settings after successful login');
@@ -425,16 +402,7 @@ function notifyLoginSuccess(subscription) {
     pageGroups: subscription?.features?.page_groups || 3,
   };
 
-  // Send notification to toast window
-  if (windows.toast && !windows.toast.isDestroyed()) {
-    windows.toast.webContents.send('login-success', loginData);
-  }
-
-  // Send notification to settings window
-  if (windows.settings && !windows.settings.isDestroyed()) {
-    windows.settings.webContents.send('login-success', loginData);
-  }
-
+  broadcastToWindows(windows, 'login-success', loginData);
   logger.info('Login success notification sent to both windows');
 }
 
@@ -452,16 +420,7 @@ function notifyLoginError(errorMessage) {
     message: 'Authentication failed: ' + errorMessage,
   };
 
-  // Send notification to toast window
-  if (windows.toast && !windows.toast.isDestroyed()) {
-    windows.toast.webContents.send('login-error', errorData);
-  }
-
-  // Send notification to settings window
-  if (windows.settings && !windows.settings.isDestroyed()) {
-    windows.settings.webContents.send('login-error', errorData);
-  }
-
+  broadcastToWindows(windows, 'login-error', errorData);
   logger.info('Login error notification sent to both windows');
 }
 
@@ -473,16 +432,7 @@ function notifyLogout() {
     return;
   }
 
-  // Send notification to toast window
-  if (windows.toast && !windows.toast.isDestroyed()) {
-    windows.toast.webContents.send('logout-success', {});
-  }
-
-  // Send notification to settings window
-  if (windows.settings && !windows.settings.isDestroyed()) {
-    windows.settings.webContents.send('logout-success', {});
-  }
-
+  broadcastToWindows(windows, 'logout-success', {});
   logger.info('Logout notification sent to both windows');
 }
 
@@ -533,24 +483,9 @@ function notifySettingsSynced(configData = null) {
 
   logger.info('Settings to be synced to UI:', Object.keys(configData || {}).join(', '));
 
-  // Send notification to toast window with full config data
-  if (windows.toast && !windows.toast.isDestroyed()) {
-    // 설정 업데이트 알림 전송
-    windows.toast.webContents.send('settings-synced', syncData);
-
-    // 전체 설정 데이터로 UI 갱신 알림 전송
-    windows.toast.webContents.send('config-updated', configData);
-    logger.info('Full config update notification sent to toast window');
-  }
-
-  // Send notification to settings window
-  if (windows.settings && !windows.settings.isDestroyed()) {
-    windows.settings.webContents.send('settings-synced', syncData);
-
-    // 설정 창도 전체 설정으로 업데이트
-    windows.settings.webContents.send('config-updated', configData);
-    logger.info('Full config update notification sent to settings window');
-  }
+  // 설정 업데이트 알림 + 전체 설정 데이터로 UI 갱신 알림 전송
+  broadcastToWindows(windows, 'settings-synced', syncData);
+  broadcastToWindows(windows, 'config-updated', configData);
 
   logger.info('Settings synchronization notification sent');
 }
@@ -616,16 +551,7 @@ function notifyAuthStateChange(authState) {
     return;
   }
 
-  // Send notification to toast window
-  if (windows.toast && !windows.toast.isDestroyed()) {
-    windows.toast.webContents.send('auth-state-changed', authState);
-  }
-
-  // Send notification to settings window
-  if (windows.settings && !windows.settings.isDestroyed()) {
-    windows.settings.webContents.send('auth-state-changed', authState);
-  }
-
+  broadcastToWindows(windows, 'auth-state-changed', authState);
   logger.info('Auth state change notification sent to both windows');
 }
 

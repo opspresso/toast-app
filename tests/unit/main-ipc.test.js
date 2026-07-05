@@ -437,11 +437,7 @@ describe('Main IPC Handlers (P0)', () => {
 
       const result = await ipcHandlers['show-save-dialog'](mockEvent, options);
 
-      expect(dialog.showSaveDialog).toHaveBeenCalledWith({
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      });
+      expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows.toast, options);
       expect(result).toEqual(mockResult);
     });
 
@@ -459,11 +455,7 @@ describe('Main IPC Handlers (P0)', () => {
 
       const result = await ipcHandlers['show-message-box'](mockEvent, options);
 
-      expect(dialog.showMessageBox).toHaveBeenCalledWith({
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      });
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(windows.toast, options);
       expect(result).toEqual(mockResult);
     });
   });
@@ -563,16 +555,17 @@ describe('Main IPC Handlers (P0)', () => {
 
   describe('Integration Tests', () => {
     test('should setup complete IPC communication pipeline', () => {
-      // Verify all critical systems are initialized
+      // setupIpcHandlers only initializes the updater; auth/user-data managers
+      // and the protocol handler are owned by src/index.js
       const authManager = require('../../src/main/auth-manager');
       const userDataManager = require('../../src/main/user-data-manager');
       const updater = require('../../src/main/updater');
       const auth = require('../../src/main/auth');
 
-      expect(authManager.initialize).toHaveBeenCalledWith(windows);
-      expect(userDataManager.initialize).toHaveBeenCalledWith(windows);
       expect(updater.initAutoUpdater).toHaveBeenCalledWith(windows);
-      expect(auth.registerProtocolHandler).toHaveBeenCalled();
+      expect(authManager.initialize).not.toHaveBeenCalled();
+      expect(userDataManager.initialize).not.toHaveBeenCalled();
+      expect(auth.registerProtocolHandler).not.toHaveBeenCalled();
     });
 
     test('should handle complete action workflow', async () => {

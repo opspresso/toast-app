@@ -29,6 +29,7 @@ import {
   setProfileDataFetchInProgress,
 } from './state.js';
 import { setLoading, getInitials, saveSubscriptionToConfig, handleTokenExpired } from './utils.js';
+import * as cloudSyncUI from '../cloud-sync.js';
 
 /**
  * 계정 설정 탭 초기화
@@ -156,9 +157,7 @@ export function updateAuthStateUI(isLoggedIn) {
     window.settings
       .getSyncStatus()
       .then(status => {
-        if (window.cloudSyncUI) {
-          window.cloudSyncUI.updateSyncStatusUI(status, authState, window.settings.log);
-        }
+        cloudSyncUI.updateSyncStatusUI(status, authState, window.settings.log);
       })
       .catch(error => {
         window.settings.log.error('Error getting sync status:', error);
@@ -181,9 +180,7 @@ export function updateAuthStateUI(isLoggedIn) {
     subscriptionFeatures.textContent = '-';
 
     // Disable Cloud Sync UI
-    if (window.cloudSyncUI) {
-      window.cloudSyncUI.disableCloudSyncUI(window.settings.log);
-    }
+    cloudSyncUI.disableCloudSyncUI(window.settings.log);
   }
 }
 
@@ -444,7 +441,7 @@ export async function fetchSubscriptionInfo() {
     window.settings.log.info('구독 정보 수신:', subscription ? '성공' : '실패');
 
     if (subscription) {
-      window.settings.log.info('수신된 구독 정보:', JSON.stringify(subscription));
+      window.settings.log.info('수신된 구독 정보:', JSON.stringify({ plan: subscription.plan, active: subscription.active, isSubscribed: subscription.isSubscribed }));
 
       // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
       if (subscription.plan && subscription.plan.toLowerCase().includes('premium')) {

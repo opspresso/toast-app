@@ -9,7 +9,7 @@
 const { app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { createLogger } = require('./logger');
+const { createLogger, maskAuthUrl } = require('./logger');
 const { createConfigStore } = require('./config');
 
 // 모듈별 로거 생성
@@ -42,6 +42,7 @@ const TOKEN_EXPIRES_KEY = 'token-expires-at';
 
 // Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
+const { isSubscriptionActive, calculatePageGroups, normalizeExpiryString } = require('./subscription');
 
 // Set tokens in memory
 async function initializeTokensFromStorage() {
@@ -75,6 +76,14 @@ function readTokenFile() {
       return null;
     }
 
+    // Tighten permissions on files created before the 0600 policy
+    try {
+      fs.chmodSync(TOKEN_FILE_PATH, 0o600);
+    }
+    catch (chmodError) {
+      logger.error('Error setting token file permissions:', chmodError);
+    }
+
     const data = fs.readFileSync(TOKEN_FILE_PATH, 'utf8');
     return JSON.parse(data);
   }
@@ -99,8 +108,8 @@ function writeTokenFile(tokenData) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
-    // First write to a temporary file
-    fs.writeFileSync(tempFilePath, JSON.stringify(tokenData, null, 2), 'utf8');
+    // First write to a temporary file (owner read/write only)
+    fs.writeFileSync(tempFilePath, JSON.stringify(tokenData, null, 2), { encoding: 'utf8', mode: 0o600 });
 
     // Verify the written data is valid
     try {
@@ -128,6 +137,14 @@ function writeTokenFile(tokenData) {
     }
 
     fs.renameSync(tempFilePath, TOKEN_FILE_PATH);
+
+    // Tighten permissions on files created before the 0600 policy
+    try {
+      fs.chmodSync(TOKEN_FILE_PATH, 0o600);
+    }
+    catch (chmodError) {
+      logger.error('Error setting token file permissions:', chmodError);
+    }
 
     return true;
   }
@@ -375,7 +392,7 @@ async function initiateLogin() {
  */
 async function handleAuthRedirect(url) {
   try {
-    logger.info('Processing auth redirect:', url);
+    logger.info('Processing auth redirect:', maskAuthUrl(url));
 
     // 직접 URL에서 파라미터 추출
     const urlObj = new URL(url);
@@ -849,45 +866,14 @@ async function updatePageGroupSettings(subscription) {
     const config = createConfigStore();
 
     // Check active status and subscription status
-    const isActive = subscription.active || subscription.is_subscribed || false;
+    const isActive = isSubscriptionActive(subscription);
     const isVip = subscription.isVip || false;
 
     // Calculate number of page groups
-    let pageGroups = PAGE_GROUPS.ANONYMOUS;
-    if (isActive || isVip) {
-      if (subscription.plan === 'premium' || isVip) {
-        pageGroups = PAGE_GROUPS.PREMIUM;
-      }
-      else {
-        pageGroups = PAGE_GROUPS.AUTHENTICATED;
-      }
-    }
-    else if (subscription.userId && subscription.userId !== 'anonymous') {
-      // User is authenticated but not active subscription
-      pageGroups = PAGE_GROUPS.AUTHENTICATED;
-    }
+    const pageGroups = calculatePageGroups(subscription);
 
     // Process expiresAt value - always convert to string
-    let expiresAtStr = '';
-    try {
-      if (subscription.subscribed_until) {
-        // Explicitly convert to string and verify valid string
-        expiresAtStr = typeof subscription.subscribed_until === 'string' ? subscription.subscribed_until : String(subscription.subscribed_until);
-      }
-      else if (subscription.expiresAt) {
-        // Explicitly convert to string and verify valid string
-        expiresAtStr = typeof subscription.expiresAt === 'string' ? subscription.expiresAt : String(subscription.expiresAt);
-      }
-
-      // Set to empty string if value is undefined or null
-      if (expiresAtStr === 'undefined' || expiresAtStr === 'null') {
-        expiresAtStr = '';
-      }
-    }
-    catch (error) {
-      logger.error('Error converting expiresAt value:', error);
-      expiresAtStr = ''; // Use empty string if error occurs
-    }
+    const expiresAtStr = normalizeExpiryString(subscription.subscribed_until || subscription.expiresAt);
 
     logger.info('Verifying subscription information before saving:', {
       plan: subscription.plan || 'free',

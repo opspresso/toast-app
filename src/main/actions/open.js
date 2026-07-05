@@ -119,32 +119,34 @@ async function openPath(itemPath, application) {
  */
 async function openWithApplication(filePath, application) {
   try {
-    // Platform-specific commands
-    let command;
+    // Platform-specific launcher invocations.
+    // Arguments are passed as an array (no shell) to prevent command injection.
+    let file;
+    let args;
 
     if (process.platform === 'darwin') {
       // macOS
-      command = `open -a "${application}" "${filePath}"`;
-    }
-    else if (process.platform === 'win32') {
-      // Windows
-      command = `start "" "${application}" "${filePath}"`;
+      file = 'open';
+      args = ['-a', application, filePath];
     }
     else {
-      // Linux
-      command = `${application} "${filePath}"`;
+      // Windows / Linux: launch the application executable directly with the file as an argument.
+      // execFile spawns no shell, so metacharacters in `application` are never re-parsed
+      // (unlike `cmd.exe /c start`, which would re-interpret them and allow command injection).
+      file = application;
+      args = [filePath];
     }
 
-    // Execute the command
-    const { exec } = require('child_process');
-    exec(command, error => {
-      if (error) {
-        return {
-          success: false,
-          message: `Error opening with application: ${error.message}`,
-          error,
-        };
-      }
+    const { execFile } = require('child_process');
+    await new Promise((resolve, reject) => {
+      execFile(file, args, error => {
+        if (error) {
+          reject(error);
+        }
+        else {
+          resolve();
+        }
+      });
     });
 
     return {

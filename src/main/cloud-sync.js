@@ -11,6 +11,8 @@
 const { createLogger } = require('./logger');
 const { sync: apiSync } = require('./api');
 const { createConfigStore, markAsModified, markAsSynced, hasUnsyncedChanges, getSyncMetadata, getDeviceId, updateSyncMetadata } = require('./config');
+const { sanitizeRemotePages, recordRemoteChanges } = require('./action-approval');
+const { analyzeConflict, mergePages, mergeAppearance, mergeAdvanced } = require('./cloud-sync/conflict-resolver');
 
 // Create logger for this module
 const logger = createLogger('CloudSync');
@@ -25,6 +27,7 @@ const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
 const state = {
   enabled: true, // Whether sync is enabled
   isSyncing: false, // Whether sync is currently in progress
+  applyingRemote: false, // Whether remote data is being written to ConfigStore (suppresses re-upload)
   lastSyncTime: 0, // Last synchronization time
   lastChangeType: null, // Last change type
   pendingSync: false, // Whether there's a pending sync
@@ -35,12 +38,17 @@ const state = {
   timers: {
     sync: null, // Periodic sync timer
     debounce: null, // Debounce timer
+    retry: null, // Upload retry timer
+    reconcile: null, // Stale-write (409) reconciliation timer
   },
 };
 
 // External module references
 let configStore = null;
 let authManager = null;
+
+// Initialized sync manager (initCloudSync is guarded to run once)
+let syncManagerInstance = null;
 
 // Cache for isCloudSyncEnabled to reduce API calls
 const cloudSyncCache = {
@@ -133,6 +141,16 @@ function stopPeriodicSync() {
     state.timers.sync = null;
     logger.info('Periodic synchronization stopped');
   }
+  if (state.timers.retry) {
+    clearTimeout(state.timers.retry);
+    state.timers.retry = null;
+    logger.info('Pending upload retry canceled');
+  }
+  if (state.timers.reconcile) {
+    clearTimeout(state.timers.reconcile);
+    state.timers.reconcile = null;
+    logger.info('Pending stale-write reconciliation canceled');
+  }
 }
 
 /**
@@ -206,6 +224,37 @@ async function uploadSettingsWithRetry() {
       state.pendingSync = false;
       state.lastChangeHash = null; // 성공 시 해시 초기화
     }
+    else if (result.skipped) {
+      // 업로드할 페이지가 없어 스킵됨(빈 pages 가드) — 실패가 아니므로 재시도하지 않음
+      logger.info('Upload skipped (no page data); not retrying');
+      state.retryCount = 0;
+      state.pendingSync = false;
+      state.lastChangeHash = null;
+    }
+    else if (result.statusCode === 409) {
+      // 서버에 더 최신 데이터가 있어 거부됨(stale write) — 단순 다운로드는 로컬 변경을
+      // 덮어써 유실시키므로, 병합 경로(resolve)로 로컬 변경을 보존하며 재조정한다
+      logger.warn('Upload rejected as stale (409); scheduling conflict resolution to preserve local changes');
+      state.retryCount = 0;
+      state.pendingSync = false;
+      state.lastChangeHash = null;
+      // isSyncing 해제(finally) 후 병합 재조정이 진행되도록 예약.
+      // 재시도(retry) 슬롯과 분리된 reconcile 슬롯을 사용해 서로 덮어쓰지 않게 한다.
+      if (state.timers.reconcile) {
+        clearTimeout(state.timers.reconcile);
+      }
+      state.timers.reconcile = setTimeout(() => {
+        state.timers.reconcile = null;
+        reconcileStaleUpload();
+      }, RETRY_DELAY_MS);
+    }
+    else if (result.statusCode === 400) {
+      // 페이로드 검증 실패 — 재시도해도 동일하게 실패하므로 중단
+      logger.error(`Upload rejected as invalid (400), not retrying: ${result.error}`);
+      state.retryCount = 0;
+      state.pendingSync = false;
+      state.lastChangeHash = null;
+    }
     else {
       state.retryCount++;
 
@@ -214,8 +263,9 @@ async function uploadSettingsWithRetry() {
       if (state.retryCount <= MAX_RETRY_COUNT) {
         logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
-        // 재시도 예약
-        setTimeout(() => {
+        // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
+        state.timers.retry = setTimeout(() => {
+          state.timers.retry = null;
           uploadSettingsWithRetry();
         }, RETRY_DELAY_MS);
       }
@@ -233,8 +283,9 @@ async function uploadSettingsWithRetry() {
     if (state.retryCount <= MAX_RETRY_COUNT) {
       logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
 
-      // 재시도 예약
-      setTimeout(() => {
+      // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
+      state.timers.retry = setTimeout(() => {
+        state.timers.retry = null;
         uploadSettingsWithRetry();
       }, RETRY_DELAY_MS);
     }
@@ -295,8 +346,10 @@ async function uploadSettings(isInternalCall = false) {
     const pages = configStore.get('pages') || [];
     const syncMeta = getSyncMetadata(configStore);
 
+    // 빈 페이지 업로드는 서버의 정상 데이터를 삭제할 수 있으므로 건너뛴다 (실패가 아닌 스킵)
     if (pages.length === 0) {
-      logger.warn('No page data to upload');
+      logger.warn('No page data to upload; skipping upload to avoid clobbering server data');
+      return { success: false, skipped: true, error: 'No page data to upload' };
     }
 
     // 현재 타임스탬프
@@ -333,12 +386,19 @@ async function uploadSettings(isInternalCall = false) {
       markAsSynced(configStore);
 
       logger.info('Settings upload successful and sync metadata updated in ConfigStore');
-    }
-    else {
-      logger.error('Upload failed:', result.error);
+      return result;
     }
 
-    return result;
+    // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
+    // 재시도 로직(uploadSettingsWithRetry)이 참조하는 최상위 statusCode 로 정규화한다
+    const errorInfo = result.error && typeof result.error === 'object' ? result.error : null;
+    const errorMessage = errorInfo ? errorInfo.message || errorInfo.code : result.error;
+    logger.error('Upload failed:', errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+      statusCode: errorInfo ? errorInfo.statusCode : result.statusCode,
+    };
   }
   catch (error) {
     logger.error('설정 업로드 오류:', error);
@@ -383,24 +443,43 @@ async function downloadSettings() {
 
     logger.info('Requesting settings from server...');
 
-    // API에서 설정 다운로드 (ConfigStore에 직접 저장됨)
+    // 네트워크 fetch 중에는 변경 감지를 억제하지 않는다(이 구간의 사용자 편집은 정상 큐잉되어야 함).
+    // 데이터만 받아온 뒤(configStore:null), 아래 ConfigStore 저장 구간에만 짧게 억제한다.
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore,
+      configStore: null,
       directData: {}, // GET 요청에서는 무시됨
     });
 
-    if (result.success) {
-      const timestamp = Date.now();
+    if (!result.success) {
+      logger.error('Settings download failed:', result.error);
+      return result;
+    }
 
-      // 서버에서 받은 메타데이터 처리
-      const serverMetadata = result.syncMetadata || result.data;
+    const timestamp = Date.now();
+    const normalized = result.normalized || {};
+    const serverMetadata = result.syncMetadata || result.data;
 
+    // 원격 데이터를 ConfigStore에 적용하는 짧은 구간에만 onDidChange 재업로드를 억제한다.
+    state.applyingRemote = true;
+    try {
+      if (Array.isArray(normalized.pages)) {
+        // 원격 액션 구조 검증 + 신규 위험 액션 승인 대기 등록 후 저장
+        const sanitizedPages = await sanitizeRemotePages(normalized.pages);
+        recordRemoteChanges(configStore, sanitizedPages);
+        configStore.set('pages', sanitizedPages);
+        logger.info(`Saved ${sanitizedPages.length} pages to ConfigStore`);
+      }
+      if (normalized.appearance && Object.keys(normalized.appearance).length > 0) {
+        configStore.set('appearance', normalized.appearance);
+      }
+      if (normalized.advanced && Object.keys(normalized.advanced).length > 0) {
+        configStore.set('advanced', normalized.advanced);
+      }
+
+      // 서버에서 받은 메타데이터 반영
       if (serverMetadata) {
-        logger.info('Processing server metadata');
-
-        // ConfigStore에 동기화 메타데이터 업데이트
         updateSyncMetadata(configStore, {
           lastSyncedAt: timestamp,
           lastSyncedDevice: getDeviceId(),
@@ -408,35 +487,31 @@ async function downloadSettings() {
           lastModifiedDevice: serverMetadata.lastModifiedDevice || 'server',
           isConflicted: false,
         });
-
         logger.info(`Server data synced - last modified: ${new Date(serverMetadata.lastModifiedAt || timestamp).toISOString()}`);
       }
       else {
         logger.info('No server metadata found, marking as synced with current timestamp');
-
-        // ConfigStore에 동기화 완료 마킹
         markAsSynced(configStore);
       }
-
-      // 상태 업데이트
-      state.lastSyncTime = timestamp;
-
-      // 인증 관리자를 통해 UI 업데이트 알림 전송
-      if (authManager && typeof authManager.notifySettingsSynced === 'function') {
-        // 다운로드된 설정으로 UI 업데이트
-        const configData = {
-          pages: configStore.get('pages'),
-          appearance: configStore.get('appearance'),
-          advanced: configStore.get('advanced'),
-          subscription: configStore.get('subscription'),
-        };
-
-        authManager.notifySettingsSynced(configData);
-        logger.info('UI update notification sent to toast window');
-      }
     }
-    else {
-      logger.error('Settings download failed:', result.error);
+    finally {
+      state.applyingRemote = false;
+    }
+
+    // 상태 업데이트
+    state.lastSyncTime = timestamp;
+
+    // 인증 관리자를 통해 UI 업데이트 알림 전송
+    if (authManager && typeof authManager.notifySettingsSynced === 'function') {
+      const configData = {
+        pages: configStore.get('pages'),
+        appearance: configStore.get('appearance'),
+        advanced: configStore.get('advanced'),
+        subscription: configStore.get('subscription'),
+      };
+
+      authManager.notifySettingsSynced(configData);
+      logger.info('UI update notification sent to toast window');
     }
 
     return result;
@@ -463,7 +538,7 @@ async function syncSettings(action = 'resolve') {
 
   try {
     if (action === 'upload') {
-      return await uploadSettings();
+      return await uploadAndReconcile();
     }
     else if (action === 'download') {
       return await downloadSettings();
@@ -491,8 +566,9 @@ async function syncSettings(action = 'resolve') {
         return serverResult;
       }
 
-      const serverData = serverResult.data || {};
-      const serverMeta = serverResult.syncMetadata || serverData;
+      // 정규화된 섹션을 우선 사용(중첩/배열 응답 형태에서도 데이터 유실 방지)
+      const serverData = serverResult.normalized || serverResult.data || {};
+      const serverMeta = serverResult.syncMetadata || serverResult.data || {};
 
       logger.info(`Server state - Modified: ${new Date(serverMeta.lastModifiedAt || 0).toISOString()}`);
 
@@ -504,7 +580,7 @@ async function syncSettings(action = 'resolve') {
       if (conflictResolution.action === 'upload_local') {
         // 로컬이 더 최신 - 서버로 업로드
         logger.info('Local changes are newer, uploading to server');
-        return await uploadSettings();
+        return await uploadAndReconcile();
       }
       else if (conflictResolution.action === 'download_server') {
         // 서버가 더 최신 - 서버에서 다운로드
@@ -518,7 +594,7 @@ async function syncSettings(action = 'resolve') {
         const mergeResult = await performIntelligentMerge(serverData, serverMeta);
         if (mergeResult.success) {
           // 병합 후 서버에 업로드
-          return await uploadSettings();
+          return await uploadAndReconcile();
         }
         return mergeResult;
       }
@@ -539,58 +615,85 @@ async function syncSettings(action = 'resolve') {
 }
 
 /**
- * 충돌 분석 및 해결 전략 결정
- * @param {Object} localMeta - 로컬 메타데이터
- * @param {Object} serverMeta - 서버 메타데이터
- * @param {boolean} hasLocalChanges - 로컬 변경사항 존재 여부
- * @returns {Object} 해결 전략
+ * 409(stale write) 거부 후 서버 데이터와 병합하여 로컬 변경을 보존한 채 재업로드
+ * @returns {Promise<Object>} 재조정 결과
  */
-function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
-  // Use lastModifiedAt if available, fall back to lastSyncedAt for server compatibility
-  const localTime = localMeta.lastModifiedAt || localMeta.lastSyncedAt || 0;
-  const serverTime = serverMeta.lastModifiedAt || serverMeta.lastSyncedAt || 0;
-  const timeDifference = Math.abs(localTime - serverTime);
+/**
+ * 수동/충돌해결 경로용 업로드. 자동 경로(uploadSettingsWithRetry)와 달리 결과를 즉시 반환하되,
+ * 409(stale) 응답 시 서버와 병합 재조정하여 로컬 변경을 보존한다.
+ * @returns {Promise<Object>} 업로드 또는 재조정 결과
+ */
+async function uploadAndReconcile() {
+  const result = await uploadSettings();
+  if (result.success || result.skipped) {
+    return result;
+  }
+  if (result.statusCode === 409) {
+    logger.warn('Upload rejected as stale (409); reconciling with server merge to preserve local changes');
+    return await reconcileStaleUpload();
+  }
+  return result;
+}
 
-  // 시간 차이가 1분 미만이면 동일한 것으로 간주
-  const TIME_THRESHOLD = 60000; // 1 minute
-
-  logger.info(`Analyzing conflict - Local: ${localTime}, Server: ${serverTime}, Diff: ${timeDifference}ms, HasLocalChanges: ${hasLocalChanges}`);
-
-  // 1. 로컬에 변경사항이 없는 경우
-  if (!hasLocalChanges) {
-    if (serverTime > localTime) {
-      return { action: 'download_server', reason: 'No local changes, server is newer' };
+async function reconcileStaleUpload() {
+  // 주기적 다운로드 등 다른 동기화와 ConfigStore 쓰기가 교차하지 않도록 직렬화한다.
+  // (겹치면 applyingRemote 억제 플래그가 조기 해제되어 다운로드→재업로드 루프가 발생할 수 있음)
+  if (state.isSyncing) {
+    logger.info('Sync in progress; deferring stale-upload reconciliation');
+    if (state.timers.reconcile) {
+      clearTimeout(state.timers.reconcile);
     }
-    else {
-      return { action: 'no_action', reason: 'No changes needed' };
+    state.timers.reconcile = setTimeout(() => {
+      state.timers.reconcile = null;
+      reconcileStaleUpload();
+    }, RETRY_DELAY_MS);
+    return { success: false, deferred: true, error: 'Sync in progress' };
+  }
+
+  try {
+    state.isSyncing = true;
+    logger.info('Reconciling stale upload: fetching server data for merge');
+
+    const serverResult = await apiSync.downloadSettings({
+      hasValidToken: authManager.hasValidToken,
+      onUnauthorized: authManager.refreshAccessToken,
+      configStore: null, // ConfigStore에 저장하지 않고 병합에만 사용
+      directData: {},
+    });
+
+    if (!serverResult.success) {
+      logger.error('Stale-write reconciliation failed to fetch server data:', serverResult.error);
+      return serverResult;
     }
-  }
 
-  // 2. 서버 데이터가 없는 경우
-  if (!serverTime || serverTime === 0) {
-    return { action: 'upload_local', reason: 'No server data, upload local changes' };
-  }
+    // 정규화된 섹션을 우선 사용(중첩/배열 응답 형태에서도 데이터 유실 방지)
+    const serverData = serverResult.normalized || serverResult.data || {};
+    const serverMeta = serverResult.syncMetadata || serverResult.data || {};
 
-  // 3. 타임스탬프 비교
-  if (localTime > serverTime + TIME_THRESHOLD) {
-    return { action: 'upload_local', reason: 'Local changes are significantly newer' };
+    const mergeResult = await performIntelligentMerge(serverData, serverMeta);
+    if (!mergeResult.success) {
+      return mergeResult;
+    }
+
+    // 내부 호출(isSyncing 은 이 함수가 관리하므로 재진입 가드에 막히지 않도록)
+    return await uploadSettings(true);
   }
-  else if (serverTime > localTime + TIME_THRESHOLD) {
-    return { action: 'download_server', reason: 'Server changes are significantly newer' };
+  catch (error) {
+    logger.error('Stale-write reconciliation error:', error);
+    return { success: false, error: error.message || 'Unknown error' };
   }
-  else {
-    // 시간이 비슷하면 병합 시도
-    return { action: 'merge_required', reason: 'Concurrent changes detected, merge required' };
+  finally {
+    state.isSyncing = false;
   }
 }
 
 /**
  * 지능형 설정 병합 수행
  * @param {Object} serverData - 서버 데이터
- * @param {Object} _serverMeta - 서버 메타데이터
+ * @param {Object} serverMeta - 서버 메타데이터
  * @returns {Promise<Object>} 병합 결과
  */
-async function performIntelligentMerge(serverData, _serverMeta) {
+async function performIntelligentMerge(serverData, serverMeta) {
   try {
     logger.info('Starting intelligent merge process');
 
@@ -616,13 +719,31 @@ async function performIntelligentMerge(serverData, _serverMeta) {
       advanced: mergeAdvanced(localBackup.advanced, normalizedServerData.advanced),
     };
 
-    // 4. 병합된 데이터를 ConfigStore에 적용
-    configStore.set('pages', mergedData.pages);
-    configStore.set('appearance', mergedData.appearance);
-    configStore.set('advanced', mergedData.advanced);
+    // 4. 병합된 데이터를 ConfigStore에 적용 (원격 액션은 구조 검증 + 신규 위험 액션 승인 대기 등록)
+    mergedData.pages = await sanitizeRemotePages(mergedData.pages);
+    recordRemoteChanges(configStore, mergedData.pages);
+    // 병합 결과 적용 중에는 onDidChange가 중복 업로드를 트리거하지 않도록 억제
+    // (merge_required 경로가 직후 uploadSettings를 명시적으로 호출한다)
+    state.applyingRemote = true;
+    try {
+      configStore.set('pages', mergedData.pages);
+      configStore.set('appearance', mergedData.appearance);
+      configStore.set('advanced', mergedData.advanced);
+    }
+    finally {
+      state.applyingRemote = false;
+    }
 
     // 5. 병합 메타데이터 업데이트
     markAsModified(configStore);
+
+    // 서버 타임스탬프가 로컬 시계보다 앞서 있으면(시계 편차) 그보다 크게 올려
+    // 재업로드가 다시 stale(409)로 거부되는 것을 방지한다
+    const serverModifiedAt = Number(serverMeta && serverMeta.lastModifiedAt) || 0;
+    const mergedMeta = getSyncMetadata(configStore);
+    if (serverModifiedAt >= mergedMeta.lastModifiedAt) {
+      updateSyncMetadata(configStore, { lastModifiedAt: serverModifiedAt + 1 });
+    }
 
     logger.info('Intelligent merge completed successfully');
     return {
@@ -645,48 +766,13 @@ async function performIntelligentMerge(serverData, _serverMeta) {
 }
 
 /**
- * 페이지 데이터 병합
- * @param {Array} localPages - 로컬 페이지
- * @param {Array} serverPages - 서버 페이지
- * @returns {Array} 병합된 페이지
- */
-function mergePages(localPages = [], serverPages = []) {
-  // 페이지는 로컬 우선 (사용자가 수정한 내용 보존)
-  if (localPages.length > 0) {
-    logger.info(`Merging pages: keeping ${localPages.length} local pages, server had ${serverPages.length}`);
-    return localPages;
-  }
-  return serverPages;
-}
-
-/**
- * 외관 설정 병합
- * @param {Object} localAppearance - 로컬 외관 설정
- * @param {Object} serverAppearance - 서버 외관 설정
- * @returns {Object} 병합된 외관 설정
- */
-function mergeAppearance(localAppearance = {}, serverAppearance = {}) {
-  // 외관 설정은 최신 값 우선
-  return { ...serverAppearance, ...localAppearance };
-}
-
-/**
- * 고급 설정 병합
- * @param {Object} localAdvanced - 로컬 고급 설정
- * @param {Object} serverAdvanced - 서버 고급 설정
- * @returns {Object} 병합된 고급 설정
- */
-function mergeAdvanced(localAdvanced = {}, serverAdvanced = {}) {
-  // 고급 설정은 최신 값 우선
-  return { ...serverAdvanced, ...localAdvanced };
-}
-
-/**
  * 동기화 기능 활성화/비활성화
  * @param {boolean} enabled - 활성화 여부
  */
 function setEnabled(enabled) {
   state.enabled = enabled;
+  // 활성화 상태가 바뀌면 canSync 캐시가 오래되므로 무효화 (로그인 직후 stale false 방지)
+  clearCloudSyncCache();
   logger.info(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
 
   // Config Store와 동기화 (CloudSyncManager가 단일 진실 원천)
@@ -710,6 +796,12 @@ function setupConfigListeners() {
   // 설정 변경 감지 함수 (공통 로직)
   async function handleConfigChange(changeType, _key) {
     logger.info(`=== [DEBUG_TEST] ${changeType} change detected ===`);
+
+    // 원격 데이터를 적용하는 중이면 무시 (다운로드→업로드 피드백 루프 방지)
+    if (state.applyingRemote) {
+      logger.info('Ignoring config change while applying remote data');
+      return;
+    }
 
     // 동기화 가능 여부 확인
     if (!state.enabled) {
@@ -784,6 +876,15 @@ function setupConfigListeners() {
  * @returns {Object} 동기화 관리자 객체
  */
 function initCloudSync(authManagerInstance, _userDataManagerInstance, configStoreInstance = null) {
+  // 재초기화 가드: 리스너/타이머 중복 등록을 막고 기존 매니저를 재사용
+  if (syncManagerInstance) {
+    logger.info('Cloud sync already initialized - reusing existing manager');
+    if (authManagerInstance) {
+      setAuthManager(authManagerInstance);
+    }
+    return syncManagerInstance;
+  }
+
   logger.info('Starting cloud synchronization initialization');
 
   // 인증 관리자 참조 설정
@@ -893,7 +994,16 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     }),
   };
 
+  syncManagerInstance = syncManager;
   return syncManager;
+}
+
+/**
+ * 초기화된 동기화 매니저 반환 (initCloudSync 이후 사용 가능)
+ * @returns {Object|null} 동기화 매니저 또는 null
+ */
+function getSyncManager() {
+  return syncManagerInstance;
 }
 
 /**
@@ -916,6 +1026,7 @@ function updateCloudSyncSettings(enabled) {
 
 module.exports = {
   initCloudSync,
+  getSyncManager,
   setAuthManager,
   startPeriodicSync,
   stopPeriodicSync,

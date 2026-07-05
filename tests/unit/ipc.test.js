@@ -218,23 +218,20 @@ describe('IPC Handlers', () => {
   });
 
   describe('setupIpcHandlers', () => {
-    test('should register IPC handlers and initialize managers', () => {
+    test('should register IPC handlers and initialize the updater only', () => {
       setupIpcHandlers(mockWindows);
 
-      // Verify that managers were initialized
-      expect(mockAuthManager.initialize).toHaveBeenCalledWith(mockWindows);
-      expect(mockUserDataManager.initialize).toHaveBeenCalledWith(mockWindows);
+      // Updater is initialized here; auth/user-data managers and the protocol
+      // handler are owned by src/index.js (single initialization entry point)
       expect(mockUpdater.initAutoUpdater).toHaveBeenCalledWith(mockWindows);
-      expect(mockAuth.registerProtocolHandler).toHaveBeenCalled();
+      expect(mockAuthManager.initialize).not.toHaveBeenCalled();
+      expect(mockUserDataManager.initialize).not.toHaveBeenCalled();
+      expect(mockAuth.registerProtocolHandler).not.toHaveBeenCalled();
 
       // Verify that some key IPC handlers were registered
       expect(mockIpcMain.on).toHaveBeenCalledWith('modal-state-changed', expect.any(Function));
       expect(mockIpcMain.handle).toHaveBeenCalledWith('is-modal-open', expect.any(Function));
       expect(mockIpcMain.handle).toHaveBeenCalledWith('execute-action', expect.any(Function));
-
-      // Verify protocol handler is set up
-      expect(global.handleProtocolRequest).toBeDefined();
-      expect(typeof global.handleProtocolRequest).toBe('function');
     });
   });
 
@@ -496,9 +493,7 @@ describe('IPC Handlers', () => {
       const options = { defaultPath: 'test.txt' };
       const result = await handler({}, options);
 
-      expect(mockDialog.showSaveDialog).toHaveBeenCalledWith(
-        expect.objectContaining({ modal: true, parent: mockWindows.toast, ...options })
-      );
+      expect(mockDialog.showSaveDialog).toHaveBeenCalledWith(mockWindows.toast, options);
       expect(result).toEqual({ canceled: false, filePath: '/test/save' });
     });
 
@@ -678,25 +673,12 @@ describe('IPC Handlers', () => {
   });
 
   describe('protocol handling', () => {
-    test('should handle auth protocol requests', async () => {
+    test('should not define the global protocol handler (owned by src/index.js)', () => {
+      delete global.handleProtocolRequest;
+
       setupIpcHandlers(mockWindows);
-      mockAuth.handleAuthRedirect.mockResolvedValue({ success: true, subscription: {} });
 
-      const protocolHandler = global.handleProtocolRequest;
-      await protocolHandler('toast-app://auth?action=login&code=testcode');
-
-      expect(mockAuth.handleAuthRedirect).toHaveBeenCalledWith('toast-app://auth?action=login&code=testcode');
-      expect(mockWindows.settings.webContents.send).toHaveBeenCalledWith('auth-result', { success: true, subscription: {} });
-    });
-
-    test('should handle auth protocol errors', async () => {
-      setupIpcHandlers(mockWindows);
-      mockAuth.handleAuthRedirect.mockRejectedValue(new Error('Auth error'));
-
-      const protocolHandler = global.handleProtocolRequest;
-      await protocolHandler('toast-app://auth?action=login');
-
-      expect(mockAuthManager.notifyLoginError).toHaveBeenCalledWith('Auth error');
+      expect(global.handleProtocolRequest).toBeUndefined();
     });
   });
 

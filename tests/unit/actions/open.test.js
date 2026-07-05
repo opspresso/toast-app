@@ -21,14 +21,14 @@ jest.mock('path', () => ({
 }));
 
 jest.mock('child_process', () => ({
-  exec: jest.fn(),
+  execFile: jest.fn(),
 }));
 
 const { openItem } = require('../../../src/main/actions/open');
 const { shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 
 describe('Open Action', () => {
   let originalPlatform;
@@ -45,7 +45,7 @@ describe('Open Action', () => {
     shell.openPath.mockResolvedValue();
     fs.existsSync.mockReturnValue(true);
     path.resolve.mockImplementation((p) => `/resolved${p}`);
-    exec.mockImplementation((command, callback) => {
+    execFile.mockImplementation((file, args, callback) => {
       if (callback) callback(null);
     });
   });
@@ -248,8 +248,9 @@ describe('Open Action', () => {
 
       const result = await openItem(action);
 
-      expect(exec).toHaveBeenCalledWith(
-        'open -a "TextEdit" "/resolved/test/file.txt"',
+      expect(execFile).toHaveBeenCalledWith(
+        'open',
+        ['-a', 'TextEdit', '/resolved/test/file.txt'],
         expect.any(Function)
       );
       expect(result).toEqual({
@@ -270,8 +271,11 @@ describe('Open Action', () => {
 
       const result = await openItem(action);
 
-      expect(exec).toHaveBeenCalledWith(
-        'start "" "notepad.exe" "/resolved/test/file.txt"',
+      // Windows launches the application executable directly (no cmd.exe), preventing
+      // metacharacter re-parsing / command injection.
+      expect(execFile).toHaveBeenCalledWith(
+        'notepad.exe',
+        ['/resolved/test/file.txt'],
         expect.any(Function)
       );
       expect(result).toEqual({
@@ -292,8 +296,9 @@ describe('Open Action', () => {
 
       const result = await openItem(action);
 
-      expect(exec).toHaveBeenCalledWith(
-        'gedit "/resolved/test/file.txt"',
+      expect(execFile).toHaveBeenCalledWith(
+        'gedit',
+        ['/resolved/test/file.txt'],
         expect.any(Function)
       );
       expect(result).toEqual({
@@ -309,17 +314,35 @@ describe('Open Action', () => {
       };
 
       const error = new Error('Application not found');
-      exec.mockImplementation((command, callback) => {
+      execFile.mockImplementation((file, args, callback) => {
         callback(error);
       });
 
       const result = await openItem(action);
 
-      // Note: Due to the async nature of exec callback, the error handling
-      // in the current implementation doesn't properly propagate the error.
-      // This test documents the current behavior.
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Error opening with application: Application not found');
+      expect(result.error).toBe(error);
+    });
+
+    test('should pass shell metacharacters as literal arguments (no injection)', async () => {
+      Object.defineProperty(process, 'platform', {
+        value: 'darwin',
+      });
+
+      const action = {
+        path: '/test/file"; rm -rf ~; ".txt',
+        application: 'TextEdit"; touch /tmp/pwned; "',
+      };
+
+      const result = await openItem(action);
+
+      expect(execFile).toHaveBeenCalledWith(
+        'open',
+        ['-a', 'TextEdit"; touch /tmp/pwned; "', '/resolved/test/file"; rm -rf ~; ".txt'],
+        expect.any(Function)
+      );
       expect(result.success).toBe(true);
-      expect(result.message).toContain('NonexistentApp');
     });
 
     test('should handle application opening with non-existent file', async () => {
@@ -332,7 +355,7 @@ describe('Open Action', () => {
 
       const result = await openItem(action);
 
-      expect(exec).not.toHaveBeenCalled();
+      expect(execFile).not.toHaveBeenCalled();
       expect(result).toEqual({
         success: false,
         message: 'Path does not exist: /resolved/nonexistent/file.txt',
@@ -345,8 +368,8 @@ describe('Open Action', () => {
         application: 'TextEdit'
       };
 
-      // Mock exec to throw synchronously to test try-catch
-      exec.mockImplementation(() => {
+      // Mock execFile to throw synchronously to test try-catch
+      execFile.mockImplementation(() => {
         throw new Error('Exec error');
       });
 

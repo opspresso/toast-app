@@ -9,7 +9,6 @@ import { startRecordingHotkey, clearHotkey, handleHotkeyRecording } from './gene
 import { setupAppearanceEventListeners } from './appearance-settings.js';
 import { setupAdvancedEventListeners } from './advanced-settings.js';
 import { setupAccountEventListeners } from './account-settings.js';
-import { setupCloudSyncEventListeners } from './cloud-sync-settings.js';
 import { setupAboutEventListeners } from './about-settings.js';
 
 /**
@@ -184,7 +183,6 @@ export function setupEventListeners() {
   setupAppearanceEventListeners();
   setupAdvancedEventListeners();
   setupAccountEventListeners();
-  setupCloudSyncEventListeners();
   setupAboutEventListeners();
 
   // 닫기 버튼

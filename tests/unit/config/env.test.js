@@ -99,6 +99,7 @@ describe('Environment Configuration', () => {
       });
       expect(mockDotenv.config).toHaveBeenNthCalledWith(2, {
         path: expect.stringContaining('.env.local'),
+        override: true,
       });
     });
 
@@ -113,6 +114,7 @@ describe('Environment Configuration', () => {
       expect(mockDotenv.config).toHaveBeenCalledTimes(1);
       expect(mockDotenv.config).toHaveBeenCalledWith({
         path: expect.stringContaining('.env.local'),
+        override: true,
       });
     });
 

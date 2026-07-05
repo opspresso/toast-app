@@ -10,7 +10,7 @@ const { loadEnv } = require('./main/config/env');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
-const { createLogger } = require('./main/logger');
+const { createLogger, maskAuthUrl } = require('./main/logger');
 
 // 모듈별 로거 생성
 const logger = createLogger('Main');
@@ -28,6 +28,7 @@ const authManager = require('./main/auth-manager');
 const auth = require('./main/auth');
 const cloudSync = require('./main/cloud-sync');
 const userDataManager = require('./main/user-data-manager');
+const { initializeApprovals } = require('./main/action-approval');
 
 // Hide Dock icon on macOS
 if (process.platform === 'darwin' && app.dock) {
@@ -114,6 +115,9 @@ function initialize() {
   // Set up IPC handlers
   setupIpcHandlers(windows);
 
+  // Seed the trusted action list so cloud-synced exec/script actions can be gated
+  initializeApprovals(config, windows);
+
   // Initialize authentication manager and cloud sync
   authManager.initialize(windows);
 
@@ -130,7 +134,7 @@ function initialize() {
 
   // Set up URL protocol request handling function
   global.handleProtocolRequest = url => {
-    logger.info('Processing protocol request:', url);
+    logger.info('Processing protocol request:', maskAuthUrl(url));
 
     // Directly extract authentication code from URL
     if (url.startsWith('toast-app://auth')) {
@@ -165,11 +169,21 @@ function initialize() {
         }
         else if (action === 'reload_auth' && token && userId) {
           // connect 페이지에서 온 딥링크 처리
-          logger.info('Processing auth reload request with token:', token);
+          logger.info('Processing auth reload request with token:', token.substring(0, 8) + '...');
           auth
             .handleAuthRedirect(url)
             .then(result => {
               logger.info('Auth reload result:', result.success ? 'Success' : 'Failed');
+              if (result.success) {
+                authManager.notifyAuthStateChange({
+                  type: 'auth-reload',
+                  subscription: result.subscription,
+                  message: 'Authentication information has been refreshed.',
+                });
+              }
+              else {
+                authManager.notifyLoginError(result.error || 'Auth reload failed');
+              }
             })
             .catch(err => {
               logger.error('Auth reload error:', err);
@@ -189,6 +203,10 @@ function initialize() {
     }
     else {
       logger.info('Non-authentication URL protocol request:', url);
+      // Deliver other protocol data to the settings window
+      if (windows.settings && !windows.settings.isDestroyed()) {
+        windows.settings.webContents.send('protocol-data', url);
+      }
     }
   };
 

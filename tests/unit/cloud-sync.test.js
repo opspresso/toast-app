@@ -39,6 +39,12 @@ jest.mock('../../src/main/api', () => ({
   sync: mockApiSync,
 }));
 
+// Mock action-approval (remote page validation / approval gating)
+jest.mock('../../src/main/action-approval', () => ({
+  sanitizeRemotePages: jest.fn(async pages => pages),
+  recordRemoteChanges: jest.fn(),
+}));
+
 // Mock config module
 jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
@@ -92,8 +98,9 @@ describe('Cloud Sync Module', () => {
       return mockData[key] || {};
     });
 
-    // Re-require the module to get fresh instance
-    delete require.cache[require.resolve('../../src/main/cloud-sync')];
+    // Re-require the module to get a fresh instance
+    // (jest.resetModules is required to reset the initCloudSync singleton guard)
+    jest.resetModules();
     cloudSync = require('../../src/main/cloud-sync');
 
     // Initialize with mocks
@@ -114,6 +121,20 @@ describe('Cloud Sync Module', () => {
 
       // Should not throw error
       expect(mockConfigStore.onDidChange).toHaveBeenCalled();
+    });
+
+    test('should not register config listeners twice on repeated initCloudSync', () => {
+      const listenerCallsAfterFirstInit = mockConfigStore.onDidChange.mock.calls.length;
+
+      const secondManager = cloudSync.initCloudSync(mockAuthManager, null, mockConfigStore);
+
+      expect(mockConfigStore.onDidChange.mock.calls.length).toBe(listenerCallsAfterFirstInit);
+      expect(secondManager).toBeDefined();
+    });
+
+    test('should return the same manager instance from getSyncManager', () => {
+      expect(cloudSync.getSyncManager()).toBeDefined();
+      expect(cloudSync.initCloudSync(mockAuthManager, null, mockConfigStore)).toBe(cloudSync.getSyncManager());
     });
   });
 
@@ -227,6 +248,18 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toBe('Network error');
     });
 
+    test('should propagate HTTP statusCode from API on failure', async () => {
+      // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
+      // wrapper 가 재시도 로직이 읽는 최상위 statusCode 로 정규화해야 한다
+      mockApiSync.uploadSettings.mockResolvedValue({ error: { code: 'HTTP_409', message: 'stale', statusCode: 409 } });
+
+      const result = await cloudSync.uploadSettings();
+
+      expect(result.success).toBe(false);
+      expect(result.statusCode).toBe(409);
+      expect(result.error).toBe('stale');
+    });
+
     test('should skip upload when sync is disabled', async () => {
       cloudSync.updateCloudSyncSettings(false);
 
@@ -314,12 +347,38 @@ describe('Cloud Sync Module', () => {
       const result = await freshCloudSync.downloadSettings();
 
       expect(result.success).toBe(true);
+      // 다운로드는 fetch 전용으로 apiSync를 호출한다(저장은 cloud-sync가 직접 수행).
       expect(mockApiSync.downloadSettings).toHaveBeenCalledWith({
         hasValidToken: mockAuthManager.hasValidToken,
         onUnauthorized: mockAuthManager.refreshAccessToken,
-        configStore: mockConfigStore,
+        configStore: null,
         directData: {},
       });
+    });
+
+    test('should apply normalized server data to ConfigStore', async () => {
+      delete require.cache[require.resolve('../../src/main/cloud-sync')];
+      const freshCloudSync = require('../../src/main/cloud-sync');
+      freshCloudSync.initCloudSync(mockAuthManager, null, mockConfigStore);
+
+      mockConfigStore.set.mockClear();
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: {},
+        normalized: {
+          pages: [{ name: 'P1', buttons: [] }],
+          appearance: { theme: 'dark' },
+          advanced: { autoStart: true },
+        },
+        syncMetadata: { lastModifiedAt: 123 },
+      });
+
+      const result = await freshCloudSync.downloadSettings();
+
+      expect(result.success).toBe(true);
+      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'P1', buttons: [] }]);
+      expect(mockConfigStore.set).toHaveBeenCalledWith('appearance', { theme: 'dark' });
+      expect(mockConfigStore.set).toHaveBeenCalledWith('advanced', { autoStart: true });
     });
 
     test('should handle download failure', async () => {

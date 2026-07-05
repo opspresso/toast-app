@@ -28,6 +28,7 @@ const mockFs = {
   unlinkSync: jest.fn(),
   mkdirSync: jest.fn(),
   renameSync: jest.fn(), // Added missing renameSync
+  chmodSync: jest.fn(),
 };
 
 jest.mock('fs', () => mockFs);
@@ -112,6 +113,7 @@ jest.mock('../../src/main/logger', () => ({
     warn: jest.fn(),
     debug: jest.fn(),
   })),
+  maskAuthUrl: jest.fn(url => url),
 }));
 
 describe('Main Auth Module (P0)', () => {
@@ -497,11 +499,21 @@ describe('Main Auth Module (P0)', () => {
 
     test('should write token file successfully', async () => {
       const code = 'test-code';
-      
+
       const result = await auth.exchangeCodeForToken(code);
 
       expect(mockFs.writeFileSync).toHaveBeenCalled();
       expect(result.success).toBe(true);
+    });
+
+    test('should write token file with owner-only permissions (0600)', async () => {
+      await auth.exchangeCodeForToken('test-code');
+
+      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({ mode: 0o600 })
+      );
     });
 
     test('should handle token file write errors', async () => {

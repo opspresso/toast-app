@@ -170,6 +170,27 @@ const schema = {
       isConflicted: false,
     },
   },
+  security: {
+    type: 'object',
+    properties: {
+      approvalsInitialized: {
+        type: 'boolean',
+        default: false,
+        description: 'Whether the trusted action list has been seeded from the local configuration',
+      },
+      trustedActions: {
+        type: 'array',
+        default: [],
+        description: 'Fingerprints of exec/script actions approved to run on this device (device-local, never synced)',
+      },
+      pendingApprovals: {
+        type: 'array',
+        default: [],
+        description: 'Risky actions downloaded from cloud sync awaiting one-time user approval',
+      },
+    },
+    default: {},
+  },
 };
 
 /**

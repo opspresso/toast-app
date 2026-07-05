@@ -330,12 +330,8 @@ describe('Toast Preload Script', () => {
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('save-config', testConfig);
     });
 
-    test('should call get-env with key parameter', () => {
-      const envKey = 'NODE_ENV';
-      
-      toastAPI.getEnv(envKey);
-      
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('get-env', envKey);
+    test('should not expose getEnv (environment variables are main-process only)', () => {
+      expect(toastAPI.getEnv).toBeUndefined();
     });
   });
 

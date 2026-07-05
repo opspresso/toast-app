@@ -99,19 +99,7 @@ export function isURL(str) {
   return pattern.test(str.trim());
 }
 
-/**
- * Extract initials from user name
- * @param {string} name - User name
- * @returns {string} User initials
- */
-export function getInitials(name) {
-  return name
-    .split(' ')
-    .map(part => part.charAt(0))
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
-}
+export { getInitials } from '../../../common/utils.js';
 
 /**
  * Show a status message
