@@ -5,24 +5,13 @@
  */
 
 const { ipcMain } = require('electron');
-const os = require('os');
 const authManager = require('../auth-manager');
 const userDataManager = require('../user-data-manager');
 const { createLogger } = require('../logger');
 const { broadcastToWindows } = require('../broadcast');
+const { getDeviceId } = require('../config');
 
 const logger = createLogger('IPC');
-
-/**
- * Function to get device identifier
- * @returns {string} Device identifier
- */
-function getDeviceIdentifier() {
-  const platform = process.platform;
-  const hostname = os.hostname();
-  const username = os.userInfo().username;
-  return `${platform}-${hostname}-${username}`;
-}
 
 /**
  * Set up cloud sync IPC handlers
@@ -55,7 +44,7 @@ function setupCloudSyncHandlers(windows, config) {
         logger.info(`Cloud sync manager not initialized, returning config-based status: ${actualEnabled}`);
         return {
           enabled: actualEnabled,
-          deviceId: getDeviceIdentifier(),
+          deviceId: getDeviceId(),
           lastSyncTime: 0,
           lastChangeType: null,
         };
@@ -71,7 +60,7 @@ function setupCloudSyncHandlers(windows, config) {
 
         return {
           enabled: actualEnabled,
-          deviceId: getDeviceIdentifier(),
+          deviceId: getDeviceId(),
           lastSyncTime: 0,
           lastChangeType: null,
         };
@@ -80,7 +69,7 @@ function setupCloudSyncHandlers(windows, config) {
         logger.error('Error reading config for sync status:', configError);
         return {
           enabled: false,
-          deviceId: getDeviceIdentifier(),
+          deviceId: getDeviceId(),
           lastSyncTime: 0,
           lastChangeType: null,
         };

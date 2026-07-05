@@ -201,12 +201,21 @@ function trustCurrentConfig(configStore) {
  * @returns {Promise<{approved: boolean, reason?: string}>}
  */
 async function ensureApproved(action) {
-  const fingerprint = computeFingerprint(action);
-  if (!fingerprint || !state.configStore) {
+  if (!state.configStore) {
     return { approved: true };
   }
 
   const security = getSecurity(state.configStore);
+  // 승인 대기 중인 액션이 없으면(실행 시점의 대부분의 경우) fingerprint 계산 없이 즉시 허용
+  if (security.pendingApprovals.length === 0) {
+    return { approved: true };
+  }
+
+  const fingerprint = computeFingerprint(action);
+  if (!fingerprint) {
+    return { approved: true };
+  }
+
   const entry = security.pendingApprovals.find(item => item.fingerprint === fingerprint);
   if (!entry) {
     return { approved: true };

@@ -8,7 +8,7 @@
 const { URL } = require('url');
 const { randomUUID } = require('crypto');
 const Store = require('electron-store');
-const { createLogger } = require('../logger');
+const { createLogger, maskAuthUrl } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest, clearTokens } = require('./client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
@@ -353,7 +353,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
  */
 async function handleAuthRedirect({ url, onCodeExchange }) {
   try {
-    logger.info('Processing auth redirect:', url.replace(/([?&](?:token|code)=)[^&]+/g, '$1***'));
+    logger.info('Processing auth redirect:', maskAuthUrl(url));
 
     const urlObj = new URL(url);
 
@@ -489,7 +489,10 @@ async function fetchSubscription(onUnauthorized) {
       // Extract subscription information from profile data
       const subscriptionData = profileData.subscription || {};
 
-      logger.info('Subscription data received:', JSON.stringify({ plan: subscriptionData.plan, active: subscriptionData.active, isVip: subscriptionData.isVip }));
+      logger.info(
+        'Subscription data received:',
+        JSON.stringify({ plan: subscriptionData.plan, active: subscriptionData.active, isVip: subscriptionData.isVip }),
+      );
 
       // Validate subscription data and ensure field compatibility
       const normalizedSubscription = {

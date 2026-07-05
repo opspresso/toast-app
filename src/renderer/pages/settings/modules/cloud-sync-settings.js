@@ -21,11 +21,3 @@ export function initializeCloudSyncUI() {
     window.settings.log.error('Error initializing Cloud Sync UI:', error);
   }
 }
-
-/**
- * Setup cloud sync event listeners
- * Note: Event listeners are registered by cloud-sync.js during initialization.
- */
-export function setupCloudSyncEventListeners() {
-  window.settings.log.info('Cloud sync event listeners are managed by cloud-sync.js module');
-}

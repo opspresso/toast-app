@@ -9,7 +9,7 @@
 const { app, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { createLogger } = require('./logger');
+const { createLogger, maskAuthUrl } = require('./logger');
 const { createConfigStore } = require('./config');
 
 // 모듈별 로거 생성
@@ -392,7 +392,7 @@ async function initiateLogin() {
  */
 async function handleAuthRedirect(url) {
   try {
-    logger.info('Processing auth redirect:', url.replace(/([?&](?:token|code)=)[^&]+/g, '$1***'));
+    logger.info('Processing auth redirect:', maskAuthUrl(url));
 
     // 직접 URL에서 파라미터 추출
     const urlObj = new URL(url);

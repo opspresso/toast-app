@@ -127,7 +127,10 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         logger.info('Starting cloud synchronization after successful login');
 
         // Add debugging information
-        logger.info('Subscription summary:', JSON.stringify({ plan: result.subscription?.plan, active: result.subscription?.active, isVip: result.subscription?.isVip }));
+        logger.info(
+          'Subscription summary:',
+          JSON.stringify({ plan: result.subscription?.plan, active: result.subscription?.active, isVip: result.subscription?.isVip }),
+        );
 
         hasSyncFeature = determineCloudSyncFeature(result.subscription, {
           isDevelopment: process.env.NODE_ENV === 'development',
@@ -156,7 +159,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Save updated subscription info to settings store
           const config = createConfigStore();
           config.set('subscription', updatedSubscription);
-          logger.info('Updated subscription information saved:', JSON.stringify({ plan: updatedSubscription.plan, active: updatedSubscription.active, cloud_sync: updatedSubscription.features?.cloud_sync }));
+          logger.info(
+            'Updated subscription information saved:',
+            JSON.stringify({
+              plan: updatedSubscription.plan,
+              active: updatedSubscription.active,
+              cloud_sync: updatedSubscription.features?.cloud_sync,
+            }),
+          );
         }
 
         logger.info('Cloud synchronization feature status set:', hasSyncFeature);

@@ -48,7 +48,15 @@ async function isCloudSyncEnabled({ hasValidToken, configStore }) {
 
     // 구독 정보 확인
     const subscription = configStore.get('subscription') || {};
-    logger.info('isCloudSyncEnabled: 구독 정보 확인:', JSON.stringify({ plan: subscription.plan, active: subscription.active, isSubscribed: subscription.isSubscribed, cloud_sync: subscription.features?.cloud_sync }));
+    logger.info(
+      'isCloudSyncEnabled: 구독 정보 확인:',
+      JSON.stringify({
+        plan: subscription.plan,
+        active: subscription.active,
+        isSubscribed: subscription.isSubscribed,
+        cloud_sync: subscription.features?.cloud_sync,
+      }),
+    );
 
     // 동기화 시점 판정 규칙 (subscription.js 참조)
     const hasSyncFeature = isCloudSyncAllowed(subscription, {

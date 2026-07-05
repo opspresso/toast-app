@@ -113,6 +113,7 @@ jest.mock('../../src/main/logger', () => ({
     warn: jest.fn(),
     debug: jest.fn(),
   })),
+  maskAuthUrl: jest.fn(url => url),
 }));
 
 describe('Main Auth Module (P0)', () => {

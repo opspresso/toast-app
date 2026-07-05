@@ -16,7 +16,8 @@ jest.mock('../../../src/main/logger', () => ({
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn()
-  }))
+  })),
+  maskAuthUrl: jest.fn(url => url)
 }));
 jest.mock('../../../src/main/constants', () => ({
   DEFAULT_ANONYMOUS_SUBSCRIPTION: {

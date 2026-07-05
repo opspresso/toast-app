@@ -10,7 +10,7 @@ const { loadEnv } = require('./main/config/env');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
-const { createLogger } = require('./main/logger');
+const { createLogger, maskAuthUrl } = require('./main/logger');
 
 // 모듈별 로거 생성
 const logger = createLogger('Main');
@@ -134,7 +134,7 @@ function initialize() {
 
   // Set up URL protocol request handling function
   global.handleProtocolRequest = url => {
-    logger.info('Processing protocol request:', url.replace(/([?&](?:token|code)=)[^&]+/g, '$1***'));
+    logger.info('Processing protocol request:', maskAuthUrl(url));
 
     // Directly extract authentication code from URL
     if (url.startsWith('toast-app://auth')) {
