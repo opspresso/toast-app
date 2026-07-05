@@ -285,13 +285,29 @@ describe('Action Approval', () => {
       const pages = pagesWith(
         execAction(),
         { name: 'Broken', action: 'exec' }, // command 누락
-        { name: 'Bad type', action: 'unknown-type' }
+        { name: 'Bad type', action: 'unknown-type' },
       );
 
       const result = await sanitizeRemotePages(pages);
 
       expect(result[0].buttons).toHaveLength(1);
       expect(result[0].buttons[0].name).toBe('Exec Button');
+    });
+
+    test('should keep empty slot buttons (application action without path)', async () => {
+      const emptySlot = {
+        name: '',
+        shortcut: 'Q',
+        icon: '',
+        action: 'application',
+        application: '',
+        applicationParameters: '',
+      };
+
+      const result = await sanitizeRemotePages(pagesWith(emptySlot, execAction()));
+
+      expect(result[0].buttons).toHaveLength(2);
+      expect(result[0].buttons[0]).toEqual(emptySlot);
     });
 
     test('should return empty array for non-array input', async () => {

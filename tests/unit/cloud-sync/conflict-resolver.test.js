@@ -75,16 +75,37 @@ describe('conflict-resolver', () => {
 
   describe('mergePages', () => {
     test('로컬 페이지가 있으면 로컬을 유지한다 (로컬 우선)', () => {
-      const localPages = [{ id: 1 }, { id: 2 }];
-      const serverPages = [{ id: 9 }];
+      const localPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }, { name: 'Page 2', buttons: [] }];
+      const serverPages = [{ name: 'Page 1', buttons: [{ name: 'Z' }] }];
 
-      expect(mergePages(localPages, serverPages)).toBe(localPages);
+      expect(mergePages(localPages, serverPages)).toEqual(localPages);
     });
 
     test('로컬 페이지가 비어있으면 서버 페이지를 사용한다', () => {
-      const serverPages = [{ id: 9 }];
+      const serverPages = [{ name: 'Page 1' }];
 
       expect(mergePages([], serverPages)).toBe(serverPages);
+    });
+
+    test('로컬 페이지의 버튼이 비었고 서버 대응 페이지에 버튼이 있으면 서버를 유지한다', () => {
+      const localPages = [{ name: 'Page 1', buttons: [] }];
+      const serverPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }];
+
+      expect(mergePages(localPages, serverPages)).toEqual([{ name: 'Page 1', buttons: [{ name: 'A' }] }]);
+    });
+
+    test('로컬 버튼이 비었지만 서버에도 버튼이 없으면 로컬을 유지한다', () => {
+      const localPages = [{ name: 'Page 1', buttons: [] }];
+      const serverPages = [{ name: 'Page 1', buttons: [] }];
+
+      expect(mergePages(localPages, serverPages)).toEqual(localPages);
+    });
+
+    test('이름 없는 페이지는 index 폴백으로 서버를 치환하지 않고 로컬을 유지한다', () => {
+      const localPages = [{ buttons: [] }];
+      const serverPages = [{ buttons: [{ name: 'X' }] }];
+
+      expect(mergePages(localPages, serverPages)).toEqual(localPages);
     });
 
     test('인자 미제공 시 빈 배열로 처리한다', () => {

@@ -441,7 +441,7 @@ export async function fetchSubscriptionInfo() {
     window.settings.log.info('구독 정보 수신:', subscription ? '성공' : '실패');
 
     if (subscription) {
-      window.settings.log.info('수신된 구독 정보:', JSON.stringify(subscription));
+      window.settings.log.info('수신된 구독 정보:', JSON.stringify({ plan: subscription.plan, active: subscription.active, isSubscribed: subscription.isSubscribed }));
 
       // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
       if (subscription.plan && subscription.plan.toLowerCase().includes('premium')) {

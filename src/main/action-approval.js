@@ -268,6 +268,16 @@ async function promptUser(entry, fingerprint) {
 }
 
 /**
+ * Empty page slots are stored as application buttons without a path. They
+ * cannot execute anything, so they are preserved instead of being dropped.
+ * @param {Object} button - Button from remote page data
+ * @returns {boolean} Whether the button is an inert empty slot
+ */
+function isEmptySlotButton(button) {
+  return Boolean(button) && button.action === 'application' && !button.applicationPath;
+}
+
+/**
  * Validate remote pages before persisting them: every button action must pass
  * executor validation. Invalid actions are dropped with a warning so malformed
  * or malicious sync data cannot enter the local configuration.
@@ -295,6 +305,10 @@ async function sanitizeRemotePages(pages) {
 
     const buttons = [];
     for (const button of page.buttons) {
+      if (isEmptySlotButton(button)) {
+        buttons.push(button);
+        continue;
+      }
       const validation = await validateAction(button);
       if (validation.valid) {
         buttons.push(button);

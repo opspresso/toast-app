@@ -298,7 +298,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         };
       }
 
-      logger.info('New access token received:', access_token.substring(0, 10) + '...');
+      logger.info('New access token received');
 
       return {
         success: true,
@@ -353,7 +353,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
  */
 async function handleAuthRedirect({ url, onCodeExchange }) {
   try {
-    logger.info('Processing auth redirect:', url);
+    logger.info('Processing auth redirect:', url.replace(/([?&](?:token|code)=)[^&]+/g, '$1***'));
 
     const urlObj = new URL(url);
 
@@ -489,7 +489,7 @@ async function fetchSubscription(onUnauthorized) {
       // Extract subscription information from profile data
       const subscriptionData = profileData.subscription || {};
 
-      logger.info('Subscription data received:', JSON.stringify(subscriptionData, null, 2));
+      logger.info('Subscription data received:', JSON.stringify({ plan: subscriptionData.plan, active: subscriptionData.active, isVip: subscriptionData.isVip }));
 
       // Validate subscription data and ensure field compatibility
       const normalizedSubscription = {
@@ -500,6 +500,8 @@ async function fetchSubscription(onUnauthorized) {
         // Synchronize active status fields (is_subscribed or active)
         active: subscriptionData.active || subscriptionData.is_subscribed || false,
         is_subscribed: subscriptionData.is_subscribed || subscriptionData.active || false,
+        // Mirror to camelCase so renderer consumers reading isSubscribed stay consistent
+        isSubscribed: subscriptionData.is_subscribed || subscriptionData.active || subscriptionData.isSubscribed || false,
         // Synchronize expiration date fields (expiresAt or subscribed_until)
         expiresAt: subscriptionData.expiresAt || subscriptionData.subscribed_until || null,
         subscribed_until: subscriptionData.subscribed_until || subscriptionData.expiresAt || null,
@@ -512,6 +514,7 @@ async function fetchSubscription(onUnauthorized) {
         logger.info('VIP user detected - applying premium benefits');
         normalizedSubscription.active = true;
         normalizedSubscription.is_subscribed = true;
+        normalizedSubscription.isSubscribed = true;
         normalizedSubscription.plan = 'premium';
       }
 

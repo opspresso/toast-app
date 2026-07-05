@@ -27,6 +27,7 @@ const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
 const state = {
   enabled: true, // Whether sync is enabled
   isSyncing: false, // Whether sync is currently in progress
+  applyingRemote: false, // Whether remote data is being written to ConfigStore (suppresses re-upload)
   lastSyncTime: 0, // Last synchronization time
   lastChangeType: null, // Last change type
   pendingSync: false, // Whether there's a pending sync
@@ -217,6 +218,32 @@ async function uploadSettingsWithRetry() {
       state.pendingSync = false;
       state.lastChangeHash = null; // 성공 시 해시 초기화
     }
+    else if (result.skipped) {
+      // 업로드할 페이지가 없어 스킵됨(빈 pages 가드) — 실패가 아니므로 재시도하지 않음
+      logger.info('Upload skipped (no page data); not retrying');
+      state.retryCount = 0;
+      state.pendingSync = false;
+      state.lastChangeHash = null;
+    }
+    else if (result.statusCode === 409) {
+      // 서버에 더 최신 데이터가 있어 거부됨(stale write) — 재시도 대신 서버 데이터로 재조정
+      logger.warn('Upload rejected as stale (409); scheduling download to reconcile with server');
+      state.retryCount = 0;
+      state.pendingSync = false;
+      state.lastChangeHash = null;
+      // isSyncing 해제(finally) 후 다운로드가 진행되도록 예약
+      state.timers.retry = setTimeout(() => {
+        state.timers.retry = null;
+        downloadSettings();
+      }, RETRY_DELAY_MS);
+    }
+    else if (result.statusCode === 400) {
+      // 페이로드 검증 실패 — 재시도해도 동일하게 실패하므로 중단
+      logger.error(`Upload rejected as invalid (400), not retrying: ${result.error}`);
+      state.retryCount = 0;
+      state.pendingSync = false;
+      state.lastChangeHash = null;
+    }
     else {
       state.retryCount++;
 
@@ -308,8 +335,10 @@ async function uploadSettings(isInternalCall = false) {
     const pages = configStore.get('pages') || [];
     const syncMeta = getSyncMetadata(configStore);
 
+    // 빈 페이지 업로드는 서버의 정상 데이터를 삭제할 수 있으므로 건너뛴다 (실패가 아닌 스킵)
     if (pages.length === 0) {
-      logger.warn('No page data to upload');
+      logger.warn('No page data to upload; skipping upload to avoid clobbering server data');
+      return { success: false, skipped: true, error: 'No page data to upload' };
     }
 
     // 현재 타임스탬프
@@ -393,6 +422,8 @@ async function downloadSettings() {
 
   try {
     state.isSyncing = true;
+    // 다운로드가 ConfigStore에 쓰는 동안 onDidChange가 재업로드를 트리거하지 않도록 억제
+    state.applyingRemote = true;
 
     logger.info('Requesting settings from server...');
 
@@ -463,6 +494,7 @@ async function downloadSettings() {
   }
   finally {
     state.isSyncing = false;
+    state.applyingRemote = false;
   }
 }
 
@@ -586,9 +618,17 @@ async function performIntelligentMerge(serverData, _serverMeta) {
     // 4. 병합된 데이터를 ConfigStore에 적용 (원격 액션은 구조 검증 + 신규 위험 액션 승인 대기 등록)
     mergedData.pages = await sanitizeRemotePages(mergedData.pages);
     recordRemoteChanges(configStore, mergedData.pages);
-    configStore.set('pages', mergedData.pages);
-    configStore.set('appearance', mergedData.appearance);
-    configStore.set('advanced', mergedData.advanced);
+    // 병합 결과 적용 중에는 onDidChange가 중복 업로드를 트리거하지 않도록 억제
+    // (merge_required 경로가 직후 uploadSettings를 명시적으로 호출한다)
+    state.applyingRemote = true;
+    try {
+      configStore.set('pages', mergedData.pages);
+      configStore.set('appearance', mergedData.appearance);
+      configStore.set('advanced', mergedData.advanced);
+    }
+    finally {
+      state.applyingRemote = false;
+    }
 
     // 5. 병합 메타데이터 업데이트
     markAsModified(configStore);
@@ -619,6 +659,8 @@ async function performIntelligentMerge(serverData, _serverMeta) {
  */
 function setEnabled(enabled) {
   state.enabled = enabled;
+  // 활성화 상태가 바뀌면 canSync 캐시가 오래되므로 무효화 (로그인 직후 stale false 방지)
+  clearCloudSyncCache();
   logger.info(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
 
   // Config Store와 동기화 (CloudSyncManager가 단일 진실 원천)
@@ -642,6 +684,12 @@ function setupConfigListeners() {
   // 설정 변경 감지 함수 (공통 로직)
   async function handleConfigChange(changeType, _key) {
     logger.info(`=== [DEBUG_TEST] ${changeType} change detected ===`);
+
+    // 원격 데이터를 적용하는 중이면 무시 (다운로드→업로드 피드백 루프 방지)
+    if (state.applyingRemote) {
+      logger.info('Ignoring config change while applying remote data');
+      return;
+    }
 
     // 동기화 가능 여부 확인
     if (!state.enabled) {

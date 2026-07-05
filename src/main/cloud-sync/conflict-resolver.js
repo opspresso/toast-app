@@ -58,18 +58,58 @@ function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
 }
 
 /**
+ * 페이지 식별 키 (이름 우선, 없으면 위치 기준)
+ * @param {Object} page - 페이지
+ * @param {number} index - 위치
+ * @returns {string} 식별 키
+ */
+function pageKey(page, index) {
+  if (page && page.name !== undefined && page.name !== null && page.name !== '') {
+    return `name:${page.name}`;
+  }
+  return `index:${index}`;
+}
+
+/**
  * 페이지 데이터 병합
+ * 로컬 우선(사용자가 수정한 내용 보존)이되, 로컬 페이지의 버튼이 비어 있고
+ * 대응하는 서버 페이지에 버튼이 있으면 서버 버전을 유지해 데이터 유실을 막는다.
  * @param {Array} localPages - 로컬 페이지
  * @param {Array} serverPages - 서버 페이지
  * @returns {Array} 병합된 페이지
  */
 function mergePages(localPages = [], serverPages = []) {
-  // 페이지는 로컬 우선 (사용자가 수정한 내용 보존)
-  if (localPages.length > 0) {
-    logger.info(`Merging pages: keeping ${localPages.length} local pages, server had ${serverPages.length}`);
-    return localPages;
+  if (localPages.length === 0) {
+    return serverPages;
   }
-  return serverPages;
+
+  const serverByKey = new Map();
+  serverPages.forEach((page, index) => {
+    serverByKey.set(pageKey(page, index), page);
+  });
+
+  logger.info(`Merging pages: ${localPages.length} local, ${serverPages.length} server`);
+
+  return localPages.map((localPage, index) => {
+    const localEmpty = localPage && Array.isArray(localPage.buttons) && localPage.buttons.length === 0;
+    if (!localEmpty) {
+      return localPage;
+    }
+
+    const key = pageKey(localPage, index);
+    // 이름으로 확실히 매칭될 때만 서버 페이지를 채택한다.
+    // index 폴백 매칭은 순서가 다를 때 무관한 서버 페이지로 치환할 수 있어 제외.
+    if (!key.startsWith('name:')) {
+      return localPage;
+    }
+
+    const serverPage = serverByKey.get(key);
+    if (serverPage && Array.isArray(serverPage.buttons) && serverPage.buttons.length > 0) {
+      logger.warn(`Local page "${key}" has no buttons; keeping server version to avoid data loss`);
+      return serverPage;
+    }
+    return localPage;
+  });
 }
 
 /**

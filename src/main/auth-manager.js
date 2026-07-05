@@ -93,11 +93,18 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
     // Notify both windows on login success
     if (result.success) {
-      notifyLoginSuccess(result.subscription);
-
       // 1. Get profile information only once after successful login
       logger.info('Getting user profile information after successful login');
       const userProfile = await auth.fetchUserProfile();
+
+      // Persist the profile to the local cache before notifying renderers so their
+      // profile/subscription IPC requests hit the cache instead of re-calling the API
+      if (userProfile) {
+        await userDataManager.getUserProfile(true, userProfile);
+      }
+
+      // Notify both windows on login success (profile cache is now warm)
+      notifyLoginSuccess(result.subscription);
 
       // Log subscription information
       if (userProfile) {
@@ -120,7 +127,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         logger.info('Starting cloud synchronization after successful login');
 
         // Add debugging information
-        logger.info('Complete subscription information:', JSON.stringify(result.subscription || {}));
+        logger.info('Subscription summary:', JSON.stringify({ plan: result.subscription?.plan, active: result.subscription?.active, isVip: result.subscription?.isVip }));
 
         hasSyncFeature = determineCloudSyncFeature(result.subscription, {
           isDevelopment: process.env.NODE_ENV === 'development',
@@ -149,7 +156,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Save updated subscription info to settings store
           const config = createConfigStore();
           config.set('subscription', updatedSubscription);
-          logger.info('Updated subscription information saved:', JSON.stringify(updatedSubscription));
+          logger.info('Updated subscription information saved:', JSON.stringify({ plan: updatedSubscription.plan, active: updatedSubscription.active, cloud_sync: updatedSubscription.features?.cloud_sync }));
         }
 
         logger.info('Cloud synchronization feature status set:', hasSyncFeature);
@@ -165,11 +172,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
       // 3. Integrated synchronization processing - handle profile and settings information at once
       const performSync = async () => {
         try {
-          // Save profile information to file (prevent duplicate API calls)
-          if (userProfile) {
-            await userDataManager.getUserProfile(true, userProfile); // Directly pass API results to prevent duplicate calls
-            logger.info('User profile information saved successfully');
-          }
+          // Profile was already persisted to the local cache above, before notifying renderers
 
           // Get user settings information
           logger.info('Getting user settings after successful login');

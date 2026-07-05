@@ -242,6 +242,16 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toBe('Network error');
     });
 
+    test('should propagate HTTP statusCode from API on failure', async () => {
+      // 재시도 로직이 409(stale)/400(검증)을 분기하려면 statusCode가 전파되어야 한다
+      mockApiSync.uploadSettings.mockResolvedValue({ success: false, error: 'stale', statusCode: 409 });
+
+      const result = await cloudSync.uploadSettings();
+
+      expect(result.success).toBe(false);
+      expect(result.statusCode).toBe(409);
+    });
+
     test('should skip upload when sync is disabled', async () => {
       cloudSync.updateCloudSyncSettings(false);
 

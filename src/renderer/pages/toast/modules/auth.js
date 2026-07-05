@@ -428,39 +428,6 @@ export async function handleLogout() {
       // Update user button UI to reflect logged out state
       updateUserButton();
 
-      // Get current settings (for backup)
-      const currentAppearance = (await window.toast.getConfig('appearance')) || {};
-
-      // Attempt to reset all settings
-      try {
-        // Call logout (function provided in auth.js)
-        await window.toast.invoke('logout');
-      }
-      catch (resetError) {
-        console.error('Error resetting settings:', resetError);
-
-        // Alternative method: manually reset settings
-        await window.toast.saveConfig({
-          subscription: {
-            isAuthenticated: false,
-            isSubscribed: false,
-            plan: 'free',
-            expiresAt: '',
-            pageGroups: 1,
-            isVip: false,
-            additionalFeatures: {
-              advancedActions: false,
-              cloudSync: false,
-            },
-          },
-        });
-      }
-
-      // Save appearance settings again to preserve them
-      if (currentAppearance && Object.keys(currentAppearance).length > 0) {
-        await window.toast.saveConfig({ appearance: currentAppearance });
-      }
-
       showStatus('Logged out successfully.', 'success');
       hideProfileModal();
     }
