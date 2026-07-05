@@ -376,12 +376,19 @@ async function uploadSettings(isInternalCall = false) {
       markAsSynced(configStore);
 
       logger.info('Settings upload successful and sync metadata updated in ConfigStore');
-    }
-    else {
-      logger.error('Upload failed:', result.error);
+      return result;
     }
 
-    return result;
+    // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
+    // 재시도 로직(uploadSettingsWithRetry)이 참조하는 최상위 statusCode 로 정규화한다
+    const errorInfo = result.error && typeof result.error === 'object' ? result.error : null;
+    const errorMessage = errorInfo ? errorInfo.message || errorInfo.code : result.error;
+    logger.error('Upload failed:', errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+      statusCode: errorInfo ? errorInfo.statusCode : result.statusCode,
+    };
   }
   catch (error) {
     logger.error('설정 업로드 오류:', error);
@@ -423,29 +430,46 @@ async function downloadSettings() {
 
   try {
     state.isSyncing = true;
-    // 다운로드가 ConfigStore에 쓰는 동안 onDidChange가 재업로드를 트리거하지 않도록 억제
-    state.applyingRemote = true;
 
     logger.info('Requesting settings from server...');
 
-    // API에서 설정 다운로드 (ConfigStore에 직접 저장됨)
+    // 네트워크 fetch 중에는 변경 감지를 억제하지 않는다(이 구간의 사용자 편집은 정상 큐잉되어야 함).
+    // 데이터만 받아온 뒤(configStore:null), 아래 ConfigStore 저장 구간에만 짧게 억제한다.
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore,
+      configStore: null,
       directData: {}, // GET 요청에서는 무시됨
     });
 
-    if (result.success) {
-      const timestamp = Date.now();
+    if (!result.success) {
+      logger.error('Settings download failed:', result.error);
+      return result;
+    }
 
-      // 서버에서 받은 메타데이터 처리
-      const serverMetadata = result.syncMetadata || result.data;
+    const timestamp = Date.now();
+    const normalized = result.normalized || {};
+    const serverMetadata = result.syncMetadata || result.data;
 
+    // 원격 데이터를 ConfigStore에 적용하는 짧은 구간에만 onDidChange 재업로드를 억제한다.
+    state.applyingRemote = true;
+    try {
+      if (Array.isArray(normalized.pages)) {
+        // 원격 액션 구조 검증 + 신규 위험 액션 승인 대기 등록 후 저장
+        const sanitizedPages = await sanitizeRemotePages(normalized.pages);
+        recordRemoteChanges(configStore, sanitizedPages);
+        configStore.set('pages', sanitizedPages);
+        logger.info(`Saved ${sanitizedPages.length} pages to ConfigStore`);
+      }
+      if (normalized.appearance && Object.keys(normalized.appearance).length > 0) {
+        configStore.set('appearance', normalized.appearance);
+      }
+      if (normalized.advanced && Object.keys(normalized.advanced).length > 0) {
+        configStore.set('advanced', normalized.advanced);
+      }
+
+      // 서버에서 받은 메타데이터 반영
       if (serverMetadata) {
-        logger.info('Processing server metadata');
-
-        // ConfigStore에 동기화 메타데이터 업데이트
         updateSyncMetadata(configStore, {
           lastSyncedAt: timestamp,
           lastSyncedDevice: getDeviceId(),
@@ -453,35 +477,31 @@ async function downloadSettings() {
           lastModifiedDevice: serverMetadata.lastModifiedDevice || 'server',
           isConflicted: false,
         });
-
         logger.info(`Server data synced - last modified: ${new Date(serverMetadata.lastModifiedAt || timestamp).toISOString()}`);
       }
       else {
         logger.info('No server metadata found, marking as synced with current timestamp');
-
-        // ConfigStore에 동기화 완료 마킹
         markAsSynced(configStore);
       }
-
-      // 상태 업데이트
-      state.lastSyncTime = timestamp;
-
-      // 인증 관리자를 통해 UI 업데이트 알림 전송
-      if (authManager && typeof authManager.notifySettingsSynced === 'function') {
-        // 다운로드된 설정으로 UI 업데이트
-        const configData = {
-          pages: configStore.get('pages'),
-          appearance: configStore.get('appearance'),
-          advanced: configStore.get('advanced'),
-          subscription: configStore.get('subscription'),
-        };
-
-        authManager.notifySettingsSynced(configData);
-        logger.info('UI update notification sent to toast window');
-      }
     }
-    else {
-      logger.error('Settings download failed:', result.error);
+    finally {
+      state.applyingRemote = false;
+    }
+
+    // 상태 업데이트
+    state.lastSyncTime = timestamp;
+
+    // 인증 관리자를 통해 UI 업데이트 알림 전송
+    if (authManager && typeof authManager.notifySettingsSynced === 'function') {
+      const configData = {
+        pages: configStore.get('pages'),
+        appearance: configStore.get('appearance'),
+        advanced: configStore.get('advanced'),
+        subscription: configStore.get('subscription'),
+      };
+
+      authManager.notifySettingsSynced(configData);
+      logger.info('UI update notification sent to toast window');
     }
 
     return result;
@@ -495,7 +515,6 @@ async function downloadSettings() {
   }
   finally {
     state.isSyncing = false;
-    state.applyingRemote = false;
   }
 }
 
@@ -509,7 +528,7 @@ async function syncSettings(action = 'resolve') {
 
   try {
     if (action === 'upload') {
-      return await uploadSettings();
+      return await uploadAndReconcile();
     }
     else if (action === 'download') {
       return await downloadSettings();
@@ -537,8 +556,9 @@ async function syncSettings(action = 'resolve') {
         return serverResult;
       }
 
-      const serverData = serverResult.data || {};
-      const serverMeta = serverResult.syncMetadata || serverData;
+      // 정규화된 섹션을 우선 사용(중첩/배열 응답 형태에서도 데이터 유실 방지)
+      const serverData = serverResult.normalized || serverResult.data || {};
+      const serverMeta = serverResult.syncMetadata || serverResult.data || {};
 
       logger.info(`Server state - Modified: ${new Date(serverMeta.lastModifiedAt || 0).toISOString()}`);
 
@@ -550,7 +570,7 @@ async function syncSettings(action = 'resolve') {
       if (conflictResolution.action === 'upload_local') {
         // 로컬이 더 최신 - 서버로 업로드
         logger.info('Local changes are newer, uploading to server');
-        return await uploadSettings();
+        return await uploadAndReconcile();
       }
       else if (conflictResolution.action === 'download_server') {
         // 서버가 더 최신 - 서버에서 다운로드
@@ -564,7 +584,7 @@ async function syncSettings(action = 'resolve') {
         const mergeResult = await performIntelligentMerge(serverData, serverMeta);
         if (mergeResult.success) {
           // 병합 후 서버에 업로드
-          return await uploadSettings();
+          return await uploadAndReconcile();
         }
         return mergeResult;
       }
@@ -588,8 +608,37 @@ async function syncSettings(action = 'resolve') {
  * 409(stale write) 거부 후 서버 데이터와 병합하여 로컬 변경을 보존한 채 재업로드
  * @returns {Promise<Object>} 재조정 결과
  */
+/**
+ * 수동/충돌해결 경로용 업로드. 자동 경로(uploadSettingsWithRetry)와 달리 결과를 즉시 반환하되,
+ * 409(stale) 응답 시 서버와 병합 재조정하여 로컬 변경을 보존한다.
+ * @returns {Promise<Object>} 업로드 또는 재조정 결과
+ */
+async function uploadAndReconcile() {
+  const result = await uploadSettings();
+  if (result.success || result.skipped) {
+    return result;
+  }
+  if (result.statusCode === 409) {
+    logger.warn('Upload rejected as stale (409); reconciling with server merge to preserve local changes');
+    return await reconcileStaleUpload();
+  }
+  return result;
+}
+
 async function reconcileStaleUpload() {
+  // 주기적 다운로드 등 다른 동기화와 ConfigStore 쓰기가 교차하지 않도록 직렬화한다.
+  // (겹치면 applyingRemote 억제 플래그가 조기 해제되어 다운로드→재업로드 루프가 발생할 수 있음)
+  if (state.isSyncing) {
+    logger.info('Sync in progress; deferring stale-upload reconciliation');
+    state.timers.retry = setTimeout(() => {
+      state.timers.retry = null;
+      reconcileStaleUpload();
+    }, RETRY_DELAY_MS);
+    return { success: false, deferred: true, error: 'Sync in progress' };
+  }
+
   try {
+    state.isSyncing = true;
     logger.info('Reconciling stale upload: fetching server data for merge');
 
     const serverResult = await apiSync.downloadSettings({
@@ -604,19 +653,24 @@ async function reconcileStaleUpload() {
       return serverResult;
     }
 
-    const serverData = serverResult.data || {};
-    const serverMeta = serverResult.syncMetadata || serverData;
+    // 정규화된 섹션을 우선 사용(중첩/배열 응답 형태에서도 데이터 유실 방지)
+    const serverData = serverResult.normalized || serverResult.data || {};
+    const serverMeta = serverResult.syncMetadata || serverResult.data || {};
 
     const mergeResult = await performIntelligentMerge(serverData, serverMeta);
     if (!mergeResult.success) {
       return mergeResult;
     }
 
-    return await uploadSettings();
+    // 내부 호출(isSyncing 은 이 함수가 관리하므로 재진입 가드에 막히지 않도록)
+    return await uploadSettings(true);
   }
   catch (error) {
     logger.error('Stale-write reconciliation error:', error);
     return { success: false, error: error.message || 'Unknown error' };
+  }
+  finally {
+    state.isSyncing = false;
   }
 }
 

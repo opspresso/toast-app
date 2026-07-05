@@ -108,6 +108,26 @@ describe('conflict-resolver', () => {
       expect(mergePages(localPages, serverPages)).toEqual(localPages);
     });
 
+    test('로컬에 없고 서버에만 있는 이름 페이지는 병합 결과 끝에 보존한다', () => {
+      const localPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }];
+      const serverPages = [
+        { name: 'Page 1', buttons: [{ name: 'A' }] },
+        { name: 'Work', buttons: [{ name: 'B' }] },
+      ];
+
+      expect(mergePages(localPages, serverPages)).toEqual([
+        { name: 'Page 1', buttons: [{ name: 'A' }] },
+        { name: 'Work', buttons: [{ name: 'B' }] },
+      ]);
+    });
+
+    test('이름 없는 서버 전용 페이지는 append하지 않는다', () => {
+      const localPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }];
+      const serverPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }, { buttons: [{ name: 'B' }] }];
+
+      expect(mergePages(localPages, serverPages)).toEqual(localPages);
+    });
+
     test('인자 미제공 시 빈 배열로 처리한다', () => {
       expect(mergePages()).toEqual([]);
     });

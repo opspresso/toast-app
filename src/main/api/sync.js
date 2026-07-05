@@ -343,9 +343,16 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
         logger.info('설정 다운로드가 성공적으로 완료되었습니다');
 
         // 서버 응답과 메타데이터를 함께 반환
+        // data 는 원본(raw) 응답, normalized 는 응답 구조에 상관없이 파싱된 섹션들.
+        // 병합(merge) 경로는 normalized 를 사용해 중첩/배열 형태에서도 데이터를 잃지 않는다.
         return {
           success: true,
           data: settings,
+          normalized: {
+            pages: pagesData,
+            appearance: appearanceData || {},
+            advanced: advancedData || {},
+          },
           syncMetadata,
         };
       },

@@ -90,7 +90,9 @@ function mergePages(localPages = [], serverPages = []) {
 
   logger.info(`Merging pages: ${localPages.length} local, ${serverPages.length} server`);
 
-  return localPages.map((localPage, index) => {
+  const localKeys = new Set(localPages.map((page, index) => pageKey(page, index)));
+
+  const merged = localPages.map((localPage, index) => {
     const localEmpty = localPage && Array.isArray(localPage.buttons) && localPage.buttons.length === 0;
     if (!localEmpty) {
       return localPage;
@@ -110,6 +112,19 @@ function mergePages(localPages = [], serverPages = []) {
     }
     return localPage;
   });
+
+  // 로컬에 없고 서버에만 있는 페이지(다른 기기가 추가한 페이지)를 병합 결과 끝에 보존한다.
+  // 이렇게 하지 않으면 재업로드 시 서버 전용 페이지가 삭제된다.
+  // 이름 키로만 매칭하며, 순서 의존적인 index 키는 무관한 페이지를 신규로 오인할 수 있어 제외한다.
+  serverPages.forEach((serverPage, index) => {
+    const key = pageKey(serverPage, index);
+    if (key.startsWith('name:') && !localKeys.has(key)) {
+      logger.info(`Appending server-only page "${key}" to preserve remote additions`);
+      merged.push(serverPage);
+    }
+  });
+
+  return merged;
 }
 
 /**

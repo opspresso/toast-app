@@ -79,6 +79,11 @@ describe('Subscription Helpers', () => {
       expect(determineCloudSyncFeature({ active: false })).toBe(false);
     });
 
+    test('empty features object falls through to the active-subscriber default', () => {
+      expect(determineCloudSyncFeature({ active: true, features: {} })).toBe(true);
+      expect(determineCloudSyncFeature({ active: false, features: {} })).toBe(false);
+    });
+
     test('development mode enables Basic plan', () => {
       expect(determineCloudSyncFeature({ plan: 'Basic' }, { isDevelopment: true })).toBe(true);
       expect(determineCloudSyncFeature({ plan: 'Basic' }, { isDevelopment: false })).toBe(false);

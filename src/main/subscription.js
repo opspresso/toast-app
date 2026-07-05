@@ -75,14 +75,15 @@ function determineCloudSyncFeature(subscription, { isDevelopment = false } = {})
   }
 
   let hasSyncFeature = false;
-  if (subscription.features && typeof subscription.features === 'object') {
+  if (subscription.features && typeof subscription.features === 'object' && 'cloud_sync' in subscription.features) {
+    // Server explicitly specified cloud_sync — honor its value
     hasSyncFeature = subscription.features.cloud_sync === true;
   }
   else if (Array.isArray(subscription.features_array)) {
     hasSyncFeature = subscription.features_array.includes('cloud_sync');
   }
   else if (isSubscriptionActive(subscription)) {
-    // Subscribers can use cloud_sync by default
+    // No explicit feature flag (including an empty features object): active subscribers get sync by default
     hasSyncFeature = true;
   }
 

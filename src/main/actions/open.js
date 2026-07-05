@@ -129,13 +129,10 @@ async function openWithApplication(filePath, application) {
       file = 'open';
       args = ['-a', application, filePath];
     }
-    else if (process.platform === 'win32') {
-      // Windows: `start` is a cmd built-in; empty string is the window title
-      file = 'cmd.exe';
-      args = ['/c', 'start', '', application, filePath];
-    }
     else {
-      // Linux
+      // Windows / Linux: launch the application executable directly with the file as an argument.
+      // execFile spawns no shell, so metacharacters in `application` are never re-parsed
+      // (unlike `cmd.exe /c start`, which would re-interpret them and allow command injection).
       file = application;
       args = [filePath];
     }

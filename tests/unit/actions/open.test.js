@@ -271,9 +271,11 @@ describe('Open Action', () => {
 
       const result = await openItem(action);
 
+      // Windows launches the application executable directly (no cmd.exe), preventing
+      // metacharacter re-parsing / command injection.
       expect(execFile).toHaveBeenCalledWith(
-        'cmd.exe',
-        ['/c', 'start', '', 'notepad.exe', '/resolved/test/file.txt'],
+        'notepad.exe',
+        ['/resolved/test/file.txt'],
         expect.any(Function)
       );
       expect(result).toEqual({

@@ -39,6 +39,12 @@ jest.mock('../../src/main/api', () => ({
   sync: mockApiSync,
 }));
 
+// Mock action-approval (remote page validation / approval gating)
+jest.mock('../../src/main/action-approval', () => ({
+  sanitizeRemotePages: jest.fn(async pages => pages),
+  recordRemoteChanges: jest.fn(),
+}));
+
 // Mock config module
 jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
@@ -243,13 +249,15 @@ describe('Cloud Sync Module', () => {
     });
 
     test('should propagate HTTP statusCode from API on failure', async () => {
-      // 재시도 로직이 409(stale)/400(검증)을 분기하려면 statusCode가 전파되어야 한다
-      mockApiSync.uploadSettings.mockResolvedValue({ success: false, error: 'stale', statusCode: 409 });
+      // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
+      // wrapper 가 재시도 로직이 읽는 최상위 statusCode 로 정규화해야 한다
+      mockApiSync.uploadSettings.mockResolvedValue({ error: { code: 'HTTP_409', message: 'stale', statusCode: 409 } });
 
       const result = await cloudSync.uploadSettings();
 
       expect(result.success).toBe(false);
       expect(result.statusCode).toBe(409);
+      expect(result.error).toBe('stale');
     });
 
     test('should skip upload when sync is disabled', async () => {
@@ -339,12 +347,38 @@ describe('Cloud Sync Module', () => {
       const result = await freshCloudSync.downloadSettings();
 
       expect(result.success).toBe(true);
+      // 다운로드는 fetch 전용으로 apiSync를 호출한다(저장은 cloud-sync가 직접 수행).
       expect(mockApiSync.downloadSettings).toHaveBeenCalledWith({
         hasValidToken: mockAuthManager.hasValidToken,
         onUnauthorized: mockAuthManager.refreshAccessToken,
-        configStore: mockConfigStore,
+        configStore: null,
         directData: {},
       });
+    });
+
+    test('should apply normalized server data to ConfigStore', async () => {
+      delete require.cache[require.resolve('../../src/main/cloud-sync')];
+      const freshCloudSync = require('../../src/main/cloud-sync');
+      freshCloudSync.initCloudSync(mockAuthManager, null, mockConfigStore);
+
+      mockConfigStore.set.mockClear();
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: {},
+        normalized: {
+          pages: [{ name: 'P1', buttons: [] }],
+          appearance: { theme: 'dark' },
+          advanced: { autoStart: true },
+        },
+        syncMetadata: { lastModifiedAt: 123 },
+      });
+
+      const result = await freshCloudSync.downloadSettings();
+
+      expect(result.success).toBe(true);
+      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'P1', buttons: [] }]);
+      expect(mockConfigStore.set).toHaveBeenCalledWith('appearance', { theme: 'dark' });
+      expect(mockConfigStore.set).toHaveBeenCalledWith('advanced', { autoStart: true });
     });
 
     test('should handle download failure', async () => {
