@@ -773,6 +773,7 @@ function updateCloudSyncSettings(enabled)
 - **주기적 동기화 간격**: 15분 (`SYNC_INTERVAL_MS`)
 - **Debounce 시간**: 5초 (`SYNC_DEBOUNCE_MS`)
 - **최대 재시도 횟수**: 3회 (`MAX_RETRY_COUNT`)
+- **재시도 예외**: 빈 `pages` 업로드는 건너뜀(재시도 없음), `400`은 재시도 안 함, `409`는 서버 데이터와 병합 후 재업로드(`reconcileStaleUpload`)
 
 ### 사용 예시
 
@@ -805,7 +806,8 @@ updateCloudSyncSettings(false);
 function analyzeConflict(localMeta, serverMeta, hasLocalChanges)
 
 /**
- * 페이지 병합 — 로컬 값 우선 (사용자 수정 내용 보존)
+ * 페이지 병합 — 로컬 우선 (사용자 수정 내용 보존).
+ * 로컬 페이지의 버튼이 비어 있고 이름이 같은 서버 페이지에 버튼이 있으면 서버 버전 유지
  */
 function mergePages(localPages, serverPages)
 
@@ -855,7 +857,8 @@ function trustCurrentConfig(configStore)
 async function ensureApproved(action)
 
 /**
- * 원격 페이지 저장 전 검증. 모든 버튼 액션이 executor 검증을 통과해야 하며, 실패 항목은 제거
+ * 원격 페이지 저장 전 검증. 모든 버튼 액션이 executor 검증을 통과해야 하며, 실패 항목은 제거.
+ * 빈 슬롯 버튼(자리표시자)은 검증 없이 보존
  * @returns {Promise<Array>} 유효하지 않은 액션이 제거된 페이지
  */
 async function sanitizeRemotePages(pages)
