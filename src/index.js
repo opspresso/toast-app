@@ -126,6 +126,16 @@ function initialize() {
   authManager.setSyncManager(syncManager);
   logger.info('Cloud sync module initialized and connected to auth manager with shared config');
 
+  // Initialize inline text expansion (starts the global key hook only if the
+  // feature is enabled and permission is granted; macOS only)
+  try {
+    require('./main/text-expander').initTextExpander(config);
+    logger.info('Text expander module initialized');
+  }
+  catch (error) {
+    logger.error('Error initializing text expander:', error);
+  }
+
   // Load environment configuration files and apply to app
   loadEnvironmentConfig();
 
@@ -331,6 +341,16 @@ app.on('before-quit', () => {
   }
   catch (error) {
     logger.error('Error unregistering shortcuts:', error);
+  }
+
+  // Stop the text expander hook (otherwise the uiohook thread can keep the
+  // process alive and hang the quit)
+  try {
+    require('./main/text-expander').stopExpander();
+    logger.info('Text expander stopped');
+  }
+  catch (error) {
+    logger.error('Error stopping text expander:', error);
   }
 
   // Destroy tray icon

@@ -14,6 +14,7 @@ const { setupAuthHandlers } = require('./ipc/auth');
 const { setupCloudSyncHandlers } = require('./ipc/cloud-sync');
 const { setupUpdaterHandlers } = require('./ipc/updater');
 const { setupSystemHandlers } = require('./ipc/system');
+const { setupSnippetsHandlers } = require('./ipc/snippets');
 
 /**
  * Set up IPC handlers
@@ -31,6 +32,7 @@ function setupIpcHandlers(windows) {
   setupAuthHandlers();
   setupCloudSyncHandlers(windows, config);
   setupSystemHandlers(windows, config);
+  setupSnippetsHandlers(windows, config);
   setupUpdaterHandlers();
 }
 
