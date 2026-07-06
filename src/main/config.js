@@ -33,9 +33,15 @@ const schema = {
         default: false,
         description: 'Whether inline text expansion is active on this device (device-local, never synced)',
       },
+      seeded: {
+        type: 'boolean',
+        default: false,
+        description: 'Whether the default snippet has been seeded on this device (device-local)',
+      },
     },
     default: {
       enabled: false,
+      seeded: false,
     },
   },
   appearance: {
@@ -284,6 +290,37 @@ function resetToDefaults(config) {
   config.set('advanced', schema.advanced.default);
   config.set('textExpander', schema.textExpander.default);
   config.set('firstLaunchCompleted', false);
+}
+
+// Fallback content for the seeded default snippet when the user is not logged in.
+const DEFAULT_SNIPPET_EMAIL = 'email@toast.sh';
+
+/**
+ * Seed a default example snippet on first run so the feature is discoverable.
+ * Runs at most once per device (guarded by textExpander.seeded) and never
+ * overwrites existing snippets (e.g. downloaded from cloud sync).
+ * @param {Store} config - Configuration store instance
+ * @param {string} [loginEmail] - Logged-in user's email, used as the content
+ */
+function seedDefaultSnippets(config, loginEmail) {
+  try {
+    const textExpander = config.get('textExpander') || {};
+    if (textExpander.seeded) {
+      return;
+    }
+
+    const existing = config.get('snippets');
+    if (!Array.isArray(existing) || existing.length === 0) {
+      const content = loginEmail || DEFAULT_SNIPPET_EMAIL;
+      config.set('snippets', [{ id: 'default-email', keyword: '!email', content, enabled: true, label: 'Email' }]);
+      logger.info('Seeded default snippet');
+    }
+
+    config.set('textExpander', { ...textExpander, seeded: true });
+  }
+  catch (error) {
+    logger.error('Error seeding default snippets:', error);
+  }
 }
 
 /**
@@ -602,6 +639,7 @@ module.exports = {
   schema,
   createConfigStore,
   resetToDefaults,
+  seedDefaultSnippets,
   importConfig,
   exportConfig,
   sanitizeSubscription,

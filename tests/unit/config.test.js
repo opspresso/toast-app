@@ -104,7 +104,7 @@ describe('Configuration Store', () => {
     expect(config.set).toHaveBeenCalledWith('pages', []);
     // Snippets are preserved and text expander reset to default
     expect(config.set).toHaveBeenCalledWith('snippets', []);
-    expect(config.set).toHaveBeenCalledWith('textExpander', { enabled: false });
+    expect(config.set).toHaveBeenCalledWith('textExpander', { enabled: false, seeded: false });
   });
 
   describe('schema', () => {
@@ -112,7 +112,63 @@ describe('Configuration Store', () => {
       const { schema } = require('../../src/main/config');
       expect(schema.snippets).toEqual(expect.objectContaining({ type: 'array' }));
       expect(schema.snippets.default).toEqual([]);
-      expect(schema.textExpander.default).toEqual({ enabled: false });
+      expect(schema.textExpander.default).toEqual({ enabled: false, seeded: false });
+    });
+  });
+
+  describe('seedDefaultSnippets', () => {
+    test('seeds the !email default with the login email when empty and unseeded', () => {
+      const { createConfigStore, seedDefaultSnippets } = require('../../src/main/config');
+      const config = createConfigStore();
+      config.get.mockImplementation(key => {
+        if (key === 'textExpander') return { enabled: false, seeded: false };
+        if (key === 'snippets') return [];
+        return undefined;
+      });
+
+      seedDefaultSnippets(config, 'me@corp.com');
+
+      expect(config.set).toHaveBeenCalledWith('snippets', [
+        { id: 'default-email', keyword: '!email', content: 'me@corp.com', enabled: true, label: 'Email' },
+      ]);
+      expect(config.set).toHaveBeenCalledWith('textExpander', { enabled: false, seeded: true });
+    });
+
+    test('uses the fallback email when not logged in', () => {
+      const { createConfigStore, seedDefaultSnippets } = require('../../src/main/config');
+      const config = createConfigStore();
+      config.get.mockImplementation(key => (key === 'textExpander' ? { seeded: false } : key === 'snippets' ? [] : undefined));
+
+      seedDefaultSnippets(config);
+
+      expect(config.set).toHaveBeenCalledWith('snippets', [expect.objectContaining({ keyword: '!email', content: 'email@toast.sh' })]);
+    });
+
+    test('does nothing when already seeded', () => {
+      const { createConfigStore, seedDefaultSnippets } = require('../../src/main/config');
+      const config = createConfigStore();
+      config.get.mockImplementation(key => (key === 'textExpander' ? { seeded: true } : undefined));
+
+      seedDefaultSnippets(config, 'x@y.com');
+
+      const snippetSets = config.set.mock.calls.filter(call => call[0] === 'snippets');
+      expect(snippetSets).toHaveLength(0);
+    });
+
+    test('does not overwrite existing snippets but marks as seeded', () => {
+      const { createConfigStore, seedDefaultSnippets } = require('../../src/main/config');
+      const config = createConfigStore();
+      config.get.mockImplementation(key => {
+        if (key === 'textExpander') return { seeded: false };
+        if (key === 'snippets') return [{ keyword: ':x', content: 'y' }];
+        return undefined;
+      });
+
+      seedDefaultSnippets(config, 'x@y.com');
+
+      const snippetSets = config.set.mock.calls.filter(call => call[0] === 'snippets');
+      expect(snippetSets).toHaveLength(0);
+      expect(config.set).toHaveBeenCalledWith('textExpander', { seeded: true });
     });
   });
 

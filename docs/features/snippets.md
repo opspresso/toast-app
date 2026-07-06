@@ -1,6 +1,8 @@
 # 스니펫 (텍스트 확장)
 
-다른 앱에서 키워드를 입력하면 미리 정의한 텍스트로 자동 치환하는 인라인 텍스트 확장 기능입니다. 예를 들어 Slack, 메모, 브라우저 등 어느 앱에서든 `:email`을 입력하면 `byforce@gmail.com`으로 바뀝니다. Raycast Snippets와 동일한 방식입니다.
+다른 앱에서 키워드를 입력하면 미리 정의한 텍스트로 자동 치환하는 인라인 텍스트 확장 기능입니다. 예를 들어 Slack, 메모, 브라우저 등 어느 앱에서든 `!email`을 입력하면 `email@toast.sh`로 바뀝니다.
+
+첫 실행 시 예시 스니펫 `!email`이 하나 시드됩니다. 치환 내용은 로그인한 사용자의 이메일이며, 로그인하지 않았다면 `email@toast.sh`입니다. 이 시드는 기기당 한 번만 수행되며, 이미 스니펫이 있으면(예: 클라우드 동기화로 내려받은 경우) 건드리지 않습니다.
 
 ## 동작 방식
 
@@ -26,7 +28,7 @@
 ```json
 {
   "snippets": [
-    { "id": "sn-1", "keyword": ":email", "content": "byforce@gmail.com", "enabled": true, "label": "Work email" }
+    { "id": "default-email", "keyword": "!email", "content": "email@toast.sh", "enabled": true, "label": "Email" }
   ],
   "textExpander": { "enabled": false }
 }

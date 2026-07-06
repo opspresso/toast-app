@@ -19,7 +19,7 @@ const logger = createLogger('Main');
 loadEnv();
 
 // Import modules
-const { createConfigStore } = require('./main/config');
+const { createConfigStore, seedDefaultSnippets } = require('./main/config');
 const { registerGlobalShortcuts, unregisterGlobalShortcuts } = require('./main/shortcuts');
 const { createTray, destroyTray } = require('./main/tray');
 const { createToastWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
@@ -72,12 +72,19 @@ async function loadEnvironmentConfig() {
         });
         logger.info('Authentication state update notification sent');
       }
+
+      // Seed the default snippet with the logged-in email (once, after
+      // any cloud-synced snippets have been applied)
+      seedDefaultSnippets(config, userProfile && userProfile.email);
     }
     else {
       logger.info('No valid token, initializing authentication state');
       authManager.notifyAuthStateChange({
         isAuthenticated: false,
       });
+
+      // Seed the default snippet with the fallback email when not logged in
+      seedDefaultSnippets(config);
     }
   }
   catch (error) {
