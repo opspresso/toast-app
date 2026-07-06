@@ -98,6 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
       window.settings.log.error('설정 로드 오류:', error);
     });
 
+  // Tab selection listener - 메인 프로세스에서 특정 탭 선택 요청 시 (예: 트레이 About 메뉴)
+  window.addEventListener('select-settings-tab', event => {
+    const tabName = event.detail;
+    window.settings.log.info(`select-settings-tab 이벤트 수신 - 탭 전환: ${tabName}`);
+    if (tabName) {
+      switchTab(tabName);
+    }
+  });
+
   // Config update listener - 필요한 설정만 업데이트하도록 최적화
   window.addEventListener('config-loaded', event => {
     window.settings.log.info('config-loaded 이벤트 수신 - 최적화된 업데이트 사용');

@@ -109,8 +109,7 @@ function updateTrayMenu(tray, windows) {
         const { ipcMain } = require('electron');
         // 설정 창을 열고 about 탭을 선택하도록 이벤트 발생
         // 두 번째 인자는 이벤트 객체, 세 번째 인자부터 추가 데이터
-        // ipcMain.emit('show-settings-tab', null, 'about');
-        showAboutDialog();
+        ipcMain.emit('show-settings-tab', null, 'about');
       },
     },
     {
@@ -139,22 +138,6 @@ function setupTrayClickBehavior(tray, windows) {
   // This is consistent with the default behavior on Windows
   // No need to set up custom behavior, as we want to use the default behavior
   // (right-click on macOS and left-click on Windows shows the context menu)
-}
-
-/**
- * Show the about dialog
- */
-function showAboutDialog() {
-  const { dialog } = require('electron');
-
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'About Toast',
-    message: 'Toast',
-    detail: `Version: ${app.getVersion()}\n\nA customizable shortcut launcher for macOS and Windows.`,
-    buttons: ['OK'],
-    icon: path.join(__dirname, '../../assets/icons/icon.png'),
-  });
 }
 
 /**
