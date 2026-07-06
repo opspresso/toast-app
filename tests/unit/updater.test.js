@@ -14,7 +14,6 @@ const mockAutoUpdater = {
   on: jest.fn(),
   removeAllListeners: jest.fn(),
   isUpdaterActive: jest.fn(() => false),
-  isUpdateDownloaded: jest.fn(() => false),
   logger: null,
   autoDownload: true,
   autoInstallOnAppQuit: true,
@@ -198,11 +197,36 @@ describe('Auto Updater', () => {
     test('should call installUpdate without throwing', async () => {
       mockDialog.showMessageBox.mockResolvedValue({ response: 0 });
       const result = await updater.installUpdate();
-      
+
       // Should return an object with success property
       expect(result).toEqual(expect.objectContaining({
         success: expect.any(Boolean)
       }));
+    });
+
+    test('should fail without quitting when no update has been downloaded', async () => {
+      updater.initAutoUpdater(mockWindows);
+
+      const result = await updater.installUpdate();
+
+      expect(result.success).toBe(false);
+      expect(mockAutoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    });
+
+    test('should quit and install after update-downloaded event', async () => {
+      mockApp.isQuitting = false;
+      updater.initAutoUpdater(mockWindows);
+
+      // update-downloaded 이벤트 핸들러를 직접 호출하여 다운로드 완료 상태로 만듦
+      const downloadedHandler = mockAutoUpdater.on.mock.calls.find(([eventName]) => eventName === 'update-downloaded')[1];
+      downloadedHandler({ version: '1.1.0', releaseDate: '2026-01-01', files: [] });
+
+      const result = await updater.installUpdate();
+
+      expect(result.success).toBe(true);
+      // isQuitting을 설정해야 창 close 핸들러가 종료를 막지 않아 재시작이 진행됨
+      expect(mockApp.isQuitting).toBe(true);
+      expect(mockAutoUpdater.quitAndInstall).toHaveBeenCalledWith(false, true);
     });
   });
 

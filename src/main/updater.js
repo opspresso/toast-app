@@ -20,6 +20,7 @@ const logger = createLogger('Updater');
 let windowsRef = null;
 let updateCheckInProgress = false;
 let updateDownloadInProgress = false;
+let updateDownloaded = false;
 let lastCheckTime = 0;
 let updateConfig = null;
 
@@ -239,6 +240,7 @@ function setupAutoUpdaterEvents() {
   autoUpdater.on('update-downloaded', info => {
     logger.info(`Update downloaded: ${info.version}`);
     updateDownloadInProgress = false;
+    updateDownloaded = true;
 
     sendStatusToWindows('update-downloaded', {
       status: 'downloaded',
@@ -490,6 +492,7 @@ async function downloadUpdate() {
     try {
       // 실제 다운로드 수행
       await autoUpdater.downloadUpdate();
+      updateDownloaded = true;
       logger.info('Update download completed successfully');
     }
     catch (downloadError) {
@@ -544,7 +547,8 @@ async function installUpdate() {
     sendStatusToWindows('install-started', { status: 'installing' });
 
     // 업데이트가 다운로드되었는지 확인
-    if (!autoUpdater.isUpdateDownloaded()) {
+    // (electron-updater에는 isUpdateDownloaded() API가 없으므로 update-downloaded 이벤트 기반 플래그 사용)
+    if (!updateDownloaded) {
       logger.warn('Attempting to install update, but no update is downloaded');
 
       // 사용자에게 메시지 표시
@@ -571,6 +575,10 @@ async function installUpdate() {
     // quitAndInstall 호출 (isSilent, isForceRunAfter 옵션 사용 가능)
     // macOS에서는 앱이 종료되고 자동으로 새 버전이 설치됨
     logger.info('Closing app to install update...');
+
+    // quitAndInstall은 창들을 먼저 닫는데, isQuitting이 false면
+    // 창의 close 핸들러가 preventDefault로 종료를 막아 재시작이 되지 않음
+    app.isQuitting = true;
 
     // isSilent: false - 사용자에게 종료 알림 표시
     // isForceRunAfter: true - 설치 후 앱을 자동으로 재시작
