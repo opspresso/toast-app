@@ -84,5 +84,3 @@ export const downloadUpdateButton = document.getElementById('download-update');
 export const installUpdateButton = document.getElementById('install-update');
 export const updateLoading = document.getElementById('update-loading');
 
-// DOM Elements - Main Buttons
-export const cancelButton = document.getElementById('cancel-button');

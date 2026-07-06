@@ -2,7 +2,7 @@
  * Settings - Event Handlers Management
  */
 
-import { cancelButton, launchAtLoginCheckbox } from './dom-elements.js';
+import { launchAtLoginCheckbox } from './dom-elements.js';
 import { isRecordingHotkey, unsavedChanges, config, updateConfig } from './state.js';
 import { switchTab } from './tabs.js';
 import { startRecordingHotkey, clearHotkey, handleHotkeyRecording } from './general-settings.js';
@@ -186,13 +186,6 @@ export function setupEventListeners() {
   setupAccountEventListeners();
   setupAboutEventListeners();
   setupSnippetsEventListeners();
-
-  // 닫기 버튼
-  if (cancelButton) {
-    cancelButton.addEventListener('click', () => {
-      window.settings.closeWindow();
-    });
-  }
 
   // Hotkey 녹화 이벤트 리스너는 이미 위에서 등록됨
   document.addEventListener('keydown', handleHotkeyRecording);
