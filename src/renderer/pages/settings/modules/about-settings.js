@@ -233,8 +233,9 @@ export function handleDownloadUpdate() {
   `;
   updateMessage.appendChild(progressElement);
 
-  // 다운로드 진행률 이벤트 리스너 추가
-  const progressListener = (event, data) => {
+  // 다운로드 진행률 이벤트 리스너 추가 (preload가 CustomEvent로 재발행하므로 detail에서 데이터 추출)
+  const progressListener = event => {
+    const data = event.detail;
     if (data && data.progress && progressElement) {
       const percent = Math.round(data.progress.percent);
       const progressBar = progressElement.querySelector('.progress-bar');

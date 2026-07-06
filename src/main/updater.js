@@ -9,6 +9,7 @@
 const { app, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { createLogger } = require('./logger');
+const { broadcastToWindows } = require('./broadcast');
 const path = require('path');
 const fs = require('fs');
 
@@ -16,8 +17,7 @@ const fs = require('fs');
 const logger = createLogger('Updater');
 
 // 자동 업데이트 상태와 창 참조를 저장하는 변수들
-let mainWindow = null;
-let settingsWindow = null;
+let windowsRef = null;
 let updateCheckInProgress = false;
 let updateDownloadInProgress = false;
 let lastCheckTime = 0;
@@ -28,9 +28,12 @@ let updateConfig = null;
  * @param {Object} windows - 애플리케이션 창 객체
  */
 function initAutoUpdater(windows) {
-  // 창 레퍼런스 저장
-  mainWindow = windows.toast;
-  settingsWindow = windows.settings;
+  if (!windows) {
+    throw new Error('windows reference is required');
+  }
+
+  // 창 객체 자체를 저장 (설정 창은 열 때마다 재생성되므로 스냅샷이 아닌 객체를 참조)
+  windowsRef = windows;
 
   // 로깅 설정
   configureLogging();
@@ -291,6 +294,7 @@ function setupAutoUpdaterEvents() {
  * @param {string} version - 설치할 업데이트 버전
  */
 function promptUserToInstall(version) {
+  const mainWindow = windowsRef && windowsRef.toast;
   if (mainWindow && !mainWindow.isDestroyed()) {
     dialog
       .showMessageBox(mainWindow, {
@@ -597,15 +601,8 @@ async function installUpdate() {
  * @param {Object} data - 상태 데이터
  */
 function sendStatusToWindows(channel, data) {
-  // 토스트 창에 이벤트 전송
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(channel, data);
-  }
-
-  // 설정 창에 이벤트 전송
-  if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.webContents.send(channel, data);
-  }
+  // 토스트/설정 창에 이벤트 전송 (파괴된 창은 자동으로 건너뜀)
+  broadcastToWindows(windowsRef, channel, data);
 
   // 모든 이벤트 로깅 (디버깅 용도)
   logger.debug(`Sent event to windows: ${channel}`, data);
