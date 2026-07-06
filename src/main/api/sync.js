@@ -208,6 +208,7 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
 
         // 표준화된 데이터 추출
         let pagesData = null;
+        let snippetsData = null;
         let appearanceData = null;
         let advancedData = null;
         const syncMetadata = {
@@ -220,6 +221,7 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
         if (settings.pages && Array.isArray(settings.pages)) {
           logger.info('표준 페이지 구조 발견');
           pagesData = settings.pages;
+          snippetsData = Array.isArray(settings.snippets) ? settings.snippets : null;
           appearanceData = settings.appearance || null;
           advancedData = settings.advanced || null;
 
@@ -249,6 +251,7 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             pagesData = data;
           }
 
+          snippetsData = Array.isArray(data.snippets) ? data.snippets : Array.isArray(settings.snippets) ? settings.snippets : null;
           appearanceData = data.appearance || settings.appearance || null;
           advancedData = data.advanced || settings.advanced || null;
 
@@ -295,6 +298,9 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             else if (key === 'advanced' && typeof value === 'object') {
               advancedData = value;
             }
+            else if (key === 'snippets' && Array.isArray(value)) {
+              snippetsData = value;
+            }
           });
         }
 
@@ -335,6 +341,13 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
             configStore.set('advanced', advancedData);
             logger.info('고급 설정을 ConfigStore에 저장 완료');
           }
+
+          // snippets 저장 (있는 경우) — 구조 검증 후 저장
+          if (Array.isArray(snippetsData)) {
+            const safeSnippets = snippetsData.filter(s => s && typeof s.keyword === 'string' && typeof s.content === 'string');
+            configStore.set('snippets', safeSnippets);
+            logger.info(`스니펫 ${safeSnippets.length}개를 ConfigStore에 저장 완료`);
+          }
         }
         else {
           logger.info('ConfigStore not provided - data downloaded but not saved locally');
@@ -358,6 +371,7 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
           data: settings,
           normalized: {
             pages: pagesData,
+            snippets: Array.isArray(snippetsData) ? snippetsData : [],
             appearance: appearanceData || {},
             advanced: advancedData || {},
           },

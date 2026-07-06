@@ -12,7 +12,7 @@ const { createLogger } = require('./logger');
 const { sync: apiSync } = require('./api');
 const { createConfigStore, markAsModified, markAsSynced, hasUnsyncedChanges, getSyncMetadata, getDeviceId, updateSyncMetadata } = require('./config');
 const { sanitizeRemotePages, recordRemoteChanges } = require('./action-approval');
-const { analyzeConflict, mergePages, mergeAppearance, mergeAdvanced } = require('./cloud-sync/conflict-resolver');
+const { analyzeConflict, mergePages, mergeSnippets, mergeAppearance, mergeAdvanced } = require('./cloud-sync/conflict-resolver');
 
 // Create logger for this module
 const logger = createLogger('CloudSync');
@@ -162,6 +162,7 @@ function scheduleSync(changeType) {
   const currentData = {
     appearance: configStore.get('appearance'),
     pages: configStore.get('pages'),
+    snippets: configStore.get('snippets'),
     advanced: configStore.get('advanced'),
     // _sync 필드는 의도적으로 제외 (메타데이터 변경으로 인한 false positive 방지)
   };
@@ -344,20 +345,23 @@ async function uploadSettings(isInternalCall = false) {
     const advanced = configStore.get('advanced');
     const appearance = configStore.get('appearance');
     const pages = configStore.get('pages') || [];
+    const snippets = configStore.get('snippets') || [];
     const syncMeta = getSyncMetadata(configStore);
 
-    // 빈 페이지 업로드는 서버의 정상 데이터를 삭제할 수 있으므로 건너뛴다 (실패가 아닌 스킵)
-    if (pages.length === 0) {
-      logger.warn('No page data to upload; skipping upload to avoid clobbering server data');
-      return { success: false, skipped: true, error: 'No page data to upload' };
+    // pages/snippets 가 모두 비어 있으면 서버의 정상 데이터를 삭제할 수 있으므로 건너뛴다 (실패가 아닌 스킵)
+    if (pages.length === 0 && snippets.length === 0) {
+      logger.warn('No page or snippet data to upload; skipping upload to avoid clobbering server data');
+      return { success: false, skipped: true, error: 'No data to upload' };
     }
 
     // 현재 타임스탬프
     const timestamp = Date.now();
 
     // 업로드 데이터 준비 - 메타데이터 포함
+    // 빈 pages 는 서버가 거부하므로 페이지가 있을 때만 포함한다(스니펫만 쓰는 사용자 지원)
     const uploadData = {
-      pages,
+      ...(pages.length > 0 ? { pages } : {}),
+      snippets,
       appearance,
       advanced,
       // 메타데이터 포함
@@ -471,6 +475,14 @@ async function downloadSettings() {
         configStore.set('pages', sanitizedPages);
         logger.info(`Saved ${sanitizedPages.length} pages to ConfigStore`);
       }
+      if (Array.isArray(normalized.snippets)) {
+        // 스니펫은 코드 실행이 없어 승인 게이트가 불필요하나, 구조는 검증 후 저장
+        const safeSnippets = normalized.snippets.filter(
+          s => s && typeof s.keyword === 'string' && typeof s.content === 'string',
+        );
+        configStore.set('snippets', safeSnippets);
+        logger.info(`Saved ${safeSnippets.length} snippets to ConfigStore`);
+      }
       if (normalized.appearance && Object.keys(normalized.appearance).length > 0) {
         configStore.set('appearance', normalized.appearance);
       }
@@ -505,6 +517,7 @@ async function downloadSettings() {
     if (authManager && typeof authManager.notifySettingsSynced === 'function') {
       const configData = {
         pages: configStore.get('pages'),
+        snippets: configStore.get('snippets'),
         appearance: configStore.get('appearance'),
         advanced: configStore.get('advanced'),
         subscription: configStore.get('subscription'),
@@ -700,6 +713,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
     // 1. 현재 로컬 데이터 백업
     const localBackup = {
       pages: configStore.get('pages'),
+      snippets: configStore.get('snippets'),
       appearance: configStore.get('appearance'),
       advanced: configStore.get('advanced'),
       _sync: getSyncMetadata(configStore),
@@ -708,6 +722,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
     // 2. 서버 데이터 구조 정규화
     const normalizedServerData = {
       pages: serverData.pages || [],
+      snippets: serverData.snippets || [],
       appearance: serverData.appearance || {},
       advanced: serverData.advanced || {},
     };
@@ -715,6 +730,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
     // 3. 섹션별 병합
     const mergedData = {
       pages: mergePages(localBackup.pages, normalizedServerData.pages),
+      snippets: mergeSnippets(localBackup.snippets, normalizedServerData.snippets),
       appearance: mergeAppearance(localBackup.appearance, normalizedServerData.appearance),
       advanced: mergeAdvanced(localBackup.advanced, normalizedServerData.advanced),
     };
@@ -727,6 +743,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
     state.applyingRemote = true;
     try {
       configStore.set('pages', mergedData.pages);
+      configStore.set('snippets', mergedData.snippets);
       configStore.set('appearance', mergedData.appearance);
       configStore.set('advanced', mergedData.advanced);
     }
@@ -751,6 +768,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
       message: 'Settings merged successfully',
       merged: {
         pages: mergedData.pages.length,
+        snippets: mergedData.snippets.length,
         appearance: Object.keys(mergedData.appearance).length,
         advanced: Object.keys(mergedData.advanced).length,
       },
@@ -849,6 +867,11 @@ function setupConfigListeners() {
     await handleConfigChange(changeType, 'pages');
   });
   logger.info('onDidChange listener for pages registered successfully');
+
+  // 스니펫 변경 감지
+  configStore.onDidChange('snippets', async () => {
+    await handleConfigChange('snippets_modified', 'snippets');
+  });
 
   // 외관 설정 변경 감지
   configStore.onDidChange('appearance', async () => {

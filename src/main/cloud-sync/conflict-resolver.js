@@ -128,6 +128,32 @@ function mergePages(localPages = [], serverPages = []) {
 }
 
 /**
+ * 스니펫 병합
+ * keyword 를 키로 병합한다. 로컬 우선(사용자가 방금 수정한 내용 보존)이되,
+ * 서버에만 있는 keyword(다른 기기가 추가)는 결과 끝에 append 해 유실을 막는다.
+ * @param {Array} localSnippets - 로컬 스니펫
+ * @param {Array} serverSnippets - 서버 스니펫
+ * @returns {Array} 병합된 스니펫
+ */
+function mergeSnippets(localSnippets = [], serverSnippets = []) {
+  if (localSnippets.length === 0) {
+    return serverSnippets;
+  }
+
+  const localKeywords = new Set(localSnippets.map(s => s && s.keyword));
+  const merged = [...localSnippets];
+
+  serverSnippets.forEach(serverSnippet => {
+    if (serverSnippet && serverSnippet.keyword && !localKeywords.has(serverSnippet.keyword)) {
+      logger.info(`Appending server-only snippet "${serverSnippet.keyword}" to preserve remote additions`);
+      merged.push(serverSnippet);
+    }
+  });
+
+  return merged;
+}
+
+/**
  * 외관 설정 병합
  * @param {Object} localAppearance - 로컬 외관 설정
  * @param {Object} serverAppearance - 서버 외관 설정
@@ -152,6 +178,7 @@ function mergeAdvanced(localAdvanced = {}, serverAdvanced = {}) {
 module.exports = {
   analyzeConflict,
   mergePages,
+  mergeSnippets,
   mergeAppearance,
   mergeAdvanced,
 };

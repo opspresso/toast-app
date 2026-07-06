@@ -15,7 +15,7 @@ jest.mock('../../../src/main/logger', () => ({
   })),
 }));
 
-const { analyzeConflict, mergePages, mergeAppearance, mergeAdvanced } = require('../../../src/main/cloud-sync/conflict-resolver');
+const { analyzeConflict, mergePages, mergeSnippets, mergeAppearance, mergeAdvanced } = require('../../../src/main/cloud-sync/conflict-resolver');
 
 const TIME_THRESHOLD = 60000; // 1 minute (구현과 동일)
 
@@ -130,6 +130,37 @@ describe('conflict-resolver', () => {
 
     test('인자 미제공 시 빈 배열로 처리한다', () => {
       expect(mergePages()).toEqual([]);
+    });
+  });
+
+  describe('mergeSnippets', () => {
+    test('로컬이 비어 있으면 서버 스니펫을 채택한다', () => {
+      const server = [{ keyword: ':email', content: 'a@b.com' }];
+      expect(mergeSnippets([], server)).toEqual(server);
+    });
+
+    test('로컬 우선하되 서버 전용 keyword 는 끝에 append 한다', () => {
+      const local = [{ keyword: ':email', content: 'local@b.com' }];
+      const server = [
+        { keyword: ':email', content: 'server@b.com' },
+        { keyword: ':addr', content: 'Seoul' },
+      ];
+      const result = mergeSnippets(local, server);
+      // 로컬 :email 유지, 서버 전용 :addr 추가
+      expect(result).toEqual([
+        { keyword: ':email', content: 'local@b.com' },
+        { keyword: ':addr', content: 'Seoul' },
+      ]);
+    });
+
+    test('중복 keyword 를 서버에서 다시 추가하지 않는다', () => {
+      const local = [{ keyword: ':x', content: '1' }];
+      const server = [{ keyword: ':x', content: '2' }];
+      expect(mergeSnippets(local, server)).toEqual(local);
+    });
+
+    test('인자 미제공 시 빈 배열로 처리한다', () => {
+      expect(mergeSnippets()).toEqual([]);
     });
   });
 
