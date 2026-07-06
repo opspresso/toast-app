@@ -188,6 +188,7 @@ const updaterConfig = {
 ```javascript
 // src/main/ipc/updater.js에서 제공하는 IPC 채널
 - 'check-for-updates': 업데이트 확인
+- 'check-latest-version': 최신 버전 정보 조회
 - 'download-update': 업데이트 다운로드
 - 'download-auto-update': 자동 다운로드
 - 'download-manual-update': 수동 다운로드

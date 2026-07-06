@@ -272,10 +272,13 @@ const paramResult = await executeApplication({
 {
   success: true,
   message: '작업이 성공적으로 완료되었습니다',
-  output: '명령 출력 또는 결과 데이터', // 해당되는 경우
-  // 액션별 추가 데이터
+  stdout: '명령 표준 출력', // exec, script(AppleScript/PowerShell/Bash) 액션만
+  stderr: '명령 표준 오류',  // exec, script(AppleScript/PowerShell/Bash) 액션만
+  results: [],              // chain 액션만 (각 하위 액션의 결과 배열)
 }
 ```
+
+`application`, `open` 액션은 `success`와 `message`만 반환합니다. JavaScript 스크립트는 스크립트가 `result` 변수에 할당한 객체를 그대로 반환합니다.
 
 ### 오류 결과
 

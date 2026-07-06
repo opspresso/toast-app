@@ -354,7 +354,7 @@ const result = await window.settings.testAction({
 });
 
 if (result.success) {
-  console.log('액션 테스트 성공:', result.output);
+  console.log('액션 테스트 성공:', result.stdout);
 } else {
   console.error('액션 테스트 실패:', result.error);
 }
@@ -455,8 +455,7 @@ window.addEventListener('download-progress', (event) => {
 {
   success: true,
   message: '작업이 성공적으로 완료되었습니다',
-  data: {}, // 반환 데이터 (해당되는 경우)
-  // 기타 작업별 속성
+  // 액션별 추가 속성: exec/script는 stdout·stderr, chain은 results 배열
 }
 
 // 오류 결과

@@ -341,7 +341,7 @@ describe('Performance Tests', () => {
 
 ## 테스트 보고
 
-- **커버리지 보고서**: Jest 실행 시 HTML 및 JSON 커버리지 보고서를 `coverage/` 디렉토리에 생성
+- **커버리지 보고서**: Jest 실행 시 `text`(콘솔), `lcov`(HTML 포함), `clover`(XML) 커버리지 보고서를 `coverage/` 디렉토리에 생성
 
 ## 수동 테스팅
 

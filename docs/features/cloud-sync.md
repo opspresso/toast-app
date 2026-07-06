@@ -245,7 +245,8 @@ ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`sni
 
 - 유효한 인증 토큰 보유
 - 구독 활성화(`subscription.isSubscribed` 또는 `subscription.active`)
-- `cloud_sync` 기능 보유(`features.cloud_sync` 또는 `additionalFeatures.cloudSync`) **또는** 플랜 이름이 `premium`/`vip`로 시작
+- `cloud_sync` 기능 보유(`features.cloud_sync` 또는 `additionalFeatures.cloudSync`) **또는** 플랜 이름이 `premium`/`vip`로 시작 **또는** `subscription.isVip`가 `true`
+- 예외: 개발 모드에서는 `Basic` 플랜도 `cloud_sync` 기능 플래그가 있으면 허용
 
 ### 자동 동기화
 

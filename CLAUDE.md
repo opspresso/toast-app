@@ -41,6 +41,11 @@ Toast App is an Electron-based desktop application that provides a customizable 
   - `ipc/`: Domain-specific IPC handlers (window, config, actions, auth, cloud-sync, snippets, updater, system); `ipc.js` is the orchestrator
   - `executor.js`: Central action dispatcher with validation
   - `action-approval.js`: One-time user approval for exec/script actions downloaded via cloud sync
+  - `auth.js`: OAuth token issuance/refresh/storage (CLIENT_ID/CLIENT_SECRET)
+  - `user-data-manager.js`: Local user profile/settings file management
+  - `logger.js`: electron-log based logger factory (`createLogger`)
+  - `constants.js`: Shared constants (PAGE_GROUPS, default subscription/profile)
+  - `utils/app-icon-extractor.js`: Local app icon extraction (macOS)
   - `subscription.js`: Subscription-derived decisions (page groups, cloud sync eligibility)
   - `broadcast.js`: Send events to both windows safely
   - `windows.js`: Toast/Settings window lifecycle management
@@ -198,4 +203,5 @@ When storing subscription data in ConfigStore, ensure consistency:
   - `CLIENT_ID`, `CLIENT_SECRET`: OAuth authentication
   - `TOAST_URL`: API endpoint (default: https://app.toast.sh)
   - `TOKEN_EXPIRES_IN`: Token expiration in seconds (default: 31536000 = 1 year)
+  - `CONFIG_SUFFIX`: Suffix for auth token storage file (`auth-tokens-<suffix>.json`), for running multiple instances
   - `NODE_ENV`: Set to 'development' for dev mode

@@ -576,6 +576,17 @@ function setupIpcHandlers(windows)
 | `extract-app-icon` | handle | 애플리케이션 경로에서 아이콘 추출 |
 | `resolve-tilde-path` | handle | 틸드 경로를 절대 경로로 변환 |
 
+#### 텍스트 확장 (스니펫) 관련
+
+| 채널 | 유형 | 설명 |
+|------|------|------|
+| `text-expander:get-status` | handle | 텍스트 확장 상태·권한 조회 |
+| `text-expander:request-permission` | handle | macOS 접근성 권한 요청 |
+| `text-expander:open-privacy-settings` | handle | 시스템 개인정보 설정 열기 |
+| `text-expander:set-enabled` | handle | 텍스트 확장 활성화/비활성화 |
+| `text-expander:save-snippets` | handle | 스니펫 목록 저장 |
+| `text-expander:validate-snippet` | handle | 스니펫 키워드 유효성 검사 |
+
 ### 사용 예시
 
 ```javascript

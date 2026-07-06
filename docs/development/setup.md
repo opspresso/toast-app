@@ -104,6 +104,7 @@ toast-app/
 │   │   └── windows.js     # 윈도우 관리
 │   ├── renderer/          # 렌더러 프로세스 코드
 │   │   ├── assets/        # 렌더러 자산
+│   │   ├── common/        # 공통 유틸리티
 │   │   ├── pages/         # 애플리케이션 페이지
 │   │   │   ├── toast/     # Toast 팝업 UI
 │   │   │   └── settings/  # 설정 UI
