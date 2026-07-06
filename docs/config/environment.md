@@ -72,9 +72,9 @@ CLIENT_ID=production_client_id
 CLIENT_SECRET=production_client_secret
 ```
 
-## 클라우드 동기화 변수
+## 토큰 만료 변수
 
-클라우드 동기화 기능에 사용되는 환경 변수들입니다.
+OAuth 액세스 토큰 만료 시간의 폴백 값으로 사용되는 환경 변수입니다 (서버의 `expires_in` 응답이 항상 우선).
 
 | 변수명 | 기본값 | 설명 | 예시 |
 |--------|--------|------|------|

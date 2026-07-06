@@ -81,18 +81,23 @@ toast-app/
 │   ├── main/              # 메인 프로세스 코드
 │   │   ├── actions/       # 액션 구현
 │   │   ├── api/           # API 클라이언트
-│   │   ├── config/        # 환경 구성
+│   │   ├── cloud-sync/    # 동기화 충돌 해결 (conflict-resolver)
+│   │   ├── config/        # 환경 구성 (env.js)
+│   │   ├── ipc/           # 도메인별 IPC 핸들러 (8개)
 │   │   ├── text-expander/ # 스니펫 텍스트 확장 (키후킹·매칭)
 │   │   ├── utils/         # 유틸리티 (앱 아이콘 추출 등)
+│   │   ├── action-approval.js # 클라우드 동기화 액션 승인
 │   │   ├── auth.js        # 인증 처리
 │   │   ├── auth-manager.js # 인증 상태 동기화
+│   │   ├── broadcast.js   # 양쪽 윈도우 이벤트 전송
 │   │   ├── cloud-sync.js  # 클라우드 동기화
 │   │   ├── config.js      # 구성 관리
 │   │   ├── constants.js   # 상수 정의
 │   │   ├── executor.js    # 액션 실행
-│   │   ├── ipc.js         # IPC 처리
+│   │   ├── ipc.js         # IPC 오케스트레이터
 │   │   ├── logger.js      # 로깅 시스템
 │   │   ├── shortcuts.js   # 글로벌 단축키
+│   │   ├── subscription.js # 구독 기반 기능 판정
 │   │   ├── tray.js        # 시스템 트레이
 │   │   ├── updater.js     # 자동 업데이트
 │   │   ├── user-data-manager.js # 사용자 데이터 관리
