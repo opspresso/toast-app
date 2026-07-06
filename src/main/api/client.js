@@ -25,6 +25,9 @@ const ENDPOINTS = {
 
   // Settings related
   SETTINGS: `${API_BASE_URL}/users/settings`,
+
+  // Button icon upload
+  USER_ICONS: `${API_BASE_URL}/users/icons`,
 };
 
 // Token management (in memory)

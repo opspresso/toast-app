@@ -7,6 +7,7 @@
 const client = require('./client');
 const auth = require('./auth');
 const sync = require('./sync');
+const icons = require('./icons');
 
 module.exports = {
   // Base API client module
@@ -17,4 +18,7 @@ module.exports = {
 
   // Settings synchronization API module
   sync,
+
+  // Button icon upload API module
+  icons,
 };

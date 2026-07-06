@@ -22,8 +22,9 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
 
     if (result.success) {
       // 1. 아이콘 입력 필드 업데이트
-      // Convert iconPath (which is in tilde format) to file:// URL
-      iconInput.value = `file://${result.iconPath}`;
+      // 서버 업로드에 성공했으면 기기 간 공유 가능한 https URL 을 우선 사용하고,
+      // 아니면 기존처럼 로컬 tilde 경로 기반 file:// URL 을 사용
+      iconInput.value = result.remoteUrl || `file://${result.iconPath}`;
 
       // 2. 버튼 이름 업데이트 (비어있을 때만)
       if (nameInput && !nameInput.value.trim()) {

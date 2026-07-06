@@ -8,6 +8,8 @@ const { ipcMain, dialog, shell } = require('electron');
 const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('../shortcuts');
 const { createLogger, handleIpcLogging } = require('../logger');
 const { extractAppIcon, extractAppNameFromPath, convertToTildePath, resolveTildePath } = require('../utils/app-icon-extractor');
+const authManager = require('../auth-manager');
+const apiIcons = require('../api/icons');
 
 const logger = createLogger('IPC');
 
@@ -133,11 +135,31 @@ function setupSystemHandlers(windows, config) {
       }
 
       const tildePath = convertToTildePath(iconPath);
+
+      // 인증된 사용자는 아이콘을 서버(S3)에 업로드해 기기 간 공유 가능한 URL 확보.
+      // 실패해도 로컬 아이콘 동작에는 영향 없음 (remoteUrl 필드만 생략).
+      let remoteUrl = null;
+      try {
+        if (await authManager.hasValidToken()) {
+          const uploadResult = await apiIcons.uploadIcon({
+            filePath: iconPath,
+            onUnauthorized: authManager.refreshAccessToken,
+          });
+          if (uploadResult.success) {
+            remoteUrl = uploadResult.url;
+          }
+        }
+      }
+      catch (uploadError) {
+        logger.debug(`Icon upload skipped: ${uploadError.message}`);
+      }
+
       return {
         success: true,
         iconUrl: `file://${iconPath}`,
         iconPath: tildePath,
         appName,
+        ...(remoteUrl ? { remoteUrl } : {}),
       };
     }
     catch (err) {

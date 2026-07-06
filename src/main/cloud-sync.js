@@ -13,6 +13,7 @@ const { sync: apiSync } = require('./api');
 const { createConfigStore, markAsModified, markAsSynced, hasUnsyncedChanges, getSyncMetadata, getDeviceId, updateSyncMetadata } = require('./config');
 const { sanitizeRemotePages, recordRemoteChanges } = require('./action-approval');
 const { analyzeConflict, mergePages, mergeSnippets, mergeAppearance, mergeAdvanced } = require('./cloud-sync/conflict-resolver');
+const { normalizeLocalIcons } = require('./utils/icon-normalizer');
 
 // Create logger for this module
 const logger = createLogger('CloudSync');
@@ -344,9 +345,31 @@ async function uploadSettings(isInternalCall = false) {
     // ConfigStore에서 직접 데이터 추출 (단일 소스)
     const advanced = configStore.get('advanced');
     const appearance = configStore.get('appearance');
-    const pages = configStore.get('pages') || [];
+    let pages = configStore.get('pages') || [];
     const snippets = configStore.get('snippets') || [];
     const syncMeta = getSyncMetadata(configStore);
+
+    // 로컬 file:// 아이콘을 서버 URL 로 정규화 (기기 간 아이콘 공유를 위한 일회성 마이그레이션)
+    try {
+      const normalized = await normalizeLocalIcons(pages, {
+        onUnauthorized: authManager ? authManager.refreshAccessToken : null,
+      });
+      if (normalized.changed) {
+        // 내부 쓰기가 onDidChange 재업로드를 트리거하지 않도록 억제 (downloadSettings 와 동일한 패턴)
+        state.applyingRemote = true;
+        try {
+          configStore.set('pages', normalized.pages);
+        }
+        finally {
+          state.applyingRemote = false;
+        }
+        pages = normalized.pages;
+        logger.info('Local file:// icons were uploaded and replaced with server URLs');
+      }
+    }
+    catch (normalizeError) {
+      logger.warn(`Icon normalization skipped due to error: ${normalizeError.message}`);
+    }
 
     // pages/snippets 가 모두 비어 있으면 서버의 정상 데이터를 삭제할 수 있으므로 건너뛴다 (실패가 아닌 스킵)
     if (pages.length === 0 && snippets.length === 0) {

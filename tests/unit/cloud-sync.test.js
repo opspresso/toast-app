@@ -45,6 +45,13 @@ jest.mock('../../src/main/action-approval', () => ({
   recordRemoteChanges: jest.fn(),
 }));
 
+// Mock icon normalizer (file:// → https URL migration during upload)
+const mockIconNormalizer = {
+  normalizeLocalIcons: jest.fn(),
+};
+
+jest.mock('../../src/main/utils/icon-normalizer', () => mockIconNormalizer);
+
 // Mock config module
 jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
@@ -87,6 +94,9 @@ describe('Cloud Sync Module', () => {
     // Reset auth manager mocks
     mockAuthManager.hasValidToken.mockResolvedValue(true);
     mockAuthManager.refreshAccessToken.mockResolvedValue({ success: true });
+
+    // Reset icon normalizer mock (default: no local icons to migrate)
+    mockIconNormalizer.normalizeLocalIcons.mockImplementation(async pages => ({ pages, changed: false, failures: 0 }));
 
     // Reset config store mocks
     mockConfigStore.get.mockImplementation((key) => {
@@ -234,6 +244,38 @@ describe('Cloud Sync Module', () => {
           lastSyncedAt: expect.any(Number),
         }),
       });
+    });
+
+    test('should upload normalized pages and persist them when icons were migrated', async () => {
+      const normalizedPages = [
+        { id: 1, name: 'Test Page', buttons: [{ name: 'App', action: 'application', icon: 'https://icons.example.com/a.png' }] },
+      ];
+      mockIconNormalizer.normalizeLocalIcons.mockResolvedValue({ pages: normalizedPages, changed: true, failures: 0 });
+
+      const result = await cloudSync.uploadSettings();
+
+      expect(result.success).toBe(true);
+      // 정규화된 pages 가 ConfigStore 에 저장되고 업로드 페이로드에도 실린다
+      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', normalizedPages);
+      const uploadArg = mockApiSync.uploadSettings.mock.calls[0][0];
+      expect(uploadArg.directData.pages).toBe(normalizedPages);
+    });
+
+    test('should not write pages back to config store when normalization made no changes', async () => {
+      const result = await cloudSync.uploadSettings();
+
+      expect(result.success).toBe(true);
+      expect(mockIconNormalizer.normalizeLocalIcons).toHaveBeenCalled();
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('pages', expect.anything());
+    });
+
+    test('should still upload when icon normalization throws', async () => {
+      mockIconNormalizer.normalizeLocalIcons.mockRejectedValue(new Error('network down'));
+
+      const result = await cloudSync.uploadSettings();
+
+      expect(result.success).toBe(true);
+      expect(mockApiSync.uploadSettings).toHaveBeenCalled();
     });
 
     test('should handle upload failure', async () => {
