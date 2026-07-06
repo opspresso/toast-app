@@ -44,6 +44,7 @@ Toast 앱은 npm을 사용하여 의존성을 관리하며, 패키지 정보는 
 | electron-log | ^5.3.4 | Electron용 로깅 유틸리티 |
 | electron-store | ^8.1.0 | Electron 앱용 간단한 데이터 지속성 |
 | electron-updater | ^6.6.2 | 자동 업데이트 기능 |
+| uiohook-napi | ^1.5.5 | 전역 키 입력 후킹 (스니펫 텍스트 확장, 네이티브 모듈) |
 | yaml | ^2.8.3 | YAML 파싱 및 생성 |
 
 > 고유 식별자는 Node.js 내장 `crypto.randomUUID()`를 사용합니다.

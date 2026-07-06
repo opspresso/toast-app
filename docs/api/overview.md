@@ -67,6 +67,8 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 {
   globalHotkey: 'Alt+Space',
   pages: [],
+  snippets: [],
+  textExpander: { enabled: false, seeded: false },
   appearance: {
     theme: 'system',
     position: 'center',

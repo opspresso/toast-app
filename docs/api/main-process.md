@@ -22,6 +22,13 @@ function createConfigStore()
 function resetToDefaults(config)
 
 /**
+ * 첫 실행 시 기본 !email 스니펫 시드 (기기당 1회, 기존 스니펫은 보존)
+ * @param {Store} config - 구성 저장소 인스턴스
+ * @param {string} [loginEmail] - 로그인 이메일 (없으면 email@toast.sh)
+ */
+function seedDefaultSnippets(config, loginEmail)
+
+/**
  * 파일에서 구성 가져오기
  * @param {Store} config - 구성 저장소 인스턴스
  * @param {string} filePath - 구성 파일 경로
@@ -443,6 +450,7 @@ hideToastWindow();
 | `ipc/actions.js` | 액션 실행/검증/테스트 |
 | `ipc/auth.js` | 로그인/로그아웃, 토큰, 프로필/구독 조회 |
 | `ipc/cloud-sync.js` | 동기화 상태, 수동 동기화, 클라우드 동기화 활성화 |
+| `ipc/snippets.js` | 텍스트 확장 상태/권한/토글, 스니펫 저장·검증 (`text-expander:get-status`, `text-expander:request-permission`, `text-expander:open-privacy-settings`, `text-expander:set-enabled`, `text-expander:save-snippets`, `text-expander:validate-snippet`) |
 | `ipc/updater.js` | 업데이트 확인/다운로드/설치 |
 | `ipc/system.js` | URL 열기, 대화 상자, 로깅, 아이콘 추출, 경로 변환, 단축키 임시 제어 |
 
@@ -773,7 +781,7 @@ function updateCloudSyncSettings(enabled)
 - **주기적 동기화 간격**: 15분 (`SYNC_INTERVAL_MS`)
 - **Debounce 시간**: 5초 (`SYNC_DEBOUNCE_MS`)
 - **최대 재시도 횟수**: 3회 (`MAX_RETRY_COUNT`)
-- **재시도 예외**: 빈 `pages` 업로드는 건너뜀(재시도 없음), `400`은 재시도 안 함, `409`는 서버 데이터와 병합 후 재업로드(`reconcileStaleUpload`)
+- **재시도 예외**: `pages`와 `snippets`가 모두 빈 업로드는 건너뜀(재시도 없음), `400`은 재시도 안 함, `409`는 서버 데이터와 병합 후 재업로드(`reconcileStaleUpload`)
 
 ### 사용 예시
 
@@ -810,6 +818,11 @@ function analyzeConflict(localMeta, serverMeta, hasLocalChanges)
  * 로컬 페이지의 버튼이 비어 있고 이름이 같은 서버 페이지에 버튼이 있으면 서버 버전 유지
  */
 function mergePages(localPages, serverPages)
+
+/**
+ * 스니펫 병합 — keyword 기준 로컬 우선, 서버 전용 keyword 는 뒤에 보존
+ */
+function mergeSnippets(localSnippets, serverSnippets)
 
 /**
  * 외관 설정 병합 — 로컬 값 우선

@@ -7,7 +7,7 @@ Toast App의 API 레퍼런스 문서입니다.
 | 문서 | 설명 |
 |------|------|
 | [overview.md](./overview.md) | API 구조 개요 및 주요 패턴 |
-| [main-process.md](./main-process.md) | 메인 프로세스 12개 모듈 API |
+| [main-process.md](./main-process.md) | 메인 프로세스 모듈 API |
 | [renderer.md](./renderer.md) | 렌더러 프로세스 API (Toast, Settings) |
 | [actions.md](./actions.md) | 5가지 액션 타입 상세 API |
 

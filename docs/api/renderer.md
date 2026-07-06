@@ -212,6 +212,17 @@ window.settings.manualSync(action)    // 수동 동기화 (upload/download/resol
 window.settings.debugSyncStatus()     // 동기화 디버그 정보
 ```
 
+### 텍스트 확장 (스니펫)
+
+```javascript
+window.settings.textExpander.getStatus()            // { supported, enabled, running, permissions }
+window.settings.textExpander.requestPermission()    // macOS 접근성 권한 프롬프트
+window.settings.textExpander.openPrivacySettings(section) // 'accessibility' | 'inputMonitoring' 설정 열기
+window.settings.textExpander.setEnabled(enabled)    // 기능 켜기/끄기 (훅 시작/중지)
+window.settings.textExpander.saveSnippets(snippets) // 스니펫 배열 저장 + 매처 갱신
+window.settings.textExpander.validateSnippet(snippet, existing) // { valid, errors }
+```
+
 ### 유틸리티
 
 ```javascript

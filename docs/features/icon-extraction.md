@@ -229,7 +229,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
 }
 ```
 
-### IPC 통신 (`src/main/ipc.js`)
+### IPC 통신 (`src/main/ipc/system.js`)
 
 ```javascript
 // 아이콘 추출 IPC 핸들러

@@ -82,6 +82,7 @@ toast-app/
 │   │   ├── actions/       # 액션 구현
 │   │   ├── api/           # API 클라이언트
 │   │   ├── config/        # 환경 구성
+│   │   ├── text-expander/ # 스니펫 텍스트 확장 (키후킹·매칭)
 │   │   ├── utils/         # 유틸리티 (앱 아이콘 추출 등)
 │   │   ├── auth.js        # 인증 처리
 │   │   ├── auth-manager.js # 인증 상태 동기화

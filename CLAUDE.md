@@ -20,7 +20,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Mac App Store**: `npm run build:mas` (MAS distribution)
 
 ### Testing & Quality
-- **Run Tests**: `npm run test` (Jest - 30 test suites, 865 unit tests)
+- **Run Tests**: `npm run test` (Jest - 31 test suites, 917 unit tests)
 - **Lint Fix**: `npm run lint:fix` (ESLint auto-fix)
 - **Lint**: `npm run lint` (ESLint check)
 - **Format**: `npm run format` (Prettier formatting)
@@ -38,7 +38,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
   - `actions/`: 5 action handlers (application, chain, exec, open, script)
   - `api/`: Cloud sync API client (auth.js, client.js, sync.js, index.js)
   - `config/`: Environment variable loading (env.js); electron-store schema validation lives in `config.js`
-  - `ipc/`: Domain-specific IPC handlers (window, config, actions, auth, cloud-sync, updater, system); `ipc.js` is the orchestrator
+  - `ipc/`: Domain-specific IPC handlers (window, config, actions, auth, cloud-sync, snippets, updater, system); `ipc.js` is the orchestrator
   - `executor.js`: Central action dispatcher with validation
   - `action-approval.js`: One-time user approval for exec/script actions downloaded via cloud sync
   - `subscription.js`: Subscription-derived decisions (page groups, cloud sync eligibility)
@@ -47,12 +47,13 @@ Toast App is an Electron-based desktop application that provides a customizable 
   - `auth-manager.js`: Authentication state synchronization
   - `cloud-sync.js`: Automatic cloud synchronization (15min intervals); merge policies in `cloud-sync/conflict-resolver.js`
   - `shortcuts.js`: Global hotkey registration
+  - `text-expander/`: Inline text expansion (snippets) — pure matching in `matcher.js`, uiohook/clipboard I/O in `index.js` (macOS only, off by default)
   - `tray.js`: System tray integration
   - `updater.js`: Auto-update functionality
 
 - **Renderer Process** (`src/renderer/`): Modular UI implementation
   - `pages/toast/`: Main popup with ES6 modules
-  - `pages/settings/`: 6-tab settings interface (General, Appearance, Account & Subscription, Cloud Sync, Advanced, About)
+  - `pages/settings/`: 7-tab settings interface (General, Appearance, Account & Subscription, Cloud Sync, Snippets, Advanced, About)
   - `preload/`: Secure IPC bridges (toast.js, settings.js)
   - `assets/flat-color-icons/`: 300+ SVG icons library
 
@@ -91,7 +92,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 5. Update `docs/config/schema.md` and `docs/features/settings.md`
 
 ### Testing & Quality Assurance
-- **Unit Tests**: 30 test suites, 865 unit tests
+- **Unit Tests**: 31 test suites, 917 unit tests
 - **Manual Testing**: Use dev mode with `npm run dev`
 - **Coverage**: Run `npm run test` to generate coverage report
 - **Linting**: `npm run lint` to check code style
@@ -130,7 +131,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Framework**: Jest with coverage reporting
 - **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
 - **Coverage**: Enabled by default, reports in `coverage/` directory
-- **Current Tests**: 30 test suites, 865 unit tests
+- **Current Tests**: 31 test suites, 917 unit tests
   - Main process modules (executor, config, shortcuts, windows, etc.)
   - Actions (application, chain, exec, open, script)
   - API clients (auth, client, sync)
@@ -142,11 +143,13 @@ tests/
 ├── mocks/
 │   └── electron.js        # Electron API mocks
 ├── setup.js               # Jest setup configuration
-├── unit/                  # Unit tests (865 tests in 30 suites)
+├── unit/                  # Unit tests (917 tests in 31 suites)
 │   ├── actions/           # Action handler tests
 │   ├── api/               # API client tests
+│   ├── cloud-sync/        # Conflict resolver / merge tests
 │   ├── config/            # Configuration tests
 │   ├── preload/           # Preload script tests
+│   ├── text-expander/     # Snippet matcher tests
 │   └── utils/             # Utility function tests
 ├── integration/           # Integration tests (empty)
 └── e2e/                   # End-to-end tests (empty)

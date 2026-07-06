@@ -47,8 +47,7 @@ macOS에서 Toast 앱은 메뉴 바에 통합됩니다:
 - Electron의 `Tray` API를 통해 `NSStatusItem` 사용
 - 메뉴 바 아이콘은 템플릿 이미지 형식(`tray-icon-Template.png`) 사용
 - 다크/라이트 모드 자동 전환 지원
-- 우클릭(또는 ctrl+클릭)으로 컨텍스트 메뉴 열기
-- 좌클릭으로 Toast 윈도우 토글
+- 클릭(좌/우 모두)으로 컨텍스트 메뉴 열기 (별도 클릭 동작 미구현 — 기본 동작 사용)
 
 **구현**:
 ```javascript

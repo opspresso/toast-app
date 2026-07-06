@@ -160,7 +160,7 @@ Toast 앱의 자동 업데이트 시스템은 `electron-updater` 라이브러리
 
 1. **app-update.yml / dev-app-update.yml**: 업데이트 서버 설정
 2. **src/main/updater.js**: 상세한 업데이트 로직 구현
-3. **src/main/ipc.js**: IPC 핸들러를 통한 UI 연동
+3. **src/main/ipc/updater.js**: IPC 핸들러를 통한 UI 연동
 4. **GitHub Releases**: 업데이트 배포 채널
 
 #### 구현 특징
@@ -186,7 +186,7 @@ const updaterConfig = {
 #### IPC 핸들러
 
 ```javascript
-// src/main/ipc.js에서 제공하는 IPC 채널
+// src/main/ipc/updater.js에서 제공하는 IPC 채널
 - 'check-for-updates': 업데이트 확인
 - 'download-update': 업데이트 다운로드
 - 'download-auto-update': 자동 다운로드
