@@ -204,7 +204,6 @@ function createSettingsWindow(config) {
 
   // Create the browser window
   windows.settings = new BrowserWindow({
-    // 기본 크기는 최소 크기(minWidth/minHeight)의 2배
     width: 1200,
     height: 800,
     minWidth: 600,
