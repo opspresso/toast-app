@@ -370,12 +370,35 @@ export function handleInstallUpdate() {
     if (countdown <= 0) {
       clearInterval(countdownInterval);
 
+      // 설치 대기 상태 표시 - 설치 준비(Squirrel 스테이징)에는 진행률 이벤트가 없어
+      // 앱이 종료될 때까지 부정형 프로그레스바와 안내 메시지를 보여준다
+      if (updateMessage) {
+        updateMessage.textContent = 'Installing update...';
+      }
+      closingMessage.innerHTML = `
+        <div class="download-progress-bar">
+          <div class="progress-container">
+            <div class="progress-bar indeterminate"></div>
+          </div>
+          <div class="progress-text">Preparing the update... The app will close and restart automatically. This may take up to 30 seconds.</div>
+        </div>
+      `;
+
       try {
         // 업데이트 설치 (앱 재시작)
-        window.settings.installUpdate().catch(error => {
-          window.settings.log.error('업데이트 설치 오류:', error);
-          handleInstallError(error);
-        });
+        window.settings
+          .installUpdate()
+          .then(result => {
+            // 메인 프로세스가 실패를 resolve로 반환하는 경우도 오류로 처리
+            if (result && result.success === false) {
+              window.settings.log.error('업데이트 설치 실패:', result.error);
+              handleInstallError(new Error(result.error || 'Failed to install update'));
+            }
+          })
+          .catch(error => {
+            window.settings.log.error('업데이트 설치 오류:', error);
+            handleInstallError(error);
+          });
       }
       catch (error) {
         window.settings.log.error('업데이트 설치 과정에서 예외 발생:', error);
@@ -392,6 +415,9 @@ export function handleInstallUpdate() {
  * 업데이트 설치 오류 처리
  */
 export function handleInstallError(error) {
+  // 설치 중 표시(카운트다운/부정형 프로그레스바) 제거
+  document.querySelectorAll('.update-closing-message').forEach(el => el.remove());
+
   // 오류 메시지 표시
   if (updateMessage) {
     // 기존 메시지 내용 저장

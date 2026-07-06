@@ -926,6 +926,21 @@ button {
   color: var(--help-text-color);
 }
 
+/* 설치 중 부정형(indeterminate) 진행 표시 - 설치는 진행률 이벤트가 없음 */
+.progress-bar.indeterminate {
+  width: 40%;
+  animation: progress-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    margin-left: -40%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .settings-content {
