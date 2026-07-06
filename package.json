@@ -66,6 +66,9 @@
       "assets/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "**/node_modules/uiohook-napi/**"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "entitlements": "entitlements.mac.plist",
