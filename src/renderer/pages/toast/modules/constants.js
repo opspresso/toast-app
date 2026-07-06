@@ -136,6 +136,24 @@ export const emptyButtons = Array(15)
   }));
 
 /**
+ * 페이지 버튼 배열을 15개로 정규화하는 함수
+ * 과거 버전 데이터나 동기화로 버튼이 15개 미만이 된 페이지의 부족분을 빈 버튼으로 채운다.
+ * 빈 페이지(0개)는 "페이지 추가 안내" 동작을 유지하기 위해 그대로 둔다.
+ * @param {Array} buttons - 버튼 배열
+ * @returns {Array} 15개로 채워진 버튼 배열
+ */
+export function normalizePageButtons(buttons) {
+  const result = [...(buttons || [])];
+  if (result.length === 0) {
+    return result;
+  }
+  while (result.length < emptyButtons.length) {
+    result.push({ ...emptyButtons[result.length] });
+  }
+  return result;
+}
+
+/**
  * 버튼 배열의 단축키를 순서대로 재할당하는 함수
  * @param {Array} buttons - 버튼 배열
  * @returns {Array} 단축키가 재할당된 버튼 배열
