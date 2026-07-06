@@ -157,12 +157,22 @@ jobs:
           fi
 
           if [ -z "$TAG_MESSAGE" ] || [ "$TAG_MESSAGE" = "null" ]; then
-            echo "⚠️ No tag message found, using default release notes"
-            TAG_MESSAGE="Release ${{ github.ref_name }}"
+            echo "⚠️ No tag message found, generating notes from commit log"
+
+            # Fall back to the commit subjects since the previous tag
+            PREV_TAG=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              TAG_MESSAGE=$(printf '## Changes since %s\n\n%s\n' \
+                "$PREV_TAG" \
+                "$(git log --pretty='- %s' "$PREV_TAG..${{ github.ref_name }}" --no-merges)")
+            else
+              TAG_MESSAGE="Release ${{ github.ref_name }}"
+            fi
           fi
 
           echo "$TAG_MESSAGE" > release_notes.md
-          echo "✅ Saved tag message to release_notes.md"
+          echo "✅ Saved release notes:"
+          cat release_notes.md
 
       - name: Create Release in Releases Repo 🚀
         uses: softprops/action-gh-release@v2
