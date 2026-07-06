@@ -389,6 +389,7 @@ body {
 
 .settings-mode .toast-button {
   position: relative;
+  cursor: grab;
 }
 
 .settings-mode .toast-button::after {
@@ -406,6 +407,27 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 드래그 중인 버튼 스타일 */
+.toast-button.dragging {
+  opacity: 0.4;
+}
+
+/* 커서를 따라다니는 드래그 고스트 */
+.toast-button.drag-ghost {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.85;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* 드롭 대상 버튼 하이라이트 */
+.toast-button.drag-over {
+  border: 2px dashed var(--primary-color);
+  background-color: rgba(0, 100, 255, 0.05);
 }
 
 /* 편집 중인 버튼 스타일 */

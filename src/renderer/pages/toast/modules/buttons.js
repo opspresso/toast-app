@@ -4,12 +4,15 @@
 
 import { buttonsContainer, buttonTemplate } from './dom-elements.js';
 import { getFaviconFromUrl, isURL, createNoResultsElement, showStatus } from './utils.js';
-import { getCurrentPageButtons } from './pages.js';
+import { getCurrentPageButtons, updateCurrentPageButtons } from './pages.js';
 
 // State variables
 export let filteredButtons = [];
 export let selectedButtonIndex = -1;
 export let isSettingsMode = false;
+
+// Suppresses the click that follows a completed drag-reorder
+let suppressNextClick = false;
 
 /**
  * Display buttons for current page
@@ -52,6 +55,10 @@ export function renderButtons(buttons) {
 
     // Click event
     buttonElement.addEventListener('click', () => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
       executeButton(button);
     });
 
@@ -59,6 +66,11 @@ export function renderButtons(buttons) {
     buttonElement.addEventListener('mouseenter', () => {
       selectButton(index);
     });
+
+    // Enable drag & drop reordering in settings mode
+    if (isSettingsMode) {
+      enableButtonDrag(buttonElement, index);
+    }
 
     buttonsContainer.appendChild(buttonElement);
   });
@@ -68,6 +80,130 @@ export function renderButtons(buttons) {
     const noResults = createNoResultsElement();
     buttonsContainer.appendChild(noResults);
   }
+}
+
+/**
+ * Move a button to a new position, shifting buttons in between
+ * @param {Array} buttons - Button array
+ * @param {number} from - Source index
+ * @param {number} to - Target index
+ * @returns {Array} Reordered button array
+ */
+export function moveButton(buttons, from, to) {
+  const result = [...buttons];
+  const [moved] = result.splice(from, 1);
+  result.splice(to, 0, moved);
+  return result;
+}
+
+/**
+ * Swap two buttons' positions
+ * @param {Array} buttons - Button array
+ * @param {number} from - Source index
+ * @param {number} to - Target index
+ * @returns {Array} Reordered button array
+ */
+export function swapButtons(buttons, from, to) {
+  const result = [...buttons];
+  [result[from], result[to]] = [result[to], result[from]];
+  return result;
+}
+
+/**
+ * Enable drag & drop reordering for a button element (settings mode only)
+ * Default drag inserts at the drop position; Cmd/Ctrl+drag swaps the two buttons.
+ * Uses mouse events instead of the HTML5 DnD API because macOS blocks HTML5
+ * drop events while the Cmd key is held.
+ * @param {HTMLElement} buttonElement - Button element
+ * @param {number} index - Button index in the current page
+ */
+function enableButtonDrag(buttonElement, index) {
+  buttonElement.dataset.index = index;
+
+  buttonElement.addEventListener('mousedown', startEvent => {
+    if (startEvent.button !== 0) {
+      return;
+    }
+
+    const DRAG_THRESHOLD = 5;
+    let dragging = false;
+    let ghost = null;
+    let targetElement = null;
+
+    const clearDropTarget = () => {
+      if (targetElement) {
+        targetElement.classList.remove('drag-over');
+        targetElement = null;
+      }
+    };
+
+    const onMouseMove = event => {
+      if (!dragging) {
+        if (Math.abs(event.clientX - startEvent.clientX) < DRAG_THRESHOLD && Math.abs(event.clientY - startEvent.clientY) < DRAG_THRESHOLD) {
+          return;
+        }
+        dragging = true;
+        buttonElement.classList.add('dragging');
+        ghost = buttonElement.cloneNode(true);
+        ghost.classList.add('drag-ghost');
+        ghost.style.width = `${buttonElement.offsetWidth}px`;
+        ghost.style.height = `${buttonElement.offsetHeight}px`;
+        document.body.appendChild(ghost);
+      }
+
+      ghost.style.left = `${event.clientX}px`;
+      ghost.style.top = `${event.clientY}px`;
+
+      // The ghost has pointer-events: none, so elementFromPoint sees the button under it
+      const over = document.elementFromPoint(event.clientX, event.clientY)?.closest('.toast-button');
+      if (over !== targetElement) {
+        clearDropTarget();
+        if (over && over !== buttonElement) {
+          targetElement = over;
+          targetElement.classList.add('drag-over');
+        }
+      }
+    };
+
+    const onMouseUp = event => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+
+      if (!dragging) {
+        // Plain click; let the click handler run
+        return;
+      }
+
+      if (ghost) {
+        ghost.remove();
+      }
+      buttonElement.classList.remove('dragging');
+
+      const targetIndex = targetElement ? parseInt(targetElement.dataset.index, 10) : NaN;
+      clearDropTarget();
+
+      // Prevent the click that follows mouseup from opening the edit modal
+      suppressNextClick = true;
+      setTimeout(() => {
+        suppressNextClick = false;
+      }, 0);
+
+      if (Number.isNaN(targetIndex) || targetIndex === index) {
+        return;
+      }
+
+      const isSwap = event.metaKey || event.ctrlKey;
+      const currentButtons = getCurrentPageButtons();
+      const reordered = isSwap ? swapButtons(currentButtons, index, targetIndex) : moveButton(currentButtons, index, targetIndex);
+
+      // Reassign shortcuts by position and persist, then re-render
+      updateCurrentPageButtons(reordered);
+      showCurrentPageButtons();
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
 }
 
 /**
