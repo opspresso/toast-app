@@ -44,17 +44,16 @@ function createTray(windows) {
  * @returns {string} Path to tray icon
  */
 function getTrayIconPath() {
-  const isDev = process.env.NODE_ENV === 'development';
-
   // Use template icons for macOS (auto-adapts to menu bar light/dark mode).
   // Development instances get a badged variant so they are easy to tell
   // apart from the installed (production) app.
   if (process.platform === 'darwin') {
+    const isDev = process.env.NODE_ENV === 'development';
     return path.join(__dirname, isDev ? '../../assets/icons/tray-icon-devTemplate.png' : '../../assets/icons/tray-icon-Template.png');
   }
 
-  // Other platforms: colored icon, dev variant for development instances
-  return path.join(__dirname, isDev ? '../../assets/icons/tray-icon-dev.png' : '../../assets/icons/tray-icon.png');
+  // Use regular icon for other platforms
+  return path.join(__dirname, '../../assets/icons/tray-icon.png');
 }
 
 /**
