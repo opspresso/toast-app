@@ -10,6 +10,7 @@ import { setupAppearanceEventListeners } from './appearance-settings.js';
 import { setupAdvancedEventListeners } from './advanced-settings.js';
 import { setupAccountEventListeners } from './account-settings.js';
 import { setupAboutEventListeners } from './about-settings.js';
+import { setupSnippetsEventListeners } from './snippets-settings.js';
 
 /**
  * Sets up all event listeners for UI controls, keyboard shortcuts, authentication events, configuration updates, and modal interactions in the Settings window.
@@ -184,6 +185,7 @@ export function setupEventListeners() {
   setupAdvancedEventListeners();
   setupAccountEventListeners();
   setupAboutEventListeners();
+  setupSnippetsEventListeners();
 
   // 닫기 버튼
   if (cancelButton) {

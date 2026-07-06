@@ -55,6 +55,21 @@ export const manualSyncDownloadButton = document.getElementById('manual-sync-dow
 export const manualSyncResolveButton = document.getElementById('manual-sync-resolve');
 export const syncLoading = document.getElementById('sync-loading');
 
+// DOM Elements - Snippets
+export const snippetsUnsupported = document.getElementById('snippets-unsupported');
+export const snippetsPermission = document.getElementById('snippets-permission');
+export const snippetsRequestPermissionButton = document.getElementById('snippets-request-permission');
+export const snippetsOpenAccessibilityButton = document.getElementById('snippets-open-accessibility');
+export const snippetsOpenInputMonitoringButton = document.getElementById('snippets-open-input-monitoring');
+export const snippetsEnabledCheckbox = document.getElementById('snippets-enabled');
+export const snippetsStatusText = document.getElementById('snippets-status');
+export const snippetsList = document.getElementById('snippets-list');
+export const snippetKeywordInput = document.getElementById('snippet-keyword');
+export const snippetContentInput = document.getElementById('snippet-content');
+export const snippetLabelInput = document.getElementById('snippet-label');
+export const snippetFormError = document.getElementById('snippet-form-error');
+export const snippetAddButton = document.getElementById('snippet-add');
+
 // DOM Elements - About Tab
 export const appVersionElement = document.getElementById('app-version');
 export const homepageButton = document.getElementById('homepage-link');

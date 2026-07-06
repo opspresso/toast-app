@@ -23,6 +23,7 @@
             <li data-tab="appearance">Appearance</li>
             <li data-tab="account">Account & Subscription</li>
             <li data-tab="cloud-sync">Cloud Sync</li>
+            <li data-tab="snippets">Snippets</li>
             <li data-tab="advanced">Advanced</li>
             <li data-tab="about">About</li>
           </ul>
@@ -152,6 +153,56 @@
           </div>
 
           <!-- Advanced Tab -->
+          <!-- Snippets Tab -->
+          <div id="snippets" class="settings-tab">
+            <h2>Snippets</h2>
+            <p class="help-text">
+              Type a keyword in any app and it expands to the text you define. For example, typing <code>:email</code> becomes your email
+              address. macOS only.
+            </p>
+
+            <div id="snippets-unsupported" class="settings-group hidden">
+              <p class="help-text">Text expansion is not available on this platform or build.</p>
+            </div>
+
+            <div id="snippets-permission" class="settings-group hidden">
+              <p class="help-text">
+                Text expansion needs Accessibility and Input Monitoring permission to detect typing and paste replacements. Grant permission,
+                then enable the feature.
+              </p>
+              <div class="actions-group">
+                <button id="snippets-request-permission" class="primary-button">Grant Permission</button>
+                <button id="snippets-open-accessibility" class="secondary-button">Open Accessibility Settings</button>
+                <button id="snippets-open-input-monitoring" class="secondary-button">Open Input Monitoring Settings</button>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="snippets-enabled" />
+                Enable text expansion
+              </label>
+              <p class="help-text">When enabled, snippets expand as you type in other apps. Disabled by default for privacy.</p>
+              <p id="snippets-status" class="help-text"></p>
+            </div>
+
+            <div class="settings-group">
+              <h3>Your Snippets</h3>
+              <div id="snippets-list"></div>
+            </div>
+
+            <div class="settings-group">
+              <h3>Add Snippet</h3>
+              <div class="snippet-form">
+                <input type="text" id="snippet-keyword" placeholder="Keyword (e.g. :email)" />
+                <textarea id="snippet-content" placeholder="Expansion text" rows="3"></textarea>
+                <input type="text" id="snippet-label" placeholder="Label (optional)" />
+                <p id="snippet-form-error" class="error-message hidden"></p>
+                <button id="snippet-add" class="primary-button">Add Snippet</button>
+              </div>
+            </div>
+          </div>
+
           <div id="advanced" class="settings-tab">
             <h2>Advanced Settings</h2>
 
@@ -341,6 +392,14 @@
           getSyncStatus: () => Promise.resolve({ enabled: false }),
           checkForUpdates: () => Promise.resolve({ hasUpdate: false }),
           openUrl: url => window.open(url, '_blank'),
+          textExpander: {
+            getStatus: () => Promise.resolve({ supported: false, enabled: false, running: false, permissions: { accessibility: false } }),
+            requestPermission: () => Promise.resolve(false),
+            openPrivacySettings: () => Promise.resolve(true),
+            setEnabled: () => Promise.resolve({ supported: false, enabled: false, running: false, permissions: { accessibility: false } }),
+            saveSnippets: () => Promise.resolve({ success: true }),
+            validateSnippet: () => Promise.resolve({ valid: true, errors: [] }),
+          },
         };
       }
 

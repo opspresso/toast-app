@@ -14,6 +14,7 @@ import { initializeAccountSettings } from './modules/account-settings.js';
 import { initializeAdvancedSettings } from './modules/advanced-settings.js';
 import { initializeCloudSyncUI } from './modules/cloud-sync-settings.js';
 import { initializeAboutSettings } from './modules/about-settings.js';
+import { initializeSnippetsSettings } from './modules/snippets-settings.js';
 
 /**
  * Initialize UI with config values - 필수적인 작업만 수행
@@ -45,6 +46,10 @@ export function initializeUI() {
   // Cloud Sync settings
   window.settings.log.info('클라우드 동기화 설정 초기화');
   initializeCloudSyncUI();
+
+  // Snippets settings
+  window.settings.log.info('스니펫 설정 초기화');
+  initializeSnippetsSettings();
 
   // About settings
   window.settings.log.info('정보 탭 초기화');

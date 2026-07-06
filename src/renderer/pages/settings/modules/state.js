@@ -19,6 +19,7 @@ export const tabInitState = {
   account: false,
   advanced: false,
   'cloud-sync': false,
+  snippets: false,
   about: false,
 };
 

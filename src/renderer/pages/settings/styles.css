@@ -662,6 +662,46 @@ button {
   display: none !important;
 }
 
+/* Snippets (Text Expander) tab */
+.snippet-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.snippet-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.snippet-keyword {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.snippet-preview {
+  color: var(--help-text-color);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snippet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snippet-form input,
+.snippet-form textarea {
+  width: 100%;
+}
+
 /* 로딩 인디케이터 스타일 */
 .loading-indicator {
   display: flex;

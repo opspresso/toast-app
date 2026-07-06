@@ -126,6 +126,11 @@ export function initializeTabContent(tabId) {
         initializeCloudSyncUI();
       });
       break;
+    case 'snippets':
+      import('./snippets-settings.js').then(({ initializeSnippetsSettings }) => {
+        initializeSnippetsSettings();
+      });
+      break;
     case 'about':
       import('./about-settings.js').then(({ initializeAboutSettings }) => {
         initializeAboutSettings();
