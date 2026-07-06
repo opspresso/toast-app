@@ -116,67 +116,33 @@ export function handleCheckForUpdates() {
     updateMessage.textContent = 'Checking for updates...';
   }
 
-  // 업데이트 확인 요청 (개선된 updater 사용)
+  // 업데이트 확인 후, 새 버전이 있으면 묻지 않고 다운로드 → 설치 → 재시작까지 자동 진행
   window.settings
     .checkForUpdates()
     .then(result => {
       window.settings.log.info('업데이트 확인 결과:', result);
 
       if (result.hasUpdate) {
-        // 업데이트가 있는 경우
-        const latestVersion = result.versionInfo?.latest || result.updateInfo?.version || '새 버전';
-        const currentVersion = result.versionInfo?.current || '현재 버전';
+        const latestVersion = result.versionInfo?.latest || result.updateInfo?.version || 'new version';
+        const currentVersion = result.versionInfo?.current || 'current';
 
-        // 상태 메시지 업데이트
         if (updateMessage) {
-          const notes = result.updateInfo?.releaseNotes || '';
-
-          let messageText = `New version available (${currentVersion} → ${latestVersion}).`;
-          if (notes) {
-            // 릴리스 노트가 HTML 형식이면 텍스트로 변환
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = notes;
-            const plainText = tempDiv.textContent || tempDiv.innerText || notes;
-
-            // 릴리스 노트가 너무 길면 잘라내기
-            const maxLength = 100;
-            const trimmedNotes = plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText;
-
-            messageText += ` Release notes: ${trimmedNotes}`;
+          let messageText = `New version available (${currentVersion} → ${latestVersion}). Downloading...`;
+          if (result.files && Array.isArray(result.files) && result.files.length > 0) {
+            messageText += ` (${formatFileSize(result.files[0].size || 0)})`;
           }
-
           updateMessage.textContent = messageText;
         }
 
-        // 업데이트 액션 영역 표시
-        if (updateActions) {
-          updateActions.className = 'update-actions';
-        }
-
-        // 대체 업데이트 방법 섹션 표시
-        if (alternativeUpdates) {
-          alternativeUpdates.className = 'alternative-updates';
-        }
-
-        // 다운로드 버튼 표시
-        if (downloadUpdateButton) {
-          downloadUpdateButton.style.display = 'inline-block';
-          downloadUpdateButton.textContent = 'Download Update';
-        }
-
-        // 파일 정보가 있다면 표시
-        if (result.files && Array.isArray(result.files) && result.files.length > 0) {
-          const fileInfo = document.createElement('p');
-          fileInfo.className = 'update-file-info';
-          fileInfo.textContent = `Update size: ${formatFileSize(result.files[0].size || 0)}`;
-          updateMessage.appendChild(fileInfo);
-        }
+        // 자동으로 다운로드 → 설치 → 재시작 진행 (check 버튼은 비활성 유지)
+        handleDownloadUpdate(latestVersion);
       }
       else {
         // 업데이트가 없는 경우
         if (updateMessage) {
           updateMessage.textContent = 'You are using the latest version.';
         }
+        finishCheckFlow();
       }
     })
     .catch(error => {
@@ -186,24 +152,26 @@ export function handleCheckForUpdates() {
       if (updateMessage) {
         updateMessage.textContent = 'Error checking for updates: ' + (error.message || 'Unknown error');
       }
-    })
-    .finally(() => {
-      // 로딩 표시 숨기기
-      if (updateLoading) {
-        updateLoading.className = 'loading-indicator hidden';
-      }
-
-      // 버튼 활성화
-      if (checkUpdatesButton) {
-        checkUpdatesButton.disabled = false;
-      }
+      finishCheckFlow();
     });
+}
+
+/**
+ * 확인/자동 업데이트 플로우 종료 처리 (로딩 숨김 + 버튼 재활성화)
+ */
+function finishCheckFlow() {
+  if (updateLoading) {
+    updateLoading.className = 'loading-indicator hidden';
+  }
+  if (checkUpdatesButton) {
+    checkUpdatesButton.disabled = false;
+  }
 }
 
 /**
  * 업데이트 다운로드
  */
-export function handleDownloadUpdate() {
+export function handleDownloadUpdate(version) {
   window.settings.log.info('업데이트 다운로드 시작');
 
   // 로딩 표시
@@ -219,7 +187,7 @@ export function handleDownloadUpdate() {
 
   // 메시지 업데이트
   if (updateMessage) {
-    updateMessage.textContent = 'Downloading update...';
+    updateMessage.textContent = version ? `Downloading update ${version}...` : 'Downloading update...';
   }
 
   // 진행 상태 표시를 위한 요소 추가
@@ -260,27 +228,17 @@ export function handleDownloadUpdate() {
       window.settings.log.info('업데이트 다운로드 결과:', result);
 
       if (result.success) {
-        // 다운로드 성공
+        // 다운로드 성공 → 묻지 않고 바로 설치/재시작 진행
         if (updateMessage) {
           // 진행 상태 표시 요소 제거
           if (progressElement && progressElement.parentNode) {
             progressElement.parentNode.removeChild(progressElement);
           }
 
-          updateMessage.textContent = `Update download complete (${result.version || 'new version'}). Restart to install.`;
+          updateMessage.textContent = `Download complete (${result.version || version || 'new version'}). Installing...`;
         }
 
-        // 다운로드 버튼을 숨기고 설치 버튼 표시
-        if (downloadUpdateButton) {
-          downloadUpdateButton.style.display = 'none';
-        }
-
-        // 설치(재시작) 버튼 표시
-        if (installUpdateButton) {
-          installUpdateButton.style.display = 'inline-block';
-          installUpdateButton.textContent = 'Restart to Install';
-          installUpdateButton.disabled = false;
-        }
+        handleInstallUpdate();
       }
       else {
         // 다운로드 실패
@@ -310,11 +268,13 @@ export function handleDownloadUpdate() {
         updateMessage.textContent = 'Error occurred while downloading update: ' + (error.message || 'Unknown error');
       }
 
-      // 다운로드 버튼 상태 복원
+      // 재시도 버튼 표시 + 확인 버튼 재활성화
       if (downloadUpdateButton) {
+        downloadUpdateButton.style.display = 'inline-block';
         downloadUpdateButton.textContent = 'Try Again';
         downloadUpdateButton.disabled = false;
       }
+      finishCheckFlow();
     })
     .finally(() => {
       // 이벤트 리스너 제거
@@ -333,13 +293,7 @@ export function handleDownloadUpdate() {
 export function handleInstallUpdate() {
   window.settings.log.info('업데이트 설치 시작 (재시작)');
 
-  // 사용자에게 확인
-  if (!confirm('The app will close and restart automatically after the update. Do you want to proceed now?')) {
-    window.settings.log.info('User canceled the update installation.');
-    return;
-  }
-
-  // 설치 버튼 비활성화
+  // 설치 버튼 비활성화 (오류 복구 경로로 노출된 경우)
   if (installUpdateButton) {
     installUpdateButton.disabled = true;
     installUpdateButton.textContent = 'Restarting...';
@@ -352,63 +306,45 @@ export function handleInstallUpdate() {
 
   // 메시지 업데이트
   if (updateMessage) {
-    updateMessage.textContent = 'Restarting to install update...';
+    updateMessage.textContent = 'Installing update...';
   }
 
-  // 앱 종료 알림 표시
+  // 설치 대기 상태 표시 - 설치 준비(Squirrel 스테이징)에는 진행률 이벤트가 없어
+  // 앱이 종료될 때까지 부정형 프로그레스바와 안내 메시지를 보여준다
   const closingMessage = document.createElement('div');
   closingMessage.className = 'update-closing-message';
-  closingMessage.textContent = 'App will close automatically in 5 seconds...';
+  closingMessage.innerHTML = `
+    <div class="download-progress-bar">
+      <div class="progress-container">
+        <div class="progress-bar indeterminate"></div>
+      </div>
+      <div class="progress-text">Installing... The app will close and restart automatically. This may take up to 30 seconds.</div>
+    </div>
+  `;
   if (updateMessage.parentNode) {
     updateMessage.parentNode.appendChild(closingMessage);
   }
 
-  // 카운트다운 표시 (5초)
-  let countdown = 5;
-  const countdownInterval = setInterval(() => {
-    countdown--;
-    if (countdown <= 0) {
-      clearInterval(countdownInterval);
-
-      // 설치 대기 상태 표시 - 설치 준비(Squirrel 스테이징)에는 진행률 이벤트가 없어
-      // 앱이 종료될 때까지 부정형 프로그레스바와 안내 메시지를 보여준다
-      if (updateMessage) {
-        updateMessage.textContent = 'Installing update...';
-      }
-      closingMessage.innerHTML = `
-        <div class="download-progress-bar">
-          <div class="progress-container">
-            <div class="progress-bar indeterminate"></div>
-          </div>
-          <div class="progress-text">Preparing the update... The app will close and restart automatically. This may take up to 30 seconds.</div>
-        </div>
-      `;
-
-      try {
-        // 업데이트 설치 (앱 재시작)
-        window.settings
-          .installUpdate()
-          .then(result => {
-            // 메인 프로세스가 실패를 resolve로 반환하는 경우도 오류로 처리
-            if (result && result.success === false) {
-              window.settings.log.error('업데이트 설치 실패:', result.error);
-              handleInstallError(new Error(result.error || 'Failed to install update'));
-            }
-          })
-          .catch(error => {
-            window.settings.log.error('업데이트 설치 오류:', error);
-            handleInstallError(error);
-          });
-      }
-      catch (error) {
-        window.settings.log.error('업데이트 설치 과정에서 예외 발생:', error);
+  try {
+    // 업데이트 설치 (앱 재시작) — 묻지 않고 바로 진행
+    window.settings
+      .installUpdate()
+      .then(result => {
+        // 메인 프로세스가 실패를 resolve로 반환하는 경우도 오류로 처리
+        if (result && result.success === false) {
+          window.settings.log.error('업데이트 설치 실패:', result.error);
+          handleInstallError(new Error(result.error || 'Failed to install update'));
+        }
+      })
+      .catch(error => {
+        window.settings.log.error('업데이트 설치 오류:', error);
         handleInstallError(error);
-      }
-    }
-    else {
-      closingMessage.textContent = `App will close automatically in ${countdown} seconds...`;
-    }
-  }, 1000);
+      });
+  }
+  catch (error) {
+    window.settings.log.error('업데이트 설치 과정에서 예외 발생:', error);
+    handleInstallError(error);
+  }
 }
 
 /**
@@ -462,10 +398,8 @@ export function handleInstallError(error) {
     downloadUpdateButton.disabled = false;
   }
 
-  // 로딩 숨기기
-  if (updateLoading) {
-    updateLoading.className = 'loading-indicator hidden';
-  }
+  // 로딩 숨기기 + 확인 버튼 재활성화
+  finishCheckFlow();
 
   // 오류 로그 자세히 기록
   window.settings.log.error('업데이트 설치 오류 세부 정보:', {
