@@ -254,13 +254,16 @@
             </div>
 
             <div class="settings-group">
-              <h3>Add Snippet</h3>
+              <h3 id="snippet-form-title">Add Snippet</h3>
               <div class="snippet-form">
                 <input type="text" id="snippet-keyword" placeholder="Keyword (e.g. !email)" />
                 <textarea id="snippet-content" placeholder="Expansion text" rows="3"></textarea>
                 <input type="text" id="snippet-label" placeholder="Label (optional)" />
                 <p id="snippet-form-error" class="error-message hidden"></p>
-                <button id="snippet-add" class="primary-button">Add Snippet</button>
+                <div class="actions-group">
+                  <button id="snippet-add" class="primary-button">Add Snippet</button>
+                  <button id="snippet-cancel-edit" class="secondary-button hidden">Cancel</button>
+                </div>
               </div>
             </div>
           </div>

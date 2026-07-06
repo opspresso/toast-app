@@ -69,6 +69,8 @@ export const snippetContentInput = document.getElementById('snippet-content');
 export const snippetLabelInput = document.getElementById('snippet-label');
 export const snippetFormError = document.getElementById('snippet-form-error');
 export const snippetAddButton = document.getElementById('snippet-add');
+export const snippetFormTitle = document.getElementById('snippet-form-title');
+export const snippetCancelEditButton = document.getElementById('snippet-cancel-edit');
 
 // DOM Elements - About Tab
 export const appVersionElement = document.getElementById('app-version');

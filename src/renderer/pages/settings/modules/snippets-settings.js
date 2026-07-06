@@ -16,6 +16,8 @@ import {
   snippetLabelInput,
   snippetFormError,
   snippetAddButton,
+  snippetFormTitle,
+  snippetCancelEditButton,
 } from './dom-elements.js';
 import { config, updateConfig } from './state.js';
 
@@ -24,6 +26,9 @@ import { config, updateConfig } from './state.js';
  * which also refreshes the running matcher.
  */
 let snippets = [];
+
+// id of the snippet currently being edited in the form (null = add mode)
+let editingId = null;
 
 /**
  * Generate a stable-enough id for a new snippet without extra dependencies.
@@ -130,10 +135,20 @@ function renderSnippets() {
     info.appendChild(keyword);
     info.appendChild(preview);
 
+    const editButton = document.createElement('button');
+    editButton.className = 'secondary-button';
+    editButton.textContent = 'Edit';
+    editButton.addEventListener('click', () => {
+      startEditSnippet(snippet);
+    });
+
     const deleteButton = document.createElement('button');
     deleteButton.className = 'secondary-button';
     deleteButton.textContent = 'Delete';
     deleteButton.addEventListener('click', () => {
+      if (editingId === snippet.id) {
+        exitEditMode();
+      }
       snippets = snippets.filter(s => s.id !== snippet.id);
       renderSnippets();
       persistSnippets();
@@ -141,6 +156,7 @@ function renderSnippets() {
 
     row.appendChild(enabledToggle);
     row.appendChild(info);
+    row.appendChild(editButton);
     row.appendChild(deleteButton);
     snippetsList.appendChild(row);
   });
@@ -166,15 +182,68 @@ function persistSnippets() {
 }
 
 /**
- * Handle the Add Snippet form: validate, then append and persist.
+ * Switch the form into edit mode for an existing snippet.
+ */
+function startEditSnippet(snippet) {
+  editingId = snippet.id;
+  snippetKeywordInput.value = snippet.keyword || '';
+  snippetContentInput.value = snippet.content || '';
+  snippetLabelInput.value = snippet.label || '';
+  hideFormError();
+
+  if (snippetFormTitle) {
+    snippetFormTitle.textContent = 'Edit Snippet';
+  }
+  if (snippetAddButton) {
+    snippetAddButton.textContent = 'Save Changes';
+  }
+  if (snippetCancelEditButton) {
+    snippetCancelEditButton.classList.remove('hidden');
+  }
+  snippetKeywordInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  snippetKeywordInput.focus();
+}
+
+/**
+ * Reset the form back to add mode.
+ */
+function exitEditMode() {
+  editingId = null;
+  snippetKeywordInput.value = '';
+  snippetContentInput.value = '';
+  snippetLabelInput.value = '';
+  hideFormError();
+
+  if (snippetFormTitle) {
+    snippetFormTitle.textContent = 'Add Snippet';
+  }
+  if (snippetAddButton) {
+    snippetAddButton.textContent = 'Add Snippet';
+  }
+  if (snippetCancelEditButton) {
+    snippetCancelEditButton.classList.add('hidden');
+  }
+}
+
+/**
+ * Handle the snippet form submit: validate, then add or save edits.
  */
 function handleAddSnippet() {
   const keyword = (snippetKeywordInput.value || '').trim();
   const content = snippetContentInput.value || '';
   const label = (snippetLabelInput.value || '').trim();
 
-  const candidate = { id: newSnippetId(), keyword, content, label, enabled: true };
+  const existing = editingId ? snippets.find(s => s.id === editingId) : null;
+  const candidate = {
+    id: editingId || newSnippetId(),
+    keyword,
+    content,
+    label,
+    enabled: existing ? existing.enabled !== false : true,
+  };
 
+  // validateSnippet excludes the snippet's own id, so editing a snippet
+  // without changing its keyword does not trip the duplicate check.
   window.settings.textExpander
     .validateSnippet(candidate, snippets)
     .then(result => {
@@ -183,13 +252,16 @@ function handleAddSnippet() {
         return;
       }
       hideFormError();
-      snippets = [...snippets, candidate];
+
+      if (editingId) {
+        snippets = snippets.map(s => (s.id === editingId ? candidate : s));
+      }
+      else {
+        snippets = [...snippets, candidate];
+      }
       renderSnippets();
       persistSnippets();
-
-      snippetKeywordInput.value = '';
-      snippetContentInput.value = '';
-      snippetLabelInput.value = '';
+      exitEditMode();
     })
     .catch(error => {
       window.settings.log.error('스니펫 검증 오류:', error);
@@ -259,5 +331,9 @@ export function setupSnippetsEventListeners() {
 
   if (snippetAddButton) {
     snippetAddButton.addEventListener('click', handleAddSnippet);
+  }
+
+  if (snippetCancelEditButton) {
+    snippetCancelEditButton.addEventListener('click', exitEditMode);
   }
 }
