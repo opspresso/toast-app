@@ -87,6 +87,31 @@ const RESET_KEYCODES = new Set([
 
 const BACKSPACE_KEYCODE = 14;
 
+// Modifier/lock keys that produce no character but must NOT reset the buffer:
+// pressing Shift before a symbol/uppercase (e.g. the "!" in ":email") would
+// otherwise clear everything typed so far. These are ignored (buffer kept).
+const MODIFIER_KEYCODES = new Set([
+  42, // Shift (left)
+  54, // Shift (right)
+  29, // Ctrl (left)
+  3613, // Ctrl (right)
+  56, // Alt (left)
+  3640, // Alt (right)
+  3675, // Meta (left)
+  3676, // Meta (right)
+  58, // CapsLock
+]);
+
+/**
+ * Whether a keycode is a modifier/lock key that should leave the buffer
+ * untouched (neither reset nor appended to).
+ * @param {number} keycode - uiohook keycode
+ * @returns {boolean}
+ */
+function isModifierKey(keycode) {
+  return MODIFIER_KEYCODES.has(keycode);
+}
+
 /**
  * Convert a keycode + shift state to a printable character.
  * @param {number} keycode - uiohook keycode
@@ -246,6 +271,8 @@ module.exports = {
   BACKSPACE_KEYCODE,
   KEYCODE_TO_CHAR,
   RESET_KEYCODES,
+  MODIFIER_KEYCODES,
+  isModifierKey,
   keycodeToChar,
   shouldResetOnKey,
   createBufferState,

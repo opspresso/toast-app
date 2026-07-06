@@ -7,13 +7,46 @@
 const {
   keycodeToChar,
   shouldResetOnKey,
+  isModifierKey,
   createBufferState,
   pushChar,
   popChar,
   resetBuffer,
   findMatch,
   validateSnippet,
+  BACKSPACE_KEYCODE,
 } = require('../../../src/main/text-expander/matcher');
+
+// Mirrors the onKeydown pipeline in text-expander/index.js so key sequences
+// (with real uiohook keycodes) can be exercised without the native module.
+function feedKeys(state, events, snippets) {
+  let lastMatch = null;
+  for (const event of events) {
+    if (event.keycode === BACKSPACE_KEYCODE) {
+      popChar(state);
+      continue;
+    }
+    const modifiers = { shift: event.shift, ctrl: event.ctrl, alt: event.alt, meta: event.meta };
+    if (shouldResetOnKey(event.keycode, modifiers)) {
+      resetBuffer(state);
+      continue;
+    }
+    if (isModifierKey(event.keycode)) {
+      continue;
+    }
+    const char = keycodeToChar(event.keycode, modifiers.shift);
+    if (char === null) {
+      resetBuffer(state);
+      continue;
+    }
+    pushChar(state, char);
+    lastMatch = findMatch(state.buffer, snippets);
+  }
+  return lastMatch;
+}
+
+// Real uiohook keycodes captured from a running app.
+const K = { Shift: 42, One: 2, e: 18, k: 37, d: 32, three: 4, f: 33, o: 24, b: 48, a: 30, r: 19 };
 
 describe('Text Expander Matcher', () => {
   describe('keycodeToChar', () => {
@@ -55,6 +88,58 @@ describe('Text Expander Matcher', () => {
     test('does not reset on a plain character key', () => {
       expect(shouldResetOnKey(30)).toBe(false); // 'a'
       expect(shouldResetOnKey(30, { shift: true })).toBe(false); // 'A' still typed
+    });
+  });
+
+  describe('isModifierKey', () => {
+    test('identifies Shift/CapsLock/Ctrl/Meta/Alt', () => {
+      expect(isModifierKey(42)).toBe(true); // Shift
+      expect(isModifierKey(58)).toBe(true); // CapsLock
+      expect(isModifierKey(3675)).toBe(true); // Meta
+      expect(isModifierKey(18)).toBe(false); // 'e'
+    });
+  });
+
+  describe('key sequence (onKeydown pipeline)', () => {
+    const snippets = [{ id: '1', keyword: '!ekd3', content: 'x', enabled: true }];
+
+    test('matches "!ekd3" typed with Shift for the leading "!"', () => {
+      const state = createBufferState();
+      const match = feedKeys(
+        state,
+        [
+          { keycode: K.Shift, shift: true }, // Shift down (produces no char)
+          { keycode: K.One, shift: true }, // "!"
+          { keycode: K.e }, // e
+          { keycode: K.k }, // k
+          { keycode: K.d }, // d
+          { keycode: K.three }, // 3
+        ],
+        snippets,
+      );
+      expect(match).not.toBeNull();
+      expect(match.snippet.id).toBe('1');
+    });
+
+    test('matches a keyword with a shifted character in the middle (Shift must not reset)', () => {
+      const state = createBufferState();
+      const midSnippets = [{ id: 'm', keyword: 'foo!bar', content: 'y', enabled: true }];
+      const match = feedKeys(
+        state,
+        [
+          { keycode: K.f },
+          { keycode: K.o },
+          { keycode: K.o },
+          { keycode: K.Shift, shift: true }, // Shift down — must be ignored, not reset
+          { keycode: K.One, shift: true }, // "!"
+          { keycode: K.b },
+          { keycode: K.a },
+          { keycode: K.r },
+        ],
+        midSnippets,
+      );
+      expect(match).not.toBeNull();
+      expect(match.snippet.id).toBe('m');
     });
   });
 

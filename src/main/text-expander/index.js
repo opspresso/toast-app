@@ -168,6 +168,13 @@ function onKeydown(event) {
     return;
   }
 
+  // Modifier/lock keys (Shift for a symbol/uppercase, CapsLock, …) produce no
+  // character but must not reset the buffer, or a keyword with a mid/late
+  // shifted character (e.g. "foo!bar") could never match.
+  if (matcher.isModifierKey(event.keycode)) {
+    return;
+  }
+
   const char = matcher.keycodeToChar(event.keycode, modifiers.shift);
   if (char === null) {
     // Unmapped key: reset so a keyword can't span an untracked character.
