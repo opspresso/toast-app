@@ -101,27 +101,23 @@ export function initializeTabContent(tabId) {
 
   // 각 탭에 맞는 초기화 함수 호출 (동적 import 사용)
   switch (tabId) {
-    case 'general':
+    case 'settings':
+      // 통합 Settings 탭: General / Appearance / Advanced 섹션
       import('./general-settings.js').then(({ initializeGeneralSettings }) => {
         initializeGeneralSettings();
       });
-      break;
-    case 'appearance':
       import('./appearance-settings.js').then(({ initializeAppearanceSettings }) => {
         initializeAppearanceSettings();
       });
-      break;
-    case 'account':
-      import('./account-settings.js').then(({ initializeAccountSettings }) => {
-        initializeAccountSettings();
-      });
-      break;
-    case 'advanced':
       import('./advanced-settings.js').then(({ initializeAdvancedSettings }) => {
         initializeAdvancedSettings();
       });
       break;
-    case 'cloud-sync':
+    case 'account':
+      // 통합 Account 탭: 계정/구독 + Cloud Sync 섹션
+      import('./account-settings.js').then(({ initializeAccountSettings }) => {
+        initializeAccountSettings();
+      });
       import('./cloud-sync-settings.js').then(({ initializeCloudSyncUI }) => {
         initializeCloudSyncUI();
       });

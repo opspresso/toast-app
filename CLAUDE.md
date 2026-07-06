@@ -53,7 +53,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 
 - **Renderer Process** (`src/renderer/`): Modular UI implementation
   - `pages/toast/`: Main popup with ES6 modules
-  - `pages/settings/`: 7-tab settings interface (General, Appearance, Account & Subscription, Cloud Sync, Snippets, Advanced, About)
+  - `pages/settings/`: 4-tab settings interface (Settings, Account, Snippets, About)
   - `preload/`: Secure IPC bridges (toast.js, settings.js)
   - `assets/flat-color-icons/`: 300+ SVG icons library
 

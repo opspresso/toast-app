@@ -12,20 +12,19 @@
       <div class="settings-content">
         <div class="settings-sidebar">
           <ul class="settings-nav">
-            <li data-tab="general" class="active">General</li>
-            <li data-tab="appearance">Appearance</li>
-            <li data-tab="account">Account & Subscription</li>
-            <li data-tab="cloud-sync">Cloud Sync</li>
+            <li data-tab="settings" class="active">Settings</li>
+            <li data-tab="account">Account</li>
             <li data-tab="snippets">Snippets</li>
-            <li data-tab="advanced">Advanced</li>
             <li data-tab="about">About</li>
           </ul>
         </div>
 
         <div class="settings-main">
-          <!-- General Settings Tab -->
-          <div id="general" class="settings-tab active">
-            <h2>General Settings</h2>
+          <!-- Settings Tab (General / Appearance / Advanced) -->
+          <div id="settings" class="settings-tab active">
+            <h2>Settings</h2>
+
+            <h3 class="settings-section-title">General</h3>
 
             <div class="settings-group">
               <label for="global-hotkey">Global Hotkey</label>
@@ -44,11 +43,8 @@
               </label>
               <p class="help-text">Start Toast automatically when you log in to your computer.</p>
             </div>
-          </div>
 
-          <!-- Appearance Tab -->
-          <div id="appearance" class="settings-tab">
-            <h2>Appearance</h2>
+            <h3 class="settings-section-title">Appearance</h3>
 
             <div class="settings-group">
               <label for="theme">Theme</label>
@@ -89,11 +85,50 @@
               </div>
               <p class="help-text">Transparency of the Toast window.</p>
             </div>
+
+            <h3 class="settings-section-title">Advanced</h3>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="hide-after-action" />
+                Hide after action
+              </label>
+              <p class="help-text">Hide the Toast window after executing an action.</p>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="hide-on-blur" />
+                Hide on blur
+              </label>
+              <p class="help-text">Hide the Toast window when it loses focus.</p>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="hide-on-escape" />
+                Hide on Escape key
+              </label>
+              <p class="help-text">Hide the Toast window when the Escape key is pressed.</p>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="show-in-taskbar" />
+                Show in taskbar
+              </label>
+              <p class="help-text">Show the Toast window in the taskbar/dock.</p>
+            </div>
+
+            <div class="settings-group actions-group">
+              <button id="reset-settings" class="danger-button">Reset to Defaults</button>
+              <p class="help-text">Reset all settings to their default values.</p>
+            </div>
           </div>
 
-          <!-- Account & Subscription Tab -->
+          <!-- Account Tab (Account & Subscription / Cloud Sync) -->
           <div id="account" class="settings-tab">
-            <h2>Account & Subscription</h2>
+            <h2>Account</h2>
 
             <!-- Login state (before sign-in) -->
             <div id="login-section" class="settings-group">
@@ -143,9 +178,43 @@
                 </div>
               </div>
             </div>
+
+            <h3 class="settings-section-title">Cloud Sync</h3>
+
+            <div id="sync-status-section" class="settings-group">
+              <div class="subscription-container">
+                <div class="subscription-details">
+                  <div class="subscription-status">
+                    <span id="sync-status-badge" class="badge">Disabled</span>
+                    <span id="sync-status-text">Cloud Sync Status</span>
+                  </div>
+                  <p id="last-synced-time">Last Synced: -</p>
+                  <p id="sync-device-info">Current Device: -</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label>
+                <input type="checkbox" id="enable-cloud-sync" />
+                Enable Cloud Sync
+              </label>
+              <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
+            </div>
+
+            <div class="settings-group">
+              <div class="subscription-actions">
+                <button id="manual-sync-upload" class="primary-button">Upload to Server</button>
+                <button id="manual-sync-download" class="primary-button">Download from Server</button>
+                <button id="manual-sync-resolve" class="secondary-button">Resolve Conflicts</button>
+              </div>
+              <div id="sync-loading" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>Syncing...</p>
+              </div>
+            </div>
           </div>
 
-          <!-- Advanced Tab -->
           <!-- Snippets Tab -->
           <div id="snippets" class="settings-tab">
             <h2>Snippets</h2>
@@ -196,93 +265,9 @@
             </div>
           </div>
 
-          <div id="advanced" class="settings-tab">
-            <h2>Advanced Settings</h2>
-
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="hide-after-action" />
-                Hide after action
-              </label>
-              <p class="help-text">Hide the Toast window after executing an action.</p>
-            </div>
-
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="hide-on-blur" />
-                Hide on blur
-              </label>
-              <p class="help-text">Hide the Toast window when it loses focus.</p>
-            </div>
-
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="hide-on-escape" />
-                Hide on Escape key
-              </label>
-              <p class="help-text">Hide the Toast window when the Escape key is pressed.</p>
-            </div>
-
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="show-in-taskbar" />
-                Show in taskbar
-              </label>
-              <p class="help-text">Show the Toast window in the taskbar/dock.</p>
-            </div>
-
-            <div class="settings-group actions-group">
-              <button id="reset-settings" class="danger-button">Reset to Defaults</button>
-              <p class="help-text">Reset all settings to their default values.</p>
-            </div>
-          </div>
-
-          <!-- Cloud Sync Tab -->
-          <div id="cloud-sync" class="settings-tab">
-            <h2>Cloud Sync</h2>
-
-            <!-- Sync Status -->
-            <div id="sync-status-section" class="settings-group">
-              <div class="subscription-container">
-                <div class="subscription-details">
-                  <div class="subscription-status">
-                    <span id="sync-status-badge" class="badge">Disabled</span>
-                    <span id="sync-status-text">Cloud Sync Status</span>
-                  </div>
-                  <p id="last-synced-time">Last Synced: -</p>
-                  <p id="sync-device-info">Current Device: -</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sync Controls -->
-            <div class="settings-group">
-              <h3>Sync Settings</h3>
-              <div class="settings-group">
-                <label>
-                  <input type="checkbox" id="enable-cloud-sync" />
-                  Enable Cloud Sync
-                </label>
-                <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
-              </div>
-
-              <div class="settings-group">
-                <div class="subscription-actions">
-                  <button id="manual-sync-upload" class="primary-button">Upload to Server</button>
-                  <button id="manual-sync-download" class="primary-button">Download from Server</button>
-                  <button id="manual-sync-resolve" class="secondary-button">Resolve Conflicts</button>
-                </div>
-                <div id="sync-loading" class="loading-indicator hidden">
-                  <div class="spinner"></div>
-                  <p>Syncing...</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- About Tab -->
           <div id="about" class="settings-tab">
-            <h2>About Toast</h2>
+            <h2>About</h2>
 
             <div class="settings-group about-section">
               <div class="app-logo">

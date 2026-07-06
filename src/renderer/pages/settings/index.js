@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const tabId = activeTab.id;
         window.settings.log.info(`현재 활성 탭 "${tabId}"만 선택적으로 업데이트`);
 
-        // 선택적으로 필요한 설정만 업데이트
-        if (tabId === 'general') {
+        // 선택적으로 필요한 설정만 업데이트 (통합 Settings 탭 = General/Appearance/Advanced 섹션)
+        if (tabId === 'settings') {
           const globalHotkeyInput = document.getElementById('global-hotkey');
           const launchAtLoginCheckbox = document.getElementById('launch-at-login');
 
@@ -139,8 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (launchAtLoginCheckbox) {
             launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
           }
-        }
-        else if (tabId === 'appearance') {
+
           const themeSelect = document.getElementById('theme');
           const positionSelect = document.getElementById('position');
           const sizeSelect = document.getElementById('size');
@@ -162,8 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
               opacityValue.textContent = opacityRange.value;
             }
           }
-        }
-        else if (tabId === 'advanced') {
+
           const hideAfterActionCheckbox = document.getElementById('hide-after-action');
           const hideOnBlurCheckbox = document.getElementById('hide-on-blur');
           const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');

@@ -14,11 +14,8 @@ export const authState = {
 
 // 탭 초기화 상태 추적을 위한 객체
 export const tabInitState = {
-  general: false,
-  appearance: false,
+  settings: false,
   account: false,
-  advanced: false,
-  'cloud-sync': false,
   snippets: false,
   about: false,
 };

@@ -204,6 +204,19 @@ body {
   font-weight: 600;
 }
 
+/* 통합 탭 내 섹션 제목 (General/Appearance/Advanced, Cloud Sync 등) */
+.settings-section-title {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.settings-tab > .settings-section-title:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 /* Form elements */
 .settings-group {
   margin-bottom: 24px;
