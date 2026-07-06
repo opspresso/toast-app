@@ -27,8 +27,8 @@ function createTray(windows) {
   // Create the tray icon
   trayInstance = new Tray(iconPath);
 
-  // Set tooltip
-  trayInstance.setToolTip('Toast');
+  // Set tooltip (mark development instances)
+  trayInstance.setToolTip(process.env.NODE_ENV === 'development' ? 'Toast (dev)' : 'Toast');
 
   // Create context menu
   updateTrayMenu(trayInstance, windows);
@@ -44,6 +44,12 @@ function createTray(windows) {
  * @returns {string} Path to tray icon
  */
 function getTrayIconPath() {
+  // Development instances use the colored app logo so they are easy to tell
+  // apart from the installed (production) app in the menu bar
+  if (process.env.NODE_ENV === 'development') {
+    return path.join(__dirname, '../../assets/icons/tray-icon-dev.png');
+  }
+
   // Use template icon for macOS (supports dark mode)
   if (process.platform === 'darwin') {
     return path.join(__dirname, '../../assets/icons/tray-icon-Template.png');
