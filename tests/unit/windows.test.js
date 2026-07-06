@@ -294,8 +294,8 @@ describe('Windows Management', () => {
       const result = createSettingsWindow(mockConfig);
 
       expect(mockBrowserWindow).toHaveBeenCalledWith({
-        width: 800,
-        height: 600,
+        width: 1200,
+        height: 800,
         minWidth: 600,
         minHeight: 400,
         show: false,
