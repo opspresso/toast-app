@@ -20,6 +20,24 @@ const schema = {
     type: 'array',
     default: [],
   },
+  snippets: {
+    type: 'array',
+    default: [],
+    description: 'Text expansion snippets ({ id, keyword, content, enabled, label }); synced like pages',
+  },
+  textExpander: {
+    type: 'object',
+    properties: {
+      enabled: {
+        type: 'boolean',
+        default: false,
+        description: 'Whether inline text expansion is active on this device (device-local, never synced)',
+      },
+    },
+    default: {
+      enabled: false,
+    },
+  },
   appearance: {
     type: 'object',
     properties: {
@@ -248,8 +266,9 @@ function createConfigStore() {
  * @param {Store} config - Configuration store instance
  */
 function resetToDefaults(config) {
-  // Preserve current pages settings
+  // Preserve current pages and snippets settings
   const currentPages = config.get('pages');
+  const currentSnippets = config.get('snippets');
 
   // Clear all existing settings
   config.clear();
@@ -257,11 +276,13 @@ function resetToDefaults(config) {
   // Set default values for each key
   config.set('globalHotkey', schema.globalHotkey.default);
 
-  // Preserve pages if they exist, otherwise use the default (empty array)
+  // Preserve pages/snippets if they exist, otherwise use the default (empty array)
   config.set('pages', currentPages || schema.pages.default);
+  config.set('snippets', currentSnippets || schema.snippets.default);
 
   config.set('appearance', schema.appearance.default);
   config.set('advanced', schema.advanced.default);
+  config.set('textExpander', schema.textExpander.default);
   config.set('firstLaunchCompleted', false);
 }
 
@@ -297,6 +318,13 @@ function importConfig(config, filePath) {
     }
     else {
       config.set('pages', schema.pages.default);
+    }
+
+    if (Array.isArray(importedConfig.snippets)) {
+      config.set('snippets', importedConfig.snippets);
+    }
+    else {
+      config.set('snippets', schema.snippets.default);
     }
 
     if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
@@ -339,6 +367,7 @@ function exportConfig(config, filePath) {
     const configData = {
       globalHotkey: config.get('globalHotkey'),
       pages: config.get('pages'),
+      snippets: config.get('snippets'),
       appearance: config.get('appearance'),
       advanced: config.get('advanced'),
     };
@@ -427,9 +456,10 @@ function getDeviceId() {
  */
 function generateDataHash(data) {
   const crypto = require('crypto');
-  // Only hash the core sync data (pages, appearance, advanced)
+  // Only hash the core sync data (pages, snippets, appearance, advanced)
   const coreData = {
     pages: data.pages || [],
+    snippets: data.snippets || [],
     appearance: data.appearance || {},
     advanced: data.advanced || {},
   };
@@ -463,6 +493,7 @@ function markAsModified(config, deviceId = null) {
   // Generate new hash based on current data
   const currentData = {
     pages: config.get('pages'),
+    snippets: config.get('snippets'),
     appearance: config.get('appearance'),
     advanced: config.get('advanced'),
   };
@@ -498,6 +529,7 @@ function markAsSynced(config, deviceId = null) {
   // Generate hash based on current data
   const currentData = {
     pages: config.get('pages'),
+    snippets: config.get('snippets'),
     appearance: config.get('appearance'),
     advanced: config.get('advanced'),
   };
@@ -521,6 +553,7 @@ function hasUnsyncedChanges(config) {
   const syncMeta = config.get('_sync') || schema._sync.default;
   const currentData = {
     pages: config.get('pages'),
+    snippets: config.get('snippets'),
     appearance: config.get('appearance'),
     advanced: config.get('advanced'),
   };

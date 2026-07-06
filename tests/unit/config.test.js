@@ -102,5 +102,33 @@ describe('Configuration Store', () => {
     // Verify default values were set
     expect(config.set).toHaveBeenCalledWith('globalHotkey', 'Alt+Space');
     expect(config.set).toHaveBeenCalledWith('pages', []);
+    // Snippets are preserved and text expander reset to default
+    expect(config.set).toHaveBeenCalledWith('snippets', []);
+    expect(config.set).toHaveBeenCalledWith('textExpander', { enabled: false });
+  });
+
+  describe('schema', () => {
+    test('defines snippets and textExpander keys', () => {
+      const { schema } = require('../../src/main/config');
+      expect(schema.snippets).toEqual(expect.objectContaining({ type: 'array' }));
+      expect(schema.snippets.default).toEqual([]);
+      expect(schema.textExpander.default).toEqual({ enabled: false });
+    });
+  });
+
+  describe('generateDataHash', () => {
+    test('includes snippets in the sync hash', () => {
+      const { generateDataHash } = require('../../src/main/config');
+      const base = { pages: [], appearance: {}, advanced: {} };
+      const withSnippet = { ...base, snippets: [{ keyword: ':email', content: 'a@b.com' }] };
+      // Changing snippets must change the hash so sync detects it
+      expect(generateDataHash(base)).not.toBe(generateDataHash(withSnippet));
+    });
+
+    test('is stable for equal data', () => {
+      const { generateDataHash } = require('../../src/main/config');
+      const data = { pages: [], snippets: [{ keyword: ':x', content: 'y' }], appearance: {}, advanced: {} };
+      expect(generateDataHash(data)).toBe(generateDataHash({ ...data }));
+    });
   });
 });
