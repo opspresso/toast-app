@@ -284,8 +284,8 @@ ipcRenderer.on('update-error', (event, data) => {
 });
 
 // Tab selection event handler
+// (주의: preload 컨텍스트에는 window.settings가 없으므로 여기서 로깅하지 않는다)
 ipcRenderer.on('select-settings-tab', (event, tabName) => {
-  window.settings.log.info('select-settings-tab event received:', tabName);
   window.dispatchEvent(
     new CustomEvent('select-settings-tab', {
       detail: tabName,
