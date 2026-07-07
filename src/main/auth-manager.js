@@ -475,12 +475,6 @@ function notifySettingsSynced(configData = null) {
     };
   }
 
-  // 동기화 데이터를 설정 데이터에 병합
-  const fullData = {
-    ...syncData,
-    config: configData,
-  };
-
   logger.info('Settings to be synced to UI:', Object.keys(configData || {}).join(', '));
 
   // 설정 업데이트 알림 + 전체 설정 데이터로 UI 갱신 알림 전송

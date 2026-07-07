@@ -86,13 +86,13 @@ async function uploadIcon({ filePath, onUnauthorized = null }) {
       logger.info(`Icon upload endpoint unavailable (${statusCode}), retrying after ${UNAVAILABLE_RETRY_MS / 1000}s`);
       return { success: false, unavailable: true, error: response.error };
     }
-    logger.debug('Icon upload failed:', response.error.message || response.error.code);
+    logger.warn('Icon upload failed:', response.error.message || response.error.code);
     return { success: false, error: response.error };
   }
 
   const url = response?.data?.data?.url;
   if (!url) {
-    logger.debug('Icon upload returned an unexpected response shape');
+    logger.warn('Icon upload returned an unexpected response shape');
     return { success: false, error: 'Invalid icon upload response' };
   }
 

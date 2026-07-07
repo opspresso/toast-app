@@ -836,7 +836,7 @@ function setEnabled(enabled) {
 function setupConfigListeners() {
   // 설정 변경 감지 함수 (공통 로직)
   async function handleConfigChange(changeType, _key) {
-    logger.info(`=== [DEBUG_TEST] ${changeType} change detected ===`);
+    logger.debug(`${changeType} change detected`);
 
     // 원격 데이터를 적용하는 중이면 무시 (다운로드→업로드 피드백 루프 방지)
     if (state.applyingRemote) {

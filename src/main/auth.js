@@ -21,7 +21,6 @@ const apiAuth = require('./api/auth');
 
 // ENV
 const { getEnv } = require('./config/env');
-const NODE_ENV = getEnv('NODE_ENV', 'development');
 // Security: Do not use hardcoded default credentials
 // These must be provided via environment variables or .env file
 const CLIENT_ID = getEnv('CLIENT_ID', '');
@@ -185,30 +184,6 @@ async function getStoredRefreshToken() {
 }
 
 /**
- * Store token expiration time
- * @param {number} expiresAt - Token expiration time (milliseconds)
- * @returns {Promise<void>}
- */
-async function storeTokenExpiry(expiresAt) {
-  try {
-    // Read existing token data
-    const tokenData = readTokenFile() || {};
-
-    // Store expiration time
-    tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
-
-    // Save to file
-    if (!writeTokenFile(tokenData)) {
-      throw new Error('Failed to save token expiration time');
-    }
-  }
-  catch (error) {
-    logger.error('Failed to store token expiration time:', error);
-    throw error;
-  }
-}
-
-/**
  * Get stored token expiration time
  * @returns {Promise<number|null>} Stored token expiration time or null
  */
@@ -244,7 +219,6 @@ async function isTokenExpired() {
 
     // Compare with current time to check expiration
     const now = Date.now();
-    const isExpired = now >= expiresAt;
 
     // Consider expired if within safety margin (30 seconds before actual expiry)
     const safetyMargin = 30 * 1000; // 30 seconds

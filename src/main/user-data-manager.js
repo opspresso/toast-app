@@ -91,26 +91,6 @@ function writeToFile(filePath, data) {
 }
 
 /**
- * 파일 삭제
- * @param {string} filePath - 삭제할 파일 경로
- * @returns {boolean} 삭제 성공 여부
- */
-function deleteFile(filePath) {
-  try {
-    if (fileExists(filePath)) {
-      fs.unlinkSync(filePath);
-      logger.info(`파일 삭제 성공: ${filePath}`);
-      return true;
-    }
-    return false;
-  }
-  catch (error) {
-    logger.error(`파일 삭제 오류 (${filePath}):`, error);
-    return false;
-  }
-}
-
-/**
  * 사용자 프로필 및 구독 정보 가져오기
  * @param {boolean} forceRefresh - 강제 새로고침 여부 (true: API 호출, false: 파일 우선)
  * @param {Object} [profileDataInput] - 이미 얻은 프로필 정보 (중복 API 호출 방지용)

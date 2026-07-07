@@ -550,10 +550,10 @@ function markAsModified(config, deviceId = null) {
   // Debug logging
   const { createLogger } = require('./logger');
   const logger = createLogger('ConfigDebug');
-  logger.info('=== markAsModified Debug ===');
-  logger.info('New hash:', dataHash);
-  logger.info('Timestamp:', new Date(timestamp).toISOString());
-  logger.info('Device:', device);
+  logger.debug('=== markAsModified Debug ===');
+  logger.debug('New hash:', dataHash);
+  logger.debug('Timestamp:', new Date(timestamp).toISOString());
+  logger.debug('Device:', device);
 
   updateSyncMetadata(config, {
     lastModifiedAt: timestamp,
@@ -562,7 +562,7 @@ function markAsModified(config, deviceId = null) {
     isConflicted: false, // Reset conflict flag when locally modified
   });
   
-  logger.info('Sync metadata updated successfully');
+  logger.debug('Sync metadata updated successfully');
 }
 
 /**
@@ -615,14 +615,14 @@ function hasUnsyncedChanges(config) {
   const timeCondition = syncMeta.lastModifiedAt > syncMeta.lastSyncedAt;
   const result = hashDifferent || timeCondition;
   
-  logger.info('=== hasUnsyncedChanges Debug ===');
-  logger.info('Current hash:', currentHash);
-  logger.info('Stored hash:', syncMeta.dataHash);
-  logger.info('Hash different:', hashDifferent);
-  logger.info('Last modified:', new Date(syncMeta.lastModifiedAt).toISOString());
-  logger.info('Last synced:', new Date(syncMeta.lastSyncedAt).toISOString());
-  logger.info('Time condition (modified > synced):', timeCondition);
-  logger.info('Final result:', result);
+  logger.debug('=== hasUnsyncedChanges Debug ===');
+  logger.debug('Current hash:', currentHash);
+  logger.debug('Stored hash:', syncMeta.dataHash);
+  logger.debug('Hash different:', hashDifferent);
+  logger.debug('Last modified:', new Date(syncMeta.lastModifiedAt).toISOString());
+  logger.debug('Last synced:', new Date(syncMeta.lastSyncedAt).toISOString());
+  logger.debug('Time condition (modified > synced):', timeCondition);
+  logger.debug('Final result:', result);
 
   return result;
 }
