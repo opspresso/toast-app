@@ -320,15 +320,12 @@ describe('Script Action', () => {
         callback(error, null, 'error output');
       });
 
-      try {
-        await executeScript(action);
-        fail('Should have rejected');
-      } catch (result) {
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('AppleScript error');
-        expect(result.error).toBe(error);
-        expect(result.stderr).toBe('error output');
-      }
+      const result = await executeScript(action);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('AppleScript error');
+      expect(result.error).toBe(error);
+      expect(result.stderr).toBe('error output');
     });
 
     test('should clean up temporary AppleScript file', async () => {
@@ -433,15 +430,12 @@ describe('Script Action', () => {
         callback(error, null, 'error output');
       });
 
-      try {
-        await executeScript(action);
-        fail('Should have rejected');
-      } catch (result) {
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('PowerShell error');
-        expect(result.error).toBe(error);
-        expect(result.stderr).toBe('error output');
-      }
+      const result = await executeScript(action);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('PowerShell error');
+      expect(result.error).toBe(error);
+      expect(result.stderr).toBe('error output');
     });
   });
 
@@ -529,15 +523,12 @@ describe('Script Action', () => {
         callback(error, null, 'error output');
       });
 
-      try {
-        await executeScript(action);
-        fail('Should have rejected');
-      } catch (result) {
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Bash error');
-        expect(result.error).toBe(error);
-        expect(result.stderr).toBe('error output');
-      }
+      const result = await executeScript(action);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Bash error');
+      expect(result.error).toBe(error);
+      expect(result.stderr).toBe('error output');
     });
   });
 

@@ -161,7 +161,7 @@ async function executeAppleScript(script) {
     fs.writeFileSync(tempFile, script);
 
     // Execute the script
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       exec(`osascript "${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
         // Clean up the temporary file
         try {
@@ -172,7 +172,8 @@ async function executeAppleScript(script) {
         }
 
         if (error) {
-          reject({
+          // 실패도 {success:false} resolve 로 반환해 상위(executor)의 오류 채널을 일원화한다
+          resolve({
             success: false,
             message: error.message,
             error,
@@ -221,7 +222,7 @@ async function executePowerShell(script) {
     fs.writeFileSync(tempFile, script);
 
     // Execute the script
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       exec(`powershell -ExecutionPolicy Bypass -File "${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
         // Clean up the temporary file
         try {
@@ -232,7 +233,8 @@ async function executePowerShell(script) {
         }
 
         if (error) {
-          reject({
+          // 실패도 {success:false} resolve 로 반환해 상위(executor)의 오류 채널을 일원화한다
+          resolve({
             success: false,
             message: error.message,
             error,
@@ -284,7 +286,7 @@ async function executeBash(script) {
     fs.chmodSync(tempFile, '755');
 
     // Execute the script
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       exec(`"${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
         // Clean up the temporary file
         try {
@@ -295,7 +297,8 @@ async function executeBash(script) {
         }
 
         if (error) {
-          reject({
+          // 실패도 {success:false} resolve 로 반환해 상위(executor)의 오류 채널을 일원화한다
+          resolve({
             success: false,
             message: error.message,
             error,
