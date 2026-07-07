@@ -4,13 +4,35 @@
  * This module handles the execution of application actions.
  */
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const fs = require('fs');
+
+/**
+ * Split an application-parameters string into an argv array.
+ * Honors single and double quotes so arguments with spaces survive intact,
+ * without ever going through a shell (no metacharacter interpretation).
+ * @param {string} raw - Raw applicationParameters string
+ * @returns {string[]} Parsed argument list
+ */
+function parseParameters(raw) {
+  if (!raw || typeof raw !== 'string') {
+    return [];
+  }
+
+  const args = [];
+  const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
+  let match;
+  while ((match = pattern.exec(raw)) !== null) {
+    args.push(match[1] ?? match[2] ?? match[3]);
+  }
+  return args;
+}
 
 /**
  * Execute an application
  * @param {Object} action - Action configuration
  * @param {string} action.applicationPath - Path to the application to execute
+ * @param {string} [action.applicationParameters] - Extra launch arguments
  * @returns {Promise<Object>} Result object
  */
 async function executeApplication(action) {
@@ -28,42 +50,41 @@ async function executeApplication(action) {
       };
     }
 
-    let command;
+    const params = parseParameters(action.applicationParameters);
 
-    // Platform-specific command to open application
+    // Build launcher + argv per platform. Arguments are passed as an array
+    // (execFile spawns no shell) so metacharacters in applicationParameters are
+    // never re-interpreted — closing the command-injection path that string
+    // concatenation into exec() would open, especially for cloud-synced actions.
+    let file;
+    let args;
+
     if (process.platform === 'darwin') {
-      // macOS: Use the 'open' command
-      if (action.applicationParameters) {
-        command = `open -a "${action.applicationPath}" ${action.applicationParameters}`;
-      }
-      else {
-        command = `open "${action.applicationPath}"`;
-      }
+      // macOS: `open` launches the app bundle; extra params follow the path.
+      file = 'open';
+      args = params.length > 0 ? ['-a', action.applicationPath, ...params] : [action.applicationPath];
     }
     else if (process.platform === 'win32') {
-      // Windows: Just use the path directly, wrapped in quotes, with parameters
-      if (action.applicationParameters) {
-        command = `"${action.applicationPath}" ${action.applicationParameters}`;
-      }
-      else {
-        command = `"${action.applicationPath}"`;
-      }
+      // Windows: run the executable directly with its arguments.
+      file = action.applicationPath;
+      args = params;
+    }
+    else if (params.length > 0) {
+      // Linux with params: run the executable directly with its arguments.
+      file = action.applicationPath;
+      args = params;
     }
     else {
-      // Linux: Use xdg-open or direct execution with parameters
-      if (action.applicationParameters) {
-        command = `"${action.applicationPath}" ${action.applicationParameters}`;
-      }
-      else {
-        command = `xdg-open "${action.applicationPath}"`;
-      }
+      // Linux without params: hand off to the desktop opener.
+      file = 'xdg-open';
+      args = [action.applicationPath];
     }
 
     // Execute the command
-    return new Promise((resolve, reject) => {
-      exec(command, error => {
+    return new Promise(resolve => {
+      execFile(file, args, error => {
         if (error) {
-          reject({
+          resolve({
             success: false,
             message: `Error executing application: ${error.message}`,
             error,

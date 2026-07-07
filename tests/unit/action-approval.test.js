@@ -74,6 +74,16 @@ describe('Action Approval', () => {
       expect(computeFingerprint({ action: 'application', applicationPath: '/app' })).toBeNull();
       expect(computeFingerprint(null)).toBeNull();
     });
+
+    test('should fingerprint application actions that carry launch parameters', () => {
+      const withParams = { action: 'application', applicationPath: '/app', applicationParameters: '--flag' };
+      expect(computeFingerprint(withParams)).not.toBeNull();
+      // Empty parameters stay gate-free
+      expect(computeFingerprint({ action: 'application', applicationPath: '/app', applicationParameters: '' })).toBeNull();
+      // Fingerprint tracks the parameters that make it risky
+      const other = { action: 'application', applicationPath: '/app', applicationParameters: '--other' };
+      expect(computeFingerprint(withParams)).not.toBe(computeFingerprint(other));
+    });
   });
 
   describe('collectRiskyFingerprints', () => {

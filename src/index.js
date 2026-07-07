@@ -172,6 +172,14 @@ function initialize() {
         }
 
         if (code) {
+          // CSRF 방지: 서버가 되돌려준 state 를 저장값과 대조한 뒤에만 코드 교환 진행
+          const receivedState = urlObj.searchParams.get('state');
+          if (!auth.validateStateParam(receivedState)) {
+            logger.error('Auth redirect rejected: state validation failed');
+            authManager.notifyLoginError('Security validation failed (state mismatch).');
+            return;
+          }
+
           // 기존 OAuth 코드 처리 로직
           logger.info('Starting authentication code exchange:', code.substring(0, 6) + '...');
           authManager

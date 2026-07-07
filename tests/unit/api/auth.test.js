@@ -248,6 +248,50 @@ describe('API Auth Module (P0)', () => {
     });
   });
 
+  describe('validateStateParam (CSRF)', () => {
+    beforeEach(() => {
+      mockStore.get.mockReset();
+      mockStore.delete.mockClear();
+    });
+
+    test('should accept a matching, unexpired state and consume it', () => {
+      mockStore.get
+        .mockReturnValueOnce('mock-uuid-12345')      // oauth-state
+        .mockReturnValueOnce(Date.now() - 10000);    // state-created-at
+
+      const valid = authApi.validateStateParam('mock-uuid-12345');
+
+      expect(valid).toBe(true);
+      // one-time use: state is cleared after validation
+      expect(mockStore.delete).toHaveBeenCalledWith('oauth-state');
+      expect(mockStore.delete).toHaveBeenCalledWith('state-created-at');
+    });
+
+    test('should reject a mismatched state', () => {
+      mockStore.get
+        .mockReturnValueOnce('stored-state')
+        .mockReturnValueOnce(Date.now() - 10000);
+
+      expect(authApi.validateStateParam('attacker-state')).toBe(false);
+      // cleared even on rejection so it cannot be replayed
+      expect(mockStore.delete).toHaveBeenCalledWith('oauth-state');
+    });
+
+    test('should reject when no state was stored', () => {
+      mockStore.get.mockReturnValueOnce(undefined).mockReturnValueOnce(0);
+
+      expect(authApi.validateStateParam('anything')).toBe(false);
+    });
+
+    test('should reject an expired state', () => {
+      mockStore.get
+        .mockReturnValueOnce('mock-uuid-12345')
+        .mockReturnValueOnce(Date.now() - 6 * 60 * 1000); // older than 5 min
+
+      expect(authApi.validateStateParam('mock-uuid-12345')).toBe(false);
+    });
+  });
+
   describe('User Profile', () => {
     test('should fetch user profile', async () => {
       mockClientModule.authenticatedRequest.mockResolvedValue({

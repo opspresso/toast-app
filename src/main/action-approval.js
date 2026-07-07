@@ -54,6 +54,15 @@ function computeFingerprint(action) {
       scriptParams: action.scriptParams || '',
     };
   }
+  else if (action.action === 'application' && action.applicationParameters) {
+    // Launch arguments are attacker-controllable capability; a plain app launch
+    // (no parameters) stays gate-free to avoid prompting on every synced button.
+    canonical = {
+      action: 'application',
+      applicationPath: action.applicationPath || '',
+      applicationParameters: action.applicationParameters || '',
+    };
+  }
   else {
     return null;
   }
@@ -159,7 +168,16 @@ function recordRemoteChanges(configStore, incomingPages) {
 
   for (const [fingerprint, action] of incoming) {
     if (!trusted.has(fingerprint) && !pendingSet.has(fingerprint)) {
-      const preview = action.action === 'exec' ? action.command || '' : action.script || '';
+      let preview;
+      if (action.action === 'exec') {
+        preview = action.command || '';
+      }
+      else if (action.action === 'application') {
+        preview = `${action.applicationPath || ''} ${action.applicationParameters || ''}`.trim();
+      }
+      else {
+        preview = action.script || '';
+      }
       pending.push({
         fingerprint,
         actionType: action.action,

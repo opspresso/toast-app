@@ -77,6 +77,32 @@ function retrieveStoredState() {
 }
 
 /**
+ * Validate a state value received on the OAuth redirect against the stored one
+ * (CSRF prevention) and consume it so a state cannot be replayed.
+ * @param {string} receivedState - state parameter from the redirect URL
+ * @returns {boolean} True when the state matches the stored, unexpired value
+ */
+function validateStateParam(receivedState) {
+  const storedState = retrieveStoredState();
+  const valid = Boolean(storedState) && receivedState === storedState;
+
+  // One-time use: clear regardless of outcome so a leaked/guessed state
+  // cannot be replayed on a subsequent redirect.
+  try {
+    stateStore.delete('oauth-state');
+    stateStore.delete('state-created-at');
+  }
+  catch (error) {
+    logger.error('Failed to clear auth state after validation:', error);
+  }
+
+  if (!valid) {
+    logger.error('State mismatch on auth redirect. Possible CSRF attack');
+  }
+  return valid;
+}
+
+/**
  * Check if login process is currently active
  * @returns {boolean} True if login is in progress
  */
@@ -572,6 +598,7 @@ module.exports = {
   exchangeCodeForToken,
   refreshAccessToken,
   handleAuthRedirect,
+  validateStateParam,
   fetchUserProfile,
   fetchSubscription,
   logout,

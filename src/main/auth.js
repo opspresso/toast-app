@@ -966,6 +966,7 @@ module.exports = {
   fetchSubscription,
   registerProtocolHandler,
   handleAuthRedirect,
+  validateStateParam: apiAuth.validateStateParam,
   hasValidToken,
   getAccessToken,
   updatePageGroupSettings,

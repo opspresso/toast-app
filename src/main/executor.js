@@ -28,8 +28,10 @@ async function executeAction(action) {
       return { success: false, message: 'Action type is required' };
     }
 
-    // Risky actions downloaded from cloud sync need one-time user approval
-    if (action.action === 'exec' || action.action === 'script') {
+    // Risky actions downloaded from cloud sync need one-time user approval.
+    // application actions only carry risk when they pass launch parameters;
+    // ensureApproved/computeFingerprint returns allow for a plain app launch.
+    if (action.action === 'exec' || action.action === 'script' || action.action === 'application') {
       const { approved, reason } = await ensureApproved(action);
       if (!approved) {
         return { success: false, message: reason };
