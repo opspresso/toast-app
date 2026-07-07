@@ -217,11 +217,20 @@ const schema = {
   },
 };
 
+// 공유 스토어 인스턴스 — 모든 모듈이 동일 인스턴스를 써야
+// onDidChange 기반 동작(클라우드 동기화 트리거, 텍스트 확장 캐시 갱신)이
+// 어느 쓰기 경로에서든 발화한다 (electron-store 이벤트는 인스턴스 간 전파되지 않음)
+let sharedStore = null;
+
 /**
- * Create a configuration store
+ * Create (or return the shared) configuration store
  * @returns {Store} Configuration store instance
  */
 function createConfigStore() {
+  if (sharedStore) {
+    return sharedStore;
+  }
+
   try {
     // 먼저 스키마 검증 없이 구성을 로드하여 마이그레이션
     const migrationStore = new Store({
@@ -255,15 +264,17 @@ function createConfigStore() {
     }
 
     // 이제 정상적인 스키마 검증으로 Store 객체 생성
-    return new Store({ schema });
+    sharedStore = new Store({ schema });
+    return sharedStore;
   }
   catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
     logger.error('Error creating config store with schema, falling back to schema-less store:', error);
-    return new Store({
+    sharedStore = new Store({
       schema: null,
       clearInvalidConfig: false,
     });
+    return sharedStore;
   }
 }
 
