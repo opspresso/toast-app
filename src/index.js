@@ -7,7 +7,6 @@
 
 const { app } = require('electron');
 const { loadEnv } = require('./main/config/env');
-const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const { createLogger, maskAuthUrl } = require('./main/logger');
@@ -239,42 +238,10 @@ function initialize() {
   app.isQuitting = false;
 }
 
-// Configure auto updater
-function setupAutoUpdater() {
-  if (process.env.NODE_ENV !== 'development') {
-    autoUpdater.checkForUpdatesAndNotify();
-
-    // Log update events
-    autoUpdater.on('checking-for-update', () => {
-      logger.info('Checking for update...');
-    });
-
-    autoUpdater.on('update-available', info => {
-      logger.info('Update available:', info.version);
-    });
-
-    autoUpdater.on('update-not-available', () => {
-      logger.info('Update not available');
-    });
-
-    autoUpdater.on('error', err => {
-      logger.error('Error in auto-updater:', err);
-    });
-
-    autoUpdater.on('download-progress', progressObj => {
-      logger.info(`Download progress: ${progressObj.percent.toFixed(2)}%`);
-    });
-
-    autoUpdater.on('update-downloaded', () => {
-      logger.info('Update downloaded. Will install on restart.');
-    });
-  }
-}
-
 // When Electron has finished initialization
+// (자동 업데이트는 src/main/updater.js 가 단독 소유 — ipc.js 의 initAutoUpdater 에서 초기화)
 app.whenReady().then(() => {
   initialize();
-  setupAutoUpdater();
 
   // Show the settings window on first launch if this is a new installation
   const isFirstLaunch = !config.has('firstLaunchCompleted');

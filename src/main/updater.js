@@ -160,10 +160,11 @@ function validateUpdateConfig() {
 function scheduleUpdateCheck() {
   if (process.env.NODE_ENV !== 'development') {
     // 앱이 시작되고 몇 초 후에 업데이트 확인 (초기화 시간 확보)
+    // (unref: 이 타이머가 프로세스 종료를 붙잡지 않도록)
     logger.info('Scheduling initial update check in 5 seconds');
     setTimeout(() => {
       checkForUpdates(true); // silent 모드로 시작 시 자동 확인
-    }, 5000);
+    }, 5000).unref();
 
     // 이후 일정 주기마다 백그라운드에서 새 버전 확인
     // (unref: 이 타이머가 프로세스 종료를 붙잡지 않도록)
@@ -566,10 +567,9 @@ async function downloadUpdate() {
     };
   }
   finally {
-    // 다운로드 상태 갱신
-    if (!autoUpdater.isUpdaterActive()) {
-      updateDownloadInProgress = false;
-    }
+    // 다운로드 종료(성공/실패) 시 항상 플래그 해제 — 조건부 해제 시
+    // 플래그가 고착되면 이후 다운로드가 영구히 조기 반환된다
+    updateDownloadInProgress = false;
   }
 }
 
