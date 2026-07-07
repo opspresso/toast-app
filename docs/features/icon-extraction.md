@@ -6,11 +6,13 @@
 
 Toast 앱의 아이콘 추출 시스템은 로컬에서 직접 애플리케이션의 아이콘을 추출하여 사용하는 기능입니다. macOS의 Applications 폴더에 설치된 앱들의 .icns 파일을 찾아 PNG 형식으로 변환하여 Toast 앱에서 활용할 수 있습니다.
 
+로그인한 클라우드 동기화 사용자의 경우, 추출된 PNG 아이콘은 서버(S3)에 업로드되고 버튼의 아이콘 값이 로컬 `file://` 경로에서 기기 간 공유 가능한 `https://` URL로 교체됩니다(아래 "기기 간 아이콘 공유" 참고). 비로그인 사용자는 로컬 `file://` 경로만 사용합니다.
+
 ### 주요 특징
 
-- **로컬 시스템에서 직접 아이콘 추출**: 네트워크 연결 불필요
+- **로컬 시스템에서 직접 아이콘 추출**: 추출 자체는 로컬에서 수행
 - **설치된 모든 앱 지원**: Applications 폴더의 모든 .app 번들
-- **오프라인 동작**: 인터넷 연결 없이도 작동
+- **기기 간 공유**: 로그인 사용자는 추출한 아이콘을 서버에 업로드해 다른 기기에서도 동일하게 표시
 - **실시간 미리보기**: 버튼 설정 시 즉시 아이콘 확인
 - **자동 감지**: `open -a AppName` 명령어에서 자동 아이콘 추출
 - **스마트 캐싱**: 한 번 추출한 아이콘은 캐시하여 재사용
@@ -246,11 +248,20 @@ ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh =
     }
 
     const tildePath = convertToTildePath(iconPath);
+
+    // 인증 상태이면 서버에 업로드해 기기 간 공유 가능한 remoteUrl 확보 (실패해도 로컬 동작 유지)
+    let remoteUrl = null;
+    if (await authManager.hasValidToken()) {
+      const uploadResult = await apiIcons.uploadIcon({ filePath: iconPath, onUnauthorized: authManager.refreshAccessToken });
+      if (uploadResult.success) remoteUrl = uploadResult.url;
+    }
+
     return {
       success: true,
       iconUrl: `file://${iconPath}`,
       iconPath: tildePath, // ~ 형식으로 변환된 경로
-      appName
+      appName,
+      ...(remoteUrl ? { remoteUrl } : {})
     };
   } catch (err) {
     return {
@@ -274,8 +285,10 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
     const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
 
     if (result.success) {
-      // 1. 아이콘 입력 필드 업데이트 (iconPath는 ~ 형식 경로이므로 file:// URL로 변환)
-      iconInput.value = `file://${result.iconPath}`;
+      // 1. 아이콘 입력 필드 업데이트
+      //    서버 업로드에 성공했으면 기기 간 공유 가능한 https URL(remoteUrl)을 우선 사용,
+      //    아니면 로컬 경로 기반 file:// URL 사용
+      iconInput.value = result.remoteUrl || `file://${result.iconPath}`;
 
       // 2. 버튼 이름 업데이트 (비어있을 때만)
       if (nameInput && !nameInput.value.trim()) {
@@ -481,11 +494,26 @@ for (const appName of testApps) {
    - 아이콘 캐시 크기 제한
    - 임시 파일 정리 확인
 
+## 기기 간 아이콘 공유 (클라우드 업로드)
+
+로그인한 클라우드 동기화 사용자는 로컬에서 추출한 아이콘을 서버(S3)에 업로드하여 어느 기기에서든 동일한 버튼 아이콘을 볼 수 있습니다. 비로그인 사용자는 로컬 `file://` 경로만 사용하며 이 단계는 건너뜁니다.
+
+동작:
+
+1. **추출 시 업로드**: `extract-app-icon` IPC 핸들러(`src/main/ipc/system.js`)가 아이콘 추출 후 인증 상태이면 `apiIcons.uploadIcon`으로 서버에 업로드하고, 성공 시 응답에 `remoteUrl`(https URL)을 포함합니다. 렌더러(`local-icon-utils.js`)는 `remoteUrl`이 있으면 이를, 없으면 기존 `file://` 경로를 버튼 아이콘 값으로 사용합니다.
+2. **업로드 API**: `src/main/api/icons.js`의 `uploadIcon`이 `USER_ICONS`(`/users/icons`) 엔드포인트로 multipart 업로드합니다. 401 시 토큰 갱신, 세션 내 중복 업로드 캐시, 서버 미지원(404/405/503) 시 6시간 백오프를 포함합니다.
+3. **기존 아이콘 마이그레이션**: 클라우드 동기화 업로드 직전, `src/main/utils/icon-normalizer.js`의 `normalizeLocalIcons`가 페이지의 남은 `file://` 아이콘을 일회성으로 업로드해 `https://` URL로 교체합니다(`src/main/cloud-sync.js`의 `uploadSettings` 내부). 이 기기에 파일이 없는 아이콘은 건드리지 않습니다.
+
+> 서버 아이콘 URL은 사용자 해시 + 콘텐츠 해시 기반으로 추측이 어렵지만 비인증 접근이 가능하므로, 앱 아이콘 등 비민감 이미지 전용입니다.
+
 ## 관련 파일
 
 - `src/main/utils/app-icon-extractor.js` - 핵심 아이콘 추출 유틸리티
-- `src/renderer/pages/toast/modules/local-icon-utils.js` - 렌더러 프로세스 유틸리티
-- `src/main/ipc/system.js` - IPC 핸들러 (extract-app-icon)
+- `src/main/api/icons.js` - 아이콘 서버 업로드 API (`uploadIcon`)
+- `src/main/utils/icon-normalizer.js` - `file://` → `https://` 일회성 마이그레이션
+- `src/renderer/pages/toast/modules/local-icon-utils.js` - 렌더러 프로세스 유틸리티 (remoteUrl 우선)
+- `src/main/ipc/system.js` - IPC 핸들러 (extract-app-icon, 인증 시 업로드)
+- `src/main/cloud-sync.js` - 업로드 전 아이콘 정규화 호출
 - `src/renderer/preload/toast.js` - Preload 스크립트 확장
 - `src/renderer/pages/toast/modules/modals-button-edit.js` - 버튼 편집 모달 (아이콘 미리보기)
 - `src/renderer/pages/toast/modules/modals-icon-browser.js` - 아이콘 브라우저 모달

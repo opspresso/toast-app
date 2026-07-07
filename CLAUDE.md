@@ -20,7 +20,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Mac App Store**: `npm run build:mas` (MAS distribution)
 
 ### Testing & Quality
-- **Run Tests**: `npm run test` (Jest - 31 test suites, 917 unit tests)
+- **Run Tests**: `npm run test` (Jest - 33 test suites, 959 unit tests)
 - **Lint Fix**: `npm run lint:fix` (ESLint auto-fix)
 - **Lint**: `npm run lint` (ESLint check)
 - **Format**: `npm run format` (Prettier formatting)
@@ -36,7 +36,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 ### Process Structure
 - **Main Process** (`src/main/`): Handles application lifecycle, window management, system integration
   - `actions/`: 5 action handlers (application, chain, exec, open, script)
-  - `api/`: Cloud sync API client (auth.js, client.js, sync.js, index.js)
+  - `api/`: Cloud sync API client (auth.js, client.js, sync.js, icons.js, index.js)
   - `config/`: Environment variable loading (env.js); electron-store schema validation lives in `config.js`
   - `ipc/`: Domain-specific IPC handlers (window, config, actions, auth, cloud-sync, snippets, updater, system); `ipc.js` is the orchestrator
   - `executor.js`: Central action dispatcher with validation
@@ -46,6 +46,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
   - `logger.js`: electron-log based logger factory (`createLogger`)
   - `constants.js`: Shared constants (PAGE_GROUPS, default subscription/profile)
   - `utils/app-icon-extractor.js`: Local app icon extraction (macOS)
+  - `utils/icon-normalizer.js`: One-time `file://` → server `https://` icon migration during cloud sync upload
   - `subscription.js`: Subscription-derived decisions (page groups, cloud sync eligibility)
   - `broadcast.js`: Send events to both windows safely
   - `windows.js`: Toast/Settings window lifecycle management
@@ -97,7 +98,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 5. Update `docs/config/schema.md` and `docs/features/settings.md`
 
 ### Testing & Quality Assurance
-- **Unit Tests**: 31 test suites, 917 unit tests
+- **Unit Tests**: 33 test suites, 959 unit tests
 - **Manual Testing**: Use dev mode with `npm run dev`
 - **Coverage**: Run `npm run test` to generate coverage report
 - **Linting**: `npm run lint` to check code style
@@ -136,7 +137,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Framework**: Jest with coverage reporting
 - **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
 - **Coverage**: Enabled by default, reports in `coverage/` directory
-- **Current Tests**: 31 test suites, 917 unit tests
+- **Current Tests**: 33 test suites, 959 unit tests
   - Main process modules (executor, config, shortcuts, windows, etc.)
   - Actions (application, chain, exec, open, script)
   - API clients (auth, client, sync)
@@ -148,7 +149,7 @@ tests/
 ├── mocks/
 │   └── electron.js        # Electron API mocks
 ├── setup.js               # Jest setup configuration
-├── unit/                  # Unit tests (917 tests in 31 suites)
+├── unit/                  # Unit tests (959 tests in 33 suites)
 │   ├── actions/           # Action handler tests
 │   ├── api/               # API client tests
 │   ├── cloud-sync/        # Conflict resolver / merge tests
