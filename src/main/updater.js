@@ -16,6 +16,9 @@ const fs = require('fs');
 // 모듈별 로거 생성
 const logger = createLogger('Updater');
 
+// 주기적 업데이트 확인 간격
+const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
+
 // 자동 업데이트 상태와 창 참조를 저장하는 변수들
 let windowsRef = null;
 let updateCheckInProgress = false;
@@ -152,7 +155,7 @@ function validateUpdateConfig() {
 }
 
 /**
- * 시작 시 업데이트 확인 예약
+ * 시작 시 및 주기적 업데이트 확인 예약
  */
 function scheduleUpdateCheck() {
   if (process.env.NODE_ENV !== 'development') {
@@ -161,9 +164,31 @@ function scheduleUpdateCheck() {
     setTimeout(() => {
       checkForUpdates(true); // silent 모드로 시작 시 자동 확인
     }, 5000);
+
+    // 이후 일정 주기마다 백그라운드에서 새 버전 확인
+    // (unref: 이 타이머가 프로세스 종료를 붙잡지 않도록)
+    logger.info(`Scheduling periodic update check every ${UPDATE_CHECK_INTERVAL_MS / (60 * 60 * 1000)} hours`);
+    setInterval(() => {
+      checkForUpdates(true);
+    }, UPDATE_CHECK_INTERVAL_MS).unref();
   }
   else {
     logger.info('Skipping automatic update check in development mode');
+  }
+}
+
+/**
+ * 트레이 메뉴에 업데이트 상태 반영
+ * (모듈 로드 순환 참조를 피하기 위해 호출 시점에 tray 모듈을 로드)
+ * @param {string|null} status - 'available' | 'downloading' | 'downloaded' | null
+ * @param {string} [version] - 대상 버전
+ */
+function notifyTrayUpdateState(status, version) {
+  try {
+    require('./tray').setUpdateState(status, version);
+  }
+  catch (error) {
+    logger.error('Failed to update tray menu state:', error.toString());
   }
 }
 
@@ -184,6 +209,11 @@ function setupAutoUpdaterEvents() {
     updateCheckInProgress = false;
     lastCheckTime = Date.now();
 
+    // 다운로드 중/완료 상태를 available 로 되돌리지 않는다
+    if (!updateDownloadInProgress && !updateDownloaded) {
+      notifyTrayUpdateState('available', info.version);
+    }
+
     sendStatusToWindows('update-available', {
       status: 'available',
       info: {
@@ -201,6 +231,8 @@ function setupAutoUpdaterEvents() {
     logger.info(`No updates available (latest: ${info.version || 'unknown'})`);
     updateCheckInProgress = false;
     lastCheckTime = Date.now();
+
+    notifyTrayUpdateState(null);
 
     sendStatusToWindows('update-not-available', {
       status: 'not-available',
@@ -242,6 +274,8 @@ function setupAutoUpdaterEvents() {
     updateDownloadInProgress = false;
     updateDownloaded = true;
 
+    notifyTrayUpdateState('downloaded', info.version);
+
     sendStatusToWindows('update-downloaded', {
       status: 'downloaded',
       info: {
@@ -274,6 +308,8 @@ function setupAutoUpdaterEvents() {
 
     updateCheckInProgress = false;
     updateDownloadInProgress = false;
+
+    notifyTrayUpdateState(null);
 
     // 특정 오류 코드에 대한 사용자 친화적인 메시지 생성
     let userFriendlyMessage = err.message;
@@ -604,6 +640,30 @@ async function installUpdate() {
 }
 
 /**
+ * 업데이트 다운로드 후 즉시 설치 (트레이 메뉴의 원클릭 업그레이드용)
+ * @param {string} [version] - 대상 버전 (트레이 표시용)
+ * @returns {Promise} 결과 객체
+ */
+async function downloadAndInstallUpdate(version) {
+  // 이미 다운로드된 업데이트가 있으면 바로 설치
+  if (updateDownloaded) {
+    logger.info('Update already downloaded, installing immediately');
+    return await installUpdate();
+  }
+
+  notifyTrayUpdateState('downloading', version);
+
+  const downloadResult = await downloadUpdate();
+  if (!downloadResult.success) {
+    logger.error('One-click upgrade failed during download:', downloadResult.error);
+    notifyTrayUpdateState('available', version);
+    return downloadResult;
+  }
+
+  return await installUpdate();
+}
+
+/**
  * 모든 창에 상태 업데이트 전송
  * @param {string} channel - 이벤트 채널 이름
  * @param {Object} data - 상태 데이터
@@ -666,4 +726,5 @@ module.exports = {
   checkForUpdates,
   downloadUpdate,
   installUpdate,
+  downloadAndInstallUpdate,
 };

@@ -68,6 +68,13 @@ jest.mock('../../src/main/logger', () => ({
   })),
 }));
 
+// Mock tray (updater reflects update state into the tray menu)
+const mockTrayModule = {
+  setUpdateState: jest.fn(),
+};
+
+jest.mock('../../src/main/tray', () => mockTrayModule);
+
 const fs = require('fs');
 
 describe('Auto Updater', () => {
@@ -260,11 +267,107 @@ describe('Auto Updater', () => {
     test('should handle re-initialization', () => {
       updater.initAutoUpdater(mockWindows);
       const result = updater.initAutoUpdater(mockWindows);
-      
+
       // Should handle re-initialization gracefully
       expect(result).toHaveProperty('checkForUpdates');
       expect(result).toHaveProperty('downloadUpdate');
       expect(result).toHaveProperty('installUpdate');
+    });
+  });
+
+  describe('Periodic Update Check', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should re-check for updates on the periodic interval', async () => {
+      jest.useFakeTimers();
+      updater.initAutoUpdater(mockWindows);
+
+      // Initial check fires 5 seconds after startup
+      await jest.advanceTimersByTimeAsync(5000);
+      expect(mockAutoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+
+      // Each 4-hour interval triggers another silent check
+      await jest.advanceTimersByTimeAsync(4 * 60 * 60 * 1000);
+      expect(mockAutoUpdater.checkForUpdates).toHaveBeenCalledTimes(2);
+
+      await jest.advanceTimersByTimeAsync(4 * 60 * 60 * 1000);
+      expect(mockAutoUpdater.checkForUpdates).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Tray Update State', () => {
+    test('update-available event should mark the tray menu', () => {
+      updater.initAutoUpdater(mockWindows);
+
+      const handler = mockAutoUpdater.on.mock.calls.find(call => call[0] === 'update-available')[1];
+      handler({ version: '1.1.0', releaseDate: '2026-01-01', releaseNotes: '' });
+
+      expect(mockTrayModule.setUpdateState).toHaveBeenCalledWith('available', '1.1.0');
+    });
+
+    test('update-not-available event should clear the tray menu state', () => {
+      updater.initAutoUpdater(mockWindows);
+
+      const handler = mockAutoUpdater.on.mock.calls.find(call => call[0] === 'update-not-available')[1];
+      handler({ version: '1.0.0' });
+
+      expect(mockTrayModule.setUpdateState).toHaveBeenCalledWith(null, undefined);
+    });
+  });
+
+  describe('One-click Upgrade (downloadAndInstallUpdate)', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should download then install when no update is downloaded yet', async () => {
+      jest.useFakeTimers();
+      updater.initAutoUpdater(mockWindows);
+      mockAutoUpdater.downloadUpdate.mockResolvedValue(undefined);
+
+      const promise = updater.downloadAndInstallUpdate('1.1.0');
+      // downloadUpdate has a 500ms pre-download delay, installUpdate a 1000ms pre-install delay
+      await jest.advanceTimersByTimeAsync(2000);
+      const result = await promise;
+
+      expect(result.success).toBe(true);
+      expect(mockTrayModule.setUpdateState).toHaveBeenCalledWith('downloading', '1.1.0');
+      expect(mockAutoUpdater.downloadUpdate).toHaveBeenCalled();
+      expect(mockAutoUpdater.quitAndInstall).toHaveBeenCalled();
+    });
+
+    test('should install immediately when update is already downloaded', async () => {
+      jest.useFakeTimers();
+      updater.initAutoUpdater(mockWindows);
+
+      // Simulate a completed download via the update-downloaded event
+      const downloadedHandler = mockAutoUpdater.on.mock.calls.find(call => call[0] === 'update-downloaded')[1];
+      downloadedHandler({ version: '1.1.0', releaseDate: '2026-01-01', releaseNotes: '' });
+      mockAutoUpdater.downloadUpdate.mockClear();
+
+      const promise = updater.downloadAndInstallUpdate('1.1.0');
+      await jest.advanceTimersByTimeAsync(1500);
+      const result = await promise;
+
+      expect(result.success).toBe(true);
+      expect(mockAutoUpdater.downloadUpdate).not.toHaveBeenCalled();
+      expect(mockAutoUpdater.quitAndInstall).toHaveBeenCalled();
+    });
+
+    test('should revert tray state to available when download fails', async () => {
+      jest.useFakeTimers();
+      updater.initAutoUpdater(mockWindows);
+      mockAutoUpdater.downloadUpdate.mockRejectedValue(new Error('network down'));
+
+      const promise = updater.downloadAndInstallUpdate('1.1.0');
+      await jest.advanceTimersByTimeAsync(1000);
+      const result = await promise;
+
+      expect(result.success).toBe(false);
+      expect(mockTrayModule.setUpdateState).toHaveBeenCalledWith('available', '1.1.0');
+      expect(mockAutoUpdater.quitAndInstall).not.toHaveBeenCalled();
     });
   });
 });

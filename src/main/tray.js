@@ -9,6 +9,10 @@ const path = require('path');
 const { createConfigStore } = require('./config');
 
 let trayInstance = null;
+let windowsRef = null;
+
+// 자동 업데이트 상태 (updater.js 가 setUpdateState 로 갱신)
+let updateState = { status: null, version: null };
 
 /**
  * Create the system tray icon
@@ -16,6 +20,8 @@ let trayInstance = null;
  * @returns {Tray} Tray instance
  */
 function createTray(windows) {
+  windowsRef = windows;
+
   // If tray already exists, return it
   if (trayInstance) {
     return trayInstance;
@@ -115,10 +121,7 @@ function updateTrayMenu(tray, windows) {
         ipcMain.emit('show-settings-tab', null, 'about');
       },
     },
-    {
-      label: `Version: ${app.getVersion()}`,
-      enabled: false,
-    },
+    ...buildUpdateMenuItems(),
     { type: 'separator' },
     {
       label: 'Quit',
@@ -129,6 +132,71 @@ function updateTrayMenu(tray, windows) {
   ]);
 
   tray.setContextMenu(contextMenu);
+}
+
+/**
+ * Build version/update menu items based on the current update state
+ * @returns {Array} Menu item templates
+ */
+function buildUpdateMenuItems() {
+  const { status, version } = updateState;
+
+  if (status === 'available') {
+    return [
+      {
+        label: `⬆ Update to v${version}`,
+        click: () => {
+          // 순환 참조를 피하기 위해 클릭 시점에 로드
+          require('./updater').downloadAndInstallUpdate(version);
+        },
+      },
+    ];
+  }
+
+  if (status === 'downloading') {
+    return [
+      {
+        label: `Downloading v${version}…`,
+        enabled: false,
+      },
+    ];
+  }
+
+  if (status === 'downloaded') {
+    return [
+      {
+        label: `Restart to install v${version}`,
+        click: () => {
+          require('./updater').installUpdate();
+        },
+      },
+    ];
+  }
+
+  return [
+    {
+      label: `Version: ${app.getVersion()}`,
+      enabled: false,
+    },
+  ];
+}
+
+/**
+ * Reflect auto-update state in the tray menu
+ * @param {string|null} status - 'available' | 'downloading' | 'downloaded' | null
+ * @param {string} [version] - Target update version
+ */
+function setUpdateState(status, version) {
+  // 동일 상태로의 중복 갱신은 무시 (주기 체크마다 메뉴가 다시 만들어지는 것 방지)
+  if (updateState.status === status && updateState.version === (version || null)) {
+    return;
+  }
+
+  updateState = { status: status || null, version: version || null };
+
+  if (trayInstance) {
+    updateTrayMenu(trayInstance, windowsRef);
+  }
 }
 
 /**
@@ -156,5 +224,6 @@ function destroyTray() {
 module.exports = {
   createTray,
   updateTrayMenu,
+  setUpdateState,
   destroyTray,
 };

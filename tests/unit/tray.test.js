@@ -58,6 +58,14 @@ jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
 }));
 
+// Mock updater module (tray menu triggers one-click upgrade)
+const mockUpdater = {
+  downloadAndInstallUpdate: jest.fn(),
+  installUpdate: jest.fn(),
+};
+
+jest.mock('../../src/main/updater', () => mockUpdater);
+
 describe('System Tray', () => {
   let tray;
   let mockWindows;
@@ -413,6 +421,79 @@ describe('System Tray', () => {
       tray.createTray(mockWindows);
 
       expect(Tray).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Update Menu State', () => {
+    afterEach(() => {
+      // 모듈 상태가 다른 테스트로 새어나가지 않도록 초기화
+      tray.setUpdateState(null);
+    });
+
+    test('should show update item when an update is available', () => {
+      tray.createTray(mockWindows);
+      mockMenu.buildFromTemplate.mockClear();
+
+      tray.setUpdateState('available', '9.9.9');
+
+      const template = mockMenu.buildFromTemplate.mock.calls[0][0];
+      const updateItem = template.find(item => item.label === '⬆ Update to v9.9.9');
+      expect(updateItem).toBeDefined();
+      expect(template.find(item => (item.label || '').startsWith('Version:'))).toBeUndefined();
+
+      updateItem.click();
+      expect(mockUpdater.downloadAndInstallUpdate).toHaveBeenCalledWith('9.9.9');
+    });
+
+    test('should show disabled downloading item while downloading', () => {
+      tray.createTray(mockWindows);
+      mockMenu.buildFromTemplate.mockClear();
+
+      tray.setUpdateState('downloading', '9.9.9');
+
+      const template = mockMenu.buildFromTemplate.mock.calls[0][0];
+      const downloadingItem = template.find(item => item.label === 'Downloading v9.9.9…');
+      expect(downloadingItem).toBeDefined();
+      expect(downloadingItem.enabled).toBe(false);
+    });
+
+    test('should show restart item and trigger install when downloaded', () => {
+      tray.createTray(mockWindows);
+      mockMenu.buildFromTemplate.mockClear();
+
+      tray.setUpdateState('downloaded', '9.9.9');
+
+      const template = mockMenu.buildFromTemplate.mock.calls[0][0];
+      const restartItem = template.find(item => item.label === 'Restart to install v9.9.9');
+      expect(restartItem).toBeDefined();
+
+      restartItem.click();
+      expect(mockUpdater.installUpdate).toHaveBeenCalled();
+    });
+
+    test('should restore version label when update state is cleared', () => {
+      tray.createTray(mockWindows);
+      tray.setUpdateState('available', '9.9.9');
+      mockMenu.buildFromTemplate.mockClear();
+
+      tray.setUpdateState(null);
+
+      const template = mockMenu.buildFromTemplate.mock.calls[0][0];
+      expect(template.find(item => item.label === 'Version: 1.0.0')).toBeDefined();
+    });
+
+    test('should not rebuild menu for duplicate state updates', () => {
+      tray.createTray(mockWindows);
+      tray.setUpdateState('available', '9.9.9');
+      mockMenu.buildFromTemplate.mockClear();
+
+      tray.setUpdateState('available', '9.9.9');
+
+      expect(mockMenu.buildFromTemplate).not.toHaveBeenCalled();
+    });
+
+    test('should not throw when no tray instance exists', () => {
+      expect(() => tray.setUpdateState('available', '1.2.3')).not.toThrow();
     });
   });
 });
