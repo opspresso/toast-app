@@ -50,6 +50,19 @@ function setupSnippetsHandlers(windows, config) {
   ipcMain.handle('text-expander:open-privacy-settings', async (event, section) => {
     try {
       const url = PRIVACY_URLS[section] || PRIVACY_URLS.accessibility;
+
+      // Release alwaysOnTop so System Settings is not hidden behind the settings
+      // window; restore it when the settings window regains focus
+      const settingsWindow = windows.settings && !windows.settings.isDestroyed() ? windows.settings : null;
+      if (settingsWindow) {
+        settingsWindow.setAlwaysOnTop(false);
+        settingsWindow.once('focus', () => {
+          if (!settingsWindow.isDestroyed()) {
+            settingsWindow.setAlwaysOnTop(true, 'screen-saver');
+          }
+        });
+      }
+
       await shell.openExternal(url);
       return true;
     }

@@ -20,7 +20,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Mac App Store**: `npm run build:mas` (MAS distribution)
 
 ### Testing & Quality
-- **Run Tests**: `npm run test` (Jest - 33 test suites, 959 unit tests)
+- **Run Tests**: `npm run test` (Jest - 34 test suites, 964 unit tests)
 - **Lint Fix**: `npm run lint:fix` (ESLint auto-fix)
 - **Lint**: `npm run lint` (ESLint check)
 - **Format**: `npm run format` (Prettier formatting)
@@ -98,7 +98,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 5. Update `docs/config/schema.md` and `docs/features/settings.md`
 
 ### Testing & Quality Assurance
-- **Unit Tests**: 33 test suites, 959 unit tests
+- **Unit Tests**: 34 test suites, 964 unit tests
 - **Manual Testing**: Use dev mode with `npm run dev`
 - **Coverage**: Run `npm run test` to generate coverage report
 - **Linting**: `npm run lint` to check code style
@@ -137,7 +137,7 @@ Toast App is an Electron-based desktop application that provides a customizable 
 - **Framework**: Jest with coverage reporting
 - **Mock System**: Electron APIs mocked via `tests/mocks/electron.js`
 - **Coverage**: Enabled by default, reports in `coverage/` directory
-- **Current Tests**: 33 test suites, 959 unit tests
+- **Current Tests**: 34 test suites, 964 unit tests
   - Main process modules (executor, config, shortcuts, windows, etc.)
   - Actions (application, chain, exec, open, script)
   - API clients (auth, client, sync)
@@ -149,7 +149,7 @@ tests/
 ├── mocks/
 │   └── electron.js        # Electron API mocks
 ├── setup.js               # Jest setup configuration
-├── unit/                  # Unit tests (959 tests in 33 suites)
+├── unit/                  # Unit tests (964 tests in 34 suites)
 │   ├── actions/           # Action handler tests
 │   ├── api/               # API client tests
 │   ├── cloud-sync/        # Conflict resolver / merge tests
