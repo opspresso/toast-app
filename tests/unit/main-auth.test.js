@@ -240,16 +240,47 @@ describe('Main Auth Module (P0)', () => {
       expect(mockFs.existsSync).toHaveBeenCalled();
     });
 
-    test('should return false for expired tokens', async () => {
+    test('should return false for expired tokens when refresh fails', async () => {
       mockFs.existsSync.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue(JSON.stringify({
         'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
         'token-expires-at': Date.now() - 3600000, // 1 hour ago
       }));
+
+      mockApiAuth.refreshAccessToken.mockResolvedValue({
+        success: false,
+        error: 'invalid_grant',
+      });
 
       const isValid = await auth.hasValidToken();
 
       expect(isValid).toBe(false);
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalled();
+    });
+
+    test('should auto-refresh expired token and return true', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000, // 1 hour ago
+      }));
+
+      mockApiAuth.refreshAccessToken.mockResolvedValue({
+        success: true,
+        access_token: 'refreshed-token',
+        expires_in: 3600,
+      });
+
+      const isValid = await auth.hasValidToken();
+
+      expect(isValid).toBe(true);
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledWith({
+        refreshToken: 'test-refresh-token',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+      });
     });
 
     test('should get access token', async () => {

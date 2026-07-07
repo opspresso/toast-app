@@ -836,7 +836,15 @@ async function hasValidToken() {
     // If token exists, also check expiration
     const isExpired = await isTokenExpired();
     if (isExpired) {
-      logger.info('Token has expired. Refresh needed.');
+      // 만료된 토큰은 자동 갱신을 시도한다. 갱신 없이 false 만 반환하면
+      // hasValidToken 으로 게이트하는 호출부(cloud sync, 아이콘 업로드)가
+      // 요청 자체를 보내지 않아 401 기반 갱신도 영영 일어나지 않는다.
+      logger.info('Token has expired. Attempting automatic refresh.');
+      const refreshResult = await refreshAccessToken();
+      if (refreshResult && refreshResult.success) {
+        return true;
+      }
+      logger.warn('Automatic token refresh failed:', refreshResult && (refreshResult.code || refreshResult.error));
       return false;
     }
 
