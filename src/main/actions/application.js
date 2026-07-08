@@ -6,6 +6,25 @@
 
 const { execFile } = require('child_process');
 const fs = require('fs');
+const os = require('os');
+
+/**
+ * Expand a leading `~` to the user's home directory.
+ * execFile spawns no shell, so tilde expansion must happen here or paths like
+ * `~/workspace` reach the launcher as literal relative paths and fail.
+ * Only `~` and `~/...` are expanded; `~user` forms are left untouched.
+ * @param {string} arg - Single argument
+ * @returns {string} Argument with tilde expanded
+ */
+function expandTilde(arg) {
+  if (arg === '~') {
+    return os.homedir();
+  }
+  if (arg.startsWith('~/')) {
+    return os.homedir() + arg.slice(1);
+  }
+  return arg;
+}
 
 /**
  * Split an application-parameters string into an argv array.
@@ -23,7 +42,7 @@ function parseParameters(raw) {
   const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
   let match;
   while ((match = pattern.exec(raw)) !== null) {
-    args.push(match[1] ?? match[2] ?? match[3]);
+    args.push(expandTilde(match[1] ?? match[2] ?? match[3]));
   }
   return args;
 }

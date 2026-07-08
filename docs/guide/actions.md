@@ -36,7 +36,7 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 | 속성 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | `applicationPath` | string | 예 | 실행할 애플리케이션의 경로 |
-| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터 |
+| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터. `~` 또는 `~/`로 시작하는 인자는 홈 디렉토리로 확장됩니다 |
 
 ### 예시
 ```json

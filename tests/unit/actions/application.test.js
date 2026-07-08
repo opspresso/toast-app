@@ -142,6 +142,43 @@ describe('Application Action', () => {
         );
       });
 
+      test('should expand tilde in parameters to the home directory', async () => {
+        const os = require('os');
+        const action = {
+          applicationPath: '/Applications/Visual Studio Code.app',
+          applicationParameters: '~/workspace/sample-project',
+        };
+        execFile.mockImplementation((file, args, callback) => {
+          callback(null);
+        });
+
+        await executeApplication(action);
+
+        expect(execFile).toHaveBeenCalledWith(
+          'open',
+          ['-a', '/Applications/Visual Studio Code.app', `${os.homedir()}/workspace/sample-project`],
+          expect.any(Function)
+        );
+      });
+
+      test('should not expand tilde in ~user form', async () => {
+        const action = {
+          applicationPath: '/Applications/Calculator.app',
+          applicationParameters: '~otheruser/docs',
+        };
+        execFile.mockImplementation((file, args, callback) => {
+          callback(null);
+        });
+
+        await executeApplication(action);
+
+        expect(execFile).toHaveBeenCalledWith(
+          'open',
+          ['-a', '/Applications/Calculator.app', '~otheruser/docs'],
+          expect.any(Function)
+        );
+      });
+
       test('should handle execution error', async () => {
         const action = { applicationPath: '/Applications/Calculator.app' };
         const error = new Error('Command failed');
