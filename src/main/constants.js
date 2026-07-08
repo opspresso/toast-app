@@ -6,7 +6,7 @@
 
 // 앱 기본 정보 (package.json 정보를 읽을 수 없을 때 사용)
 const APP_DEFAULT_INFO = {
-  author: 'nalbam <me@nalbam.com>, bruce <bruce@daangn.com>',
+  author: 'nalbam <me@nalbam.com>',
   homepage: 'https://app.toast.sh',
   description: 'A customizable shortcut launcher for macOS and Windows',
   license: 'MIT',

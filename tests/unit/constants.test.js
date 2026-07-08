@@ -22,9 +22,7 @@ describe('Constants', () => {
 
     test('should have author information', () => {
       expect(constants.APP_DEFAULT_INFO.author).toContain('nalbam');
-      expect(constants.APP_DEFAULT_INFO.author).toContain('bruce');
       expect(constants.APP_DEFAULT_INFO.author).toContain('me@nalbam.com');
-      expect(constants.APP_DEFAULT_INFO.author).toContain('bruce@daangn.com');
     });
 
     test('should have mutable object structure', () => {
