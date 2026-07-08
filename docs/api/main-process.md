@@ -848,11 +848,11 @@ function mergeAdvanced(localAdvanced, serverAdvanced)
 
 ## 액션 승인 모듈 (`src/main/action-approval.js`)
 
-클라우드 동기화로 내려받은 `exec`/`script` 액션을 기기별로 1회 사용자 승인 후에만 실행하도록 보호합니다. 로컬에서 생성·편집한 액션은 신뢰 처리되며, 원격 데이터에서 처음 나타난 위험 액션만 승인 대기 목록에 오릅니다. 신뢰 목록·대기 목록의 fingerprint 는 config `security` 키에 저장되며 **기기 로컬 전용**(클라우드 업로드 대상 아님)입니다.
+클라우드 동기화로 내려받은 `exec`/`script` 액션과 실행 인자(`applicationParameters`)가 있는 `application` 액션을 기기별로 1회 사용자 승인 후에만 실행하도록 보호합니다. 로컬에서 생성·편집한 액션은 신뢰 처리되며, 원격 데이터에서 처음 나타난 위험 액션만 승인 대기 목록에 오릅니다. 신뢰 목록·대기 목록의 fingerprint 는 config `security` 키에 저장되며 **기기 로컬 전용**(클라우드 업로드 대상 아님)입니다.
 
 ```javascript
 /**
- * 위험 액션(exec/script)의 안정적 fingerprint 계산 (실행에 영향을 주는 필드만 해시)
+ * 위험 액션(exec/script, 인자 있는 application)의 안정적 fingerprint 계산 (실행에 영향을 주는 필드만 해시)
  * @returns {string|null} sha256 hex, 비위험 액션이면 null
  */
 function computeFingerprint(action)
@@ -960,6 +960,18 @@ function setAccessToken(token)
 function setRefreshToken(token)
 
 /**
+ * 현재 액세스 토큰 가져오기
+ * @returns {string|null} 액세스 토큰
+ */
+function getAccessToken()
+
+/**
+ * 현재 리프레시 토큰 가져오기
+ * @returns {string|null} 리프레시 토큰
+ */
+function getRefreshToken()
+
+/**
  * 토큰 초기화
  */
 function clearTokens()
@@ -989,7 +1001,8 @@ const ENDPOINTS = {
   OAUTH_TOKEN: `${API_BASE_URL}/oauth/token`,
   OAUTH_REVOKE: `${API_BASE_URL}/oauth/revoke`,
   USER_PROFILE: `${API_BASE_URL}/users/profile`,
-  SETTINGS: `${API_BASE_URL}/users/settings`
+  SETTINGS: `${API_BASE_URL}/users/settings`,
+  USER_ICONS: `${API_BASE_URL}/users/icons`
 };
 ```
 

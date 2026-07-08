@@ -63,7 +63,7 @@ npm run dev
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
 TOAST_URL=https://app.toast.sh
-TOKEN_EXPIRES_IN=2592000
+TOKEN_EXPIRES_IN=31536000
 ```
 
 자세한 환경 변수 설정은 [환경 변수 문서](../config/environment.md)를 참조하세요.

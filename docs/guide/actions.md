@@ -134,7 +134,7 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 | 속성 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | `script` | string | 예 | 스크립트 내용 |
-| `scriptType` | string | 예 | 스크립트 언어 (javascript, applescript, powershell, bash). 기본 Confetti 버튼이 사용하는 내부 전용 `special` 타입도 있습니다 |
+| `scriptType` | string | 예 | 스크립트 언어 (javascript, applescript, powershell, bash). 기본 Confetti 버튼이 사용하는 `special` 타입은 렌더러에서만 처리되는 클라이언트 전용 값으로, 메인 프로세스 스크립트 실행기는 지원하지 않습니다 |
 | `scriptParams` | object | 아니오 | 스크립트에 전달할 파라미터 (JavaScript에만 적용) |
 
 ### 예시

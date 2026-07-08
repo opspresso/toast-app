@@ -5,7 +5,7 @@
 > **현재 상태**: 테스트 인프라가 설정되어 있으며, 주요 기능에 대한 단위 테스트가 구현되어 있습니다.
 > - ✅ Jest 설정 완료
 > - ✅ 테스트 디렉토리 구조 생성
-> - ✅ 34개 테스트 스위트, 964개 단위 테스트 케이스 구현됨
+> - ✅ 34개 테스트 스위트, 966개 단위 테스트 케이스 구현됨
 > - ❌ 통합 테스트, E2E 테스트 미구현
 
 ## 목차
@@ -291,7 +291,9 @@ describe('Performance Tests', () => {
 
 ### 지속적 통합 환경
 
-- **GitHub Actions**: 태그 푸시 시 릴리스 빌드 실행 (`build-release.yml`, macOS/Windows). 자동화된 테스트 실행 파이프라인은 없으며, 테스트는 로컬에서 실행합니다.
+- **GitHub Actions**:
+  - `test.yml`: main 브랜치로의 모든 push와 PR에서 `npm run lint` + `npm test` 자동 실행 (ubuntu-latest, Node 22)
+  - `build-release.yml`: 태그 푸시 시 릴리스 빌드 실행 (macOS/Windows)
 
 ### 프로덕션 유사 환경
 

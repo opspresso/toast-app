@@ -321,7 +321,7 @@ const paramResult = await executeApplication({
 1. **스크립트 실행 환경**: JavaScript 스크립트는 `vm` 컨텍스트에서 실행되지만 `require`(모든 내장 모듈), `Buffer`가 노출되어 시스템 수준 샌드박스가 아닙니다. 환경변수는 비민감 allowlist(`HOME`, `PATH` 등)만 전달됩니다. 신뢰할 수 있는 스크립트만 실행하세요.
 2. **경로 검증**: 파일 및 애플리케이션 경로는 실행 전 검증. `open` 액션의 애플리케이션 실행은 셸을 거치지 않는 인자 배열(`execFile`) 방식으로 인젝션을 차단합니다.
 3. **명령 이스케이프**: `exec` 액션의 `command`는 사용자가 정의한 셸 명령 그대로 실행되며, workingDir·AppleScript 인자만 이스케이프됩니다.
-4. **원격 액션 승인**: 클라우드 동기화로 새로 내려받은 `exec`/`script` 액션은 이 기기에서 최초 실행 전 사용자 확인 다이얼로그를 거칩니다 (`src/main/action-approval.js`).
+4. **원격 액션 승인**: 클라우드 동기화로 새로 내려받은 `exec`/`script` 액션과 실행 인자(`applicationParameters`)를 가진 `application` 액션은 이 기기에서 최초 실행 전 사용자 확인 다이얼로그를 거칩니다 (`src/main/action-approval.js`). 인자 없는 단순 앱 실행은 승인 대상이 아닙니다.
 
 ## 성능 최적화
 

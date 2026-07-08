@@ -27,7 +27,9 @@ Toast App의 주요 엔티티는 다음과 같은 관계를 가집니다:
 │   ├── advanced
 │   ├── snippets (텍스트 확장 스니펫)
 │   ├── textExpander (기기 로컬 활성화 상태)
-│   └── subscription
+│   ├── subscription
+│   ├── security (exec/script 액션 승인 상태)
+│   └── firstLaunchCompleted
 ├── 페이지 (1-9개)
 │   ├── name
 │   ├── shortcut

@@ -168,16 +168,14 @@ Toast 앱의 자동 업데이트 시스템은 `electron-updater` 라이브러리
 #### 구현 특징
 
 ```javascript
-// src/main/updater.js 주요 설정
-const updaterConfig = {
-  appId: 'com.opspresso.toast-app',
-  autoDownload: false,  // 사용자 확인 후 다운로드
-  autoInstallOnAppQuit: true,  // 앱 종료 시 자동 설치
-  channel: 'latest',  // 업데이트 채널 (고정)
-  allowDowngrade: false,  // 다운그레이드 방지 (개발 환경에서만 허용)
-  allowPrerelease: false,  // 사전 릴리스 (개발 환경에서만 허용)
-  forceDevUpdateConfig: true,  // 개발 환경에서도 업데이트 설정 적용
-};
+// src/main/updater.js — configureUpdater() 주요 설정
+autoUpdater.appId = 'com.opspresso.toast-app';
+autoUpdater.forceDevUpdateConfig = true;  // 개발 환경에서도 업데이트 설정 적용
+autoUpdater.allowDowngrade = process.env.NODE_ENV === 'development';  // 개발 환경에서만 허용
+autoUpdater.allowPrerelease = process.env.NODE_ENV === 'development';  // 개발 환경에서만 허용
+autoUpdater.autoDownload = false;  // 사용자 확인 후 다운로드
+autoUpdater.autoInstallOnAppQuit = true;  // 앱 종료 시 자동 설치
+autoUpdater.channel = 'latest';  // 업데이트 채널 (고정)
 
 // 주요 기능
 - checkForUpdates(silent): 업데이트 확인

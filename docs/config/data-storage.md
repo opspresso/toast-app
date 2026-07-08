@@ -174,8 +174,8 @@ Toast/
 
 ```
 logs/
-  ├── toast-app.log           # 현재 로그 파일 (회전 시 .old.log 로 보관)
-  └── ...                     # 회전된 이전 로그 파일
+  ├── toast-app.log           # 현재 로그 파일
+  └── ...                     # 회전된 이전 로그 파일 (electron-log가 관리, 최대 5MB × 5개)
 ```
 
 ## 데이터 액세스 패턴
@@ -220,8 +220,8 @@ const userDataManager = require('./main/user-data-manager');
 // 사용자 프로필 가져오기
 const profile = await userDataManager.getUserProfile();
 
-// 동기화 메타데이터 업데이트
-await userDataManager.updateSyncMetadata({
+// 동기화 메타데이터 업데이트 (동기 함수)
+userDataManager.updateSyncMetadata({
   lastSyncedAt: Date.now(),
   lastSyncedDevice: 'device-123'
 });

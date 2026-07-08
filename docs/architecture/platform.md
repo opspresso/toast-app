@@ -45,17 +45,16 @@ Toast 앱이 공식적으로 지원하는 플랫폼:
 macOS에서 Toast 앱은 메뉴 바에 통합됩니다:
 
 - Electron의 `Tray` API를 통해 `NSStatusItem` 사용
-- 메뉴 바 아이콘은 템플릿 이미지 형식(`tray-icon-Template.png`) 사용
+- 메뉴 바 아이콘은 템플릿 이미지 형식(`tray-icon-Template.png`, 개발 모드는 `tray-icon-devTemplate.png`) 사용
 - 다크/라이트 모드 자동 전환 지원
 - 클릭(좌/우 모두)으로 컨텍스트 메뉴 열기 (별도 클릭 동작 미구현 — 기본 동작 사용)
 
 **구현**:
 ```javascript
-// src/main/tray.js
+// src/main/tray.js — getTrayIconPath()
 if (process.platform === 'darwin') {
-  tray = new Tray(path.join(__dirname, '../../assets/icons/tray-icon-Template.png'));
-  tray.setIgnoreDoubleClickEvents(true);
-  // macOS 전용 설정
+  const isDev = process.env.NODE_ENV === 'development';
+  return path.join(__dirname, isDev ? '../../assets/icons/tray-icon-devTemplate.png' : '../../assets/icons/tray-icon-Template.png');
 }
 ```
 
