@@ -231,6 +231,7 @@ export function saveSettings() {
       globalHotkey: globalHotkeyInput ? globalHotkeyInput.value : '',
       appearance: {
         theme: themeSelect ? themeSelect.value : 'system',
+        accentColor: document.querySelector('#accent-color-picker .accent-swatch.selected')?.dataset.accentColor || 'blue',
         position: positionSelect ? positionSelect.value : 'center',
         size: sizeSelect ? sizeSelect.value : 'medium',
         opacity: opacityRange ? parseFloat(opacityRange.value) : 0.95,

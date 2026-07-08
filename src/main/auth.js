@@ -792,6 +792,15 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
  * @returns {void}
  */
 function registerProtocolHandler() {
+  // In unpackaged (dev) mode, registering would point the toast-app:// scheme at the
+  // bare Electron binary: the OAuth callback then launches an empty Electron window
+  // instead of reaching this instance, and the installed app loses the scheme.
+  // Deep-link login only works in packaged builds, so skip registration in dev.
+  if (!app.isPackaged) {
+    logger.warn('Skipping toast-app:// protocol registration in dev mode; deep-link login requires a packaged build');
+    return;
+  }
+
   // Register protocol handler for all platforms (macOS, Windows, Linux)
   app.setAsDefaultProtocolClient('toast-app');
 }

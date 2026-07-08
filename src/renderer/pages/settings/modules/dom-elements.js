@@ -14,6 +14,7 @@ export const launchAtLoginCheckbox = document.getElementById('launch-at-login');
 
 // DOM Elements - Appearance Settings
 export const themeSelect = document.getElementById('theme');
+export const accentColorPicker = document.getElementById('accent-color-picker');
 export const positionSelect = document.getElementById('position');
 export const sizeSelect = document.getElementById('size');
 export const opacityRange = document.getElementById('opacity');
@@ -85,4 +86,3 @@ export const githubReleaseLink = document.getElementById('github-release-link');
 export const downloadUpdateButton = document.getElementById('download-update');
 export const installUpdateButton = document.getElementById('install-update');
 export const updateLoading = document.getElementById('update-loading');
-

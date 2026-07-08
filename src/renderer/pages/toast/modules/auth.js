@@ -2,7 +2,7 @@
  * Toast - Authentication and User Management
  */
 
-import { SUBSCRIPTION_URL, DASHBOARD_URL } from './constants.js';
+import { SUBSCRIPTION_URL, DASHBOARD_URL, UI_ICONS } from './constants.js';
 import {
   loginLoadingOverlay,
   profileModal,
@@ -262,7 +262,7 @@ export function updateUserButton() {
   }
   else {
     // Default icon if not logged in
-    userButton.textContent = '👤';
+    userButton.innerHTML = UI_ICONS.user;
     userButton.style.fontSize = '16px';
     userButton.style.backgroundColor = 'transparent';
     userButton.style.color = 'var(--text-color)';
@@ -272,8 +272,8 @@ export function updateUserButton() {
     userButton.title = 'Click to login';
 
     // Change login button style - add border to make it more noticeable
-    userButton.style.border = '2px dashed var(--accent-color)';
-    userButton.style.boxShadow = '0 0 5px rgba(var(--accent-color-rgb), 0.5)';
+    userButton.style.border = '2px dashed var(--accent)';
+    userButton.style.boxShadow = '0 0 5px color-mix(in srgb, var(--accent) 50%, transparent)';
   }
 }
 
@@ -327,7 +327,7 @@ export function updateProfileDisplay() {
   }
   else {
     // When no user profile (logged out state)
-    profileAvatar.innerHTML = '👤';
+    profileAvatar.innerHTML = UI_ICONS.user;
     profileName.textContent = 'Guest User';
     profileEmail.textContent = 'Not logged in';
 

@@ -5,7 +5,7 @@
  */
 
 import { updateConfig, config } from './modules/state.js';
-import { applyTheme } from './modules/utils.js';
+import { applyTheme, applyAccentColor } from './modules/utils.js';
 import { switchTab } from './modules/tabs.js';
 import { setupEventListeners } from './modules/event-handlers.js';
 import { initializeGeneralSettings } from './modules/general-settings.js';
@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 테마 적용 (가장 우선순위로 처리)
         window.settings.log.info('테마 적용 중...');
         applyTheme(config.appearance?.theme || 'system');
+        applyAccentColor(config.appearance?.accentColor);
 
         // 이벤트 리스너 설정 - UI 초기화 전에 처리
         window.settings.log.info('이벤트 리스너 설정 중...');

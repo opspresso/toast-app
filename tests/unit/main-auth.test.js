@@ -9,6 +9,7 @@ const mockApp = {
   getPath: jest.fn(() => '/mock/user/data'),
   setAsDefaultProtocolClient: jest.fn(),
   removeAsDefaultProtocolClient: jest.fn(),
+  isPackaged: true,
 };
 
 const mockShell = {
@@ -414,19 +415,17 @@ describe('Main Auth Module (P0)', () => {
       expect(mockApp.setAsDefaultProtocolClient).toHaveBeenCalledWith('toast-app');
     });
 
-    test('should handle protocol registration in development', () => {
-      const { getEnv } = require('../../src/main/config/env');
-      getEnv.mockImplementation((key, defaultValue) => {
-        if (key === 'NODE_ENV') return 'development';
-        return defaultValue;
-      });
+    test('should skip protocol registration when app is not packaged', () => {
+      mockApp.isPackaged = false;
 
-      jest.resetModules();
-      const devAuth = require('../../src/main/auth');
-      
-      devAuth.registerProtocolHandler();
+      try {
+        auth.registerProtocolHandler();
 
-      expect(mockApp.setAsDefaultProtocolClient).toHaveBeenCalled();
+        expect(mockApp.setAsDefaultProtocolClient).not.toHaveBeenCalled();
+      }
+      finally {
+        mockApp.isPackaged = true;
+      }
     });
   });
 

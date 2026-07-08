@@ -1,0 +1,127 @@
+/* Toast - Shared design tokens
+ *
+ * Single source of truth for color, radius, shadow, motion and type.
+ * Light/dark values are defined once via light-dark(); the active scheme
+ * is controlled by `color-scheme` below, so no duplicated theme blocks.
+ *
+ * Theme switching contract (utils.js):
+ * - data-theme="light" | "dark" set on <html> for explicit choice
+ * - attribute removed for "system" -> follows prefers-color-scheme
+ */
+
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* Accent color themes - selected via data-accent on <html> (appearance.accentColor).
+ * Default (no attribute or "blue") is blue. Derived colors (soft, ring, gradient)
+ * are computed from --accent, so each theme only defines four values. */
+:root,
+:root[data-accent='blue'] {
+  --accent: #3672e0;
+  --accent-hover: light-dark(#2b62c9, #5a8ce8);
+  --accent-active: light-dark(#2455b0, #7aa3ee);
+  --on-accent: #ffffff;
+}
+
+:root[data-accent='red'] {
+  --accent: #d9484b;
+  --accent-hover: light-dark(#c03a3d, #e06e70);
+  --accent-active: light-dark(#a83134, #e8898b);
+  --on-accent: #ffffff;
+}
+
+:root[data-accent='orange'] {
+  --accent: #d97a4c;
+  --accent-hover: light-dark(#c76b41, #e28f65);
+  --accent-active: light-dark(#b45f3a, #eb9f7a);
+  --on-accent: #ffffff;
+}
+
+:root[data-accent='green'] {
+  --accent: #35945c;
+  --accent-hover: light-dark(#2c7f4e, #57ab77);
+  --accent-active: light-dark(#256e43, #74bb8e);
+  --on-accent: #ffffff;
+}
+
+:root[data-accent='purple'] {
+  --accent: #7d6fc4;
+  --accent-hover: light-dark(#6c5eb3, #9489d1);
+  --accent-active: light-dark(#5d50a0, #a89fd9);
+  --on-accent: #ffffff;
+}
+
+/* Mono: black accent in light mode, white accent in dark mode */
+:root[data-accent='mono'] {
+  --accent: light-dark(#18181b, #f4f4f5);
+  --accent-hover: light-dark(#3f3f46, #d4d4d8);
+  --accent-active: light-dark(#52525b, #a1a1aa);
+  --on-accent: light-dark(#ffffff, #18181b);
+}
+
+:root {
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-2: color-mix(in srgb, var(--accent) 62%, light-dark(#ffffff, #e4e4e7));
+
+  /* Neutrals - zinc scale */
+  --bg: light-dark(#fafafa, #1c1c1f);
+  --bg-translucent: light-dark(rgba(250, 250, 250, 0.97), rgba(28, 28, 31, 0.97));
+  --surface: light-dark(#ffffff, #232327);
+  --surface-hover: light-dark(#f4f4f5, #313136);
+  --surface-active: light-dark(#e9e9eb, #3a3a40);
+  --sidebar-bg: light-dark(#ececef, #18181b);
+  --text: light-dark(#18181b, #f4f4f5);
+  --text-secondary: light-dark(#6b6b70, #a1a1aa);
+  --text-tertiary: light-dark(#9b9ba0, #71717a);
+  --border: light-dark(#e4e4e7, #3f3f46);
+  --border-strong: light-dark(#d4d4d8, #52525b);
+  --overlay: light-dark(rgba(24, 24, 27, 0.4), rgba(0, 0, 0, 0.6));
+
+  /* Semantic states */
+  --success: light-dark(#16a34a, #4ade80);
+  --danger: light-dark(#dc2626, #f87171);
+  --danger-hover: light-dark(#b91c1c, #fca5a5);
+  --warning: light-dark(#d97706, #fbbf24);
+  --info: var(--accent);
+
+  /* Action type colors (application / exec / open / script / chain) */
+  --action-application: light-dark(#4a7dcc, #7aa5e0);
+  --action-exec: var(--accent);
+  --action-open: light-dark(#4a8f5f, #7dbb92);
+  --action-script: light-dark(#7d6fc4, #a498dd);
+  --action-chain: light-dark(#b56a8d, #d296b4);
+
+  /* Radius scale */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  /* Shadows (inset highlight is transparent in light mode) */
+  --shadow-sm: 0 1px 2px light-dark(rgba(24, 24, 27, 0.06), rgba(0, 0, 0, 0.3));
+  --shadow-md: 0 2px 8px light-dark(rgba(24, 24, 27, 0.08), rgba(0, 0, 0, 0.35)), 0 1px 2px light-dark(rgba(24, 24, 27, 0.05), rgba(0, 0, 0, 0.25));
+  --shadow-lg: 0 8px 24px light-dark(rgba(24, 24, 27, 0.14), rgba(0, 0, 0, 0.5));
+  --card-inset: inset 0 1px 0 light-dark(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.05));
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --duration-fast: 150ms;
+  --duration: 220ms;
+
+  /* Type */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, Menlo, monospace;
+}

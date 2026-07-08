@@ -44,6 +44,14 @@ export function applyTheme(theme) {
 }
 
 /**
+ * Apply accent color theme (tokens.css [data-accent] blocks; default is blue)
+ * @param {string} accentColor - One of 'blue' | 'red' | 'orange' | 'green' | 'purple' | 'mono'
+ */
+export function applyAccentColor(accentColor) {
+  document.documentElement.setAttribute('data-accent', accentColor || 'blue');
+}
+
+/**
  * 파일 크기를 읽기 쉬운 형식으로 변환
  * @param {number} bytes - 바이트 수
  * @returns {string} 변환된 문자열 (예: 1.5 MB)

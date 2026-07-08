@@ -52,6 +52,11 @@ const schema = {
         enum: ['light', 'dark', 'system'],
         default: 'system',
       },
+      accentColor: {
+        type: 'string',
+        enum: ['blue', 'red', 'orange', 'green', 'purple', 'mono'],
+        default: 'blue',
+      },
       position: {
         type: 'string',
         enum: ['center', 'top', 'bottom', 'cursor'],
@@ -81,6 +86,7 @@ const schema = {
     },
     default: {
       theme: 'system',
+      accentColor: 'blue',
       position: 'center',
       size: 'medium',
       opacity: 0.95,
@@ -561,7 +567,7 @@ function markAsModified(config, deviceId = null) {
     dataHash,
     isConflicted: false, // Reset conflict flag when locally modified
   });
-  
+
   logger.debug('Sync metadata updated successfully');
 }
 
@@ -606,15 +612,15 @@ function hasUnsyncedChanges(config) {
     advanced: config.get('advanced'),
   };
   const currentHash = generateDataHash(currentData);
-  
+
   // Debug logging
   const { createLogger } = require('./logger');
   const logger = createLogger('ConfigDebug');
-  
+
   const hashDifferent = currentHash !== syncMeta.dataHash;
   const timeCondition = syncMeta.lastModifiedAt > syncMeta.lastSyncedAt;
   const result = hashDifferent || timeCondition;
-  
+
   logger.debug('=== hasUnsyncedChanges Debug ===');
   logger.debug('Current hash:', currentHash);
   logger.debug('Stored hash:', syncMeta.dataHash);

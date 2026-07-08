@@ -140,6 +140,11 @@ export function applyAppearanceSettings(appearance) {
     // For system theme, let media query work without data-theme attribute
   }
 
+  // Apply accent color theme (tokens.css [data-accent] blocks; default is blue)
+  if (appearance.accentColor) {
+    document.documentElement.setAttribute('data-accent', appearance.accentColor);
+  }
+
   // Apply button layout
   if (appearance.buttonLayout) {
     buttonsContainer.className = 'toast-buttons';

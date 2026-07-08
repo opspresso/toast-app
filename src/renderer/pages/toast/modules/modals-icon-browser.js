@@ -11,6 +11,7 @@ import {
   editButtonApplicationInput,
   iconPreview,
 } from './dom-elements.js';
+import { UI_ICONS } from './constants.js';
 import { showStatus, getFaviconFromUrl } from './utils.js';
 
 /**
@@ -258,7 +259,8 @@ export function updateIconPreview() {
     // Handle file:// URLs with tilde paths
     if (iconValue.startsWith('file://~/')) {
       const tildePath = iconValue.substring(7); // Remove 'file://' prefix
-      window.toast.resolveTildePath(tildePath)
+      window.toast
+        .resolveTildePath(tildePath)
         .then(resolvedPath => {
           previewImg.src = `file://${resolvedPath}`;
           previewImg.style.display = 'block';
@@ -344,7 +346,7 @@ export function updateIconPreview() {
       placeholder.textContent = '🔗';
       break;
     default:
-      placeholder.textContent = '🖼️';
+      placeholder.innerHTML = UI_ICONS.image;
       break;
   }
 }

@@ -97,7 +97,7 @@ function setupConfigHandlers(windows, config) {
       // Immediately notify toast window when settings change
       if (windows.toast && !windows.toast.isDestroyed()) {
         // If entire settings or specific section is updated
-        if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages') {
+        if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages' || (typeof key === 'string' && key.startsWith('appearance.'))) {
           // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
           const { sanitizeSubscription } = require('../config');
           const subscription = sanitizeSubscription(config.get('subscription'));

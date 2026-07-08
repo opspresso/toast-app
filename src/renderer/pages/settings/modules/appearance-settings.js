@@ -2,9 +2,25 @@
  * Settings - Appearance Settings Management
  */
 
-import { themeSelect, positionSelect, sizeSelect, opacityRange, opacityValue } from './dom-elements.js';
+import { themeSelect, accentColorPicker, positionSelect, sizeSelect, opacityRange, opacityValue } from './dom-elements.js';
 import { config } from './state.js';
-import { applyTheme } from './utils.js';
+import { applyTheme, applyAccentColor } from './utils.js';
+
+/**
+ * Mark the swatch matching the given accent color as selected
+ * @param {string} accentColor - Accent color name
+ */
+function updateAccentSwatchSelection(accentColor) {
+  if (!accentColorPicker) {
+    return;
+  }
+
+  accentColorPicker.querySelectorAll('.accent-swatch').forEach(swatch => {
+    const isSelected = swatch.dataset.accentColor === accentColor;
+    swatch.classList.toggle('selected', isSelected);
+    swatch.setAttribute('aria-pressed', String(isSelected));
+  });
+}
 
 /**
  * Initialize Appearance Settings tab
@@ -17,6 +33,9 @@ export function initializeAppearanceSettings() {
     if (themeSelect) {
       themeSelect.value = config.appearance?.theme || 'system';
     }
+
+    // 액센트 색상 설정
+    updateAccentSwatchSelection(config.appearance?.accentColor || 'blue');
 
     // 창 위치 설정
     if (positionSelect) {
@@ -54,6 +73,21 @@ export function setupAppearanceEventListeners() {
       window.settings.log.info('테마 설정 변경:', themeSelect.value);
       window.settings.setConfig('appearance.theme', themeSelect.value);
       applyTheme(themeSelect.value);
+    });
+  }
+
+  if (accentColorPicker) {
+    accentColorPicker.addEventListener('click', event => {
+      const swatch = event.target.closest('.accent-swatch');
+      if (!swatch) {
+        return;
+      }
+
+      const accentColor = swatch.dataset.accentColor;
+      window.settings.log.info('액센트 색상 설정 변경:', accentColor);
+      window.settings.setConfig('appearance.accentColor', accentColor);
+      updateAccentSwatchSelection(accentColor);
+      applyAccentColor(accentColor);
     });
   }
 

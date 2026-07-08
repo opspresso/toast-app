@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Toast Settings</title>
+    <link rel="stylesheet" href="../../assets/tokens.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
 
@@ -12,10 +13,70 @@
       <div class="settings-content">
         <div class="settings-sidebar">
           <ul class="settings-nav">
-            <li data-tab="settings" class="active">Settings</li>
-            <li data-tab="account">Account</li>
-            <li data-tab="snippets">Snippets</li>
-            <li data-tab="about">About</li>
+            <li data-tab="settings" class="active">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                />
+              </svg>
+              <span>Settings</span>
+            </li>
+            <li data-tab="account">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>Account</span>
+            </li>
+            <li data-tab="snippets">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="4 7 4 4 20 4 20 7" />
+                <line x1="9" y1="20" x2="15" y2="20" />
+                <line x1="12" y1="4" x2="12" y2="20" />
+              </svg>
+              <span>Snippets</span>
+            </li>
+            <li data-tab="about">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <span>About</span>
+            </li>
           </ul>
         </div>
 
@@ -26,98 +87,150 @@
 
             <h3 class="settings-section-title">General</h3>
 
-            <div class="settings-group">
-              <label for="global-hotkey">Global Hotkey</label>
-              <div class="hotkey-input-container">
-                <input type="text" id="global-hotkey" placeholder="Click to record hotkey" readonly />
-                <button id="record-hotkey" class="small-button">Record</button>
-                <button id="clear-hotkey" class="small-button">Clear</button>
+            <div class="section-rows">
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="global-hotkey">Global Hotkey</label>
+                  <p class="help-text">Press the key combination you want to use to open Toast.</p>
+                </div>
+                <div class="row-control hotkey-input-container">
+                  <input type="text" id="global-hotkey" placeholder="Click to record" readonly />
+                  <button id="record-hotkey" class="small-button">Record</button>
+                  <button id="clear-hotkey" class="small-button">Clear</button>
+                </div>
               </div>
-              <p class="help-text">Press the key combination you want to use to open Toast.</p>
-            </div>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="launch-at-login" />
-                Launch at login
-              </label>
-              <p class="help-text">Start Toast automatically when you log in to your computer.</p>
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="launch-at-login">Launch at login</label>
+                  <p class="help-text">Start Toast automatically when you log in to your computer.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="launch-at-login" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
             </div>
 
             <h3 class="settings-section-title">Appearance</h3>
 
-            <div class="settings-group">
-              <label for="theme">Theme</label>
-              <select id="theme">
-                <option value="system">System Default</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-              <p class="help-text">Choose the application theme.</p>
-            </div>
-
-            <div class="settings-group">
-              <label for="position">Window Position</label>
-              <select id="position">
-                <option value="center">Center</option>
-                <option value="top">Top</option>
-                <option value="bottom">Bottom</option>
-                <option value="cursor">Cursor</option>
-              </select>
-              <p class="help-text">Where the Toast window should appear on the screen.</p>
-            </div>
-
-            <div class="settings-group">
-              <label for="size">Window Size</label>
-              <select id="size">
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-              <p class="help-text">Size of the Toast window.</p>
-            </div>
-
-            <div class="settings-group">
-              <label for="opacity">Window Opacity</label>
-              <div class="range-container">
-                <input type="range" id="opacity" min="0.1" max="1.0" step="0.05" value="0.95" />
-                <span id="opacity-value">0.95</span>
+            <div class="section-rows">
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="theme">Theme</label>
+                  <p class="help-text">Choose the application theme.</p>
+                </div>
+                <div class="row-control">
+                  <select id="theme">
+                    <option value="system">System Default</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
               </div>
-              <p class="help-text">Transparency of the Toast window.</p>
+
+              <div class="settings-row">
+                <div class="row-text">
+                  <label>Accent Color</label>
+                  <p class="help-text">Used for buttons and highlights. Synced across devices.</p>
+                </div>
+                <div id="accent-color-picker" class="row-control accent-color-picker">
+                  <button type="button" class="accent-swatch" data-accent-color="blue" title="Blue" aria-label="Blue"></button>
+                  <button type="button" class="accent-swatch" data-accent-color="red" title="Red" aria-label="Red"></button>
+                  <button type="button" class="accent-swatch" data-accent-color="orange" title="Orange" aria-label="Orange"></button>
+                  <button type="button" class="accent-swatch" data-accent-color="green" title="Green" aria-label="Green"></button>
+                  <button type="button" class="accent-swatch" data-accent-color="purple" title="Purple" aria-label="Purple"></button>
+                  <button type="button" class="accent-swatch" data-accent-color="mono" title="Mono" aria-label="Mono"></button>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="position">Window Position</label>
+                  <p class="help-text">Where the Toast window should appear on the screen.</p>
+                </div>
+                <div class="row-control">
+                  <select id="position">
+                    <option value="center">Center</option>
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="cursor">Cursor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="size">Window Size</label>
+                  <p class="help-text">Size of the Toast window.</p>
+                </div>
+                <div class="row-control">
+                  <select id="size">
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="opacity">Window Opacity</label>
+                  <p class="help-text">Transparency of the Toast window.</p>
+                </div>
+                <div class="row-control range-container">
+                  <input type="range" id="opacity" min="0.1" max="1.0" step="0.05" value="0.95" />
+                  <span id="opacity-value">0.95</span>
+                </div>
+              </div>
             </div>
 
             <h3 class="settings-section-title">Advanced</h3>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="hide-after-action" />
-                Hide after action
-              </label>
-              <p class="help-text">Hide the Toast window after executing an action.</p>
-            </div>
+            <div class="section-rows">
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="hide-after-action">Hide after action</label>
+                  <p class="help-text">Hide the Toast window after executing an action.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="hide-after-action" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="hide-on-blur" />
-                Hide on blur
-              </label>
-              <p class="help-text">Hide the Toast window when it loses focus.</p>
-            </div>
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="hide-on-blur">Hide on blur</label>
+                  <p class="help-text">Hide the Toast window when it loses focus.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="hide-on-blur" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="hide-on-escape" />
-                Hide on Escape key
-              </label>
-              <p class="help-text">Hide the Toast window when the Escape key is pressed.</p>
-            </div>
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="hide-on-escape">Hide on Escape key</label>
+                  <p class="help-text">Hide the Toast window when the Escape key is pressed.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="hide-on-escape" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="show-in-taskbar" />
-                Show in taskbar
-              </label>
-              <p class="help-text">Show the Toast window in the taskbar/dock.</p>
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="show-in-taskbar">Show in taskbar</label>
+                  <p class="help-text">Show the Toast window in the taskbar/dock.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="show-in-taskbar" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
             </div>
 
             <div class="settings-group actions-group">
@@ -151,14 +264,14 @@
                     <div id="user-name" class="profile-name">-</div>
                     <div id="user-email" class="profile-email">-</div>
                   </div>
+                  <button id="logout-button" class="secondary-button">Sign Out</button>
                 </div>
-                <button id="logout-button" class="secondary-button">Sign Out</button>
               </div>
             </div>
 
             <!-- Subscription information -->
             <div id="subscription-section" class="settings-group hidden">
-              <h3>Subscription</h3>
+              <h3 class="settings-section-title">Subscription</h3>
               <div class="subscription-container">
                 <div class="subscription-details">
                   <div class="subscription-status">
@@ -181,25 +294,28 @@
 
             <h3 class="settings-section-title">Cloud Sync</h3>
 
-            <div id="sync-status-section" class="settings-group">
-              <div class="subscription-container">
-                <div class="subscription-details">
-                  <div class="subscription-status">
-                    <span id="sync-status-badge" class="badge">Disabled</span>
-                    <span id="sync-status-text">Cloud Sync Status</span>
-                  </div>
-                  <p id="last-synced-time">Last Synced: -</p>
-                  <p id="sync-device-info">Current Device: -</p>
+            <div class="section-rows">
+              <div id="sync-status-section" class="settings-row">
+                <div class="row-text">
+                  <label id="sync-status-text">Cloud Sync Status</label>
+                  <p id="last-synced-time" class="help-text">Last Synced: -</p>
+                  <p id="sync-device-info" class="help-text">Current Device: -</p>
+                </div>
+                <div class="row-control">
+                  <span id="sync-status-badge" class="badge">Disabled</span>
                 </div>
               </div>
-            </div>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="enable-cloud-sync" />
-                Enable Cloud Sync
-              </label>
-              <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="enable-cloud-sync">Enable Cloud Sync</label>
+                  <p class="help-text">Synchronize settings and pages across multiple devices. Premium subscription required.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="enable-cloud-sync" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
             </div>
 
             <div class="settings-group">
@@ -219,8 +335,7 @@
           <div id="snippets" class="settings-tab">
             <h2>Snippets</h2>
             <p class="help-text">
-              Type a keyword in any app and it expands to the text you define. For example, typing <code>!email</code> becomes your email
-              address. macOS only.
+              Type a keyword in any app and it expands to the text you define. For example, typing <code>!email</code> becomes your email address. macOS only.
             </p>
 
             <div id="snippets-unsupported" class="settings-group hidden">
@@ -229,8 +344,8 @@
 
             <div id="snippets-permission" class="settings-group hidden">
               <p class="help-text">
-                Text expansion needs Accessibility and Input Monitoring permission to detect typing and paste replacements. Grant permission,
-                then enable the feature.
+                Text expansion needs Accessibility and Input Monitoring permission to detect typing and paste replacements. Grant permission, then enable the
+                feature.
               </p>
               <div class="actions-group">
                 <button id="snippets-request-permission" class="primary-button">Grant Permission</button>
@@ -239,22 +354,25 @@
               </div>
             </div>
 
-            <div class="settings-group">
-              <label>
-                <input type="checkbox" id="snippets-enabled" />
-                Enable text expansion
-              </label>
-              <p class="help-text">When enabled, snippets expand as you type in other apps. Disabled by default for privacy.</p>
-              <p id="snippets-status" class="help-text"></p>
+            <div class="section-rows">
+              <div class="settings-row">
+                <div class="row-text">
+                  <label for="snippets-enabled">Enable text expansion</label>
+                  <p class="help-text">When enabled, snippets expand as you type in other apps. Disabled by default for privacy.</p>
+                  <p id="snippets-status" class="help-text"></p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="snippets-enabled" />
+                  <span class="switch-track"></span>
+                </label>
+              </div>
             </div>
 
-            <div class="settings-group">
-              <h3>Your Snippets</h3>
-              <div id="snippets-list"></div>
-            </div>
+            <h3 class="settings-section-title">Your Snippets</h3>
+            <div id="snippets-list" class="section-card"></div>
 
-            <div class="settings-group">
-              <h3 id="snippet-form-title">Add Snippet</h3>
+            <h3 class="settings-section-title" id="snippet-form-title">Add Snippet</h3>
+            <div class="section-card">
               <div class="snippet-form">
                 <input type="text" id="snippet-keyword" placeholder="Keyword (e.g. !email)" />
                 <textarea id="snippet-content" placeholder="Expansion text" rows="3"></textarea>
@@ -383,7 +501,6 @@
           },
         };
       }
-
     </script>
 
     <script type="module" src="index.js"></script>

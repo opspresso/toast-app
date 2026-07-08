@@ -28,6 +28,7 @@ import {
   confirmOkButton,
   reloadIconButton,
 } from './dom-elements.js';
+import { UI_ICONS } from './constants.js';
 import { showStatus } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
 import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported } from './local-icon-utils.js';
@@ -308,7 +309,6 @@ export function setupModalEventListeners() {
 
         // Disable button during extraction
         reloadIconButton.disabled = true;
-        const originalText = reloadIconButton.innerHTML;
         reloadIconButton.innerHTML = '⏳';
         reloadIconButton.title = '아이콘 추출 중...';
 
@@ -334,7 +334,7 @@ export function setupModalEventListeners() {
       finally {
         // Re-enable button
         reloadIconButton.disabled = false;
-        reloadIconButton.innerHTML = '🔄';
+        reloadIconButton.innerHTML = UI_ICONS.refresh;
         reloadIconButton.title = 'Reload Icon from Application';
       }
     });

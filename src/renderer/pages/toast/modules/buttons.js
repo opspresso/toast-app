@@ -217,6 +217,7 @@ export function createButtonElement(button) {
 
   // Set button data
   buttonElement.dataset.action = JSON.stringify(button);
+  buttonElement.dataset.actionType = button.action || '';
 
   // Set button name
   const nameElement = buttonElement.querySelector('.button-name');
@@ -587,7 +588,8 @@ function extractAppNameFromPath(applicationPath) {
  */
 function handleTildeIconPath(iconElement, button) {
   const tildePath = button.icon.substring(7); // Remove 'file://' prefix
-  window.toast.resolveTildePath(tildePath)
+  window.toast
+    .resolveTildePath(tildePath)
     .then(resolvedPath => {
       iconElement.textContent = '';
       const img = document.createElement('img');
