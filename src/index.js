@@ -5,7 +5,7 @@
  * It initializes the Electron app, creates windows, and sets up event listeners.
  */
 
-const { app } = require('electron');
+const { app, session } = require('electron');
 const { loadEnv } = require('./main/config/env');
 const path = require('path');
 const fs = require('fs');
@@ -107,6 +107,24 @@ function initialize() {
   // Set up auto launch
   app.setLoginItemSettings({
     openAtLogin: config.get('advanced.launchAtLogin') || false,
+  });
+
+  // Allow remote button icons (e.g. site favicons) in the file:// based UI.
+  // Windows are loaded via loadFile, so every https image is cross-origin and
+  // Chromium blocks responses that carry Cross-Origin-Resource-Policy headers
+  // (e.g. https://claude.ai/favicon.ico sends "same-origin"). Strip the header
+  // for image subresources only.
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    if (details.resourceType === 'image' && details.responseHeaders) {
+      const responseHeaders = Object.fromEntries(
+        Object.entries(details.responseHeaders).filter(
+          ([key]) => key.toLowerCase() !== 'cross-origin-resource-policy',
+        ),
+      );
+      callback({ responseHeaders });
+      return;
+    }
+    callback({});
   });
 
   // Create windows
