@@ -25,6 +25,24 @@ describe('Chain Action', () => {
   });
 
   describe('executeChainedActions', () => {
+    test('should reject execution when the chain nesting depth is at the maximum', async () => {
+      const action = { actions: [{ action: 'exec', command: 'test' }] };
+
+      const result = await executeChainedActions(action, 10);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('exceeds maximum depth');
+      expect(executeAction).not.toHaveBeenCalled();
+    });
+
+    test('should pass the incremented depth to each sub-action', async () => {
+      const action = { actions: [{ action: 'exec', command: 'test' }] };
+
+      await executeChainedActions(action, 3);
+
+      expect(executeAction).toHaveBeenCalledWith(action.actions[0], 4);
+    });
+
     test('should return error when actions array is missing', async () => {
       const action = {};
 
@@ -82,7 +100,7 @@ describe('Chain Action', () => {
 
       const result = await executeChainedActions(action);
 
-      expect(executeAction).toHaveBeenCalledWith(testAction);
+      expect(executeAction).toHaveBeenCalledWith(testAction, 1);
       expect(executeAction).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         success: true,
@@ -119,9 +137,9 @@ describe('Chain Action', () => {
       const result = await executeChainedActions(action);
 
       expect(executeAction).toHaveBeenCalledTimes(3);
-      expect(executeAction).toHaveBeenNthCalledWith(1, testActions[0]);
-      expect(executeAction).toHaveBeenNthCalledWith(2, testActions[1]);
-      expect(executeAction).toHaveBeenNthCalledWith(3, testActions[2]);
+      expect(executeAction).toHaveBeenNthCalledWith(1, testActions[0], 1);
+      expect(executeAction).toHaveBeenNthCalledWith(2, testActions[1], 1);
+      expect(executeAction).toHaveBeenNthCalledWith(3, testActions[2], 1);
       
       expect(result).toEqual({
         success: true,
@@ -156,9 +174,9 @@ describe('Chain Action', () => {
       const result = await executeChainedActions(action);
 
       expect(executeAction).toHaveBeenCalledTimes(2); // Should stop after second action fails
-      expect(executeAction).toHaveBeenNthCalledWith(1, testActions[0]);
-      expect(executeAction).toHaveBeenNthCalledWith(2, testActions[1]);
-      expect(executeAction).not.toHaveBeenNthCalledWith(3, testActions[2]);
+      expect(executeAction).toHaveBeenNthCalledWith(1, testActions[0], 1);
+      expect(executeAction).toHaveBeenNthCalledWith(2, testActions[1], 1);
+      expect(executeAction).not.toHaveBeenNthCalledWith(3, testActions[2], 1);
       
       expect(result).toEqual({
         success: false,
@@ -217,9 +235,9 @@ describe('Chain Action', () => {
       const result = await executeChainedActions(action);
 
       expect(executeAction).toHaveBeenCalledTimes(3); // Should continue despite failure
-      expect(executeAction).toHaveBeenNthCalledWith(1, testActions[0]);
-      expect(executeAction).toHaveBeenNthCalledWith(2, testActions[1]);
-      expect(executeAction).toHaveBeenNthCalledWith(3, testActions[2]);
+      expect(executeAction).toHaveBeenNthCalledWith(1, testActions[0], 1);
+      expect(executeAction).toHaveBeenNthCalledWith(2, testActions[1], 1);
+      expect(executeAction).toHaveBeenNthCalledWith(3, testActions[2], 1);
       
       expect(result).toEqual({
         success: true, // Overall success because not all actions failed
@@ -386,7 +404,7 @@ describe('Chain Action', () => {
 
       const result = await executeChainedActions(action);
 
-      expect(executeAction).toHaveBeenCalledWith(complexAction);
+      expect(executeAction).toHaveBeenCalledWith(complexAction, 1);
       expect(result).toEqual({
         success: true,
         message: 'Chain executed successfully',

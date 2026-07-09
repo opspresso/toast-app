@@ -12,12 +12,18 @@ const { executeScript } = require('./actions/script');
 const { openItem } = require('./actions/open');
 const { ensureApproved } = require('./action-approval');
 
+// Upper bound on chain nesting depth. Without this, a deeply/self nested
+// chain (e.g. from a malformed or malicious cloud-sync payload) could exhaust
+// the call stack during validation before it is ever rejected for other reasons.
+const MAX_CHAIN_DEPTH = 10;
+
 /**
  * Execute an action based on its type
  * @param {Object} action - Action configuration
+ * @param {number} [depth] - Current chain nesting depth (internal use)
  * @returns {Promise<Object>} Result object
  */
-async function executeAction(action) {
+async function executeAction(action, depth = 0) {
   try {
     // Validate action
     if (!action) {
@@ -49,7 +55,7 @@ async function executeAction(action) {
       case 'script':
         return await executeScript(action);
       case 'chain':
-        return await executeChainedActions(action);
+        return await executeChainedActions(action, depth);
       default:
         return {
           success: false,
@@ -69,9 +75,10 @@ async function executeAction(action) {
 /**
  * Test an action without executing it
  * @param {Object} action - Action configuration
+ * @param {number} [depth] - Current chain nesting depth (internal use)
  * @returns {Promise<Object>} Validation result
  */
-async function validateAction(action) {
+async function validateAction(action, depth = 0) {
   try {
     // Validate action
     if (!action) {
@@ -108,6 +115,10 @@ async function validateAction(action) {
         }
         break;
       case 'chain':
+        if (depth >= MAX_CHAIN_DEPTH) {
+          return { valid: false, message: `Chain nesting exceeds maximum depth of ${MAX_CHAIN_DEPTH}` };
+        }
+
         if (!action.actions || !Array.isArray(action.actions) || action.actions.length === 0) {
           return { valid: false, message: 'Actions array is required for chain action' };
         }
@@ -115,7 +126,7 @@ async function validateAction(action) {
         // Validate each action in the chain
         for (let i = 0; i < action.actions.length; i++) {
           const subAction = action.actions[i];
-          const validation = await validateAction(subAction);
+          const validation = await validateAction(subAction, depth + 1);
 
           if (!validation.valid) {
             return {

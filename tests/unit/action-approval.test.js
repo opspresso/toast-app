@@ -108,6 +108,17 @@ describe('Action Approval', () => {
       expect(collectRiskyFingerprints(null).size).toBe(0);
       expect(collectRiskyFingerprints([{ name: 'no buttons' }]).size).toBe(0);
     });
+
+    test('should not exhaust the call stack on a pathologically deep chain', () => {
+      // Build a chain nested 50 levels deep, well past the depth guard.
+      let deepAction = execAction('innermost');
+      for (let i = 0; i < 50; i++) {
+        deepAction = { action: 'chain', actions: [deepAction] };
+      }
+      const pages = pagesWith(deepAction);
+
+      expect(() => collectRiskyFingerprints(pages)).not.toThrow();
+    });
   });
 
   describe('initializeApprovals', () => {

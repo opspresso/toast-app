@@ -157,7 +157,7 @@ describe('Executor', () => {
       
       const result = await executeAction(action);
       
-      expect(executeChainedActions).toHaveBeenCalledWith(action);
+      expect(executeChainedActions).toHaveBeenCalledWith(action, 0);
       expect(result).toEqual(expectedResult);
     });
 
@@ -353,6 +353,31 @@ describe('Executor', () => {
         valid: false,
         message: 'Invalid action at index 1: Command is required for exec action',
       });
+    });
+
+    test('should reject a chain nested deeper than the maximum allowed depth', async () => {
+      // Build a chain nested 11 levels deep (one past the 10-level limit),
+      // each level wrapping a single valid exec action.
+      let action = { action: 'exec', command: 'innermost' };
+      for (let i = 0; i < 11; i++) {
+        action = { action: 'chain', actions: [action] };
+      }
+
+      const result = await validateAction(action);
+
+      expect(result.valid).toBe(false);
+      expect(result.message).toContain('exceeds maximum depth');
+    });
+
+    test('should accept a chain nested exactly at the maximum allowed depth', async () => {
+      let action = { action: 'exec', command: 'innermost' };
+      for (let i = 0; i < 10; i++) {
+        action = { action: 'chain', actions: [action] };
+      }
+
+      const result = await validateAction(action);
+
+      expect(result.valid).toBe(true);
     });
 
     test('should return invalid for unsupported action type', async () => {
