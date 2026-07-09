@@ -224,6 +224,19 @@ describe('Main Auth Module (P0)', () => {
       expect(result.error).toContain('Invalid code');
     });
 
+    test('should not leak the raw server response body in the returned error', async () => {
+      const code = 'invalid-code';
+      const error = new Error('Invalid code');
+      error.response = { data: { internal_debug_info: 'server stack trace here' } };
+      mockApiAuth.exchangeCodeForToken.mockRejectedValue(error);
+
+      const result = await auth.exchangeCodeForToken(code);
+
+      expect(result.success).toBe(false);
+      expect(result).not.toHaveProperty('error_details');
+      expect(JSON.stringify(result)).not.toContain('internal_debug_info');
+    });
+
     test('should handle auth redirect URLs', async () => {
       const authUrl = 'toast-app://auth?code=test-code&state=test-state';
 

@@ -514,12 +514,13 @@ async function exchangeCodeForToken(code) {
     return tokenResult;
   }
   catch (error) {
-    logger.error('Error occurred during token exchange:', error);
+    // Full error (including any server response body) goes to the log only;
+    // callers only need a human-readable message, not raw server internals.
+    logger.error('Error occurred during token exchange:', error, error.response?.data);
 
     return {
       success: false,
       error: error.message || 'Unknown error',
-      error_details: error.response?.data,
     };
   }
 }
@@ -776,11 +777,11 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
     }
   }
   catch (error) {
+    // Stack trace goes to the log only; callers only need a human-readable message.
     logger.error('Error during authentication code exchange and subscription update:', error);
     return {
       success: false,
       error: error.message || 'An error occurred during authentication processing.',
-      details: error.stack,
     };
   }
 }
