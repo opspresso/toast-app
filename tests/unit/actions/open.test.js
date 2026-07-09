@@ -145,7 +145,6 @@ describe('Open Action', () => {
     test('should handle various URL protocols with :// format', async () => {
       const testCases = [
         { input: 'ftp://files.example.com', expected: 'ftp://files.example.com' },
-        { input: 'file:///path/to/file', expected: 'file:///path/to/file' },
         { input: 'https://secure.example.com', expected: 'https://secure.example.com' },
       ];
 
@@ -157,6 +156,21 @@ describe('Open Action', () => {
 
         expect(shell.openExternal).toHaveBeenCalledWith(testCase.expected);
         expect(result.success).toBe(true);
+      }
+    });
+
+    test('should reject file:// URLs instead of passing them to shell.openExternal', async () => {
+      const testCases = ['file:///path/to/file', 'FILE:///path/to/file'];
+
+      for (const input of testCases) {
+        jest.clearAllMocks();
+        const result = await openItem({ url: input });
+
+        expect(shell.openExternal).not.toHaveBeenCalled();
+        expect(result).toEqual({
+          success: false,
+          message: 'file:// URLs are not allowed; use the path field to open local files',
+        });
       }
     });
 
