@@ -70,8 +70,8 @@ async function isTokenExpired() {
   }
 }
 
-// 토큰 저장 (무기한 지원)
-async function storeToken(token, expiresIn = 31536000) {
+// 액세스·리프레시 토큰을 한 번의 원자적 쓰기로 저장 (무기한 지원)
+async function storeTokens(token, refreshToken, expiresIn = 31536000) {
   try {
     let expiresAt;
     if (expiresIn <= 0) {
@@ -82,9 +82,13 @@ async function storeToken(token, expiresIn = 31536000) {
       expiresAt = Date.now() + expiresIn * 1000;
     }
 
-    // 토큰과 만료 시간 저장
+    // 토큰과 만료 시간을 함께 저장 (readTokenFile/writeTokenFile이
+    // safeStorage 암호화 여부를 투명하게 처리)
     const tokenData = readTokenFile() || {};
     tokenData[TOKEN_KEY] = token;
+    if (refreshToken) {
+      tokenData[REFRESH_TOKEN_KEY] = refreshToken;
+    }
     tokenData[TOKEN_EXPIRES_KEY] = expiresAt;
 
     if (!writeTokenFile(tokenData)) {
@@ -117,10 +121,10 @@ TOKEN_EXPIRES_IN=86400  # 1일
 ### 토큰 관리 모범 사례
 
 1. **무기한 토큰 사용**: 동기화 중단 방지를 위해 토큰을 무기한으로 설정
-2. **로컬 파일 저장**: 토큰을 로컬 JSON 파일(`auth-tokens.json`)에 평문으로 저장
-3. **원자적 쓰기**: 파일 손상 방지를 위한 임시 파일 사용
+2. **로컬 파일 저장**: 토큰을 로컬 JSON 파일(`auth-tokens.json`)에 저장. `safeStorage`(OS 키체인/자격 증명 저장소)로 암호화되며, 이용 불가한 환경(예: 시크릿 서비스가 없는 일부 Linux)에서는 평문 + 0600 권한으로 대체됩니다. 암호화 이전에 저장된 레거시 평문 파일도 읽을 때 자동으로 인식되어 다음 저장 시 암호화됩니다(별도 마이그레이션 불필요).
+3. **원자적 쓰기**: 액세스·리프레시 토큰을 `storeTokens()` 한 번의 쓰기로 함께 저장(임시 파일 사용). 서버가 갱신할 때마다 리프레시 토큰을 회전시키므로, 두 토큰을 따로 저장하면 그 사이 크래시 시 이미 폐기된 리프레시 토큰만 남아 강제 재로그인이 발생할 수 있습니다.
 4. **오류 처리**: 토큰 관련 오류 시 적절한 로깅 및 복구 로직
-5. **보안 고려**: 토큰 파일 접근 권한 제한
+5. **로그아웃 시 서버 폐기**: 로그아웃 시 저장된 리프레시 토큰을 서버에 revoke 요청(`/oauth/revoke`)해 로컬 파일 삭제 후에도 서버에서 재사용되지 않도록 합니다.
 
 ## 기본 동기화 흐름
 
@@ -235,7 +239,7 @@ Content-Type: application/json
 
 - **`src/main/cloud-sync.js`**: 동기화 오케스트레이션 — 변경 감지, 디바운싱, 재시도, 충돌 해결을 담당합니다.
 - **`src/main/api/sync.js`**: 서버와의 HTTP 통신(`uploadSettings`, `downloadSettings`)과 동기화 가능 여부 판단(`isCloudSyncEnabled`)을 담당합니다. 동기화 시점 자격 판정은 `src/main/subscription.js`의 `isCloudSyncAllowed`에 위임합니다.
-- **`src/main/cloud-sync/conflict-resolver.js`**: 충돌 분석(`analyzeConflict`)과 섹션별 병합(`mergePages`/`mergeSnippets`/`mergeAppearance`/`mergeAdvanced`)을 담당하는 순수 로직 모듈입니다.
+- **`src/main/cloud-sync/conflict-resolver.js`**: 충돌 분석(`analyzeConflict`)과 섹션별 병합(`mergePages`/`mergeButtons`/`mergeSnippets`/`mergeAppearance`/`mergeAdvanced`)을 담당하는 순수 로직 모듈입니다.
 
 ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`snippets`·`appearance`·`advanced`가 동기화 대상입니다.
 
@@ -253,11 +257,11 @@ ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`sni
 `cloud-sync.js`는 ConfigStore의 `pages`·`snippets`·`appearance`·`advanced` 변경을 `onDidChange`로 감지합니다.
 
 - **디바운스 업로드**: 변경 감지 시 `scheduleSync`가 `SYNC_DEBOUNCE_MS`(5초) 뒤에 업로드를 예약합니다. 짧은 시간 내 연속 변경은 마지막 변경 기준으로 병합됩니다.
-- **재시도**: 업로드 실패 시 `uploadSettingsWithRetry`가 `RETRY_DELAY_MS`(5초) 간격으로 최대 `MAX_RETRY_COUNT`(3회)까지 재시도합니다. 단, 응답에 따라 다르게 처리합니다:
+- **재시도**: 업로드 실패 시 `uploadSettingsWithRetry`가 재시도합니다. 지연 시간은 `computeRetryDelay`가 시도 횟수에 따라 지수적으로 증가시키며(기본 5초 → 10초 → 20초, `MAX_RETRY_DELAY_MS` 30초로 제한) 최대 20%의 임의 지터를 더해, 같은 순간 실패한 여러 기기가 동시에 재시도하며 다시 충돌하는 것을 방지합니다. 최대 `MAX_RETRY_COUNT`(3회)까지 재시도하며, 응답에 따라 다르게 처리합니다:
   - 업로드할 `pages`와 `snippets`가 모두 비어 있으면 서버 데이터 보호를 위해 업로드를 건너뜁니다(스킵, 재시도 없음). 빈 `pages`는 서버가 거부하므로 페이지가 있을 때만 payload에 포함합니다.
   - `400`(검증 실패)은 재시도해도 동일하게 실패하므로 재시도하지 않습니다.
   - `409`(stale write)는 재시도 대신 서버 데이터를 내려받아 병합 후 재업로드하는 재조정(`reconcileStaleUpload`)을 예약합니다. 로컬 변경이 유실되지 않습니다.
-- **주기적 동기화**: `SYNC_INTERVAL_MS`(15분)마다 서버에서 설정을 다운로드합니다(`startPeriodicSync`).
+- **주기적 동기화**: `SYNC_INTERVAL_MS`(15분)마다 `syncSettings('resolve')`를 호출해 충돌 해결 경로로 동기화합니다(`startPeriodicSync`). 서버 데이터를 무조건 다운로드하지 않고, 업로드 디바운스 대기 중이던 로컬 변경이 있으면 이를 우선 반영하거나 병합합니다.
 - **원격 적용 중 변경 감지 억제**: 다운로드·병합으로 원격 데이터를 ConfigStore에 쓰는 동안에는 변경 감지를 무시하여, 다운로드가 다시 업로드를 유발하는 피드백 루프를 차단합니다.
 
 업로드 데이터에는 `pages`·`snippets`·`appearance`·`advanced`와 메타데이터(`lastModifiedAt`, `lastModifiedDevice`, `lastSyncedAt`, `lastSyncedDevice`)가 포함되며, 성공 시 `markAsSynced`로 동기화 메타데이터를 갱신합니다.
@@ -270,11 +274,15 @@ ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`sni
 - **`download_server`**: 서버가 더 최신 → 서버에서 다운로드
 - **`merge_required`**: 시간이 비슷한 동시 변경 → 병합 후 업로드
 
-병합(`performIntelligentMerge`)은 페이지를 로컬 우선으로 유지하되(`mergePages`), 로컬 페이지의 버튼이 비어 있고 이름이 같은 서버 페이지에 버튼이 있으면 서버 버전을 유지해 데이터 유실을 막습니다. 스니펫은 keyword 기준 로컬 우선 병합에 서버 전용 keyword를 뒤에 보존합니다(`mergeSnippets`). `appearance`·`advanced`는 로컬 값을 우선합니다(`mergeAppearance`/`mergeAdvanced`). 병합 후에는 `lastModifiedAt`이 서버 타임스탬프 이하이면 서버 값보다 크게 보정하여, 시계가 느린 기기가 stale write(409) 루프에 갇히지 않도록 합니다.
+병합(`performIntelligentMerge`)은 페이지를 로컬 우선으로 유지하되(`mergePages`):
+- 로컬 페이지의 버튼이 비어 있고 이름이 같은 서버 페이지에 버튼이 있으면 서버 버전을 유지해 데이터 유실을 막습니다.
+- 같은 이름의 페이지에 로컬·서버 양쪽 모두 버튼이 있으면 페이지 전체를 교체하지 않고 **버튼 단위로 병합**합니다(`mergeButtons`). 이름 기준 로컬 우선 + 서버 전용 버튼 append 정책이라, 두 기기가 같은 페이지의 다른 버튼을 동시에 추가/수정해도 한쪽 변경이 통째로 유실되지 않습니다.
+
+스니펫은 keyword 기준 로컬 우선 병합에 서버 전용 keyword를 뒤에 보존합니다(`mergeSnippets`). `appearance`·`advanced`는 로컬 값을 우선합니다(`mergeAppearance`/`mergeAdvanced`). 병합 후에는 `lastModifiedAt`이 서버 타임스탬프 이하이면 서버 값보다 크게 보정하여, 시계가 느린 기기가 stale write(409) 루프에 갇히지 않도록 합니다.
 
 ### 로그인 시 동기화
 
-로그인 성공 후 `syncAfterLogin`이 먼저 서버 설정을 다운로드하고, 성공하면 토스트 창 UI에 갱신을 알립니다(`notifySettingsSynced`).
+로그인 성공 후 `syncAfterLogin`은 (주기 동기화와 동일하게) `syncSettings('resolve')`로 충돌 해결 경로를 통해 동기화합니다. 로그인 사이 오프라인 상태에서 로컬에 편집한 내용이 있으면 서버 데이터로 무조건 덮어쓰지 않고 업로드/병합하며, 로컬 변경이 없을 때만 서버 설정을 다운로드합니다. 성공하면 토스트 창 UI에 갱신을 알립니다(`notifySettingsSynced`).
 
 ### 다운로드 검증 및 액션 승인
 

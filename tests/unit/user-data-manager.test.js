@@ -42,6 +42,8 @@ jest.mock('../../src/main/logger', () => ({
     warn: jest.fn(),
     debug: jest.fn(),
   })),
+  maskEmail: jest.fn(email => email),
+  maskName: jest.fn(name => name),
 }));
 
 // Mock constants

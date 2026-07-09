@@ -430,6 +430,43 @@ describe('API Client', () => {
       expect(result.error.requireRelogin).toBe(true);
     });
 
+    test('should retry a subscription request with the refreshed token instead of falling back immediately', async () => {
+      client.setAccessToken('expired-token');
+      const realSubscription = { id: 'sub_premium_123', plan: 'Premium', active: true };
+      const mockApiCall = jest.fn()
+        .mockRejectedValueOnce({ response: { status: 401 } })
+        .mockResolvedValueOnce(realSubscription);
+
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      const result = await client.authenticatedRequest(mockApiCall, {
+        isSubscriptionRequest: true,
+        onUnauthorized,
+      });
+
+      expect(onUnauthorized).toHaveBeenCalled();
+      expect(result).toEqual(realSubscription);
+    });
+
+    test('should fall back to default subscription only after a failed refresh attempt', async () => {
+      client.setAccessToken('expired-token');
+      const mockApiCall = jest.fn().mockRejectedValue({ response: { status: 401 } });
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: false });
+
+      const result = await client.authenticatedRequest(mockApiCall, {
+        isSubscriptionRequest: true,
+        onUnauthorized,
+      });
+
+      expect(onUnauthorized).toHaveBeenCalled();
+      expect(result).toEqual({
+        id: 'sub_free_anonymous',
+        plan: 'free',
+        active: false,
+        is_subscribed: false,
+      });
+    });
+
     test('should reset request counter after successful API call', async () => {
       client.setAccessToken('expired-token');
       const mockApiCall = jest.fn()

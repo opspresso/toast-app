@@ -6,9 +6,16 @@
 
 const Store = require('electron-store');
 const { createLogger } = require('./logger');
+const { getEnv } = require('./config/env');
 
 // 모듈별 로거 생성
 const logger = createLogger('Config');
+
+// Multiple app instances (e.g. running side-by-side for testing) must not share
+// a config file — CONFIG_SUFFIX already isolates the auth token file (auth.js),
+// so isolate the electron-store file the same way.
+const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
+const CONFIG_STORE_NAME = CONFIG_SUFFIX ? `config-${CONFIG_SUFFIX}` : 'config';
 
 // Default configuration schema
 const schema = {
@@ -240,6 +247,7 @@ function createConfigStore() {
   try {
     // 먼저 스키마 검증 없이 구성을 로드하여 마이그레이션
     const migrationStore = new Store({
+      name: CONFIG_STORE_NAME,
       schema: null, // 스키마 검증 비활성화
       clearInvalidConfig: false,
     });
@@ -270,13 +278,14 @@ function createConfigStore() {
     }
 
     // 이제 정상적인 스키마 검증으로 Store 객체 생성
-    sharedStore = new Store({ schema });
+    sharedStore = new Store({ name: CONFIG_STORE_NAME, schema });
     return sharedStore;
   }
   catch (error) {
     // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
     logger.error('Error creating config store with schema, falling back to schema-less store:', error);
     sharedStore = new Store({
+      name: CONFIG_STORE_NAME,
       schema: null,
       clearInvalidConfig: false,
     });

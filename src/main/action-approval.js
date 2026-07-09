@@ -70,6 +70,11 @@ function computeFingerprint(action) {
   return crypto.createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }
 
+// Upper bound on chain nesting depth when walking actions, matching
+// executor.js's validateAction. Guards local (not-yet-sanitized) config data
+// against a pathologically/self nested chain exhausting the call stack.
+const MAX_CHAIN_DEPTH = 10;
+
 /**
  * Collect fingerprints of all risky actions in the given pages,
  * including actions nested inside chain actions.
@@ -79,8 +84,8 @@ function computeFingerprint(action) {
 function collectRiskyFingerprints(pages) {
   const found = new Map();
 
-  const visit = action => {
-    if (!action || typeof action !== 'object') {
+  const visit = (action, depth = 0) => {
+    if (!action || typeof action !== 'object' || depth > MAX_CHAIN_DEPTH) {
       return;
     }
     const fingerprint = computeFingerprint(action);
@@ -88,7 +93,7 @@ function collectRiskyFingerprints(pages) {
       found.set(fingerprint, action);
     }
     if (action.action === 'chain' && Array.isArray(action.actions)) {
-      action.actions.forEach(visit);
+      action.actions.forEach(sub => visit(sub, depth + 1));
     }
   };
 

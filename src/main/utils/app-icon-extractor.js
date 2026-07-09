@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { createLogger } = require('../logger');
 
 // 모듈별 로거 생성
@@ -142,10 +142,11 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     const tempIconsetPath = path.join(outputDir, `${safeAppName}_temp.iconset`);
 
     try {
-      // iconutil로 icns를 iconset으로 변환
-      const iconutilCommand = `iconutil -c iconset "${icnsPath}" -o "${tempIconsetPath}"`;
-      logger.info(`🔄 iconutil 변환 실행: ${iconutilCommand}`);
-      execSync(iconutilCommand, { stdio: 'pipe' });
+      // iconutil로 icns를 iconset으로 변환 (execFileSync: icnsPath/tempIconsetPath는
+      // 앱 번들 내부 파일명에서 올 수 있어, 셸 문자열 보간 대신 인자 배열로 전달해
+      // 경로에 셸 메타문자가 있어도 명령 인젝션으로 이어지지 않게 한다)
+      logger.info(`🔄 iconutil 변환 실행: ${icnsPath} -> ${tempIconsetPath}`);
+      execFileSync('iconutil', ['-c', 'iconset', icnsPath, '-o', tempIconsetPath], { stdio: 'pipe' });
 
       // iconset에서 가장 큰 아이콘 찾기
       if (fs.existsSync(tempIconsetPath)) {
@@ -186,11 +187,13 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     }
 
     // iconutil이 실패하면 sips 사용
-    const convertCommand = `sips -s format png -Z 512 "${icnsPath}" --out "${outputPath}"`;
-    logger.info(`🔄 sips 변환 실행: ${convertCommand}`);
+    logger.info(`🔄 sips 변환 실행: ${icnsPath} -> ${outputPath}`);
 
     try {
-      const result = execSync(convertCommand, { stdio: 'pipe', encoding: 'utf8' });
+      const result = execFileSync('sips', ['-s', 'format', 'png', '-Z', '512', icnsPath, '--out', outputPath], {
+        stdio: 'pipe',
+        encoding: 'utf8',
+      });
       logger.debug(`sips 출력: ${result}`);
     }
     catch (sipsError) {

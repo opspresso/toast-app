@@ -53,6 +53,16 @@ async function openUrl(url) {
       url = 'http://' + url;
     }
 
+    // file:// grants local filesystem access equivalent to the dedicated `path`
+    // field, but without its resolve()/existsSync() checks. Local files must go
+    // through openPath() instead, so reject it here.
+    if (/^file:/i.test(url)) {
+      return {
+        success: false,
+        message: 'file:// URLs are not allowed; use the path field to open local files',
+      };
+    }
+
     // Open URL in default browser
     await shell.openExternal(url);
 

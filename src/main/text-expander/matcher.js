@@ -238,6 +238,11 @@ function validateSnippet(snippet, existing = []) {
   if (keyword.length < MIN_KEYWORD_LENGTH) {
     errors.push(`Keyword must be at least ${MIN_KEYWORD_LENGTH} characters.`);
   }
+  // A keyword longer than the sliding match buffer can never appear as a
+  // suffix of it, so it would silently never trigger.
+  if (keyword.length > DEFAULT_MAX_BUFFER) {
+    errors.push(`Keyword must be at most ${DEFAULT_MAX_BUFFER} characters.`);
+  }
   if (!ASCII_PRINTABLE.test(keyword)) {
     errors.push('Keyword may only contain printable ASCII characters with no spaces.');
   }

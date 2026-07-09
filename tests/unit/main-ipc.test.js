@@ -22,6 +22,9 @@ jest.mock('electron', () => ({
   shell: {
     openExternal: jest.fn(),
   },
+  app: {
+    setLoginItemSettings: jest.fn(),
+  },
 }));
 
 // Mock executor
@@ -132,6 +135,7 @@ describe('Main IPC Handlers (P0)', () => {
         focus: jest.fn(),
         setOpacity: jest.fn(),
         setSize: jest.fn(),
+        setSkipTaskbar: jest.fn(),
       },
       settings: {
         isDestroyed: jest.fn(() => false),
@@ -419,11 +423,7 @@ describe('Main IPC Handlers (P0)', () => {
 
       const result = await ipcHandlers['show-open-dialog'](mockEvent, options);
 
-      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows.toast, {
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      });
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows.toast, options);
       expect(result).toEqual(mockResult);
     });
 

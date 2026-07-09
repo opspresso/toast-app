@@ -567,6 +567,43 @@ async function fetchSubscription(onUnauthorized) {
 }
 
 /**
+ * Revoke a refresh token on the server (RFC 7009), so it cannot be used to
+ * mint new access tokens after logout.
+ * @param {Object} params
+ * @param {string} params.refreshToken - Refresh token to revoke
+ * @param {string} params.clientId - OAuth client id
+ * @param {string} params.clientSecret - OAuth client secret
+ * @returns {Promise<Object>} Revocation result
+ */
+async function revokeToken({ refreshToken, clientId, clientSecret }) {
+  if (!refreshToken) {
+    return { success: true, message: 'No refresh token to revoke' };
+  }
+
+  try {
+    const apiClient = createApiClient();
+    const data = new URLSearchParams();
+    data.append('token', refreshToken);
+    data.append('client_id', clientId);
+    data.append('client_secret', clientSecret);
+
+    await apiClient.post(ENDPOINTS.OAUTH_REVOKE, data, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    logger.info('Refresh token revoked on server');
+    return { success: true };
+  }
+  catch (error) {
+    // Revocation failure must not block local logout — log and continue.
+    logger.warn('Failed to revoke refresh token on server:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * API logout (clear memory tokens only)
  * @returns {Promise<Object>} Logout result
  */
@@ -597,6 +634,7 @@ module.exports = {
   initiateLogin,
   exchangeCodeForToken,
   refreshAccessToken,
+  revokeToken,
   handleAuthRedirect,
   validateStateParam,
   fetchUserProfile,

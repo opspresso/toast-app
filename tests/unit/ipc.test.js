@@ -66,6 +66,7 @@ const mockWindows = {
     setAlwaysOnTop: jest.fn(),
     setOpacity: jest.fn(),
     setSize: jest.fn(),
+    setSkipTaskbar: jest.fn(),
     getPosition: jest.fn(() => [100, 100]),
     setPosition: jest.fn(),
     show: jest.fn(),
@@ -101,6 +102,7 @@ const mockApp = {
   relaunch: jest.fn(),
   exit: jest.fn(),
   quit: jest.fn(),
+  setLoginItemSettings: jest.fn(),
 };
 
 const mockShortcuts = {
@@ -386,6 +388,26 @@ describe('IPC Handlers', () => {
       expect(result).toBe(true);
     });
 
+    test('should apply launchAtLogin to the OS immediately instead of waiting for restart', () => {
+      setupIpcHandlers(mockWindows);
+      mockConfig.get.mockImplementation(key => (key === 'advanced.launchAtLogin' ? true : undefined));
+
+      const handler = mockIpcMain.handle.mock.calls.find(([event]) => event === 'set-config')[1];
+      handler({}, 'advanced.launchAtLogin', true);
+
+      expect(mockApp.setLoginItemSettings).toHaveBeenCalledWith({ openAtLogin: true });
+    });
+
+    test('should apply showInTaskbar to the toast window immediately instead of waiting for restart', () => {
+      setupIpcHandlers(mockWindows);
+      mockConfig.get.mockImplementation(key => (key === 'advanced.showInTaskbar' ? true : undefined));
+
+      const handler = mockIpcMain.handle.mock.calls.find(([event]) => event === 'set-config')[1];
+      handler({}, 'advanced.showInTaskbar', true);
+
+      expect(mockWindows.toast.setSkipTaskbar).toHaveBeenCalledWith(false);
+    });
+
     test('should handle set-config with subscription sanitization', () => {
       setupIpcHandlers(mockWindows);
 
@@ -422,6 +444,19 @@ describe('IPC Handlers', () => {
 
       expect(mockConfigStore.resetToDefaults).toHaveBeenCalledWith(mockConfig);
       expect(result).toBe(true);
+    });
+
+    test('should re-apply OS-level settings after reset instead of waiting for restart', async () => {
+      setupIpcHandlers(mockWindows);
+      mockConfig.get.mockReturnValue(undefined);
+
+      const handler = mockIpcMain.handle.mock.calls
+        .find(([event]) => event === 'reset-config')[1];
+
+      await handler();
+
+      expect(mockApp.setLoginItemSettings).toHaveBeenCalledWith({ openAtLogin: false });
+      expect(mockWindows.toast.setSkipTaskbar).toHaveBeenCalledWith(true);
     });
   });
 
@@ -477,11 +512,23 @@ describe('IPC Handlers', () => {
       const options = { filters: [{ name: 'Text', extensions: ['txt'] }] };
       const result = await handler({}, options);
 
-      expect(mockDialog.showOpenDialog).toHaveBeenCalledWith(
-        mockWindows.toast,
-        expect.objectContaining({ modal: true, parent: mockWindows.toast, ...options })
-      );
+      expect(mockDialog.showOpenDialog).toHaveBeenCalledWith(mockWindows.toast, options);
       expect(result).toEqual({ canceled: false, filePaths: ['/test/path'] });
+    });
+
+    test('should show open dialog without a parent when the toast window is destroyed', async () => {
+      setupIpcHandlers(mockWindows);
+      // Once, not persistently, so this does not leak into later tests that
+      // expect the default (non-destroyed) toast window.
+      mockWindows.toast.isDestroyed.mockReturnValueOnce(true);
+
+      const handler = mockIpcMain.handle.mock.calls
+        .find(([event]) => event === 'show-open-dialog')[1];
+
+      const options = { filters: [{ name: 'Text', extensions: ['txt'] }] };
+      await handler({}, options);
+
+      expect(mockDialog.showOpenDialog).toHaveBeenCalledWith(options);
     });
 
     test('should handle show-save-dialog', async () => {

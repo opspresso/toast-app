@@ -200,6 +200,51 @@ describe('API Auth Module (P0)', () => {
     });
   });
 
+  describe('Token Revocation', () => {
+    test('should revoke a refresh token on the server', async () => {
+      const params = {
+        refreshToken: 'refresh-token-123',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      };
+
+      mockClient.post.mockResolvedValue({ data: {} });
+
+      const result = await authApi.revokeToken(params);
+
+      expect(result).toEqual({ success: true });
+      expect(mockClient.post).toHaveBeenCalledWith('https://app.toast.sh/api/oauth/revoke', expect.any(URLSearchParams), expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }));
+
+      const calledWith = mockClient.post.mock.calls[0][1];
+      expect(calledWith.get('token')).toBe('refresh-token-123');
+      expect(calledWith.get('client_id')).toBe('test-client-id');
+      expect(calledWith.get('client_secret')).toBe('test-client-secret');
+    });
+
+    test('should skip the request when there is no refresh token to revoke', async () => {
+      const result = await authApi.revokeToken({ refreshToken: null, clientId: 'x', clientSecret: 'y' });
+
+      expect(result).toEqual({ success: true, message: 'No refresh token to revoke' });
+      expect(mockClient.post).not.toHaveBeenCalled();
+    });
+
+    test('should report failure without throwing when the server request errors', async () => {
+      mockClient.post.mockRejectedValue(new Error('network error'));
+
+      const result = await authApi.revokeToken({
+        refreshToken: 'refresh-token-123',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      });
+
+      expect(result).toEqual({ success: false, error: expect.stringContaining('network error') });
+    });
+  });
+
   describe('Auth Redirect Handling', () => {
     test('should handle valid auth redirects', async () => {
       const params = {

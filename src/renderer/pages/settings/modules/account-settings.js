@@ -164,6 +164,13 @@ export function updateAuthStateUI(isLoggedIn) {
       });
   }
   else {
+    // Clear the cached profile/subscription so the next login re-fetches
+    // fresh data. Without this, fetchUserProfile()/fetchSubscriptionInfo()'s
+    // `if (authState.profile) return authState.profile;` cache check would
+    // keep returning the previous account's data after a different user logs
+    // in during the same session.
+    updateAuthState({ profile: null, subscription: null });
+
     // Show login section, hide profile and subscription sections
     loginSection.classList.remove('hidden');
     profileSection.classList.add('hidden');

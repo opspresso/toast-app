@@ -172,6 +172,11 @@ function finishCheckFlow() {
  * 업데이트 다운로드
  */
 export function handleDownloadUpdate(version) {
+  // Called both directly with a real version string and as a DOM click
+  // handler (the "Try Again" button), which passes a MouseEvent as the
+  // first argument — only treat an actual string as a version to display.
+  version = typeof version === 'string' ? version : undefined;
+
   window.settings.log.info('업데이트 다운로드 시작');
 
   // 로딩 표시

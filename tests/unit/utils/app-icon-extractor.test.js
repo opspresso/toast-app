@@ -21,6 +21,7 @@ const mockFs = {
 
 const mockChildProcess = {
   execSync: jest.fn(),
+  execFileSync: jest.fn(),
 };
 
 const mockElectron = {
@@ -65,11 +66,11 @@ function setupMockScenario(scenario) {
         return Buffer.from([0x69, 0x63, 0x6e, 0x73]); // icns header
       });
       mockFs.statSync.mockReturnValue({ size: 2048 });
-      mockChildProcess.execSync
+      mockChildProcess.execFileSync
         .mockImplementationOnce(() => { throw new Error('iconutil failed'); })
         .mockReturnValueOnce('success');
       break;
-      
+
     case 'app-not-found':
       mockFs.existsSync.mockImplementation((filePath) => {
         if (filePath.includes('/Applications/') && filePath.endsWith('.app')) return false;
@@ -92,11 +93,11 @@ function setupMockScenario(scenario) {
         return Buffer.from([0x69, 0x63, 0x6e, 0x73]); // icns header
       });
       mockFs.statSync.mockReturnValue({ size: 2048 });
-      mockChildProcess.execSync
+      mockChildProcess.execFileSync
         .mockImplementationOnce(() => { throw new Error('iconutil failed'); })
         .mockReturnValueOnce('success');
       break;
-      
+
     case 'command-failure':
       mockFs.existsSync.mockImplementation((filePath) => {
         if (filePath.includes('/Applications/') && filePath.endsWith('.app')) return true;
@@ -105,7 +106,7 @@ function setupMockScenario(scenario) {
         return false;
       });
       mockFs.readFileSync.mockReturnValue('<key>CFBundleIconFile</key><string>AppIcon</string>');
-      mockChildProcess.execSync.mockImplementation(() => {
+      mockChildProcess.execFileSync.mockImplementation(() => {
         throw new Error('Command execution failed');
       });
       break;
@@ -223,6 +224,7 @@ describe('App Icon Extractor (리팩토링)', () => {
 
       expect(result).toBe('/mock/user/data/icons/TestApp.png');
       expect(mockChildProcess.execSync).not.toHaveBeenCalled();
+      expect(mockChildProcess.execFileSync).not.toHaveBeenCalled();
     });
 
     test('should force refresh and delete existing icon', async () => {
@@ -240,8 +242,9 @@ describe('App Icon Extractor (리팩토링)', () => {
       const result = await appIconExtractor.extractAppIcon('TestApp');
 
       expect(result).toBe('/mock/user/data/icons/TestApp.png');
-      expect(mockChildProcess.execSync).toHaveBeenCalledWith(
-        expect.stringContaining('sips'),
+      expect(mockChildProcess.execFileSync).toHaveBeenCalledWith(
+        'sips',
+        expect.arrayContaining(['-s', 'format', 'png']),
         expect.objectContaining({ stdio: 'pipe', encoding: 'utf8' })
       );
     });
@@ -262,7 +265,7 @@ describe('App Icon Extractor (리팩토링)', () => {
         return Buffer.from([0x69, 0x63, 0x6e, 0x73]);
       });
       mockFs.statSync.mockReturnValue({ size: 2048 });
-      mockChildProcess.execSync
+      mockChildProcess.execFileSync
         .mockImplementationOnce(() => { throw new Error('iconutil failed'); })
         .mockReturnValueOnce('success');
 
@@ -289,7 +292,7 @@ describe('App Icon Extractor (리팩토링)', () => {
         return Buffer.from([0x69, 0x63, 0x6e, 0x73]);
       });
       mockFs.statSync.mockReturnValue({ size: 2048 });
-      mockChildProcess.execSync
+      mockChildProcess.execFileSync
         .mockImplementationOnce(() => { throw new Error('iconutil failed'); })
         .mockReturnValueOnce('success');
 
@@ -302,15 +305,24 @@ describe('App Icon Extractor (리팩토링)', () => {
     });
 
     test('should use find command as last resort', async () => {
+      jest.clearAllMocks();
+      // Both the iconutil and sips conversion attempts fail, so subsequent
+      // processing of the found icns file cannot succeed — isolates this test
+      // from any leftover mockReturnValueOnce queue from earlier tests, since
+      // this file does not reset mocks between tests by default.
       mockFs.existsSync
         .mockReturnValueOnce(true)  // App exists
         .mockReturnValueOnce(false) // No existing icon
         .mockReturnValueOnce(false) // No Info.plist exists
         .mockReturnValueOnce(false) // No app.icns
-        .mockReturnValueOnce(false) // No icon.icns  
-        .mockReturnValueOnce(false); // No AppIcon.icns
+        .mockReturnValueOnce(false) // No icon.icns
+        .mockReturnValueOnce(false) // No AppIcon.icns
+        .mockReturnValue(false); // Everything after (tempIconsetPath, outputPath) does not exist
       mockChildProcess.execSync
         .mockReturnValueOnce('/Applications/TestApp.app/Contents/Resources/custom.icns\n'); // find result
+      mockChildProcess.execFileSync.mockImplementation(() => {
+        throw new Error('conversion failed');
+      });
 
       const result = await appIconExtractor.extractAppIcon('TestApp');
 

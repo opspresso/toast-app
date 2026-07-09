@@ -6,16 +6,16 @@
  * It is implemented using the common API module.
  */
 
-const { createLogger } = require('./logger');
+const { createLogger, maskEmail, maskName } = require('./logger');
 const auth = require('./auth');
 const userDataManager = require('./user-data-manager');
 
 // 모듈별 로거 생성
 const logger = createLogger('AuthManager');
-const { createConfigStore } = require('./config');
+const { createConfigStore, markAsSynced } = require('./config');
 const client = require('./api/client');
-const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
-const { determineCloudSyncFeature, normalizeExpiryString } = require('./subscription');
+const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
+const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
 const { broadcastToWindows } = require('./broadcast');
 
 // Store window references
@@ -114,8 +114,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         const isVip = result.subscription?.isVip || false;
 
         logger.info('====== Account Info ======');
-        logger.info('User email:', userEmail);
-        logger.info('User name:', userName);
+        logger.info('User email:', maskEmail(userEmail));
+        logger.info('User name:', maskName(userName));
         logger.info('Subscription plan:', userPlan);
         logger.info('VIP status:', isVip ? 'VIP user' : 'Regular user');
         logger.info('=========================');
@@ -155,6 +155,22 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           if (updatedSubscription.subscribed_until !== undefined) {
             updatedSubscription.subscribed_until = normalizeExpiryString(updatedSubscription.subscribed_until);
           }
+
+          // This write replaces the whole 'subscription' config key, so it must
+          // include every field the schema/rest of the app relies on (pageGroups,
+          // isAuthenticated, isSubscribed, additionalFeatures) — auth.js's own
+          // updatePageGroupSettings() writes these too, but whichever write lands
+          // last otherwise wins with a partial shape, and electron-store's schema
+          // defaults (e.g. pageGroups: 1) silently fill in the gaps.
+          const isActive = isSubscriptionActive(updatedSubscription);
+          updatedSubscription.isAuthenticated = true;
+          updatedSubscription.isSubscribed = isActive;
+          updatedSubscription.active = isActive;
+          updatedSubscription.pageGroups = updatedSubscription.features.page_groups || calculatePageGroups(updatedSubscription);
+          updatedSubscription.additionalFeatures = {
+            advancedActions: updatedSubscription.features.advanced_actions || false,
+            cloudSync: hasSyncFeature,
+          };
 
           // Save updated subscription info to settings store
           const config = createConfigStore();
@@ -291,14 +307,26 @@ async function logout() {
         pageGroups: 1, // Reset to anonymous user default
       });
 
-      // Reset pages to default empty state
-      config.set('pages', []);
+      // Trim pages down to the anonymous entitlement instead of wiping them:
+      // this may be the only copy of the user's data if it was never synced
+      // (offline edits, sync disabled, or the upload debounce hadn't fired).
+      const currentPages = config.get('pages');
+      config.set('pages', Array.isArray(currentPages) ? currentPages.slice(0, PAGE_GROUPS.ANONYMOUS) : []);
 
       // Reset appearance to default
       config.set('appearance', {});
 
       // Reset advanced settings to default
       config.set('advanced', {});
+
+      // Sync is disabled by this point (updateCloudSyncSettings(false) above), so the
+      // 'pages' write above never reached handleConfigChange's markAsModified() call —
+      // the _sync hash/timestamps are still whatever the logged-out user last synced.
+      // Left stale, the next person to log in on this device would have their sync
+      // treat this leftover local page as "unsynced changes" and upload/merge it into
+      // their own account. Mark the post-logout state as synced so it reads as current,
+      // not as changes belonging to whoever logs in next.
+      markAsSynced(config);
 
       logger.info('All user configuration reset to defaults on logout');
 

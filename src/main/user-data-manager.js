@@ -8,7 +8,7 @@
 const { app } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { createLogger } = require('./logger');
+const { createLogger, maskEmail, maskName } = require('./logger');
 const { DEFAULT_ANONYMOUS } = require('./constants');
 
 // 모듈별 로거 생성
@@ -124,8 +124,8 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
 
       // 로그 추가
       logger.info('프로필 정보 처리 중:', {
-        name: profileDataInput.name || '이름 없음',
-        email: profileDataInput.email || '이메일 없음',
+        name: maskName(profileDataInput.name) || '이름 없음',
+        email: maskEmail(profileDataInput.email) || '이메일 없음',
         hasSubscription: profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
         plan: profileDataInput.subscription?.plan || 'free',
       });
@@ -188,8 +188,8 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
 
       // 로그 추가
       logger.info('API에서 가져온, 프로필 정보:', {
-        name: profileData.name || '이름 없음',
-        email: profileData.email || '이메일 없음',
+        name: maskName(profileData.name) || '이름 없음',
+        email: maskEmail(profileData.email) || '이메일 없음',
         hasSubscription: profileData.subscription?.active || profileData.subscription?.is_subscribed,
         plan: profileData.subscription?.plan || 'free',
       });

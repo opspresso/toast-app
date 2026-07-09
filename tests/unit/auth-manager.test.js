@@ -48,11 +48,13 @@ jest.mock('../../src/main/user-data-manager', () => mockUserDataManager);
 jest.mock('../../src/main/cloud-sync', () => mockCloudSync);
 jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
+  markAsSynced: jest.fn(),
 }));
 jest.mock('../../src/main/api/client', () => mockClient);
 jest.mock('../../src/main/constants', () => ({
   DEFAULT_ANONYMOUS_SUBSCRIPTION: { isSubscribed: false },
   DEFAULT_ANONYMOUS: { email: null },
+  PAGE_GROUPS: { ANONYMOUS: 1, AUTHENTICATED: 3, PREMIUM: 9 },
 }));
 jest.mock('../../src/main/logger', () => ({
   createLogger: jest.fn(() => ({
@@ -61,6 +63,8 @@ jest.mock('../../src/main/logger', () => ({
     warn: jest.fn(),
     debug: jest.fn(),
   })),
+  maskEmail: jest.fn(email => email),
+  maskName: jest.fn(name => name),
 }));
 
 describe('Authentication Manager', () => {
@@ -225,6 +229,57 @@ describe('Authentication Manager', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid code');
     });
+
+    test('should persist a complete subscription shape (pageGroups, additionalFeatures) after login', async () => {
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: {
+          plan: 'Premium',
+          active: true,
+          userId: 'user-1',
+          features: { page_groups: 9, cloud_sync: true },
+        },
+      });
+
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(mockConfigStore.set).toHaveBeenCalledWith(
+        'subscription',
+        expect.objectContaining({
+          isAuthenticated: true,
+          isSubscribed: true,
+          active: true,
+          pageGroups: 9,
+          additionalFeatures: { advancedActions: false, cloudSync: true },
+        }),
+      );
+    });
+
+    test('should compute pageGroups from plan when the server omits features.page_groups', async () => {
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: { plan: 'Premium', active: true, userId: 'user-1' },
+      });
+
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(mockConfigStore.set).toHaveBeenCalledWith(
+        'subscription',
+        expect.objectContaining({ pageGroups: 9 }),
+      );
+    });
   });
 
   describe('Logout Process', () => {
@@ -244,6 +299,30 @@ describe('Authentication Manager', () => {
       const result = await authManager.logout();
 
       expect(result).toBe(false);
+    });
+
+    test('should trim local pages to the anonymous entitlement instead of wiping them', async () => {
+      mockAuth.logout.mockResolvedValue(true);
+      const premiumPages = [{ name: 'Page 1' }, { name: 'Page 2' }, { name: 'Page 3' }];
+      mockConfigStore.get.mockImplementation(key => (key === 'pages' ? premiumPages : undefined));
+
+      await authManager.logout();
+
+      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'Page 1' }]);
+    });
+
+    test('should mark the post-logout state as synced so it is not mistaken for the next user\'s unsynced changes', async () => {
+      // Sync is disabled before pages are trimmed, so the 'pages' write never reaches
+      // cloud-sync's onDidChange handler and _sync metadata is left stale. Without
+      // markAsSynced() here, the next person to log in on this shared device would
+      // have hasUnsyncedChanges() report the leftover page as their own unsynced
+      // change, and conflict resolution could upload/merge it into their account.
+      mockAuth.logout.mockResolvedValue(true);
+      const { markAsSynced } = require('../../src/main/config');
+
+      await authManager.logout();
+
+      expect(markAsSynced).toHaveBeenCalledWith(mockConfigStore);
     });
 
     test('should handle logout exceptions', async () => {

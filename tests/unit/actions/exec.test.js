@@ -12,6 +12,7 @@ jest.mock('fs', () => ({
 
 jest.mock('child_process', () => ({
   exec: jest.fn(),
+  execFile: jest.fn(),
 }));
 
 jest.mock('os', () => ({
@@ -24,7 +25,7 @@ jest.mock('path', () => ({
 
 const { executeCommand } = require('../../../src/main/actions/exec');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const os = require('os');
 const path = require('path');
 
@@ -47,6 +48,9 @@ describe('Exec Action', () => {
       if (typeof options === 'function') {
         callback = options;
       }
+      callback(null, 'mock stdout', 'mock stderr');
+    });
+    execFile.mockImplementation((file, args, callback) => {
       callback(null, 'mock stdout', 'mock stderr');
     });
   });
@@ -95,14 +99,11 @@ describe('Exec Action', () => {
         callback(error, null, 'error output');
       });
 
-      try {
-        await executeCommand(action);
-        fail('Should have rejected');
-      } catch (result) {
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Command execution failed: Command not found');
-        expect(result.stderr).toBe('error output');
-      }
+      const result = await executeCommand(action);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Command execution failed: Command not found');
+      expect(result.stderr).toBe('error output');
     });
 
     describe('workingDir handling', () => {
@@ -147,13 +148,10 @@ describe('Exec Action', () => {
 
         fs.existsSync.mockReturnValue(false);
 
-        try {
-          await executeCommand(action);
-          fail('Should have rejected');
-        } catch (result) {
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Working directory does not exist: /nonexistent');
-        }
+        const result = await executeCommand(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Working directory does not exist: /nonexistent');
       });
 
       test('should reject when working directory is not a directory', async () => {
@@ -164,13 +162,10 @@ describe('Exec Action', () => {
 
         fs.statSync.mockReturnValue({ isDirectory: () => false });
 
-        try {
-          await executeCommand(action);
-          fail('Should have rejected');
-        } catch (result) {
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Working directory path is not a directory: /test/file.txt');
-        }
+        const result = await executeCommand(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Working directory path is not a directory: /test/file.txt');
       });
     });
 
@@ -297,14 +292,11 @@ describe('Exec Action', () => {
           callback(error, null, 'error output');
         });
 
-        try {
-          await executeCommand(action);
-          fail('Should have rejected');
-        } catch (result) {
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Command execution failed: App not found');
-          expect(result.stderr).toBe('error output');
-        }
+        const result = await executeCommand(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Command execution failed: App not found');
+        expect(result.stderr).toBe('error output');
       });
     });
 
@@ -323,11 +315,12 @@ describe('Exec Action', () => {
 
         const result = await executeCommand(action);
 
-        expect(exec).toHaveBeenCalledWith(
-          'osascript -e \'tell application "Terminal" to do script "npm start"\'',
-          { shell: true },
+        expect(execFile).toHaveBeenCalledWith(
+          'osascript',
+          ['-e', 'tell application "Terminal" to do script "npm start"'],
           expect.any(Function)
         );
+        expect(exec).not.toHaveBeenCalled();
         expect(result).toEqual({
           success: true,
           message: 'Command opened in terminal',
@@ -343,12 +336,31 @@ describe('Exec Action', () => {
 
         const result = await executeCommand(action);
 
-        expect(exec).toHaveBeenCalledWith(
-          'osascript -e \'tell application "Terminal" to do script "cd /test/project && npm start"\'',
-          { shell: true },
+        expect(execFile).toHaveBeenCalledWith(
+          'osascript',
+          ['-e', 'tell application "Terminal" to do script "cd /test/project && npm start"'],
           expect.any(Function)
         );
         expect(result.success).toBe(true);
+      });
+
+      test('should not let a single quote in the command break out of AppleScript quoting', async () => {
+        const action = {
+          command: 'echo "it\'s a test"',
+          runInTerminal: true,
+        };
+
+        await executeCommand(action);
+
+        // execFile passes the AppleScript source as a single argv element, so a
+        // literal single quote in the command cannot terminate any shell-level
+        // quoting the way it would if this were spliced into an `exec()` string.
+        expect(execFile).toHaveBeenCalledWith(
+          'osascript',
+          ['-e', 'tell application "Terminal" to do script "echo \\"it\'s a test\\""'],
+          expect.any(Function)
+        );
+        expect(exec).not.toHaveBeenCalled();
       });
 
       test('should handle terminal execution error', async () => {
@@ -358,7 +370,7 @@ describe('Exec Action', () => {
         };
 
         const error = new Error('Terminal error');
-        exec.mockImplementation((command, options, callback) => {
+        execFile.mockImplementation((file, args, callback) => {
           callback(error);
         });
 
@@ -465,9 +477,9 @@ describe('Exec Action', () => {
         const result = await executeCommand(action);
 
         // Uses escapeAppleScript which escapes quotes for AppleScript strings
-        expect(exec).toHaveBeenCalledWith(
-          'osascript -e \'tell application "Terminal" to do script "open -a \\"Visual Studio Code\\""\'',
-          { shell: true },
+        expect(execFile).toHaveBeenCalledWith(
+          'osascript',
+          ['-e', 'tell application "Terminal" to do script "open -a \\"Visual Studio Code\\""'],
           expect.any(Function)
         );
         expect(result.success).toBe(true);

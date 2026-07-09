@@ -76,7 +76,7 @@ export function setupAdvancedEventListeners() {
     resetSettingsButton.addEventListener('click', () => {
       if (confirm('Do you want to reset all settings to default values?')) {
         window.settings
-          .resetToDefaults()
+          .resetConfig()
           .then(() =>
             // 설정 다시 로드
             window.settings.getConfig(),

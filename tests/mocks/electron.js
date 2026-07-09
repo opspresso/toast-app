@@ -331,13 +331,29 @@ const screen = {
 
 // Mock Clipboard
 const clipboard = {
+  availableFormats: jest.fn().mockReturnValue(['text/plain']),
   readText: jest.fn().mockReturnValue('Mocked clipboard text'),
   writeText: jest.fn(),
   readHTML: jest.fn().mockReturnValue('<p>Mocked clipboard HTML</p>'),
   writeHTML: jest.fn(),
-  readImage: jest.fn(),
+  readRTF: jest.fn().mockReturnValue(''),
+  writeRTF: jest.fn(),
+  readImage: jest.fn().mockReturnValue({ isEmpty: () => true }),
   writeImage: jest.fn(),
+  write: jest.fn(),
   clear: jest.fn(),
+};
+
+// Mock systemPreferences
+const systemPreferences = {
+  isTrustedAccessibilityClient: jest.fn().mockReturnValue(true),
+};
+
+// Mock safeStorage (OS keychain/credential store)
+const safeStorage = {
+  isEncryptionAvailable: jest.fn().mockReturnValue(false),
+  encryptString: jest.fn(text => Buffer.from(text)),
+  decryptString: jest.fn(buffer => buffer.toString('utf8')),
 };
 
 // Create app instance
@@ -357,6 +373,8 @@ module.exports = {
   globalShortcut,
   screen,
   clipboard,
+  systemPreferences,
+  safeStorage,
   contextBridge: {
     exposeInMainWorld: jest.fn(),
   },

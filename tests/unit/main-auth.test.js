@@ -16,9 +16,16 @@ const mockShell = {
   openExternal: jest.fn(),
 };
 
+const mockSafeStorage = {
+  isEncryptionAvailable: jest.fn(() => false),
+  encryptString: jest.fn(text => Buffer.from(`ENCRYPTED:${text}`)),
+  decryptString: jest.fn(buffer => buffer.toString('utf8').replace(/^ENCRYPTED:/, '')),
+};
+
 jest.mock('electron', () => ({
   app: mockApp,
   shell: mockShell,
+  safeStorage: mockSafeStorage,
 }));
 
 // Mock fs
@@ -87,6 +94,7 @@ const mockApiAuth = {
   fetchUserProfile: jest.fn(),
   handleAuthRedirect: jest.fn(),
   logout: jest.fn(),
+  revokeToken: jest.fn(),
 };
 
 jest.mock('../../src/main/api/auth', () => mockApiAuth);
@@ -175,6 +183,10 @@ describe('Main Auth Module (P0)', () => {
       success: true,
     });
 
+    mockApiAuth.revokeToken.mockResolvedValue({
+      success: true,
+    });
+
     // Get auth module
     auth = require('../../src/main/auth');
   });
@@ -210,6 +222,19 @@ describe('Main Auth Module (P0)', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid code');
+    });
+
+    test('should not leak the raw server response body in the returned error', async () => {
+      const code = 'invalid-code';
+      const error = new Error('Invalid code');
+      error.response = { data: { internal_debug_info: 'server stack trace here' } };
+      mockApiAuth.exchangeCodeForToken.mockRejectedValue(error);
+
+      const result = await auth.exchangeCodeForToken(code);
+
+      expect(result.success).toBe(false);
+      expect(result).not.toHaveProperty('error_details');
+      expect(JSON.stringify(result)).not.toContain('internal_debug_info');
     });
 
     test('should handle auth redirect URLs', async () => {
@@ -315,6 +340,33 @@ describe('Main Auth Module (P0)', () => {
       expect(result.success).toBe(true);
     });
 
+    test('should persist a rotated refresh token in the same write as the access token', async () => {
+      // Set up expired token to trigger refresh
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'old-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      // Server rotates the refresh token on every refresh
+      mockApiAuth.refreshAccessToken.mockResolvedValue({
+        success: true,
+        access_token: 'refreshed-token',
+        refresh_token: 'rotated-refresh-token',
+        expires_in: 3600,
+      });
+
+      await auth.refreshAccessToken();
+
+      // Both tokens must land in the same writeFileSync call (one atomic write),
+      // not two separate writes with a crash window in between.
+      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(1);
+      const [, writtenContent] = mockFs.writeFileSync.mock.calls[0];
+      const written = JSON.parse(writtenContent);
+      expect(written['auth-token']).toBe('refreshed-token');
+      expect(written['refresh-token']).toBe('rotated-refresh-token');
+    });
+
     test('should handle refresh token errors', async () => {
       // Set up expired token to trigger refresh
       mockFs.readFileSync.mockReturnValue(JSON.stringify({
@@ -381,6 +433,26 @@ describe('Main Auth Module (P0)', () => {
       const result = await auth.logout();
 
       // The actual logout function returns boolean, not object
+      expect(result).toBe(true);
+      expect(mockFs.unlinkSync).toHaveBeenCalled();
+    });
+
+    test('should revoke the refresh token on the server before deleting it locally', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+
+      await auth.logout();
+
+      expect(mockApiAuth.revokeToken).toHaveBeenCalledWith(
+        expect.objectContaining({ refreshToken: 'test-refresh-token' }),
+      );
+    });
+
+    test('should still complete logout locally when server revocation fails', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockApiAuth.revokeToken.mockResolvedValue({ success: false, error: 'network error' });
+
+      const result = await auth.logout();
+
       expect(result).toBe(true);
       expect(mockFs.unlinkSync).toHaveBeenCalled();
     });
@@ -556,6 +628,53 @@ describe('Main Auth Module (P0)', () => {
       // The function fails if token storage fails
       expect(result.success).toBe(false);
       expect(result.error).toContain('Failed to save token file');
+    });
+
+    test('should encrypt the token file via safeStorage when encryption is available', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+
+      await auth.exchangeCodeForToken('test-code');
+
+      const [, writtenContent] = mockFs.writeFileSync.mock.calls[0];
+      expect(Buffer.isBuffer(writtenContent)).toBe(true);
+      expect(mockSafeStorage.encryptString).toHaveBeenCalled();
+
+      const decrypted = JSON.parse(mockSafeStorage.decryptString(writtenContent));
+      expect(decrypted['auth-token']).toBe('new-access-token');
+    });
+
+    test('should read back an encrypted token file when encryption is available', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(
+        mockSafeStorage.encryptString(
+          JSON.stringify({
+            'auth-token': 'encrypted-access-token',
+            'refresh-token': 'encrypted-refresh-token',
+            'token-expires-at': Date.now() + 3600000,
+          }),
+        ),
+      );
+
+      const result = await auth.hasValidToken();
+
+      expect(result).toBe(true);
+      expect(mockSafeStorage.decryptString).toHaveBeenCalled();
+    });
+
+    test('should still read a legacy plaintext token file after encryption is enabled', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          'auth-token': 'legacy-plaintext-token',
+          'refresh-token': 'legacy-refresh-token',
+          'token-expires-at': Date.now() + 3600000,
+        }),
+      );
+
+      const result = await auth.hasValidToken();
+
+      expect(result).toBe(true);
+      expect(mockSafeStorage.decryptString).not.toHaveBeenCalled();
     });
   });
 

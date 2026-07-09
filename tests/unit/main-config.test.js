@@ -197,6 +197,32 @@ describe('Main Config Module (P0)', () => {
       }));
     });
 
+    test('should isolate the store file per CONFIG_SUFFIX so multiple app instances do not share config', () => {
+      const previousSuffix = process.env.CONFIG_SUFFIX;
+      process.env.CONFIG_SUFFIX = 'dev2';
+      jest.resetModules();
+
+      try {
+        const IsolatedStore = require('electron-store');
+        IsolatedStore.mockClear();
+        IsolatedStore.mockImplementation(() => mockStore);
+
+        const isolatedConfig = require('../../src/main/config');
+        isolatedConfig.createConfigStore();
+
+        expect(IsolatedStore).toHaveBeenCalledWith(expect.objectContaining({ name: 'config-dev2' }));
+      }
+      finally {
+        if (previousSuffix === undefined) {
+          delete process.env.CONFIG_SUFFIX;
+        }
+        else {
+          process.env.CONFIG_SUFFIX = previousSuffix;
+        }
+        jest.resetModules();
+      }
+    });
+
     test('should create multiple store instances', () => {
       const store1 = config.createConfigStore();
       const store2 = config.createConfigStore();

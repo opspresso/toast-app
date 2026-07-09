@@ -15,6 +15,10 @@ const { PAGE_GROUPS } = require('./constants');
  * Whether the subscription is active. Accepts every alias used across the
  * codebase (`active`, `is_subscribed`, `isSubscribed`) — writers keep these
  * fields in sync, so the union is the intended semantics.
+ *
+ * Also rejects a subscription whose expiry has already passed, even if the
+ * active flag is still (stale) true — e.g. the local cache was written before
+ * expiry and the app has not re-fetched the subscription since.
  * @param {Object} subscription - Subscription object
  * @returns {boolean}
  */
@@ -22,7 +26,20 @@ function isSubscriptionActive(subscription) {
   if (!subscription || typeof subscription !== 'object') {
     return false;
   }
-  return subscription.active === true || subscription.is_subscribed === true || subscription.isSubscribed === true;
+  const isFlaggedActive = subscription.active === true || subscription.is_subscribed === true || subscription.isSubscribed === true;
+  if (!isFlaggedActive) {
+    return false;
+  }
+
+  const expiry = subscription.subscribed_until || subscription.expiresAt;
+  if (expiry) {
+    const expiryTime = new Date(expiry).getTime();
+    if (!Number.isNaN(expiryTime) && expiryTime < Date.now()) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -38,7 +55,7 @@ function calculatePageGroups(subscription) {
   const isVip = subscription.isVip || false;
 
   if (isActive || isVip) {
-    if (subscription.plan === 'premium' || isVip) {
+    if (isVip || /^premium/i.test(subscription.plan)) {
       return PAGE_GROUPS.PREMIUM;
     }
     return PAGE_GROUPS.AUTHENTICATED;

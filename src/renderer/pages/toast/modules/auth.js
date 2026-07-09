@@ -271,8 +271,7 @@ export function updateUserButton() {
     // Change tooltip to login prompt message
     userButton.title = 'Click to login';
 
-    // Change login button style - add border to make it more noticeable
-    userButton.style.border = '2px dashed var(--accent)';
+    // Change login button style - add glow to make it more noticeable
     userButton.style.boxShadow = '0 0 5px color-mix(in srgb, var(--accent) 50%, transparent)';
   }
 }

@@ -85,7 +85,14 @@ async function executeJavaScript(script, params = {}) {
   try {
     const safeEnv = buildSafeEnv();
 
-    // Create a sandbox with limited context
+    // NOT a security sandbox: `require` gives scripts full Node access (fs,
+    // child_process, etc.), so they can read the real process.env or spawn
+    // subprocesses directly, bypassing the `env: safeEnv` restriction below.
+    // That restriction only actually holds for the shell launchers further
+    // down (osascript/powershell/bash), where `exec()`'s `env` option fully
+    // replaces the child process's environment at the OS level. A JavaScript
+    // script action runs with the same effective privileges as an exec
+    // action and must be trusted/approved accordingly (see action-approval.js).
     const sandbox = {
       console,
       require,

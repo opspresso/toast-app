@@ -22,7 +22,23 @@ const logger = createLogger('CloudSync');
 const SYNC_INTERVAL_MS = 15 * 60 * 1000; // Auto-sync every 15 minutes
 const SYNC_DEBOUNCE_MS = 5000; // Sync 5 seconds after the last change (increased from 2s)
 const MAX_RETRY_COUNT = 3; // Maximum number of retry attempts
-const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
+const RETRY_DELAY_MS = 5000; // Base retry interval (5 seconds)
+const MAX_RETRY_DELAY_MS = 30000; // Cap for exponential backoff
+
+/**
+ * Exponential backoff with jitter for upload retries: base * 2^(retryCount-1),
+ * capped, plus up to 20% random jitter. Without jitter, multiple devices that
+ * fail at the same moment (e.g. a shared network blip) would all retry in
+ * lockstep and collide again.
+ * @param {number} retryCount - 1-based retry attempt number
+ * @returns {number} Delay in milliseconds
+ */
+function computeRetryDelay(retryCount) {
+  const exponential = RETRY_DELAY_MS * 2 ** (retryCount - 1);
+  const capped = Math.min(exponential, MAX_RETRY_DELAY_MS);
+  const jitter = capped * 0.2 * Math.random();
+  return Math.round(capped + jitter);
+}
 
 // Synchronization module state
 const state = {
@@ -126,7 +142,11 @@ function startPeriodicSync() {
   state.timers.sync = setInterval(async () => {
     if (await canSync()) {
       logger.info('Performing periodic settings synchronization');
-      await downloadSettings();
+      // Route through conflict resolution (not a blind downloadSettings()):
+      // downloadSettings() unconditionally overwrites local pages/snippets with
+      // the server copy, with no check for local edits that have not been
+      // uploaded yet (e.g. still inside the upload debounce window).
+      await syncSettings('resolve');
     }
   }, SYNC_INTERVAL_MS);
 
@@ -263,13 +283,14 @@ async function uploadSettingsWithRetry() {
       logger.info(`Synchronization failed reason: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
-        logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
+        const delay = computeRetryDelay(state.retryCount);
+        logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
 
         // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
         state.timers.retry = setTimeout(() => {
           state.timers.retry = null;
           uploadSettingsWithRetry();
-        }, RETRY_DELAY_MS);
+        }, delay);
       }
       else {
         logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
@@ -283,13 +304,14 @@ async function uploadSettingsWithRetry() {
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
-      logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
+      const delay = computeRetryDelay(state.retryCount);
+      logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
 
       // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
       state.timers.retry = setTimeout(() => {
         state.timers.retry = null;
         uploadSettingsWithRetry();
-      }, RETRY_DELAY_MS);
+      }, delay);
     }
     else {
       logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload canceled`);
@@ -995,8 +1017,9 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     syncAfterLogin: async () => {
       logger.info('Performing cloud synchronization after login');
 
-      // 로그인 후 다운로드 우선
-      const result = await downloadSettings();
+      // 충돌 해결 경로를 통해 동기화한다(무조건 다운로드가 아님): 로그인 사이 오프라인 상태에서
+      // 편집한 로컬 변경사항이 있으면 서버로 업로드/병합하고, 없으면 기존처럼 서버 데이터를 받는다.
+      const result = await syncSettings('resolve');
 
       // 다운로드 성공 후 추가 UI 업데이트
       if (result.success) {
@@ -1080,4 +1103,5 @@ module.exports = {
   downloadSettings,
   syncSettings,
   updateCloudSyncSettings,
+  computeRetryDelay,
 };

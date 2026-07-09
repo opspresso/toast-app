@@ -245,6 +245,19 @@ describe('Text Expander Matcher', () => {
       expect(result.errors.join(' ')).toMatch(/at least/);
     });
 
+    test('rejects a keyword longer than the match buffer (it could never match)', () => {
+      const keyword = ':'.repeat(33); // DEFAULT_MAX_BUFFER is 32
+      const result = validateSnippet({ keyword, content: 'x' }, []);
+      expect(result.valid).toBe(false);
+      expect(result.errors.join(' ')).toMatch(/at most/);
+    });
+
+    test('accepts a keyword exactly at the match buffer length', () => {
+      const keyword = ':'.repeat(32);
+      const result = validateSnippet({ keyword, content: 'x' }, []);
+      expect(result.valid).toBe(true);
+    });
+
     test('rejects a keyword with whitespace or non-ASCII', () => {
       expect(validateSnippet({ keyword: ':my email', content: 'x' }, []).valid).toBe(false);
       expect(validateSnippet({ keyword: ':이메일', content: 'x' }, []).valid).toBe(false);
