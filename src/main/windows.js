@@ -202,10 +202,12 @@ function createSettingsWindow(config) {
     return windows.settings;
   }
 
+  // Width fits the settings content: 200px sidebar + 640px tab + 64px main padding + 1px border
   // Create the browser window
   windows.settings = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 905,
+    height: 600,
+    useContentSize: true,
     minWidth: 600,
     minHeight: 400,
     show: false,
@@ -386,9 +388,16 @@ function positionSettingsWindowOnToastDisplay(settingsWindow) {
   // Get the target display work area
   const displayWorkArea = targetDisplay.workArea;
 
+  // Clamp the window size to the target display's work area
+  const width = Math.min(windowBounds.width, displayWorkArea.width);
+  const height = Math.min(windowBounds.height, displayWorkArea.height);
+  if (width !== windowBounds.width || height !== windowBounds.height) {
+    settingsWindow.setSize(width, height);
+  }
+
   // Center the settings window on the target display
-  const x = displayWorkArea.x + Math.round((displayWorkArea.width - windowBounds.width) / 2);
-  const y = displayWorkArea.y + Math.round((displayWorkArea.height - windowBounds.height) / 2);
+  const x = displayWorkArea.x + Math.round((displayWorkArea.width - width) / 2);
+  const y = displayWorkArea.y + Math.round((displayWorkArea.height - height) / 2);
 
   // Set the window position
   settingsWindow.setPosition(x, y);
