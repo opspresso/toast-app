@@ -4,7 +4,7 @@
  * This module handles the execution of shell commands.
  */
 
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -193,20 +193,34 @@ async function openInTerminal(command, workingDir) {
       }
     }
 
-    let terminalCommand;
+    const finish = error => {
+      resolve({
+        success: !error,
+        message: error ? `Error opening terminal: ${error.message}` : 'Command opened in terminal',
+      });
+    };
 
     if (process.platform === 'darwin') {
-      // Escape for AppleScript string context
+      // Pass the AppleScript source as a real argv element (execFile, no shell)
+      // instead of splicing it into a shell-quoted `osascript -e '...'` string.
+      // escapeAppleScript only escapes \ and " for the AppleScript string
+      // literal; a literal single quote in the command would otherwise close
+      // that outer shell single-quote early and corrupt/break the command.
       const escapedFinalCommand = escapeAppleScript(finalCommand);
+      let appleScript;
       if (expandedWorkingDir && !openAppMatch) {
         const escapedDir = escapeAppleScript(expandedWorkingDir);
-        terminalCommand = `osascript -e 'tell application "Terminal" to do script "cd ${escapedDir} && ${escapedFinalCommand}"'`;
+        appleScript = `tell application "Terminal" to do script "cd ${escapedDir} && ${escapedFinalCommand}"`;
       }
       else {
-        terminalCommand = `osascript -e 'tell application "Terminal" to do script "${escapedFinalCommand}"'`;
+        appleScript = `tell application "Terminal" to do script "${escapedFinalCommand}"`;
       }
+      execFile('osascript', ['-e', appleScript], finish);
+      return;
     }
-    else if (process.platform === 'win32') {
+
+    let terminalCommand;
+    if (process.platform === 'win32') {
       // Escape for Windows cmd context
       const escapedFinalCommand = finalCommand.replace(/"/g, '""');
       if (expandedWorkingDir) {
@@ -230,12 +244,7 @@ async function openInTerminal(command, workingDir) {
       }
     }
 
-    exec(terminalCommand, { shell: true }, error => {
-      resolve({
-        success: !error,
-        message: error ? `Error opening terminal: ${error.message}` : 'Command opened in terminal',
-      });
-    });
+    exec(terminalCommand, { shell: true }, finish);
   });
 }
 
