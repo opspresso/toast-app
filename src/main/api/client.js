@@ -146,11 +146,6 @@ async function authenticatedRequest(apiCall, options = {}) {
   catch (error) {
     // Handle 401 unauthorized error
     if (error.response && error.response.status === 401) {
-      // Special handling for subscription API requests
-      if (isSubscriptionRequest) {
-        return defaultSubscription;
-      }
-
       // Prevent infinite refresh loops
       const now = Date.now();
       const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
@@ -171,6 +166,10 @@ async function authenticatedRequest(apiCall, options = {}) {
       if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
         // Reset token to force re-login
         clearTokens();
+
+        if (isSubscriptionRequest) {
+          return defaultSubscription;
+        }
 
         return {
           error: {
@@ -242,6 +241,10 @@ async function authenticatedRequest(apiCall, options = {}) {
         else {
           // Reset tokens on refresh failure
           clearTokens();
+
+          if (isSubscriptionRequest) {
+            return defaultSubscription;
+          }
 
           return {
             error: {
