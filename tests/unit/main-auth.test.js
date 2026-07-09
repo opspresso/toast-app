@@ -16,9 +16,16 @@ const mockShell = {
   openExternal: jest.fn(),
 };
 
+const mockSafeStorage = {
+  isEncryptionAvailable: jest.fn(() => false),
+  encryptString: jest.fn(text => Buffer.from(`ENCRYPTED:${text}`)),
+  decryptString: jest.fn(buffer => buffer.toString('utf8').replace(/^ENCRYPTED:/, '')),
+};
+
 jest.mock('electron', () => ({
   app: mockApp,
   shell: mockShell,
+  safeStorage: mockSafeStorage,
 }));
 
 // Mock fs
@@ -608,6 +615,53 @@ describe('Main Auth Module (P0)', () => {
       // The function fails if token storage fails
       expect(result.success).toBe(false);
       expect(result.error).toContain('Failed to save token file');
+    });
+
+    test('should encrypt the token file via safeStorage when encryption is available', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+
+      await auth.exchangeCodeForToken('test-code');
+
+      const [, writtenContent] = mockFs.writeFileSync.mock.calls[0];
+      expect(Buffer.isBuffer(writtenContent)).toBe(true);
+      expect(mockSafeStorage.encryptString).toHaveBeenCalled();
+
+      const decrypted = JSON.parse(mockSafeStorage.decryptString(writtenContent));
+      expect(decrypted['auth-token']).toBe('new-access-token');
+    });
+
+    test('should read back an encrypted token file when encryption is available', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(
+        mockSafeStorage.encryptString(
+          JSON.stringify({
+            'auth-token': 'encrypted-access-token',
+            'refresh-token': 'encrypted-refresh-token',
+            'token-expires-at': Date.now() + 3600000,
+          }),
+        ),
+      );
+
+      const result = await auth.hasValidToken();
+
+      expect(result).toBe(true);
+      expect(mockSafeStorage.decryptString).toHaveBeenCalled();
+    });
+
+    test('should still read a legacy plaintext token file after encryption is enabled', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          'auth-token': 'legacy-plaintext-token',
+          'refresh-token': 'legacy-refresh-token',
+          'token-expires-at': Date.now() + 3600000,
+        }),
+      );
+
+      const result = await auth.hasValidToken();
+
+      expect(result).toBe(true);
+      expect(mockSafeStorage.decryptString).not.toHaveBeenCalled();
     });
   });
 

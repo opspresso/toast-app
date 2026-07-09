@@ -6,7 +6,7 @@
  * Uses the API authentication module for direct API communications.
  */
 
-const { app, shell } = require('electron');
+const { app, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { createLogger, maskAuthUrl } = require('./logger');
@@ -66,7 +66,9 @@ async function initializeTokensFromStorage() {
 }
 
 /**
- * Read token data from local file
+ * Read token data from local file. Transparently handles both the current
+ * OS-keychain-encrypted format and legacy plaintext files written before
+ * encryption was added (migrated to encrypted on the next write).
  * @returns {Object|null} Token data object or null
  */
 function readTokenFile() {
@@ -83,8 +85,17 @@ function readTokenFile() {
       logger.error('Error setting token file permissions:', chmodError);
     }
 
-    const data = fs.readFileSync(TOKEN_FILE_PATH, 'utf8');
-    return JSON.parse(data);
+    const raw = fs.readFileSync(TOKEN_FILE_PATH);
+    try {
+      // Legacy plaintext files parse directly; encrypted files do not.
+      return JSON.parse(raw.toString('utf8'));
+    }
+    catch (parseError) {
+      if (!safeStorage.isEncryptionAvailable()) {
+        throw parseError;
+      }
+      return JSON.parse(safeStorage.decryptString(raw));
+    }
   }
   catch (error) {
     logger.error('Error reading token file:', error);
@@ -93,7 +104,10 @@ function readTokenFile() {
 }
 
 /**
- * Save token data to local file using atomic write operation to prevent corruption
+ * Save token data to local file using atomic write operation to prevent corruption.
+ * Encrypted at rest via the OS keychain/credential store (Electron safeStorage)
+ * when available; falls back to plaintext (owner-only permissions) otherwise,
+ * e.g. on Linux without a secret service.
  * @param {Object} tokenData - Token data object to save
  * @returns {boolean} Whether the save was successful
  */
@@ -107,13 +121,17 @@ function writeTokenFile(tokenData) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
 
+    const json = JSON.stringify(tokenData, null, 2);
+    const canEncrypt = safeStorage.isEncryptionAvailable();
+    const fileContent = canEncrypt ? safeStorage.encryptString(json) : json;
+
     // First write to a temporary file (owner read/write only)
-    fs.writeFileSync(tempFilePath, JSON.stringify(tokenData, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.writeFileSync(tempFilePath, fileContent, { mode: 0o600 });
 
     // Verify the written data is valid
     try {
-      const verifyData = fs.readFileSync(tempFilePath, 'utf8');
-      JSON.parse(verifyData); // Ensure it's valid JSON
+      const verifyRaw = fs.readFileSync(tempFilePath);
+      JSON.parse(canEncrypt ? safeStorage.decryptString(verifyRaw) : verifyRaw.toString('utf8'));
     }
     catch (verifyError) {
       logger.error('Error verifying written token data:', verifyError);
