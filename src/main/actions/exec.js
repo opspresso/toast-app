@@ -96,10 +96,10 @@ async function executeCommand(action) {
       modifiedCommand = `open -a ${quotedAppName} ${escapedWorkingDir}`;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       exec(modifiedCommand, { shell: true }, (error, stdout, stderr) => {
         if (error) {
-          return reject({
+          return resolve({
             success: false,
             message: `Command execution failed: ${error.message}`,
             stderr,
@@ -120,21 +120,21 @@ async function executeCommand(action) {
     return openInTerminal(action.command, action.workingDir);
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const options = { shell: true };
 
     if (action.workingDir) {
       const expandedPath = expandTilde(action.workingDir);
 
       if (!fs.existsSync(expandedPath)) {
-        return reject({
+        return resolve({
           success: false,
           message: `Working directory does not exist: ${expandedPath}`,
         });
       }
 
       if (!fs.statSync(expandedPath).isDirectory()) {
-        return reject({
+        return resolve({
           success: false,
           message: `Working directory path is not a directory: ${expandedPath}`,
         });
@@ -145,7 +145,7 @@ async function executeCommand(action) {
 
     exec(action.command, options, (error, stdout, stderr) => {
       if (error) {
-        return reject({
+        return resolve({
           success: false,
           message: `Command execution failed: ${error.message}`,
           stderr,

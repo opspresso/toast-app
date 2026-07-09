@@ -95,14 +95,11 @@ describe('Exec Action', () => {
         callback(error, null, 'error output');
       });
 
-      try {
-        await executeCommand(action);
-        fail('Should have rejected');
-      } catch (result) {
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Command execution failed: Command not found');
-        expect(result.stderr).toBe('error output');
-      }
+      const result = await executeCommand(action);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Command execution failed: Command not found');
+      expect(result.stderr).toBe('error output');
     });
 
     describe('workingDir handling', () => {
@@ -147,13 +144,10 @@ describe('Exec Action', () => {
 
         fs.existsSync.mockReturnValue(false);
 
-        try {
-          await executeCommand(action);
-          fail('Should have rejected');
-        } catch (result) {
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Working directory does not exist: /nonexistent');
-        }
+        const result = await executeCommand(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Working directory does not exist: /nonexistent');
       });
 
       test('should reject when working directory is not a directory', async () => {
@@ -164,13 +158,10 @@ describe('Exec Action', () => {
 
         fs.statSync.mockReturnValue({ isDirectory: () => false });
 
-        try {
-          await executeCommand(action);
-          fail('Should have rejected');
-        } catch (result) {
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Working directory path is not a directory: /test/file.txt');
-        }
+        const result = await executeCommand(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Working directory path is not a directory: /test/file.txt');
       });
     });
 
@@ -297,14 +288,11 @@ describe('Exec Action', () => {
           callback(error, null, 'error output');
         });
 
-        try {
-          await executeCommand(action);
-          fail('Should have rejected');
-        } catch (result) {
-          expect(result.success).toBe(false);
-          expect(result.message).toBe('Command execution failed: App not found');
-          expect(result.stderr).toBe('error output');
-        }
+        const result = await executeCommand(action);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Command execution failed: App not found');
+        expect(result.stderr).toBe('error output');
       });
     });
 
