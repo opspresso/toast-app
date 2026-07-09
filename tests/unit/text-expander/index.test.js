@@ -54,11 +54,22 @@ function getRegisteredHandler(eventName) {
 describe('Text Expander (I/O layer)', () => {
   let textExpander;
   let configStore;
+  let originalPlatform;
 
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
     jest.useFakeTimers();
+
+    // This module is macOS-only (isSupported() gates on process.platform ===
+    // 'darwin'), so CI running on a non-macOS runner must not see the real
+    // platform here or startExpander() silently no-ops and never registers
+    // the 'keydown' listener the tests below rely on.
+    originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      configurable: true,
+    });
 
     ({ clipboard, systemPreferences } = require('electron'));
     systemPreferences.isTrustedAccessibilityClient.mockReturnValue(true);
@@ -88,6 +99,10 @@ describe('Text Expander (I/O layer)', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      configurable: true,
+    });
   });
 
   function typeKeyword() {
