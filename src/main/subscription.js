@@ -38,7 +38,7 @@ function calculatePageGroups(subscription) {
   const isVip = subscription.isVip || false;
 
   if (isActive || isVip) {
-    if (subscription.plan === 'premium' || isVip) {
+    if (isVip || /^premium/i.test(subscription.plan)) {
       return PAGE_GROUPS.PREMIUM;
     }
     return PAGE_GROUPS.AUTHENTICATED;

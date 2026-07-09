@@ -32,6 +32,10 @@ describe('Subscription Helpers', () => {
       expect(calculatePageGroups({ active: true, plan: 'premium' })).toBe(PAGE_GROUPS.PREMIUM);
     });
 
+    test('server-cased "Premium" plan gets premium page groups', () => {
+      expect(calculatePageGroups({ active: true, plan: 'Premium' })).toBe(PAGE_GROUPS.PREMIUM);
+    });
+
     test('VIP gets premium page groups even without active flag', () => {
       expect(calculatePageGroups({ isVip: true })).toBe(PAGE_GROUPS.PREMIUM);
     });
