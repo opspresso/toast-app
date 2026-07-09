@@ -22,7 +22,23 @@ const logger = createLogger('CloudSync');
 const SYNC_INTERVAL_MS = 15 * 60 * 1000; // Auto-sync every 15 minutes
 const SYNC_DEBOUNCE_MS = 5000; // Sync 5 seconds after the last change (increased from 2s)
 const MAX_RETRY_COUNT = 3; // Maximum number of retry attempts
-const RETRY_DELAY_MS = 5000; // Retry interval (5 seconds)
+const RETRY_DELAY_MS = 5000; // Base retry interval (5 seconds)
+const MAX_RETRY_DELAY_MS = 30000; // Cap for exponential backoff
+
+/**
+ * Exponential backoff with jitter for upload retries: base * 2^(retryCount-1),
+ * capped, plus up to 20% random jitter. Without jitter, multiple devices that
+ * fail at the same moment (e.g. a shared network blip) would all retry in
+ * lockstep and collide again.
+ * @param {number} retryCount - 1-based retry attempt number
+ * @returns {number} Delay in milliseconds
+ */
+function computeRetryDelay(retryCount) {
+  const exponential = RETRY_DELAY_MS * 2 ** (retryCount - 1);
+  const capped = Math.min(exponential, MAX_RETRY_DELAY_MS);
+  const jitter = capped * 0.2 * Math.random();
+  return Math.round(capped + jitter);
+}
 
 // Synchronization module state
 const state = {
@@ -267,13 +283,14 @@ async function uploadSettingsWithRetry() {
       logger.info(`Synchronization failed reason: ${result.error}`);
 
       if (state.retryCount <= MAX_RETRY_COUNT) {
-        logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
+        const delay = computeRetryDelay(state.retryCount);
+        logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
 
         // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
         state.timers.retry = setTimeout(() => {
           state.timers.retry = null;
           uploadSettingsWithRetry();
-        }, RETRY_DELAY_MS);
+        }, delay);
       }
       else {
         logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
@@ -287,13 +304,14 @@ async function uploadSettingsWithRetry() {
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
-      logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${RETRY_DELAY_MS / 1000} seconds`);
+      const delay = computeRetryDelay(state.retryCount);
+      logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
 
       // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
       state.timers.retry = setTimeout(() => {
         state.timers.retry = null;
         uploadSettingsWithRetry();
-      }, RETRY_DELAY_MS);
+      }, delay);
     }
     else {
       logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload canceled`);
@@ -1085,4 +1103,5 @@ module.exports = {
   downloadSettings,
   syncSettings,
   updateCloudSyncSettings,
+  computeRetryDelay,
 };

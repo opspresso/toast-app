@@ -320,6 +320,32 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toBe('Network error');
     });
 
+    test('should back off exponentially with jitter across retry attempts', () => {
+      // Base 5000ms: attempt 1 in [5000, 6000), attempt 2 in [10000, 12000),
+      // attempt 3 in [20000, 24000) — capped at 30000ms beyond that.
+      const delay1 = cloudSync.computeRetryDelay(1);
+      const delay2 = cloudSync.computeRetryDelay(2);
+      const delay3 = cloudSync.computeRetryDelay(3);
+      const delay10 = cloudSync.computeRetryDelay(10);
+
+      expect(delay1).toBeGreaterThanOrEqual(5000);
+      expect(delay1).toBeLessThan(6000);
+
+      expect(delay2).toBeGreaterThanOrEqual(10000);
+      expect(delay2).toBeLessThan(12000);
+
+      expect(delay3).toBeGreaterThanOrEqual(20000);
+      expect(delay3).toBeLessThan(24000);
+
+      // Delays must not collide device-to-device: with jitter, a large sample
+      // of same-attempt delays should not all be identical.
+      const samples = Array.from({ length: 20 }, () => cloudSync.computeRetryDelay(1));
+      expect(new Set(samples).size).toBeGreaterThan(1);
+
+      // Capped so a long retry streak never waits longer than MAX_RETRY_DELAY_MS + jitter
+      expect(delay10).toBeLessThanOrEqual(30000 * 1.2);
+    });
+
     test('should propagate HTTP statusCode from API on failure', async () => {
       // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
       // wrapper 가 재시도 로직이 읽는 최상위 statusCode 로 정규화해야 한다
