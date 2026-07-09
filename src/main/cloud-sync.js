@@ -126,7 +126,11 @@ function startPeriodicSync() {
   state.timers.sync = setInterval(async () => {
     if (await canSync()) {
       logger.info('Performing periodic settings synchronization');
-      await downloadSettings();
+      // Route through conflict resolution (not a blind downloadSettings()):
+      // downloadSettings() unconditionally overwrites local pages/snippets with
+      // the server copy, with no check for local edits that have not been
+      // uploaded yet (e.g. still inside the upload debounce window).
+      await syncSettings('resolve');
     }
   }, SYNC_INTERVAL_MS);
 

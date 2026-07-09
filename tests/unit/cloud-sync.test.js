@@ -210,6 +210,36 @@ describe('Cloud Sync Module', () => {
       expect(jest.getTimerCount()).toBeLessThanOrEqual(initialTimerCount);
     });
 
+    test('should not blindly overwrite unsynced local changes when the periodic timer fires', async () => {
+      // downloadSettings() alone (the old periodic-sync path) would unconditionally
+      // overwrite ConfigStore with whatever the server returns, even if the local
+      // copy has edits the server has never seen. Periodic sync must instead route
+      // through conflict resolution.
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(true);
+      configModule.getSyncMetadata.mockReturnValue({
+        lastModifiedAt: Date.now(),
+        lastModifiedDevice: 'test-device',
+        lastSyncedAt: Date.now() - 1000,
+        lastSyncedDevice: 'test-device',
+      });
+
+      // Server data is far older than the local unsynced edit, so conflict
+      // resolution must choose to upload local changes, not overwrite them.
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: { pages: [{ id: 99, name: 'Stale Server Page' }] },
+        syncMetadata: { lastModifiedAt: Date.now() - 10 * 60 * 1000 },
+      });
+
+      cloudSync.updateCloudSyncSettings(true);
+
+      await jest.advanceTimersByTimeAsync(15 * 60 * 1000);
+
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('pages', [{ id: 99, name: 'Stale Server Page' }]);
+      expect(mockApiSync.uploadSettings).toHaveBeenCalled();
+    });
+
     test('should integrate with updateCloudSyncSettings', () => {
       const initialTimerCount = jest.getTimerCount();
       
