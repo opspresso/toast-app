@@ -103,57 +103,61 @@ window.addEventListener('DOMContentLoaded', () => {
     );
   });
 
-  // Add debug functions to window for easy access
-  window.debugSync = async () => {
-    try {
-      const status = await window.settings.debugSyncStatus();
-      console.log('=== Sync Debug Status ===');
-      console.log(status);
-      return status;
-    }
-    catch (error) {
-      console.error('Error getting sync status:', error);
-    }
-  };
-
-  window.triggerManualSync = async (action = 'upload') => {
-    try {
-      console.log(`Triggering manual sync: ${action}`);
-      const result = await window.settings.manualSync(action);
-      console.log('Manual sync result:', result);
-      return result;
-    }
-    catch (error) {
-      console.error('Error triggering manual sync:', error);
-    }
-  };
-
-  window.testIconChange = async () => {
-    try {
-      console.log('Testing icon change detection...');
-      const pages = await window.settings.getConfig('pages');
-      if (pages && pages.length > 0 && pages[0].buttons && pages[0].buttons.length > 0) {
-        // 첫 번째 버튼의 아이콘을 임시로 변경
-        const modifiedPages = JSON.parse(JSON.stringify(pages));
-        const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
-        modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
-
-        console.log('Setting modified pages...');
-        await window.settings.setConfig('pages', modifiedPages);
-        console.log('Icon change test completed. Check logs for sync activity.');
-
-        return { success: true, message: 'Icon change triggered' };
+  // Debug helpers are only exposed in development builds — a production
+  // renderer should not carry global functions that trigger cloud sync or
+  // mutate the user's pages config.
+  if (process.env.NODE_ENV === 'development') {
+    window.debugSync = async () => {
+      try {
+        const status = await window.settings.debugSyncStatus();
+        console.log('=== Sync Debug Status ===');
+        console.log(status);
+        return status;
       }
-      else {
-        console.log('No buttons found to test icon change');
-        return { success: false, message: 'No buttons found' };
+      catch (error) {
+        console.error('Error getting sync status:', error);
       }
-    }
-    catch (error) {
-      console.error('Error testing icon change:', error);
-      return { success: false, error: error.message };
-    }
-  };
+    };
+
+    window.triggerManualSync = async (action = 'upload') => {
+      try {
+        console.log(`Triggering manual sync: ${action}`);
+        const result = await window.settings.manualSync(action);
+        console.log('Manual sync result:', result);
+        return result;
+      }
+      catch (error) {
+        console.error('Error triggering manual sync:', error);
+      }
+    };
+
+    window.testIconChange = async () => {
+      try {
+        console.log('Testing icon change detection...');
+        const pages = await window.settings.getConfig('pages');
+        if (pages && pages.length > 0 && pages[0].buttons && pages[0].buttons.length > 0) {
+          // 첫 번째 버튼의 아이콘을 임시로 변경
+          const modifiedPages = JSON.parse(JSON.stringify(pages));
+          const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
+          modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
+
+          console.log('Setting modified pages...');
+          await window.settings.setConfig('pages', modifiedPages);
+          console.log('Icon change test completed. Check logs for sync activity.');
+
+          return { success: true, message: 'Icon change triggered' };
+        }
+        else {
+          console.log('No buttons found to test icon change');
+          return { success: false, message: 'No buttons found' };
+        }
+      }
+      catch (error) {
+        console.error('Error testing icon change:', error);
+        return { success: false, error: error.message };
+      }
+    };
+  }
 });
 
 // Event handler for OAuth redirection
