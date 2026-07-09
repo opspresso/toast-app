@@ -12,7 +12,7 @@ const userDataManager = require('./user-data-manager');
 
 // 모듈별 로거 생성
 const logger = createLogger('AuthManager');
-const { createConfigStore } = require('./config');
+const { createConfigStore, markAsSynced } = require('./config');
 const client = require('./api/client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
 const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
@@ -318,6 +318,15 @@ async function logout() {
 
       // Reset advanced settings to default
       config.set('advanced', {});
+
+      // Sync is disabled by this point (updateCloudSyncSettings(false) above), so the
+      // 'pages' write above never reached handleConfigChange's markAsModified() call —
+      // the _sync hash/timestamps are still whatever the logged-out user last synced.
+      // Left stale, the next person to log in on this device would have their sync
+      // treat this leftover local page as "unsynced changes" and upload/merge it into
+      // their own account. Mark the post-logout state as synced so it reads as current,
+      // not as changes belonging to whoever logs in next.
+      markAsSynced(config);
 
       logger.info('All user configuration reset to defaults on logout');
 

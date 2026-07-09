@@ -48,6 +48,7 @@ jest.mock('../../src/main/user-data-manager', () => mockUserDataManager);
 jest.mock('../../src/main/cloud-sync', () => mockCloudSync);
 jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
+  markAsSynced: jest.fn(),
 }));
 jest.mock('../../src/main/api/client', () => mockClient);
 jest.mock('../../src/main/constants', () => ({
@@ -308,6 +309,20 @@ describe('Authentication Manager', () => {
       await authManager.logout();
 
       expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'Page 1' }]);
+    });
+
+    test('should mark the post-logout state as synced so it is not mistaken for the next user\'s unsynced changes', async () => {
+      // Sync is disabled before pages are trimmed, so the 'pages' write never reaches
+      // cloud-sync's onDidChange handler and _sync metadata is left stale. Without
+      // markAsSynced() here, the next person to log in on this shared device would
+      // have hasUnsyncedChanges() report the leftover page as their own unsynced
+      // change, and conflict resolution could upload/merge it into their account.
+      mockAuth.logout.mockResolvedValue(true);
+      const { markAsSynced } = require('../../src/main/config');
+
+      await authManager.logout();
+
+      expect(markAsSynced).toHaveBeenCalledWith(mockConfigStore);
     });
 
     test('should handle logout exceptions', async () => {
