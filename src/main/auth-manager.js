@@ -6,7 +6,7 @@
  * It is implemented using the common API module.
  */
 
-const { createLogger } = require('./logger');
+const { createLogger, maskEmail, maskName } = require('./logger');
 const auth = require('./auth');
 const userDataManager = require('./user-data-manager');
 
@@ -114,8 +114,8 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         const isVip = result.subscription?.isVip || false;
 
         logger.info('====== Account Info ======');
-        logger.info('User email:', userEmail);
-        logger.info('User name:', userName);
+        logger.info('User email:', maskEmail(userEmail));
+        logger.info('User name:', maskName(userName));
         logger.info('Subscription plan:', userPlan);
         logger.info('VIP status:', isVip ? 'VIP user' : 'Regular user');
         logger.info('=========================');

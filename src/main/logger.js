@@ -71,9 +71,39 @@ function maskAuthUrl(url) {
   return url.replace(/([?&](?:token|code)=)[^&]+/g, '$1***');
 }
 
+/**
+ * Mask an email address for logging: keep the first character and domain,
+ * replace the rest of the local part with asterisks.
+ * @param {string} email
+ * @returns {string} e.g. "jane@example.com" -> "j***@example.com"
+ */
+function maskEmail(email) {
+  if (typeof email !== 'string' || !email.includes('@')) {
+    return email;
+  }
+  const [local, domain] = email.split('@');
+  const maskedLocal = local.length <= 1 ? '*' : `${local[0]}***`;
+  return `${maskedLocal}@${domain}`;
+}
+
+/**
+ * Mask a display name for logging: keep the first character, replace the
+ * rest with asterisks.
+ * @param {string} name
+ * @returns {string} e.g. "Jane Doe" -> "J***"
+ */
+function maskName(name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    return name;
+  }
+  return name.length <= 1 ? '*' : `${name[0]}***`;
+}
+
 module.exports = {
   createLogger,
   handleIpcLogging,
   maskAuthUrl,
+  maskEmail,
+  maskName,
   electronLog,
 };

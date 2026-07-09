@@ -275,6 +275,36 @@ describe('Logger', () => {
     });
   });
 
+  describe('PII Masking', () => {
+    test('maskEmail keeps the first character and domain', () => {
+      expect(logger.maskEmail('jane@example.com')).toBe('j***@example.com');
+    });
+
+    test('maskEmail handles a single-character local part', () => {
+      expect(logger.maskEmail('j@example.com')).toBe('*@example.com');
+    });
+
+    test('maskEmail returns non-email values unchanged', () => {
+      expect(logger.maskEmail('not-an-email')).toBe('not-an-email');
+      expect(logger.maskEmail(undefined)).toBeUndefined();
+      expect(logger.maskEmail(null)).toBeNull();
+    });
+
+    test('maskName keeps only the first character', () => {
+      expect(logger.maskName('Jane Doe')).toBe('J***');
+    });
+
+    test('maskName handles a single-character name', () => {
+      expect(logger.maskName('J')).toBe('*');
+    });
+
+    test('maskName returns non-string/empty values unchanged', () => {
+      expect(logger.maskName('')).toBe('');
+      expect(logger.maskName(undefined)).toBeUndefined();
+      expect(logger.maskName(null)).toBeNull();
+    });
+  });
+
   describe('Module Exports', () => {
     test('should export createLogger function', () => {
       expect(logger.createLogger).toBeInstanceOf(Function);
