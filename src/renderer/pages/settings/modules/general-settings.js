@@ -241,6 +241,12 @@ export function handleHotkeyRecording(event) {
     })
     .then(success => {
       window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
+      if (!success) {
+        // 등록 실패는 대개 OS/다른 앱이 같은 조합을 선점한 경우다. 입력 필드는 이미
+        // 새 값을 표시하므로, 알리지 않으면 사용자가 실제로는 등록되지 않은 단축키가
+        // 동작 중이라고 오인할 수 있다.
+        alert(`Failed to register hotkey "${hotkey}". It may already be in use by another application.`);
+      }
     })
     .catch(error => {
       window.settings.log.error('전역 단축키 설정 및 복원 중 오류:', error);
