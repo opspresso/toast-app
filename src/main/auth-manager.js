@@ -14,7 +14,7 @@ const userDataManager = require('./user-data-manager');
 const logger = createLogger('AuthManager');
 const { createConfigStore } = require('./config');
 const client = require('./api/client');
-const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS } = require('./constants');
+const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
 const { determineCloudSyncFeature, normalizeExpiryString } = require('./subscription');
 const { broadcastToWindows } = require('./broadcast');
 
@@ -291,8 +291,11 @@ async function logout() {
         pageGroups: 1, // Reset to anonymous user default
       });
 
-      // Reset pages to default empty state
-      config.set('pages', []);
+      // Trim pages down to the anonymous entitlement instead of wiping them:
+      // this may be the only copy of the user's data if it was never synced
+      // (offline edits, sync disabled, or the upload debounce hadn't fired).
+      const currentPages = config.get('pages');
+      config.set('pages', Array.isArray(currentPages) ? currentPages.slice(0, PAGE_GROUPS.ANONYMOUS) : []);
 
       // Reset appearance to default
       config.set('appearance', {});

@@ -53,6 +53,7 @@ jest.mock('../../src/main/api/client', () => mockClient);
 jest.mock('../../src/main/constants', () => ({
   DEFAULT_ANONYMOUS_SUBSCRIPTION: { isSubscribed: false },
   DEFAULT_ANONYMOUS: { email: null },
+  PAGE_GROUPS: { ANONYMOUS: 1, AUTHENTICATED: 3, PREMIUM: 9 },
 }));
 jest.mock('../../src/main/logger', () => ({
   createLogger: jest.fn(() => ({
@@ -244,6 +245,16 @@ describe('Authentication Manager', () => {
       const result = await authManager.logout();
 
       expect(result).toBe(false);
+    });
+
+    test('should trim local pages to the anonymous entitlement instead of wiping them', async () => {
+      mockAuth.logout.mockResolvedValue(true);
+      const premiumPages = [{ name: 'Page 1' }, { name: 'Page 2' }, { name: 'Page 3' }];
+      mockConfigStore.get.mockImplementation(key => (key === 'pages' ? premiumPages : undefined));
+
+      await authManager.logout();
+
+      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'Page 1' }]);
     });
 
     test('should handle logout exceptions', async () => {
