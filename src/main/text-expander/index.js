@@ -98,6 +98,56 @@ function isEnabled() {
 }
 
 /**
+ * Snapshot every clipboard format Electron can read (text, HTML, RTF, image)
+ * so a snippet paste does not destroy non-text content, e.g. a copied image.
+ * @returns {{formats: string[], data: object}}
+ */
+function snapshotClipboard() {
+  try {
+    const formats = clipboard.availableFormats();
+    const data = {};
+    if (formats.includes('text/plain')) {
+      data.text = clipboard.readText();
+    }
+    if (formats.includes('text/html')) {
+      data.html = clipboard.readHTML();
+    }
+    if (formats.includes('text/rtf')) {
+      data.rtf = clipboard.readRTF();
+    }
+    if (formats.some(format => format.startsWith('image/'))) {
+      const image = clipboard.readImage();
+      if (!image.isEmpty()) {
+        data.image = image;
+      }
+    }
+    return { formats, data };
+  }
+  catch (error) {
+    logger.error('Failed to snapshot clipboard');
+    return { formats: [], data: {} };
+  }
+}
+
+/**
+ * Restore a snapshot taken by snapshotClipboard(). Clears the clipboard if it
+ * was empty at snapshot time, instead of leaving the snippet content behind.
+ * @param {{formats: string[], data: object}} snapshot
+ */
+function restoreClipboard(snapshot) {
+  try {
+    if (!snapshot || snapshot.formats.length === 0) {
+      clipboard.clear();
+      return;
+    }
+    clipboard.write(snapshot.data);
+  }
+  catch (error) {
+    logger.error('Failed to restore clipboard');
+  }
+}
+
+/**
  * Perform the replacement: delete the typed trigger, paste the content via
  * the clipboard, then restore the previous clipboard.
  * @param {{snippet: object, triggerLength: number}} match
@@ -117,7 +167,7 @@ function performReplacement(match) {
     }
 
     // Paste content via clipboard (robust for unicode/Hangul/emoji).
-    const previousClipboard = clipboard.readText();
+    const previousClipboard = snapshotClipboard();
     clipboard.writeText(match.snippet.content);
     uIOhook.keyTap(UiohookKey.V, [UiohookKey.Meta]);
 
@@ -127,17 +177,13 @@ function performReplacement(match) {
     // Restore the previous clipboard and re-enable event handling after the
     // synthetic paste has been delivered.
     setTimeout(() => {
-      try {
-        clipboard.writeText(previousClipboard);
-      }
-      catch (error) {
-        logger.error('Failed to restore clipboard');
-      }
+      restoreClipboard(previousClipboard);
       injecting = false;
     }, CLIPBOARD_RESTORE_DELAY_MS);
   }
   catch (error) {
     injecting = false;
+    matcher.resetBuffer(bufferState);
     logger.error('Error during snippet replacement');
   }
 }
