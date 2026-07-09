@@ -226,6 +226,57 @@ describe('Authentication Manager', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid code');
     });
+
+    test('should persist a complete subscription shape (pageGroups, additionalFeatures) after login', async () => {
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: {
+          plan: 'Premium',
+          active: true,
+          userId: 'user-1',
+          features: { page_groups: 9, cloud_sync: true },
+        },
+      });
+
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(mockConfigStore.set).toHaveBeenCalledWith(
+        'subscription',
+        expect.objectContaining({
+          isAuthenticated: true,
+          isSubscribed: true,
+          active: true,
+          pageGroups: 9,
+          additionalFeatures: { advancedActions: false, cloudSync: true },
+        }),
+      );
+    });
+
+    test('should compute pageGroups from plan when the server omits features.page_groups', async () => {
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: { plan: 'Premium', active: true, userId: 'user-1' },
+      });
+
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(mockConfigStore.set).toHaveBeenCalledWith(
+        'subscription',
+        expect.objectContaining({ pageGroups: 9 }),
+      );
+    });
   });
 
   describe('Logout Process', () => {

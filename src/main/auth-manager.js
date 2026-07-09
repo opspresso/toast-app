@@ -15,7 +15,7 @@ const logger = createLogger('AuthManager');
 const { createConfigStore } = require('./config');
 const client = require('./api/client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
-const { determineCloudSyncFeature, normalizeExpiryString } = require('./subscription');
+const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
 const { broadcastToWindows } = require('./broadcast');
 
 // Store window references
@@ -155,6 +155,22 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           if (updatedSubscription.subscribed_until !== undefined) {
             updatedSubscription.subscribed_until = normalizeExpiryString(updatedSubscription.subscribed_until);
           }
+
+          // This write replaces the whole 'subscription' config key, so it must
+          // include every field the schema/rest of the app relies on (pageGroups,
+          // isAuthenticated, isSubscribed, additionalFeatures) — auth.js's own
+          // updatePageGroupSettings() writes these too, but whichever write lands
+          // last otherwise wins with a partial shape, and electron-store's schema
+          // defaults (e.g. pageGroups: 1) silently fill in the gaps.
+          const isActive = isSubscriptionActive(updatedSubscription);
+          updatedSubscription.isAuthenticated = true;
+          updatedSubscription.isSubscribed = isActive;
+          updatedSubscription.active = isActive;
+          updatedSubscription.pageGroups = updatedSubscription.features.page_groups || calculatePageGroups(updatedSubscription);
+          updatedSubscription.additionalFeatures = {
+            advancedActions: updatedSubscription.features.advanced_actions || false,
+            cloudSync: hasSyncFeature,
+          };
 
           // Save updated subscription info to settings store
           const config = createConfigStore();
