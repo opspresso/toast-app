@@ -58,22 +58,52 @@ function analyzeConflict(localMeta, serverMeta, hasLocalChanges) {
 }
 
 /**
- * 페이지 식별 키 (이름 우선, 없으면 위치 기준)
- * @param {Object} page - 페이지
+ * 이름 기반 식별 키 (이름 우선, 없으면 위치 기준). 페이지와 버튼 병합에 공용으로 쓰인다.
+ * @param {Object} item - 페이지 또는 버튼
  * @param {number} index - 위치
  * @returns {string} 식별 키
  */
-function pageKey(page, index) {
-  if (page && page.name !== undefined && page.name !== null && page.name !== '') {
-    return `name:${page.name}`;
+function namedItemKey(item, index) {
+  if (item && item.name !== undefined && item.name !== null && item.name !== '') {
+    return `name:${item.name}`;
   }
   return `index:${index}`;
 }
 
 /**
+ * 버튼 데이터 병합 (같은 페이지 내부).
+ * 로컬 우선(사용자가 방금 수정한 내용 보존)이되, 서버에만 있는 이름의 버튼
+ * (다른 기기가 같은 페이지에 추가/수정한 버튼)은 결과 끝에 append 해 유실을 막는다.
+ * @param {Array} localButtons - 로컬 버튼
+ * @param {Array} serverButtons - 서버 버튼
+ * @returns {Array} 병합된 버튼
+ */
+function mergeButtons(localButtons = [], serverButtons = []) {
+  if (localButtons.length === 0) {
+    return serverButtons;
+  }
+
+  const localKeys = new Set(localButtons.map((button, index) => namedItemKey(button, index)));
+  const merged = [...localButtons];
+
+  serverButtons.forEach((serverButton, index) => {
+    const key = namedItemKey(serverButton, index);
+    if (key.startsWith('name:') && !localKeys.has(key)) {
+      logger.info(`Appending server-only button "${key}" to preserve remote additions`);
+      merged.push(serverButton);
+    }
+  });
+
+  return merged;
+}
+
+/**
  * 페이지 데이터 병합
- * 로컬 우선(사용자가 수정한 내용 보존)이되, 로컬 페이지의 버튼이 비어 있고
- * 대응하는 서버 페이지에 버튼이 있으면 서버 버전을 유지해 데이터 유실을 막는다.
+ * 로컬 우선(사용자가 수정한 내용 보존)이되:
+ * - 로컬 페이지의 버튼이 비어 있고 대응하는 서버 페이지에 버튼이 있으면 서버 버전을 유지
+ * - 같은 이름의 페이지가 로컬/서버 모두에 버튼을 갖고 있으면 페이지 전체가 아니라
+ *   버튼 단위로 병합한다 (두 기기가 같은 페이지의 다른 버튼을 동시에 추가/수정해도
+ *   한쪽 변경이 통째로 유실되지 않도록)
  * @param {Array} localPages - 로컬 페이지
  * @param {Array} serverPages - 서버 페이지
  * @returns {Array} 병합된 페이지
@@ -85,30 +115,34 @@ function mergePages(localPages = [], serverPages = []) {
 
   const serverByKey = new Map();
   serverPages.forEach((page, index) => {
-    serverByKey.set(pageKey(page, index), page);
+    serverByKey.set(namedItemKey(page, index), page);
   });
 
   logger.info(`Merging pages: ${localPages.length} local, ${serverPages.length} server`);
 
-  const localKeys = new Set(localPages.map((page, index) => pageKey(page, index)));
+  const localKeys = new Set(localPages.map((page, index) => namedItemKey(page, index)));
 
   const merged = localPages.map((localPage, index) => {
-    const localEmpty = localPage && Array.isArray(localPage.buttons) && localPage.buttons.length === 0;
-    if (!localEmpty) {
-      return localPage;
-    }
-
-    const key = pageKey(localPage, index);
-    // 이름으로 확실히 매칭될 때만 서버 페이지를 채택한다.
+    const key = namedItemKey(localPage, index);
+    // 이름으로 확실히 매칭될 때만 서버 페이지를 채택/병합한다.
     // index 폴백 매칭은 순서가 다를 때 무관한 서버 페이지로 치환할 수 있어 제외.
     if (!key.startsWith('name:')) {
       return localPage;
     }
-
     const serverPage = serverByKey.get(key);
-    if (serverPage && Array.isArray(serverPage.buttons) && serverPage.buttons.length > 0) {
-      logger.warn(`Local page "${key}" has no buttons; keeping server version to avoid data loss`);
-      return serverPage;
+    const serverHasButtons = serverPage && Array.isArray(serverPage.buttons) && serverPage.buttons.length > 0;
+
+    const localButtons = Array.isArray(localPage.buttons) ? localPage.buttons : [];
+    if (localButtons.length === 0) {
+      if (serverHasButtons) {
+        logger.warn(`Local page "${key}" has no buttons; keeping server version to avoid data loss`);
+        return serverPage;
+      }
+      return localPage;
+    }
+
+    if (serverHasButtons) {
+      return { ...localPage, buttons: mergeButtons(localButtons, serverPage.buttons) };
     }
     return localPage;
   });
@@ -117,7 +151,7 @@ function mergePages(localPages = [], serverPages = []) {
   // 이렇게 하지 않으면 재업로드 시 서버 전용 페이지가 삭제된다.
   // 이름 키로만 매칭하며, 순서 의존적인 index 키는 무관한 페이지를 신규로 오인할 수 있어 제외한다.
   serverPages.forEach((serverPage, index) => {
-    const key = pageKey(serverPage, index);
+    const key = namedItemKey(serverPage, index);
     if (key.startsWith('name:') && !localKeys.has(key)) {
       logger.info(`Appending server-only page "${key}" to preserve remote additions`);
       merged.push(serverPage);
@@ -178,6 +212,7 @@ function mergeAdvanced(localAdvanced = {}, serverAdvanced = {}) {
 module.exports = {
   analyzeConflict,
   mergePages,
+  mergeButtons,
   mergeSnippets,
   mergeAppearance,
   mergeAdvanced,

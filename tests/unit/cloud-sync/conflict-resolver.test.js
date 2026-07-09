@@ -15,7 +15,7 @@ jest.mock('../../../src/main/logger', () => ({
   })),
 }));
 
-const { analyzeConflict, mergePages, mergeSnippets, mergeAppearance, mergeAdvanced } = require('../../../src/main/cloud-sync/conflict-resolver');
+const { analyzeConflict, mergePages, mergeButtons, mergeSnippets, mergeAppearance, mergeAdvanced } = require('../../../src/main/cloud-sync/conflict-resolver');
 
 const TIME_THRESHOLD = 60000; // 1 minute (구현과 동일)
 
@@ -74,9 +74,19 @@ describe('conflict-resolver', () => {
   });
 
   describe('mergePages', () => {
-    test('로컬 페이지가 있으면 로컬을 유지한다 (로컬 우선)', () => {
+    test('같은 이름 페이지에 로컬/서버 모두 버튼이 있으면 버튼 단위로 병합한다 (양쪽 보존)', () => {
       const localPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }, { name: 'Page 2', buttons: [] }];
       const serverPages = [{ name: 'Page 1', buttons: [{ name: 'Z' }] }];
+
+      expect(mergePages(localPages, serverPages)).toEqual([
+        { name: 'Page 1', buttons: [{ name: 'A' }, { name: 'Z' }] },
+        { name: 'Page 2', buttons: [] },
+      ]);
+    });
+
+    test('같은 이름/같은 버튼이면 중복으로 append하지 않는다', () => {
+      const localPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }];
+      const serverPages = [{ name: 'Page 1', buttons: [{ name: 'A' }] }];
 
       expect(mergePages(localPages, serverPages)).toEqual(localPages);
     });
@@ -130,6 +140,41 @@ describe('conflict-resolver', () => {
 
     test('인자 미제공 시 빈 배열로 처리한다', () => {
       expect(mergePages()).toEqual([]);
+    });
+  });
+
+  describe('mergeButtons', () => {
+    test('로컬이 비어 있으면 서버 버튼을 채택한다', () => {
+      const server = [{ name: 'A' }];
+      expect(mergeButtons([], server)).toEqual(server);
+    });
+
+    test('로컬 우선하되 서버 전용 이름 버튼은 끝에 append 한다', () => {
+      const local = [{ name: 'A', shortcut: 'Q' }];
+      const server = [
+        { name: 'A', shortcut: 'W' },
+        { name: 'B', shortcut: 'E' },
+      ];
+      expect(mergeButtons(local, server)).toEqual([
+        { name: 'A', shortcut: 'Q' },
+        { name: 'B', shortcut: 'E' },
+      ]);
+    });
+
+    test('같은 이름 버튼을 서버에서 다시 추가하지 않는다', () => {
+      const local = [{ name: 'A' }];
+      const server = [{ name: 'A' }];
+      expect(mergeButtons(local, server)).toEqual(local);
+    });
+
+    test('이름 없는 서버 전용 버튼은 append하지 않는다', () => {
+      const local = [{ name: 'A' }];
+      const server = [{ name: 'A' }, { shortcut: 'E' }];
+      expect(mergeButtons(local, server)).toEqual(local);
+    });
+
+    test('인자 미제공 시 빈 배열로 처리한다', () => {
+      expect(mergeButtons()).toEqual([]);
     });
   });
 
