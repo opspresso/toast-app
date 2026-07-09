@@ -999,8 +999,9 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     syncAfterLogin: async () => {
       logger.info('Performing cloud synchronization after login');
 
-      // 로그인 후 다운로드 우선
-      const result = await downloadSettings();
+      // 충돌 해결 경로를 통해 동기화한다(무조건 다운로드가 아님): 로그인 사이 오프라인 상태에서
+      // 편집한 로컬 변경사항이 있으면 서버로 업로드/병합하고, 없으면 기존처럼 서버 데이터를 받는다.
+      const result = await syncSettings('resolve');
 
       // 다운로드 성공 후 추가 UI 업데이트
       if (result.success) {

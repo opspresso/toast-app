@@ -552,6 +552,64 @@ describe('Cloud Sync Module', () => {
     });
   });
 
+  describe('Login Sync', () => {
+    test('should not blindly overwrite unsynced local changes when syncing after login', async () => {
+      // syncAfterLogin() used to call downloadSettings() directly, clobbering
+      // offline edits made while logged out. It must route through conflict
+      // resolution instead, same as periodic sync.
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(true);
+      configModule.getSyncMetadata.mockReturnValue({
+        lastModifiedAt: Date.now(),
+        lastModifiedDevice: 'test-device',
+        lastSyncedAt: Date.now() - 1000,
+        lastSyncedDevice: 'test-device',
+      });
+
+      // Server data is far older than the local unsynced edit, so conflict
+      // resolution must choose to upload local changes, not overwrite them.
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: { pages: [{ id: 99, name: 'Stale Server Page' }] },
+        syncMetadata: { lastModifiedAt: Date.now() - 10 * 60 * 1000 },
+      });
+
+      cloudSync.updateCloudSyncSettings(true);
+      const syncManager = cloudSync.getSyncManager();
+
+      await syncManager.syncAfterLogin();
+
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('pages', [{ id: 99, name: 'Stale Server Page' }]);
+      expect(mockApiSync.uploadSettings).toHaveBeenCalled();
+    });
+
+    test('should still download server settings after login when there are no local changes', async () => {
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(false);
+      configModule.getSyncMetadata.mockReturnValue({
+        lastModifiedAt: Date.now() - 10 * 60 * 1000,
+        lastModifiedDevice: 'test-device',
+        lastSyncedAt: Date.now() - 10 * 60 * 1000,
+        lastSyncedDevice: 'test-device',
+      });
+
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: {},
+        normalized: { pages: [{ id: 1, name: 'Server Page' }] },
+        syncMetadata: { lastModifiedAt: Date.now() },
+      });
+
+      cloudSync.updateCloudSyncSettings(true);
+      const syncManager = cloudSync.getSyncManager();
+
+      const result = await syncManager.syncAfterLogin();
+
+      expect(result.success).toBe(true);
+      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ id: 1, name: 'Server Page' }]);
+    });
+  });
+
   describe('Sync Settings Integration', () => {
     test('should perform bidirectional sync', async () => {
       const mockConflictData = {
