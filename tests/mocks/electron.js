@@ -349,6 +349,13 @@ const systemPreferences = {
   isTrustedAccessibilityClient: jest.fn().mockReturnValue(true),
 };
 
+// Mock safeStorage (OS keychain/credential store)
+const safeStorage = {
+  isEncryptionAvailable: jest.fn().mockReturnValue(false),
+  encryptString: jest.fn(text => Buffer.from(text)),
+  decryptString: jest.fn(buffer => buffer.toString('utf8')),
+};
+
 // Create app instance
 const app = new App();
 
@@ -367,6 +374,7 @@ module.exports = {
   screen,
   clipboard,
   systemPreferences,
+  safeStorage,
   contextBridge: {
     exposeInMainWorld: jest.fn(),
   },
