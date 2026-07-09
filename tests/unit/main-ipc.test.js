@@ -423,11 +423,7 @@ describe('Main IPC Handlers (P0)', () => {
 
       const result = await ipcHandlers['show-open-dialog'](mockEvent, options);
 
-      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows.toast, {
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      });
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows.toast, options);
       expect(result).toEqual(mockResult);
     });
 

@@ -60,13 +60,10 @@ function setupSystemHandlers(windows, config) {
   // Show open dialog
   ipcMain.handle('show-open-dialog', async (event, options) => {
     try {
-      // Set modal and parent to ensure dialog appears above toast window
-      const modalOptions = {
-        ...options,
-        modal: true,
-        parent: windows.toast,
-      };
-      return await dialog.showOpenDialog(windows.toast, modalOptions);
+      // Passing the toast window as the first argument makes the dialog modal to it.
+      // (Electron ignores modal/parent inside the options object for dialog methods.)
+      const parent = windows.toast && !windows.toast.isDestroyed() ? windows.toast : null;
+      return parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options);
     }
     catch (error) {
       logger.error('Error showing open dialog:', error);

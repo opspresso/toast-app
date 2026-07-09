@@ -512,11 +512,23 @@ describe('IPC Handlers', () => {
       const options = { filters: [{ name: 'Text', extensions: ['txt'] }] };
       const result = await handler({}, options);
 
-      expect(mockDialog.showOpenDialog).toHaveBeenCalledWith(
-        mockWindows.toast,
-        expect.objectContaining({ modal: true, parent: mockWindows.toast, ...options })
-      );
+      expect(mockDialog.showOpenDialog).toHaveBeenCalledWith(mockWindows.toast, options);
       expect(result).toEqual({ canceled: false, filePaths: ['/test/path'] });
+    });
+
+    test('should show open dialog without a parent when the toast window is destroyed', async () => {
+      setupIpcHandlers(mockWindows);
+      // Once, not persistently, so this does not leak into later tests that
+      // expect the default (non-destroyed) toast window.
+      mockWindows.toast.isDestroyed.mockReturnValueOnce(true);
+
+      const handler = mockIpcMain.handle.mock.calls
+        .find(([event]) => event === 'show-open-dialog')[1];
+
+      const options = { filters: [{ name: 'Text', extensions: ['txt'] }] };
+      await handler({}, options);
+
+      expect(mockDialog.showOpenDialog).toHaveBeenCalledWith(options);
     });
 
     test('should handle show-save-dialog', async () => {
