@@ -690,6 +690,14 @@ async function refreshAccessToken() {
  */
 async function logout() {
   try {
+    // Revoke the refresh token on the server before deleting it locally, so
+    // it cannot be used to mint new access tokens after logout.
+    const refreshToken = await getStoredRefreshToken();
+    const revokeResult = await apiAuth.revokeToken({ refreshToken, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET });
+    if (!revokeResult.success) {
+      logger.warn('Refresh token revocation warning:', revokeResult.error);
+    }
+
     // Call API logout to clear memory tokens
     const apiLogoutResult = await apiAuth.logout();
     if (!apiLogoutResult.success) {

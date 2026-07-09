@@ -87,6 +87,7 @@ const mockApiAuth = {
   fetchUserProfile: jest.fn(),
   handleAuthRedirect: jest.fn(),
   logout: jest.fn(),
+  revokeToken: jest.fn(),
 };
 
 jest.mock('../../src/main/api/auth', () => mockApiAuth);
@@ -172,6 +173,10 @@ describe('Main Auth Module (P0)', () => {
     });
 
     mockApiAuth.logout.mockResolvedValue({
+      success: true,
+    });
+
+    mockApiAuth.revokeToken.mockResolvedValue({
       success: true,
     });
 
@@ -381,6 +386,26 @@ describe('Main Auth Module (P0)', () => {
       const result = await auth.logout();
 
       // The actual logout function returns boolean, not object
+      expect(result).toBe(true);
+      expect(mockFs.unlinkSync).toHaveBeenCalled();
+    });
+
+    test('should revoke the refresh token on the server before deleting it locally', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+
+      await auth.logout();
+
+      expect(mockApiAuth.revokeToken).toHaveBeenCalledWith(
+        expect.objectContaining({ refreshToken: 'test-refresh-token' }),
+      );
+    });
+
+    test('should still complete logout locally when server revocation fails', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockApiAuth.revokeToken.mockResolvedValue({ success: false, error: 'network error' });
+
+      const result = await auth.logout();
+
       expect(result).toBe(true);
       expect(mockFs.unlinkSync).toHaveBeenCalled();
     });
