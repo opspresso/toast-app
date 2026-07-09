@@ -25,6 +25,31 @@ describe('Subscription Helpers', () => {
     ])('%j -> %s', (subscription, expected) => {
       expect(isSubscriptionActive(subscription)).toBe(expected);
     });
+
+    test('rejects an active-flagged subscription whose expiresAt has already passed', () => {
+      const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      expect(isSubscriptionActive({ active: true, expiresAt: past })).toBe(false);
+    });
+
+    test('rejects an active-flagged subscription whose subscribed_until has already passed', () => {
+      const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      expect(isSubscriptionActive({ active: true, subscribed_until: past })).toBe(false);
+    });
+
+    test('accepts an active subscription whose expiry is in the future', () => {
+      const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      expect(isSubscriptionActive({ active: true, expiresAt: future })).toBe(true);
+    });
+
+    test('prefers subscribed_until over expiresAt when both are present', () => {
+      const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      expect(isSubscriptionActive({ active: true, subscribed_until: past, expiresAt: future })).toBe(false);
+    });
+
+    test('treats an unparsable expiry as no expiry (does not crash or reject)', () => {
+      expect(isSubscriptionActive({ active: true, expiresAt: 'not-a-date' })).toBe(true);
+    });
   });
 
   describe('calculatePageGroups', () => {
