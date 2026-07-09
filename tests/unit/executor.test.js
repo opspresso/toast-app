@@ -245,6 +245,28 @@ describe('Executor', () => {
       });
     });
 
+    test('should reject exec action with a non-string workingDir', async () => {
+      const action = { action: 'exec', command: 'ls', workingDir: 123 };
+
+      const result = await validateAction(action);
+
+      expect(result).toEqual({
+        valid: false,
+        message: 'workingDir must be a string for exec action',
+      });
+    });
+
+    test('should reject exec action with a non-boolean runInTerminal', async () => {
+      const action = { action: 'exec', command: 'ls', runInTerminal: 'yes' };
+
+      const result = await validateAction(action);
+
+      expect(result).toEqual({
+        valid: false,
+        message: 'runInTerminal must be a boolean for exec action',
+      });
+    });
+
     test('should validate open action - with URL', async () => {
       const action = { action: 'open', url: 'https://example.com' };
       
@@ -263,12 +285,34 @@ describe('Executor', () => {
 
     test('should validate open action - missing URL and path', async () => {
       const action = { action: 'open' };
-      
+
       const result = await validateAction(action);
-      
+
       expect(result).toEqual({
         valid: false,
         message: 'URL or path is required for open action',
+      });
+    });
+
+    test('should reject open action with a non-string url', async () => {
+      const action = { action: 'open', url: 12345 };
+
+      const result = await validateAction(action);
+
+      expect(result).toEqual({
+        valid: false,
+        message: 'url must be a string for open action',
+      });
+    });
+
+    test('should reject open action with a file:// url', async () => {
+      const action = { action: 'open', url: 'file:///etc/passwd' };
+
+      const result = await validateAction(action);
+
+      expect(result).toEqual({
+        valid: false,
+        message: 'file:// URLs are not allowed for open action; use path instead',
       });
     });
 
@@ -299,6 +343,17 @@ describe('Executor', () => {
       expect(result).toEqual({
         valid: false,
         message: 'Script type is required for script action',
+      });
+    });
+
+    test('should reject script action with an unsupported script type', async () => {
+      const action = { action: 'script', script: 'puts "hi"', scriptType: 'ruby' };
+
+      const result = await validateAction(action);
+
+      expect(result).toEqual({
+        valid: false,
+        message: 'Unsupported script type: ruby',
       });
     });
 

@@ -17,6 +17,9 @@ const { ensureApproved } = require('./action-approval');
 // the call stack during validation before it is ever rejected for other reasons.
 const MAX_CHAIN_DEPTH = 10;
 
+// Script types actually handled by actions/script.js's executeScript switch.
+const SUPPORTED_SCRIPT_TYPES = ['javascript', 'applescript', 'powershell', 'bash'];
+
 /**
  * Execute an action based on its type
  * @param {Object} action - Action configuration
@@ -100,10 +103,25 @@ async function validateAction(action, depth = 0) {
         if (!action.command) {
           return { valid: false, message: 'Command is required for exec action' };
         }
+        if (action.workingDir !== undefined && typeof action.workingDir !== 'string') {
+          return { valid: false, message: 'workingDir must be a string for exec action' };
+        }
+        if (action.runInTerminal !== undefined && typeof action.runInTerminal !== 'boolean') {
+          return { valid: false, message: 'runInTerminal must be a boolean for exec action' };
+        }
         break;
       case 'open':
         if (!action.url && !action.path) {
           return { valid: false, message: 'URL or path is required for open action' };
+        }
+        if (action.url !== undefined && typeof action.url !== 'string') {
+          return { valid: false, message: 'url must be a string for open action' };
+        }
+        if (action.path !== undefined && typeof action.path !== 'string') {
+          return { valid: false, message: 'path must be a string for open action' };
+        }
+        if (typeof action.url === 'string' && /^file:/i.test(action.url)) {
+          return { valid: false, message: 'file:// URLs are not allowed for open action; use path instead' };
         }
         break;
       case 'script':
@@ -112,6 +130,9 @@ async function validateAction(action, depth = 0) {
         }
         if (!action.scriptType) {
           return { valid: false, message: 'Script type is required for script action' };
+        }
+        if (!SUPPORTED_SCRIPT_TYPES.includes(String(action.scriptType).toLowerCase())) {
+          return { valid: false, message: `Unsupported script type: ${action.scriptType}` };
         }
         break;
       case 'chain':
