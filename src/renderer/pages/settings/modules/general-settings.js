@@ -60,20 +60,15 @@ export function startRecordingHotkey() {
 }
 
 /**
- * Clear the hotkey
+ * Clear the hotkey. Used both by the "Clear" button (no recording in
+ * progress — the hotkey must actually be emptied and persisted) and by
+ * Escape during recording (cancel — the previously saved hotkey must be
+ * restored, not wiped).
  */
 export function clearHotkey() {
   window.settings.log.info('단축키 초기화');
 
-  // 녹화 취소 시 전역 단축키 복원
-  window.settings
-    .restoreShortcuts()
-    .then(success => {
-      window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
-    })
-    .catch(error => {
-      window.settings.log.error('전역 단축키 복원 중 오류:', error);
-    });
+  const wasRecording = isRecordingHotkey;
 
   if (globalHotkeyInput) {
     globalHotkeyInput.value = '';
@@ -84,6 +79,30 @@ export function clearHotkey() {
 
   if (recordHotkeyButton) {
     recordHotkeyButton.disabled = false;
+  }
+
+  if (wasRecording) {
+    // 녹화 취소: 이전에 저장된 단축키를 그대로 복원한다.
+    window.settings
+      .restoreShortcuts()
+      .then(success => {
+        window.settings.log.info('전역 단축키 복원:', success ? '성공' : '실패');
+      })
+      .catch(error => {
+        window.settings.log.error('전역 단축키 복원 중 오류:', error);
+      });
+  }
+  else {
+    // "Clear" 버튼: 단축키를 실제로 비우고 저장한 뒤 등록을 해제한다.
+    window.settings
+      .setConfig('globalHotkey', '')
+      .then(() => window.settings.restoreShortcuts())
+      .then(() => {
+        window.settings.log.info('전역 단축키 해제 완료');
+      })
+      .catch(error => {
+        window.settings.log.error('전역 단축키 해제 중 오류:', error);
+      });
   }
 
   // 변경 사항 감지
