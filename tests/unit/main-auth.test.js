@@ -320,6 +320,33 @@ describe('Main Auth Module (P0)', () => {
       expect(result.success).toBe(true);
     });
 
+    test('should persist a rotated refresh token in the same write as the access token', async () => {
+      // Set up expired token to trigger refresh
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'old-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      // Server rotates the refresh token on every refresh
+      mockApiAuth.refreshAccessToken.mockResolvedValue({
+        success: true,
+        access_token: 'refreshed-token',
+        refresh_token: 'rotated-refresh-token',
+        expires_in: 3600,
+      });
+
+      await auth.refreshAccessToken();
+
+      // Both tokens must land in the same writeFileSync call (one atomic write),
+      // not two separate writes with a crash window in between.
+      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(1);
+      const [, writtenContent] = mockFs.writeFileSync.mock.calls[0];
+      const written = JSON.parse(writtenContent);
+      expect(written['auth-token']).toBe('refreshed-token');
+      expect(written['refresh-token']).toBe('rotated-refresh-token');
+    });
+
     test('should handle refresh token errors', async () => {
       // Set up expired token to trigger refresh
       mockFs.readFileSync.mockReturnValue(JSON.stringify({

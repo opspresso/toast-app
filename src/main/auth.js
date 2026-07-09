@@ -243,21 +243,32 @@ async function isTokenExpired() {
 }
 
 /**
- * Store token in local file
+ * Store the access token and (optionally) a rotated refresh token in a single
+ * atomic write. The server rotates the refresh token on every refresh and
+ * revokes the previous one immediately, so writing them in two separate file
+ * operations left a window where a crash/quit between the two could strand
+ * the local file on the now-revoked refresh token, forcing a re-login.
  * @param {string} token - Authentication token to store
+ * @param {string} [refreshToken] - Refresh token to store, if a new one was issued
  * @param {number} expiresIn - Token expiration time in seconds
  * @returns {Promise<void>}
  */
-async function storeToken(token, expiresIn = 31536000) {
+async function storeTokens(token, refreshToken, expiresIn = 31536000) {
   try {
-    // Set token in client
+    // Set tokens in client
     client.setAccessToken(token);
+    if (refreshToken) {
+      client.setRefreshToken(refreshToken);
+    }
 
     // Read existing token data
     const tokenData = readTokenFile() || {};
 
     // Store new token
     tokenData[TOKEN_KEY] = token;
+    if (refreshToken) {
+      tokenData[REFRESH_TOKEN_KEY] = refreshToken;
+    }
 
     // Calculate and store expiration time
     let expiresAt;
@@ -280,33 +291,6 @@ async function storeToken(token, expiresIn = 31536000) {
   }
   catch (error) {
     logger.error('Failed to save token:', error);
-    throw error;
-  }
-}
-
-/**
- * Store refresh token in local file
- * @param {string} refreshToken - Refresh token to store
- * @returns {Promise<void>}
- */
-async function storeRefreshToken(refreshToken) {
-  try {
-    // Set refresh token in client
-    client.setRefreshToken(refreshToken);
-
-    // Read existing token data
-    const tokenData = readTokenFile() || {};
-
-    // Store new refresh token
-    tokenData[REFRESH_TOKEN_KEY] = refreshToken;
-
-    // Save to file
-    if (!writeTokenFile(tokenData)) {
-      throw new Error('Failed to save refresh token file');
-    }
-  }
-  catch (error) {
-    logger.error('Failed to save refresh token:', error);
     throw error;
   }
 }
@@ -494,17 +478,11 @@ async function exchangeCodeForToken(code) {
     // Store tokens
     const { access_token, refresh_token, expires_in } = tokenResult;
 
-    // Store token and expiration time in secure storage
+    // Store the access and refresh token together in one atomic write.
     // Use server's expires_in first (reflects actual JWT expiration), then TOKEN_EXPIRES_IN env var as fallback
     const tokenExpiresIn = expires_in || TOKEN_EXPIRES_IN || 31536000;
-    await storeToken(access_token, tokenExpiresIn);
+    await storeTokens(access_token, refresh_token, tokenExpiresIn);
     logger.info(`Access token saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
-
-    // Store refresh token (if available)
-    if (refresh_token) {
-      await storeRefreshToken(refresh_token);
-      logger.info('Refresh token saved successfully');
-    }
 
     // Verify token was saved correctly
     const storedToken = await getStoredToken();
@@ -641,14 +619,8 @@ async function refreshAccessToken() {
 
         // Use server's expires_in first (reflects actual JWT expiration), then TOKEN_EXPIRES_IN env var as fallback
         const tokenExpiresIn = expires_in || TOKEN_EXPIRES_IN || 31536000;
-        await storeToken(access_token, tokenExpiresIn);
-        logger.info(`New access token saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
-
-        // Store new refresh token (if available)
-        if (refresh_token) {
-          await storeRefreshToken(refresh_token);
-          logger.info('New refresh token saved successfully');
-        }
+        await storeTokens(access_token, refresh_token, tokenExpiresIn);
+        logger.info(`New token(s) saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
 
         return { success: true };
       }
