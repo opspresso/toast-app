@@ -22,6 +22,9 @@ jest.mock('electron', () => ({
   shell: {
     openExternal: jest.fn(),
   },
+  app: {
+    setLoginItemSettings: jest.fn(),
+  },
 }));
 
 // Mock executor
@@ -132,6 +135,7 @@ describe('Main IPC Handlers (P0)', () => {
         focus: jest.fn(),
         setOpacity: jest.fn(),
         setSize: jest.fn(),
+        setSkipTaskbar: jest.fn(),
       },
       settings: {
         isDestroyed: jest.fn(() => false),

@@ -4,7 +4,7 @@
  * Handlers for reading, writing, importing, exporting, and resetting config.
  */
 
-const { ipcMain } = require('electron');
+const { app, ipcMain } = require('electron');
 const crypto = require('crypto');
 const { createLogger } = require('../logger');
 
@@ -92,6 +92,18 @@ function setupConfigHandlers(windows, config) {
       if (key === null || key === 'pages') {
         const { trustCurrentConfig } = require('../action-approval');
         trustCurrentConfig(config);
+      }
+
+      // Apply OS-level settings immediately instead of waiting for the next launch
+      if (key === null || key === 'advanced' || key === 'advanced.launchAtLogin') {
+        app.setLoginItemSettings({ openAtLogin: config.get('advanced.launchAtLogin') || false });
+      }
+      if (
+        (key === null || key === 'advanced' || key === 'advanced.showInTaskbar')
+        && windows.toast
+        && !windows.toast.isDestroyed()
+      ) {
+        windows.toast.setSkipTaskbar(!(config.get('advanced.showInTaskbar') || false));
       }
 
       // Immediately notify toast window when settings change
@@ -216,6 +228,12 @@ function setupConfigHandlers(windows, config) {
     try {
       const { resetToDefaults } = require('../config');
       resetToDefaults(config);
+
+      // Apply OS-level settings immediately, matching set-config's behavior
+      app.setLoginItemSettings({ openAtLogin: config.get('advanced.launchAtLogin') || false });
+      if (windows.toast && !windows.toast.isDestroyed()) {
+        windows.toast.setSkipTaskbar(!(config.get('advanced.showInTaskbar') || false));
+      }
 
       // Send change notification to toast window after settings reset
       if (windows.toast && !windows.toast.isDestroyed()) {
