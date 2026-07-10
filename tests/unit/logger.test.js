@@ -303,6 +303,19 @@ describe('Logger', () => {
       expect(logger.maskName(undefined)).toBeUndefined();
       expect(logger.maskName(null)).toBeNull();
     });
+
+    test('maskAuthUrl masks token, code, and state query params', () => {
+      expect(logger.maskAuthUrl('toast-app://auth?code=abc123&state=xyz789')).toBe('toast-app://auth?code=***&state=***');
+      expect(logger.maskAuthUrl('https://app.toast.sh/oauth/authorize?client_id=1&state=xyz789')).toBe(
+        'https://app.toast.sh/oauth/authorize?client_id=1&state=***',
+      );
+      expect(logger.maskAuthUrl('https://app.toast.sh/callback?token=secret')).toBe('https://app.toast.sh/callback?token=***');
+    });
+
+    test('maskAuthUrl returns non-string values unchanged', () => {
+      expect(logger.maskAuthUrl(undefined)).toBeUndefined();
+      expect(logger.maskAuthUrl(null)).toBeNull();
+    });
   });
 
   describe('Module Exports', () => {
