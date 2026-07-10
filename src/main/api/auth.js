@@ -336,7 +336,12 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
     catch (tokenRequestError) {
       logger.error('Token renewal request failed:', tokenRequestError.message);
 
-      if (tokenRequestError.response?.status === 401) {
+      // The server returns 400 INVALID_GRANT when the refresh token itself is
+      // expired, already used, or otherwise invalid; 401 INVALID_CLIENT is
+      // reserved for a bad client_id/client_secret. Either way the current
+      // tokens can't be used again, so treat both as a session expiry.
+      const errorCode = tokenRequestError.response?.data?.error?.code;
+      if (errorCode === 'INVALID_GRANT' || tokenRequestError.response?.status === 401) {
         logger.info('Refresh token has expired. Re-login required');
 
         return {

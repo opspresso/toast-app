@@ -198,6 +198,57 @@ describe('API Auth Module (P0)', () => {
         code: 'REFRESH_FAILED'
       });
     });
+
+    test('should treat a 400 INVALID_GRANT response as a session expiry', async () => {
+      const params = {
+        refreshToken: 'refresh-token-123',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      };
+
+      const error = new Error('Request failed with status code 400');
+      error.response = {
+        status: 400,
+        data: {
+          success: false,
+          error: {
+            code: 'INVALID_GRANT',
+            message: 'Invalid refresh token'
+          }
+        }
+      };
+      mockClient.post.mockRejectedValue(error);
+
+      const result = await authApi.refreshAccessToken(params);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Your login session has expired. Please log in again.',
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true
+      });
+    });
+
+    test('should still treat a bare 401 response as a session expiry', async () => {
+      const params = {
+        refreshToken: 'refresh-token-123',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      };
+
+      const error = new Error('Request failed with status code 401');
+      error.response = { status: 401, data: {} };
+      mockClient.post.mockRejectedValue(error);
+
+      const result = await authApi.refreshAccessToken(params);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Your login session has expired. Please log in again.',
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true
+      });
+    });
   });
 
   describe('Token Revocation', () => {
