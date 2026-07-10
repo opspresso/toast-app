@@ -661,6 +661,26 @@ describe('Main Auth Module (P0)', () => {
       expect(mockSafeStorage.decryptString).toHaveBeenCalled();
     });
 
+    test('should migrate an encrypted token file to plaintext immediately on read', async () => {
+      mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(
+        mockSafeStorage.encryptString(
+          JSON.stringify({
+            'auth-token': 'encrypted-access-token',
+            'refresh-token': 'encrypted-refresh-token',
+            'token-expires-at': Date.now() + 3600000,
+          }),
+        ),
+      );
+
+      await auth.hasValidToken();
+
+      expect(mockFs.writeFileSync).toHaveBeenCalled();
+      const [, writtenContent] = mockFs.writeFileSync.mock.calls[0];
+      expect(typeof writtenContent).toBe('string');
+      expect(JSON.parse(writtenContent)['auth-token']).toBe('encrypted-access-token');
+    });
+
     test('should still read a legacy plaintext token file after encryption is enabled', async () => {
       mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue(

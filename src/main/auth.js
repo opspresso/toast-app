@@ -68,7 +68,8 @@ async function initializeTokensFromStorage() {
 /**
  * Read token data from local file. Token files are stored as plaintext JSON;
  * a file encrypted by a previous version (via OS keychain/safeStorage) is
- * transparently decrypted here and migrated to plaintext on the next write.
+ * transparently decrypted here and immediately migrated to plaintext, so the
+ * Keychain is consulted at most once rather than on every future read.
  * @returns {Object|null} Token data object or null
  */
 function readTokenFile() {
@@ -94,7 +95,13 @@ function readTokenFile() {
       if (!safeStorage.isEncryptionAvailable()) {
         throw parseError;
       }
-      return JSON.parse(safeStorage.decryptString(raw));
+      const tokenData = JSON.parse(safeStorage.decryptString(raw));
+      // Migrate now instead of waiting for the next login/refresh, which may
+      // not happen for a long time (TOKEN_EXPIRES_IN defaults to 1 year).
+      if (!writeTokenFile(tokenData)) {
+        logger.error('Failed to migrate encrypted token file to plaintext');
+      }
+      return tokenData;
     }
   }
   catch (error) {
