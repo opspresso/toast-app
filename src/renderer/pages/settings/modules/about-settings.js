@@ -365,7 +365,12 @@ export function handleInstallError(error) {
     const originalContent = updateMessage.textContent;
 
     // 오류 메시지 설정
-    updateMessage.innerHTML = `<span class="error-message">Error occurred while installing update:</span> ${error.message || 'Unknown error'}`;
+    updateMessage.textContent = '';
+    const errorLabel = document.createElement('span');
+    errorLabel.className = 'error-message';
+    errorLabel.textContent = 'Error occurred while installing update:';
+    updateMessage.appendChild(errorLabel);
+    updateMessage.appendChild(document.createTextNode(` ${error.message || 'Unknown error'}`));
 
     // 추가 도움말 표시
     const helpText = document.createElement('p');
