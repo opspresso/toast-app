@@ -54,12 +54,27 @@ function computeFingerprint(action) {
       scriptParams: action.scriptParams || '',
     };
   }
-  else if (action.action === 'application' && action.applicationParameters) {
-    // Launch arguments are attacker-controllable capability; a plain app launch
-    // (no parameters) stays gate-free to avoid prompting on every synced button.
+  else if (action.action === 'application') {
+    const applicationPath = action.applicationPath || '';
+    if (!applicationPath) {
+      // Empty slot placeholder; nothing to execute.
+      return null;
+    }
+
+    // A plain launch of an installed .app bundle stays gate-free to avoid
+    // prompting on every synced button. Launch parameters are
+    // attacker-controllable capability regardless of target, and a path that
+    // isn't a standard app bundle (e.g. a script or arbitrary executable) is
+    // gated even without parameters, since it isn't a normal "open this app"
+    // button.
+    const isAppBundle = /\.app\/?$/i.test(applicationPath);
+    if (!action.applicationParameters && isAppBundle) {
+      return null;
+    }
+
     canonical = {
       action: 'application',
-      applicationPath: action.applicationPath || '',
+      applicationPath,
       applicationParameters: action.applicationParameters || '',
     };
   }
