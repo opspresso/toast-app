@@ -458,6 +458,17 @@ describe('IPC Handlers', () => {
       expect(mockApp.setLoginItemSettings).toHaveBeenCalledWith({ openAtLogin: false });
       expect(mockWindows.toast.setSkipTaskbar).toHaveBeenCalledWith(true);
     });
+
+    test('should re-register the global hotkey after reset-config', async () => {
+      setupIpcHandlers(mockWindows);
+
+      const handler = mockIpcMain.handle.mock.calls
+        .find(([event]) => event === 'reset-config')[1];
+
+      await handler();
+
+      expect(mockShortcuts.registerGlobalShortcuts).toHaveBeenCalledWith(mockConfig, mockWindows);
+    });
   });
 
   describe('authentication handlers', () => {
