@@ -179,8 +179,8 @@ async function executeChainedActions(action)
 
 ```javascript
 {
-  success: true|false, // 전체 체인이 성공적으로 실행되었는지 여부
-  message: "Chain executed successfully" | "Chain execution stopped due to an error",
+  success: true|false, // 전체 체인이 성공적으로 실행되었는지 여부 (하나라도 실패하면 false)
+  message: "Chain executed successfully" | "Chain execution stopped due to an error" | "Chain completed with one or more errors",
   results: [
     {
       index: 0, // 체인에서 액션의 인덱스
