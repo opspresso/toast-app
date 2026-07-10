@@ -186,7 +186,7 @@ describe('Exec Action', () => {
 
         // Uses escapeShellArg which wraps path in single quotes for Unix
         expect(exec).toHaveBeenCalledWith(
-          "open -a Visual Studio Code '/test/project'",
+          "open -a \"Visual Studio Code\" '/test/project'",
           { shell: true },
           expect.any(Function)
         );
@@ -225,7 +225,7 @@ describe('Exec Action', () => {
 
         // Uses escapeShellArg which wraps path in single quotes for Unix
         expect(exec).toHaveBeenCalledWith(
-          "open -a Visual Studio Code --new-window '/test/project'",
+          "open -a \"Visual Studio Code\" --new-window '/test/project'",
           { shell: true },
           expect.any(Function)
         );
