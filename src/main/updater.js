@@ -477,6 +477,7 @@ async function downloadUpdate() {
     return {
       success: false,
       error: 'Update download already in progress',
+      alreadyInProgress: true,
     };
   }
 
@@ -655,6 +656,14 @@ async function downloadAndInstallUpdate(version) {
 
   const downloadResult = await downloadUpdate();
   if (!downloadResult.success) {
+    if (downloadResult.alreadyInProgress) {
+      // A download triggered by an earlier click is still running; leave the
+      // tray showing 'downloading' instead of reverting it to 'available',
+      // which would look like that download had failed or been cancelled.
+      logger.info('One-click upgrade skipped: a download is already in progress');
+      return downloadResult;
+    }
+
     logger.error('One-click upgrade failed during download:', downloadResult.error);
     notifyTrayUpdateState('available', version);
     return downloadResult;
