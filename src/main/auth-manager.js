@@ -396,7 +396,17 @@ async function fetchSubscription(forceRefresh = false) {
  * @returns {Promise<Object>} Refresh result
  */
 async function refreshAccessToken() {
-  return await auth.refreshAccessToken();
+  const result = await auth.refreshAccessToken();
+
+  // A dead refresh token means the user is effectively logged out; run the
+  // full logout flow so cloud sync stops and both windows are notified,
+  // instead of silently leaving the app in a stale "logged in" state.
+  if (!result.success && result.requireRelogin) {
+    logger.warn('Refresh token requires re-login; logging out');
+    await logout();
+  }
+
+  return result;
 }
 
 /**

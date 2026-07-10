@@ -150,6 +150,31 @@ describe('Authentication Manager', () => {
       expect(result).toEqual(mockResult);
       expect(mockAuth.refreshAccessToken).toHaveBeenCalled();
     });
+
+    test('should log out and notify both windows when the refresh token requires re-login', async () => {
+      const mockResult = {
+        success: false,
+        error: 'Your login session has expired. Please log in again.',
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true,
+      };
+      mockAuth.refreshAccessToken.mockResolvedValue(mockResult);
+
+      const result = await authManager.refreshAccessToken();
+
+      expect(result).toEqual(mockResult);
+      expect(mockAuth.logout).toHaveBeenCalled();
+      expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('auth-state-changed', expect.objectContaining({ isAuthenticated: false }));
+    });
+
+    test('should not log out when refresh fails for a reason other than requireRelogin', async () => {
+      const mockResult = { success: false, error: 'Network error', code: 'REFRESH_FAILED' };
+      mockAuth.refreshAccessToken.mockResolvedValue(mockResult);
+
+      await authManager.refreshAccessToken();
+
+      expect(mockAuth.logout).not.toHaveBeenCalled();
+    });
   });
 
   describe('User Profile Management', () => {
