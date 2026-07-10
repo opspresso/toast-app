@@ -630,17 +630,17 @@ describe('Main Auth Module (P0)', () => {
       expect(result.error).toContain('Failed to save token file');
     });
 
-    test('should encrypt the token file via safeStorage when encryption is available', async () => {
+    test('should write the token file as plaintext even when safeStorage encryption is available', async () => {
       mockSafeStorage.isEncryptionAvailable.mockReturnValue(true);
 
       await auth.exchangeCodeForToken('test-code');
 
       const [, writtenContent] = mockFs.writeFileSync.mock.calls[0];
-      expect(Buffer.isBuffer(writtenContent)).toBe(true);
-      expect(mockSafeStorage.encryptString).toHaveBeenCalled();
+      expect(typeof writtenContent).toBe('string');
+      expect(mockSafeStorage.encryptString).not.toHaveBeenCalled();
 
-      const decrypted = JSON.parse(mockSafeStorage.decryptString(writtenContent));
-      expect(decrypted['auth-token']).toBe('new-access-token');
+      const written = JSON.parse(writtenContent);
+      expect(written['auth-token']).toBe('new-access-token');
     });
 
     test('should read back an encrypted token file when encryption is available', async () => {
