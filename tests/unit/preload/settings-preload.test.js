@@ -97,11 +97,6 @@ describe('Settings Preload Script', () => {
       expect(settingsAPI.exportConfig).toBeDefined();
     });
 
-    test('should expose action methods', () => {
-      expect(settingsAPI.testAction).toBeDefined();
-      expect(settingsAPI.validateAction).toBeDefined();
-    });
-
     test('should expose dialog methods', () => {
       expect(settingsAPI.showOpenDialog).toBeDefined();
       expect(settingsAPI.showSaveDialog).toBeDefined();
@@ -211,20 +206,9 @@ describe('Settings Preload Script', () => {
   });
 
   describe('Action Functions', () => {
-    test('should call test-action with action parameter', () => {
-      const testAction = { type: 'exec', command: 'ls -la' };
-      
-      settingsAPI.testAction(testAction);
-      
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('test-action', testAction);
-    });
-
-    test('should call validate-action with action parameter', () => {
-      const testAction = { type: 'application', path: '/Applications/Safari.app' };
-      
-      settingsAPI.validateAction(testAction);
-      
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('validate-action', testAction);
+    test('should not expose action execution/testing methods, which the Settings window never uses', () => {
+      expect(settingsAPI.testAction).toBeUndefined();
+      expect(settingsAPI.validateAction).toBeUndefined();
     });
   });
 
