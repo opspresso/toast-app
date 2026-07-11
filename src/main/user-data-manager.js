@@ -19,11 +19,6 @@ const USER_DATA_PATH = app.getPath('userData');
 const PROFILE_FILE_PATH = path.join(USER_DATA_PATH, 'user-profile.json');
 const SETTINGS_FILE_PATH = path.join(USER_DATA_PATH, 'user-settings.json');
 
-// Periodic refresh settings
-const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // Refresh every 30 minutes
-let profileRefreshTimer = null;
-let settingsRefreshTimer = null;
-
 // Store API references
 let apiClientRef = null;
 let authManagerRef = null;
@@ -320,230 +315,6 @@ async function getUserSettings(forceRefresh = false) {
 }
 
 /**
- * Update settings with improved error handling and atomic file operations
- * @param {Object} settings - Settings to save
- * @returns {boolean} Whether the update was successful
- */
-function updateSettings(settings) {
-  try {
-    if (!settings || typeof settings !== 'object') {
-      logger.error('No settings to update or invalid format');
-      return false;
-    }
-
-    // Create directory if it doesn't exist
-    const dirPath = path.dirname(SETTINGS_FILE_PATH);
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    // Create temporary file path
-    const tempFilePath = `${SETTINGS_FILE_PATH}.temp`;
-
-    try {
-      // First write to a temporary file
-      fs.writeFileSync(tempFilePath, JSON.stringify(settings, null, 2), 'utf8');
-
-      // Verify the written data
-      try {
-        const verifyData = fs.readFileSync(tempFilePath, 'utf8');
-        JSON.parse(verifyData); // Verify it's valid JSON
-      }
-      catch (verifyError) {
-        logger.error('Error verifying written settings data:', verifyError);
-        // Clean up corrupted temp file
-        try {
-          fs.unlinkSync(tempFilePath);
-        }
-        catch (cleanupError) {
-          logger.error('Error cleaning up temp file:', cleanupError);
-        }
-        return false;
-      }
-
-      // Use atomic rename operation
-      if (fs.existsSync(SETTINGS_FILE_PATH)) {
-        // On Windows, we need to remove the existing file first
-        if (process.platform === 'win32') {
-          try {
-            fs.unlinkSync(SETTINGS_FILE_PATH);
-          }
-          catch (unlinkError) {
-            logger.error('Error removing existing settings file:', unlinkError);
-          }
-        }
-      }
-
-      fs.renameSync(tempFilePath, SETTINGS_FILE_PATH);
-      logger.info('Settings file updated successfully via atomic operation');
-      return true;
-    }
-    catch (fileError) {
-      logger.error('File operation error during settings update:', fileError);
-      return false;
-    }
-  }
-  catch (error) {
-    logger.error('Settings update error:', error);
-    return false;
-  }
-}
-
-/**
- * Update sync metadata with improved validation and error recovery
- * @param {Object} metadata - Metadata to update
- * @returns {boolean} Whether the update was successful
- */
-function updateSyncMetadata(metadata) {
-  try {
-    if (!metadata) {
-      logger.error('No metadata to update');
-      return false;
-    }
-
-    // Create directory if it doesn't exist
-    const dirPath = path.dirname(SETTINGS_FILE_PATH);
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    // Read current settings file
-    const currentSettings = readFromFile(SETTINGS_FILE_PATH);
-
-    // Create a new minimal file if the current settings file is missing or corrupted
-    if (!currentSettings || Object.keys(currentSettings).length === 0) {
-      logger.warn('Current settings file is missing or corrupted, creating a new default file');
-
-      // Create minimal settings structure
-      const newSettings = {
-        lastSyncedAt: metadata.lastSyncedAt || Date.now(),
-        lastModifiedAt: metadata.lastModifiedAt || Date.now(),
-        lastSyncedDevice: metadata.lastSyncedDevice || 'Unknown',
-        lastModifiedDevice: metadata.lastModifiedDevice || 'Unknown',
-      };
-
-      // Save new default settings (use writeFileSync directly for test compatibility)
-      try {
-        fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(newSettings, null, 2), 'utf8');
-        logger.info('Sync metadata updated successfully');
-        return true;
-      }
-      catch (writeError) {
-        logger.error('Error saving sync metadata file:', writeError);
-        return false;
-      }
-    }
-
-    // Prepare updated settings including metadata
-    const updatedSettings = {
-      ...currentSettings,
-      // Update timestamp information
-      lastSyncedAt: metadata.lastSyncedAt || currentSettings.lastSyncedAt,
-      lastModifiedAt: metadata.lastModifiedAt || currentSettings.lastModifiedAt,
-      lastSyncedDevice: metadata.lastSyncedDevice || currentSettings.lastSyncedDevice,
-      lastModifiedDevice: metadata.lastModifiedDevice || currentSettings.lastModifiedDevice,
-    };
-
-    // Save to file (use writeFileSync directly for test compatibility)
-    try {
-      fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updatedSettings, null, 2), 'utf8');
-      logger.info('Sync metadata updated successfully');
-      return true;
-    }
-    catch (writeError) {
-      logger.error('Error saving sync metadata file:', writeError);
-      return false;
-    }
-  }
-  catch (error) {
-    logger.error('Sync metadata update error:', error);
-    return false;
-  }
-}
-
-/**
- * Start periodic profile refresh
- */
-function startProfileRefresh() {
-  // Stop any running timer
-  stopProfileRefresh();
-
-  logger.info(`Starting periodic profile refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)} minute interval)`);
-
-  // Run once immediately before starting the timer
-  getUserProfile(true).then(profile => {
-    if (profile) {
-      logger.info('Initial profile refresh complete');
-    }
-  });
-
-  // Set up periodic refresh timer
-  profileRefreshTimer = setInterval(async () => {
-    try {
-      const profile = await getUserProfile(true);
-      if (profile) {
-        logger.info('Periodic profile refresh complete');
-      }
-    }
-    catch (error) {
-      logger.error('Periodic profile refresh error:', error);
-    }
-  }, REFRESH_INTERVAL_MS);
-}
-
-/**
- * Stop periodic profile refresh
- */
-function stopProfileRefresh() {
-  if (profileRefreshTimer) {
-    clearInterval(profileRefreshTimer);
-    profileRefreshTimer = null;
-    logger.info('Periodic profile refresh stopped');
-  }
-}
-
-/**
- * Start periodic settings refresh
- */
-function startSettingsRefresh() {
-  // Stop any running timer
-  stopSettingsRefresh();
-
-  logger.info(`Starting periodic settings refresh (${Math.floor(REFRESH_INTERVAL_MS / 60000)} minute interval)`);
-
-  // Run once immediately before starting the timer
-  getUserSettings(true).then(settings => {
-    if (settings) {
-      logger.info('Initial settings refresh complete');
-    }
-  });
-
-  // Set up periodic refresh timer
-  settingsRefreshTimer = setInterval(async () => {
-    try {
-      const settings = await getUserSettings(true);
-      if (settings) {
-        logger.info('Periodic settings refresh complete');
-      }
-    }
-    catch (error) {
-      logger.error('Periodic settings refresh error:', error);
-    }
-  }, REFRESH_INTERVAL_MS);
-}
-
-/**
- * Stop periodic settings refresh
- */
-function stopSettingsRefresh() {
-  if (settingsRefreshTimer) {
-    clearInterval(settingsRefreshTimer);
-    settingsRefreshTimer = null;
-    logger.info('Periodic settings refresh stopped');
-  }
-}
-
-/**
  * Initialize user data manager
  * @param {Object} apiClient - API client reference
  * @param {Object} authManager - Auth manager reference
@@ -553,75 +324,6 @@ function initialize(apiClient, authManager) {
   authManagerRef = authManager;
 
   logger.info('User data manager initialization complete');
-}
-
-/**
- * Sync data after login and start periodic refresh
- * @param {Object} authData - Authentication data (added for test compatibility)
- * @returns {boolean} Whether the sync was successful
- */
-async function syncAfterLogin(authData = null) {
-  try {
-    logger.info('Starting user data synchronization after login');
-
-    // Save to file if authData is provided (test compatibility)
-    if (authData) {
-      if (authData.user) {
-        // Create directory if it doesn't exist
-        const dirPath = path.dirname(PROFILE_FILE_PATH);
-        if (!fs.existsSync(dirPath)) {
-          fs.mkdirSync(dirPath, { recursive: true });
-        }
-
-        // Save to file (use writeFileSync directly for test compatibility)
-        fs.writeFileSync(PROFILE_FILE_PATH, JSON.stringify(authData.user, null, 2), 'utf8');
-      }
-
-      if (authData.settings) {
-        // Create directory if it doesn't exist
-        const dirPath = path.dirname(SETTINGS_FILE_PATH);
-        if (!fs.existsSync(dirPath)) {
-          fs.mkdirSync(dirPath, { recursive: true });
-        }
-
-        // Save to file (use writeFileSync directly for test compatibility)
-        fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(authData.settings, null, 2), 'utf8');
-      }
-
-      logger.info('Authentication data saved successfully');
-
-      // Return success immediately if authData is provided (test compatibility)
-      return true;
-    }
-
-    // Default behavior if authManagerRef is missing
-    if (!authManagerRef) {
-      logger.warn('Auth manager not initialized, performing default synchronization');
-      return true;
-    }
-
-    // Update profile and settings information
-    const profile = await getUserProfile(true);
-    const settings = await getUserSettings(true);
-
-    if (profile) {
-      logger.info('Profile update after login successful');
-    }
-
-    if (settings) {
-      logger.info('Settings update after login successful');
-    }
-
-    // Start periodic refresh
-    startProfileRefresh();
-    startSettingsRefresh();
-
-    return true;
-  }
-  catch (error) {
-    logger.error('Error synchronizing data after login:', error);
-    return false;
-  }
 }
 
 /**
@@ -639,16 +341,9 @@ function cleanupOnLogout() {
     logger.info('Current state:', {
       profileFileExists: profileExists,
       settingsFileExists: settingsExists,
-      profileRefreshActive: !!profileRefreshTimer,
-      settingsRefreshActive: !!settingsRefreshTimer,
     });
 
-    // 2. Stop periodic refresh
-    stopProfileRefresh();
-    stopSettingsRefresh();
-    logger.info('Periodic refresh timers stopped');
-
-    // 3. Delete both profile file and settings file
+    // 2. Delete both profile file and settings file
     if (profileExists) {
       fs.unlinkSync(PROFILE_FILE_PATH);
       logger.info('Profile file deleted successfully');
@@ -665,7 +360,7 @@ function cleanupOnLogout() {
       logger.info('Settings file does not exist - no need to delete');
     }
 
-    // 4. Verify final result
+    // 3. Verify final result
     const profileStillExists = fileExists(PROFILE_FILE_PATH);
 
     if (profileStillExists) {
@@ -686,12 +381,5 @@ module.exports = {
   initialize,
   getUserProfile,
   getUserSettings,
-  updateSettings,
-  updateSyncMetadata,
-  syncAfterLogin,
   cleanupOnLogout,
-  startProfileRefresh,
-  stopProfileRefresh,
-  startSettingsRefresh,
-  stopSettingsRefresh,
 };
