@@ -305,7 +305,7 @@ async function logout() {
         isAuthenticated: false,
         isSubscribed: false,
         expiresAt: '',
-        pageGroups: 1, // Reset to anonymous user default
+        pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
       });
 
       // Trim pages down to the anonymous entitlement instead of wiping them:
@@ -438,7 +438,7 @@ function notifyLoginSuccess(subscription) {
   const loginData = {
     isAuthenticated: true,
     isSubscribed: subscription?.active || subscription?.is_subscribed || false,
-    pageGroups: subscription?.features?.page_groups || 3,
+    pageGroups: subscription?.features?.page_groups || PAGE_GROUPS.AUTHENTICATED,
   };
 
   broadcastToWindows(windows, 'login-success', loginData);
