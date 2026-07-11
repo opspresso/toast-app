@@ -233,7 +233,10 @@ function setupAutoUpdaterEvents() {
     updateCheckInProgress = false;
     lastCheckTime = Date.now();
 
-    notifyTrayUpdateState(null);
+    // Do not revert the downloading/downloaded state back to "no update"
+    if (!updateDownloadInProgress && !updateDownloaded) {
+      notifyTrayUpdateState(null);
+    }
 
     sendStatusToWindows('update-not-available', {
       status: 'not-available',
@@ -308,9 +311,14 @@ function setupAutoUpdaterEvents() {
     }
 
     updateCheckInProgress = false;
-    updateDownloadInProgress = false;
 
-    notifyTrayUpdateState(null);
+    // Do not revert the downloading/downloaded state back to "no update"
+    // (check before clearing updateDownloadInProgress below)
+    if (!updateDownloadInProgress && !updateDownloaded) {
+      notifyTrayUpdateState(null);
+    }
+
+    updateDownloadInProgress = false;
 
     // Generate a user-friendly message for specific error codes
     let userFriendlyMessage = err.message;
