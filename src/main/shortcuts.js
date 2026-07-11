@@ -4,11 +4,26 @@
  * This module handles the registration and management of global shortcuts.
  */
 
-const { globalShortcut } = require('electron');
+const { globalShortcut, dialog } = require('electron');
 const { createLogger } = require('./logger');
 
 // Create module-specific logger
 const logger = createLogger('Shortcuts');
+
+/**
+ * Tell the user their configured hotkey didn't take effect (e.g. another
+ * application already owns the accelerator). Only call this from call sites
+ * that have no other way to surface a registerGlobalShortcuts() failure to
+ * the user — the interactive hotkey-recording flow already shows its own
+ * in-app alert via the restore-shortcuts IPC response.
+ * @param {string} hotkey - The hotkey that failed to register, as configured
+ */
+function notifyRegistrationFailure(hotkey) {
+  dialog.showErrorBox(
+    'Global Shortcut Unavailable',
+    `Toast could not register the shortcut "${hotkey}". It may already be in use by another application. Please choose a different shortcut in Settings.`,
+  );
+}
 
 /**
  * Convert a hotkey string to Electron format
@@ -296,4 +311,5 @@ module.exports = {
   unregisterGlobalShortcuts,
   isShortcutRegistered,
   positionToastWindow,
+  notifyRegistrationFailure,
 };

@@ -230,8 +230,11 @@ function setupConfigHandlers(windows, config) {
       resetToDefaults(config);
 
       // Re-register the global hotkey since it may have changed back to the default
-      const { registerGlobalShortcuts } = require('../shortcuts');
-      registerGlobalShortcuts(config, windows);
+      const { registerGlobalShortcuts, notifyRegistrationFailure } = require('../shortcuts');
+      const hotkey = config.get('globalHotkey');
+      if (!registerGlobalShortcuts(config, windows) && hotkey) {
+        notifyRegistrationFailure(hotkey);
+      }
 
       // Apply OS-level settings immediately, matching set-config's behavior
       app.setLoginItemSettings({ openAtLogin: config.get('advanced.launchAtLogin') || false });
@@ -272,8 +275,11 @@ function setupConfigHandlers(windows, config) {
         trustCurrentConfig(config);
 
         // Re-register the global hotkey since the imported config may set a new one
-        const { registerGlobalShortcuts } = require('../shortcuts');
-        registerGlobalShortcuts(config, windows);
+        const { registerGlobalShortcuts, notifyRegistrationFailure } = require('../shortcuts');
+        const hotkey = config.get('globalHotkey');
+        if (!registerGlobalShortcuts(config, windows) && hotkey) {
+          notifyRegistrationFailure(hotkey);
+        }
       }
 
       return result;

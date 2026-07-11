@@ -17,9 +17,14 @@ const mockScreen = {
   getDisplayNearestPoint: jest.fn(),
 };
 
+const mockDialog = {
+  showErrorBox: jest.fn(),
+};
+
 jest.mock('electron', () => ({
   globalShortcut: mockGlobalShortcut,
   screen: mockScreen,
+  dialog: mockDialog,
 }));
 
 // Mock logger
@@ -46,6 +51,7 @@ describe('Global Shortcuts', () => {
     mockGlobalShortcut.unregister.mockReset();
     mockGlobalShortcut.unregisterAll.mockReset();
     mockGlobalShortcut.isRegistered.mockReset().mockReturnValue(false);
+    mockDialog.showErrorBox.mockReset();
 
     // Setup mock config
     mockConfig = {
@@ -478,10 +484,21 @@ describe('Global Shortcuts', () => {
       };
 
       shortcuts.registerGlobalShortcuts(longConfig, mockWindows);
-      
+
       // Should handle long shortcut strings gracefully
       expect(longConfig.get).toHaveBeenCalled();
       // Long shortcuts may be rejected, so register may or may not be called
+    });
+  });
+
+  describe('Registration Failure Notification', () => {
+    test('should show a native error dialog naming the conflicting hotkey', () => {
+      shortcuts.notifyRegistrationFailure('Ctrl+Shift+T');
+
+      expect(mockDialog.showErrorBox).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('Ctrl+Shift+T'),
+      );
     });
   });
 });
