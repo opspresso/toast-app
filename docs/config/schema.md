@@ -192,7 +192,7 @@ The actual number of page groups applied is determined dynamically based on the 
 
 | Option | Type | Default | Description |
 |------|------|--------|------|
-| `cloudSync.enabled` | boolean | - | Whether cloud sync is enabled (saved via the settings window toggle; dynamic field outside the schema) |
+| `cloudSync.enabled` | boolean | `true` | Whether cloud sync is enabled on this device (device-local; saved via the settings window toggle, and read/written by CloudSyncManager as the single source of truth) |
 
 ### Cloud Sync Metadata
 
