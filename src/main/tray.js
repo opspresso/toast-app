@@ -28,7 +28,7 @@ function createTray(windows) {
   }
 
   // Determine the icon path based on platform
-  const iconPath = getTrayIconPath();
+  const iconPath = getTrayIconPath(hasUpdateAvailable());
 
   // Create the tray icon
   trayInstance = new Tray(iconPath);
@@ -46,20 +46,32 @@ function createTray(windows) {
 }
 
 /**
- * Get the appropriate tray icon path based on platform
+ * Get the appropriate tray icon path based on platform and update state
+ * @param {boolean} hasUpdate - Whether an update is available/downloading/downloaded
  * @returns {string} Path to tray icon
  */
-function getTrayIconPath() {
+function getTrayIconPath(hasUpdate) {
   // Use template icons for macOS (auto-adapts to menu bar light/dark mode).
   // Development instances get a badged variant so they are easy to tell
   // apart from the installed (production) app.
   if (process.platform === 'darwin') {
     const isDev = process.env.NODE_ENV === 'development';
-    return path.join(__dirname, isDev ? '../../assets/icons/tray-icon-devTemplate.png' : '../../assets/icons/tray-icon-Template.png');
+    if (isDev) {
+      return path.join(__dirname, '../../assets/icons/tray-icon-devTemplate.png');
+    }
+    return path.join(__dirname, hasUpdate ? '../../assets/icons/tray-icon-updateTemplate.png' : '../../assets/icons/tray-icon-Template.png');
   }
 
   // Use regular icon for other platforms
-  return path.join(__dirname, '../../assets/icons/tray-icon.png');
+  return path.join(__dirname, hasUpdate ? '../../assets/icons/tray-icon-update.png' : '../../assets/icons/tray-icon.png');
+}
+
+/**
+ * Whether the current update state should be reflected on the tray icon
+ * @returns {boolean} True while an update is available, downloading, or downloaded
+ */
+function hasUpdateAvailable() {
+  return updateState.status !== null;
 }
 
 /**
@@ -195,6 +207,7 @@ function setUpdateState(status, version) {
   updateState = { status: status || null, version: version || null };
 
   if (trayInstance) {
+    trayInstance.setImage(getTrayIconPath(hasUpdateAvailable()));
     updateTrayMenu(trayInstance, windowsRef);
   }
 }

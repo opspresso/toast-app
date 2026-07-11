@@ -8,6 +8,7 @@
 const mockTray = {
   setToolTip: jest.fn(),
   setContextMenu: jest.fn(),
+  setImage: jest.fn(),
   on: jest.fn(),
   destroy: jest.fn(),
 };
@@ -91,6 +92,7 @@ describe('System Tray', () => {
     // Reset mock responses
     mockTray.setToolTip.mockClear();
     mockTray.setContextMenu.mockClear();
+    mockTray.setImage.mockClear();
     mockTray.on.mockClear();
     mockTray.destroy.mockClear();
 
@@ -494,6 +496,39 @@ describe('System Tray', () => {
 
     test('should not throw when no tray instance exists', () => {
       expect(() => tray.setUpdateState('available', '1.2.3')).not.toThrow();
+    });
+
+    test('should switch to the badged icon when an update becomes available', () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
+      tray.createTray(mockWindows);
+      mockTray.setImage.mockClear();
+
+      tray.setUpdateState('available', '9.9.9');
+
+      expect(mockTray.setImage).toHaveBeenCalledWith(
+        expect.stringContaining('tray-icon-updateTemplate.png')
+      );
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
+
+    test('should restore the normal icon when the update state is cleared', () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
+      tray.createTray(mockWindows);
+      tray.setUpdateState('available', '9.9.9');
+      mockTray.setImage.mockClear();
+
+      tray.setUpdateState(null);
+
+      expect(mockTray.setImage).toHaveBeenCalledWith(
+        expect.stringContaining('tray-icon-Template.png')
+      );
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
     });
   });
 });
