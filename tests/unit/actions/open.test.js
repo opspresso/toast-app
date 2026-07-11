@@ -1,7 +1,7 @@
 /**
  * Toast - Open Action Tests
  *
- * 파일/URL 열기 액션에 대한 단위 테스트
+ * Unit tests for the file/URL open action
  */
 
 // Mock dependencies

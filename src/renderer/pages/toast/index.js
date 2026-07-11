@@ -129,22 +129,22 @@ function setupEventListeners() {
     });
   }
 
-  // 특별 명령어 처리 (꽃가루 애니메이션 등) - only if window.toast exists
+  // Handle special commands (confetti animation, etc.) - only if window.toast exists
   if (window.toast) {
     window.toast.onSpecialCommand = function (command) {
       if (command === 'confetti' || command === '꽃가루') {
-        // 꽃가루 애니메이션 실행
+        // Run confetti animation
         showStatus('🎉 Let it go!', 'success');
         if (window.confetti && window.confetti.start) {
           window.confetti.start({
-            duration: 5, // 5초 동안 실행
-            density: 100, // 꽃가루 밀도
+            duration: 5, // Run for 5 seconds
+            density: 100, // Confetti density
           });
         }
-        return true; // 명령 처리 완료
+        return true; // Command handled
       }
 
-      return false; // 처리할 수 없는 명령
+      return false; // Command could not be handled
     };
   }
 }

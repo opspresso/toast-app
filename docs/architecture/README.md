@@ -1,22 +1,22 @@
 # Architecture
 
-Toast App의 아키텍처 문서입니다.
+Architecture documentation for Toast App.
 
-## 문서 목록
+## Document List
 
-| 문서 | 설명 |
+| Document | Description |
 |------|------|
-| [overview.md](./overview.md) | 시스템 구조, 데이터 흐름, 프로세스 구조 |
-| [platform.md](./platform.md) | macOS/Windows 플랫폼별 구현 |
-| [security.md](./security.md) | 보안 모델, 데이터 보호, 인증 |
+| [overview.md](./overview.md) | System structure, data flow, and process structure |
+| [platform.md](./platform.md) | macOS/Windows platform-specific implementation |
+| [security.md](./security.md) | Security model, data protection, and authentication |
 
-## 빠른 링크
+## Quick Links
 
-- **시스템 구조**: [overview.md](./overview.md)
-- **크로스 플랫폼**: [platform.md](./platform.md)
-- **보안**: [security.md](./security.md)
+- **System Structure**: [overview.md](./overview.md)
+- **Cross-Platform**: [platform.md](./platform.md)
+- **Security**: [security.md](./security.md)
 
-## 관련 문서
+## Related Documents
 
-- [API 레퍼런스](../api/README.md)
-- [개발 환경 설정](../development/setup.md)
+- [API Reference](../api/README.md)
+- [Development Environment Setup](../development/setup.md)

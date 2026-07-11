@@ -8,7 +8,7 @@ const Store = require('electron-store');
 const { createLogger } = require('./logger');
 const { getEnv } = require('./config/env');
 
-// 모듈별 로거 생성
+// Create module-specific logger
 const logger = createLogger('Config');
 
 // Multiple app instances (e.g. running side-by-side for testing) must not share
@@ -230,9 +230,9 @@ const schema = {
   },
 };
 
-// 공유 스토어 인스턴스 — 모든 모듈이 동일 인스턴스를 써야
-// onDidChange 기반 동작(클라우드 동기화 트리거, 텍스트 확장 캐시 갱신)이
-// 어느 쓰기 경로에서든 발화한다 (electron-store 이벤트는 인스턴스 간 전파되지 않음)
+// Shared store instance — all modules must use the same instance so that
+// onDidChange-based behaviors (cloud sync trigger, text expander cache refresh)
+// fire from any write path (electron-store events do not propagate across instances)
 let sharedStore = null;
 
 /**
@@ -245,21 +245,21 @@ function createConfigStore() {
   }
 
   try {
-    // 먼저 스키마 검증 없이 구성을 로드하여 마이그레이션
+    // First load the configuration without schema validation to migrate it
     const migrationStore = new Store({
       name: CONFIG_STORE_NAME,
-      schema: null, // 스키마 검증 비활성화
+      schema: null, // Disable schema validation
       clearInvalidConfig: false,
     });
 
-    // 구독 정보 마이그레이션 시도
+    // Attempt subscription data migration
     try {
       const subscription = migrationStore.get('subscription');
       if (subscription) {
-        // 구독 정보 타입 정리
+        // Clean up subscription data types
         const sanitizedSubscription = sanitizeSubscription(subscription);
 
-        // 변경된 데이터 저장 (스키마 검증 전)
+        // Save the changed data (before schema validation)
         migrationStore.set('subscription', sanitizedSubscription);
 
         logger.info('Legacy subscription data migrated successfully');
@@ -267,7 +267,7 @@ function createConfigStore() {
     }
     catch (migrationError) {
       logger.error('Error during subscription data migration:', migrationError);
-      // 마이그레이션 오류 발생시 구독 정보 재설정
+      // Reset subscription data when a migration error occurs
       try {
         migrationStore.set('subscription', schema.subscription.default);
         logger.info('Reset subscription data to defaults due to migration error');
@@ -277,12 +277,12 @@ function createConfigStore() {
       }
     }
 
-    // 이제 정상적인 스키마 검증으로 Store 객체 생성
+    // Now create the Store object with normal schema validation
     sharedStore = new Store({ name: CONFIG_STORE_NAME, schema });
     return sharedStore;
   }
   catch (error) {
-    // 최악의 경우 스키마 검증을 비활성화하고 Store 객체 생성
+    // As a last resort, disable schema validation and create the Store object
     logger.error('Error creating config store with schema, falling back to schema-less store:', error);
     sharedStore = new Store({
       name: CONFIG_STORE_NAME,
@@ -450,41 +450,41 @@ function exportConfig(config, filePath) {
  * @returns {Object} - Subscription object with correct types
  */
 function sanitizeSubscription(subscription) {
-  // 없거나 객체가 아닌 경우 기본값 반환
+  // Return the default when missing or not an object
   if (!subscription || typeof subscription !== 'object') {
     return schema.subscription.default;
   }
 
   const result = { ...subscription };
 
-  // boolean 타입 필드 정리
+  // Clean up boolean-type fields
   result.isSubscribed = Boolean(result.isSubscribed);
   result.isAuthenticated = Boolean(result.isAuthenticated);
 
-  // expiresAt 필드는 반드시 문자열이어야 함
+  // The expiresAt field must be a string
   if (result.expiresAt !== undefined) {
     if (typeof result.expiresAt === 'string') {
-      // 이미 문자열이면 그대로 사용
+      // Already a string, use it as-is
     }
     else if (result.expiresAt instanceof Date) {
-      // Date 객체인 경우 ISO 문자열로 변환
+      // Convert a Date object to an ISO string
       result.expiresAt = result.expiresAt.toISOString();
     }
     else if (typeof result.expiresAt === 'number') {
-      // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
+      // Convert a number (timestamp) to an ISO string
       result.expiresAt = new Date(result.expiresAt).toISOString();
     }
     else {
-      // 기타 타입은 빈 문자열로 설정
+      // Set any other type to an empty string
       result.expiresAt = '';
     }
   }
   else {
-    // undefined인 경우 빈 문자열로 설정
+    // Set to an empty string when undefined
     result.expiresAt = '';
   }
 
-  // 이전 버전과의 호환성을 위해 subscribedUntil이 존재할 경우 expiresAt으로 이동
+  // For backward compatibility, move subscribedUntil to expiresAt if it exists
   if (result.subscribedUntil !== undefined) {
     if (!result.expiresAt && result.subscribedUntil) {
       result.expiresAt = result.subscribedUntil;
@@ -492,7 +492,7 @@ function sanitizeSubscription(subscription) {
     delete result.subscribedUntil;
   }
 
-  // pageGroups 필드는 숫자여야 함
+  // The pageGroups field must be a number
   if (result.pageGroups !== undefined) {
     result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
   }
@@ -601,7 +601,7 @@ function markAsSynced(config, deviceId = null) {
   updateSyncMetadata(config, {
     lastSyncedAt: timestamp,
     lastSyncedDevice: device,
-    // lastModifiedAt는 업데이트하지 않음 - 실제 수정 시간을 보존
+    // Do not update lastModifiedAt - preserve the actual modification time
     dataHash,
     isConflicted: false,
   });

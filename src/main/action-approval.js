@@ -290,7 +290,7 @@ async function ensureApproved(action) {
   }
 
   const security = getSecurity(state.configStore);
-  // 승인 대기 중인 액션이 없으면(실행 시점의 대부분의 경우) fingerprint 계산 없이 즉시 허용
+  // If there are no actions awaiting approval (the common case at execution time), allow immediately without computing a fingerprint
   if (security.pendingApprovals.length === 0) {
     return { approved: true };
   }

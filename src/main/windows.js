@@ -64,15 +64,15 @@ function createToastWindow(config) {
     skipTaskbar: !showInTaskbar,
     show: false,
     alwaysOnTop: true,
-    // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
-    alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
-    type: process.platform === 'darwin' ? 'normal' : 'panel', // macOS에서는 normal 타입 사용하여 경고 방지
-    // hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
-    thickFrame: false, // Windows에서 기본 창 프레임 비활성화
+    // Configure the window to always stay on top, even in fullscreen mode
+    alwaysOnTopLevel: 'screen-saver', // Set the highest priority
+    type: process.platform === 'darwin' ? 'normal' : 'panel', // Use the normal type on macOS to avoid warnings
+    // hasShadow: false, // Remove the shadow effect for a lighter-looking window
+    thickFrame: false, // Disable the default window frame on Windows
     fullscreen: false,
     fullscreenable: false,
     visibleOnAllWorkspaces: true,
-    simpleFullscreen: false, // macOS 전용 속성
+    simpleFullscreen: false, // macOS-only property
     kiosk: false,
     webPreferences: {
       preload: path.join(__dirname, '../renderer/preload/toast.js'),
@@ -96,12 +96,12 @@ function createToastWindow(config) {
 
   // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
-    // DevTools를 더 조용하게 열기 위해 약간의 지연 추가
+    // Add a slight delay to open DevTools more quietly
     windows.toast.webContents.once('dom-ready', () => {
       setTimeout(() => {
         windows.toast.webContents.openDevTools({
           mode: 'detach',
-          activate: false, // DevTools 창을 활성화하지 않음
+          activate: false, // Do not activate the DevTools window
         });
       }, 1000);
     });
@@ -212,15 +212,15 @@ function createSettingsWindow(config) {
     minHeight: 400,
     show: false,
     alwaysOnTop: true,
-    // 전체 화면 모드에서도 항상 최상위에 표시되도록 설정
-    alwaysOnTopLevel: 'screen-saver', // 가장 높은 우선순위 설정
-    type: process.platform === 'darwin' ? 'normal' : 'panel', // macOS에서는 normal 타입 사용하여 경고 방지
-    // hasShadow: false, // 그림자 효과 제거로 더 가벼운 느낌의 창으로 표시
-    thickFrame: false, // Windows에서 기본 창 프레임 비활성화
+    // Configure the window to always stay on top, even in fullscreen mode
+    alwaysOnTopLevel: 'screen-saver', // Set the highest priority
+    type: process.platform === 'darwin' ? 'normal' : 'panel', // Use the normal type on macOS to avoid warnings
+    // hasShadow: false, // Remove the shadow effect for a lighter-looking window
+    thickFrame: false, // Disable the default window frame on Windows
     fullscreen: false,
     fullscreenable: false,
     visibleOnAllWorkspaces: true,
-    simpleFullscreen: false, // macOS 전용 속성
+    simpleFullscreen: false, // macOS-only property
     kiosk: false,
     webPreferences: {
       preload: path.join(__dirname, '../renderer/preload/settings.js'),
@@ -247,12 +247,12 @@ function createSettingsWindow(config) {
 
   // Open DevTools in development mode
   if (process.env.NODE_ENV === 'development') {
-    // DevTools를 더 조용하게 열기 위해 약간의 지연 추가
+    // Add a slight delay to open DevTools more quietly
     windows.settings.webContents.once('dom-ready', () => {
       setTimeout(() => {
         windows.settings.webContents.openDevTools({
           mode: 'detach',
-          activate: false, // DevTools 창을 활성화하지 않음
+          activate: false, // Do not activate the DevTools window
         });
       }, 1000);
     });
@@ -293,7 +293,7 @@ function showToastWindow(config) {
     createToastWindow(config);
   }
 
-  // 현재 포커스된 창이 있는지 확인하고 전체 화면 상태를 저장
+  // Check whether there is a currently focused window and save its fullscreen state
   const { BrowserWindow } = require('electron');
   const focusedWindow = BrowserWindow.getFocusedWindow();
   const isFullScreen = focusedWindow && focusedWindow.isFullScreen();
@@ -303,24 +303,24 @@ function showToastWindow(config) {
   // Position the window
   positionToastWindow(windows.toast, config);
 
-  // 전체 화면 모드 위에서도 토스트 창이 올바르게 표시되도록 설정
+  // Configure the toast window to display correctly even over fullscreen mode
   if (isFullScreen) {
     windows.toast.setAlwaysOnTop(true, 'screen-saver');
 
-    // 전체 화면 모드에서 토스트 창을 모든 작업 공간에 표시
+    // Show the toast window on all workspaces in fullscreen mode
     if (process.platform === 'darwin') {
-      // macOS 전용
+      // macOS only
       windows.toast.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     }
     else if (process.platform === 'win32') {
-      // Windows 전용
-      // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
+      // Windows only
+      // On Windows, set the window with a high zOrder so it always stays on top
       windows.toast.setAlwaysOnTop(true, 'screen-saver', 1);
     }
     else if (process.platform === 'linux') {
-      // Linux 전용
-      // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
-      // 다양한 윈도우 매니저에 따라 다르게 동작할 수 있음
+      // Linux only
+      // On Linux, changing the window type can make it display over fullscreen
+      // Behavior may vary depending on the window manager
       try {
         windows.toast.setAlwaysOnTop(true, 'screen-saver', 1);
         const win = windows.toast.getNativeWindowHandle();
@@ -431,30 +431,30 @@ function showSettingsWindow(config, tabName) {
   else {
     settingsWindow = windows.settings;
 
-    // 현재 포커스된 창이 있는지 확인하고 전체 화면 상태를 저장
+    // Check whether there is a currently focused window and save its fullscreen state
     const { BrowserWindow } = require('electron');
     const focusedWindow = BrowserWindow.getFocusedWindow();
     const isFullScreen = focusedWindow && focusedWindow.isFullScreen();
 
     logger.info(`Showing settings window. Focused window is fullscreen: ${isFullScreen}`);
 
-    // 전체 화면 모드 위에서도 설정 창이 올바르게 표시되도록 설정
+    // Configure the settings window to display correctly even over fullscreen mode
     if (isFullScreen) {
       settingsWindow.setAlwaysOnTop(true, 'screen-saver');
 
-      // 전체 화면 모드에서 창을 모든 작업 공간에 표시
+      // Show the window on all workspaces in fullscreen mode
       if (process.platform === 'darwin') {
-        // macOS 전용
+        // macOS only
         settingsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
       }
       else if (process.platform === 'win32') {
-        // Windows 전용
-        // Windows에서는 높은 zOrder로 창을 설정하여 항상 위에 표시
+        // Windows only
+        // On Windows, set the window with a high zOrder so it always stays on top
         settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);
       }
       else if (process.platform === 'linux') {
-        // Linux 전용
-        // Linux에서는 창 타입을 변경하여 전체 화면 위에 표시되도록 할 수 있음
+        // Linux only
+        // On Linux, changing the window type can make it display over fullscreen
         try {
           settingsWindow.setAlwaysOnTop(true, 'screen-saver', 1);
           const win = settingsWindow.getNativeWindowHandle();

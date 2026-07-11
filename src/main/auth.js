@@ -12,7 +12,7 @@ const fs = require('fs');
 const { createLogger, maskAuthUrl } = require('./logger');
 const { createConfigStore } = require('./config');
 
-// 모듈별 로거 생성
+// Create logger for this module
 const logger = createLogger('Auth');
 
 // Import API modules
@@ -25,7 +25,7 @@ const { getEnv } = require('./config/env');
 // These must be provided via environment variables or .env file
 const CLIENT_ID = getEnv('CLIENT_ID', '');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', '');
-// 토큰 만료 시간을 무기한으로 설정 (매우 긴 시간으로 설정)
+// Set token expiration time to unlimited (set to a very long duration)
 const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '31536000'), 10); // Default 1 year (365 days), can be overridden in environment variables
 const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
 
@@ -232,7 +232,7 @@ async function isTokenExpired() {
       return true;
     }
 
-    // 무기한 토큰인 경우 (매우 먼 미래 날짜) 만료되지 않은 것으로 처리
+    // Treat unlimited tokens (very distant future date) as not expired
     if (expiresAt >= 8640000000000000) {
       logger.info('Token is set to unlimited expiration');
       return false;
@@ -373,14 +373,14 @@ async function handleAuthRedirect(url) {
   try {
     logger.info('Processing auth redirect:', maskAuthUrl(url));
 
-    // 직접 URL에서 파라미터 추출
+    // Extract parameters directly from the URL
     const urlObj = new URL(url);
     const code = urlObj.searchParams.get('code');
     const token = urlObj.searchParams.get('token');
     const userId = urlObj.searchParams.get('userId');
     const action = urlObj.searchParams.get('action');
 
-    // Connect 페이지에서의 딥링크 처리 (token, userId, action 파라미터 사용)
+    // Handle deep link from the Connect page (using token, userId, action parameters)
     if (action === 'reload_auth' && token && userId) {
       logger.info('Auth reload action detected with token from connect page');
 
@@ -406,7 +406,7 @@ async function handleAuthRedirect(url) {
       }
     }
 
-    // 기존 OAuth 코드 처리 로직
+    // Existing OAuth code handling logic
     if (code) {
       const redirectResult = await apiAuth.handleAuthRedirect({
         url,
@@ -549,15 +549,15 @@ async function refreshAccessToken() {
     if (timeSinceLastRefresh < TOKEN_REFRESH_COOLDOWN_MS && lastTokenRefresh > 0) {
       logger.info(`Recent token refresh attempt (${Math.floor(timeSinceLastRefresh / 1000)} seconds ago). Skipping to prevent duplicate requests.`);
 
-      // 현재 토큰이 여전히 유효한지 확인
+      // Check if the current token is still valid
       const isExpired = await isTokenExpired();
       if (!isExpired) {
-        // 토큰이 유효하면 성공으로 처리
+        // If the token is valid, treat as success
         logger.info('Current token is still valid. Returning success.');
         return { success: true, throttled: true, tokenValid: true };
       }
       else {
-        // 토큰이 만료되었지만 스로틀링 중이면 오류 반환
+        // If the token is expired but throttled, return an error
         logger.warn('Token is expired but refresh is throttled. Returning error.');
         return {
           success: false,
@@ -622,13 +622,13 @@ async function refreshAccessToken() {
         if (!refreshResult.success) {
           // If failed with 401 error, reset tokens
           if (refreshResult.code === 'SESSION_EXPIRED') {
-            // API 토큰 초기화
+            // Reset API tokens
             const apiLogoutResult = await apiAuth.logout();
             if (!apiLogoutResult.success) {
               logger.warn('API logout warning during token reset:', apiLogoutResult.error);
             }
 
-            // 로컬 토큰 파일 삭제
+            // Delete local token file
             await clearLocalTokenStorage();
             logger.info('Expired tokens reset complete');
           }
@@ -821,9 +821,10 @@ async function hasValidToken() {
     // If token exists, also check expiration
     const isExpired = await isTokenExpired();
     if (isExpired) {
-      // 만료된 토큰은 자동 갱신을 시도한다. 갱신 없이 false 만 반환하면
-      // hasValidToken 으로 게이트하는 호출부(cloud sync, 아이콘 업로드)가
-      // 요청 자체를 보내지 않아 401 기반 갱신도 영영 일어나지 않는다.
+      // Attempt automatic refresh for expired tokens. If we only returned false
+      // without refreshing, callers gated on hasValidToken (cloud sync, icon
+      // upload) would never send the request, so 401-based refresh would never
+      // happen either.
       logger.info('Token has expired. Attempting automatic refresh.');
       const refreshResult = await refreshAccessToken();
       if (refreshResult && refreshResult.success) {

@@ -154,7 +154,7 @@ function startPeriodicSync() {
 }
 
 /**
- * 주기적 설정 동기화 중지
+ * Stop periodic settings synchronization
  */
 function stopPeriodicSync() {
   if (state.timers.sync) {
@@ -175,33 +175,33 @@ function stopPeriodicSync() {
 }
 
 /**
- * 설정 변경 시 동기화 예약
- * @param {string} changeType - 변경 유형 (예: '페이지 추가됨', '버튼 수정됨' 등)
+ * Schedule synchronization on settings change
+ * @param {string} changeType - Change type (e.g. 'page added', 'button modified', etc.)
  */
 function scheduleSync(changeType) {
-  // 현재 설정의 해시를 생성하여 중복 변경 방지 (_sync 메타데이터 제외)
+  // Generate a hash of the current settings to prevent duplicate changes (excluding _sync metadata)
   const currentData = {
     appearance: configStore.get('appearance'),
     pages: configStore.get('pages'),
     snippets: configStore.get('snippets'),
     advanced: configStore.get('advanced'),
-    // _sync 필드는 의도적으로 제외 (메타데이터 변경으로 인한 false positive 방지)
+    // The _sync field is intentionally excluded (prevents false positives from metadata changes)
   };
   const currentHash = JSON.stringify(currentData);
 
-  // 동일한 변경사항인지 확인
+  // Check if it's the same change
   if (state.lastChangeHash === currentHash && state.lastChangeType === changeType) {
     logger.info(`Duplicate ${changeType} change detected, ignoring sync request`);
     return;
   }
 
-  // 현재 동기화가 진행 중인 경우 완전 무시 (대기하지 않음)
+  // Completely ignore if sync is currently in progress (do not wait)
   if (state.isSyncing) {
     logger.info(`${changeType} change detected but sync in progress, ignoring request`);
     return;
   }
 
-  // 너무 빠른 연속 변경 방지 (최소 1초 간격)
+  // Prevent overly rapid consecutive changes (minimum 1 second interval)
   const now = Date.now();
   if (state.lastScheduleTime && now - state.lastScheduleTime < 1000) {
     logger.info(`${changeType} change detected too quickly, ignoring request`);
@@ -212,15 +212,15 @@ function scheduleSync(changeType) {
   state.lastChangeHash = currentHash;
   state.lastScheduleTime = now;
 
-  // 이전에 예약된 동기화 취소
+  // Cancel previously scheduled sync
   if (state.timers.debounce) {
     clearTimeout(state.timers.debounce);
   }
 
-  // 새로운 동기화 예약
+  // Schedule new sync
   state.timers.debounce = setTimeout(async () => {
     logger.info(`Starting settings upload for '${changeType}' change`);
-    state.retryCount = 0; // 재시도 횟수 초기화
+    state.retryCount = 0; // Reset retry count
     await uploadSettingsWithRetry();
   }, SYNC_DEBOUNCE_MS);
 
@@ -228,7 +228,7 @@ function scheduleSync(changeType) {
 }
 
 /**
- * 재시도 로직이 포함된 설정 업로드
+ * Upload settings with retry logic
  */
 async function uploadSettingsWithRetry() {
   if (state.isSyncing) {
@@ -238,30 +238,30 @@ async function uploadSettingsWithRetry() {
 
   try {
     state.isSyncing = true;
-    const result = await uploadSettings(true); // 내부 호출임을 명시
+    const result = await uploadSettings(true); // Indicate this is an internal call
 
     if (result.success) {
       logger.info(`Cloud synchronization successful for '${state.lastChangeType}' change`);
       state.retryCount = 0;
       state.pendingSync = false;
-      state.lastChangeHash = null; // 성공 시 해시 초기화
+      state.lastChangeHash = null; // Reset hash on success
     }
     else if (result.skipped) {
-      // 업로드할 페이지가 없어 스킵됨(빈 pages 가드) — 실패가 아니므로 재시도하지 않음
+      // Skipped because there are no pages to upload (empty pages guard) — not a failure, so no retry
       logger.info('Upload skipped (no page data); not retrying');
       state.retryCount = 0;
       state.pendingSync = false;
       state.lastChangeHash = null;
     }
     else if (result.statusCode === 409) {
-      // 서버에 더 최신 데이터가 있어 거부됨(stale write) — 단순 다운로드는 로컬 변경을
-      // 덮어써 유실시키므로, 병합 경로(resolve)로 로컬 변경을 보존하며 재조정한다
+      // Rejected because the server has newer data (stale write) — a plain download would
+      // overwrite and lose local changes, so reconcile via the merge path (resolve) to preserve them
       logger.warn('Upload rejected as stale (409); scheduling conflict resolution to preserve local changes');
       state.retryCount = 0;
       state.pendingSync = false;
       state.lastChangeHash = null;
-      // isSyncing 해제(finally) 후 병합 재조정이 진행되도록 예약.
-      // 재시도(retry) 슬롯과 분리된 reconcile 슬롯을 사용해 서로 덮어쓰지 않게 한다.
+      // Schedule the merge reconciliation to run after isSyncing is released (finally).
+      // Use a reconcile slot separate from the retry slot so they don't overwrite each other.
       if (state.timers.reconcile) {
         clearTimeout(state.timers.reconcile);
       }
@@ -271,7 +271,7 @@ async function uploadSettingsWithRetry() {
       }, RETRY_DELAY_MS);
     }
     else if (result.statusCode === 400) {
-      // 페이로드 검증 실패 — 재시도해도 동일하게 실패하므로 중단
+      // Payload validation failed — retrying would fail identically, so stop
       logger.error(`Upload rejected as invalid (400), not retrying: ${result.error}`);
       state.retryCount = 0;
       state.pendingSync = false;
@@ -286,7 +286,7 @@ async function uploadSettingsWithRetry() {
         const delay = computeRetryDelay(state.retryCount);
         logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
 
-        // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
+        // Schedule retry (track timer so it can be cleaned up on shutdown)
         state.timers.retry = setTimeout(() => {
           state.timers.retry = null;
           uploadSettingsWithRetry();
@@ -300,14 +300,14 @@ async function uploadSettingsWithRetry() {
     }
   }
   catch (error) {
-    logger.error('설정 업로드 중 오류 발생:', error);
+    logger.error('Error occurred during settings upload:', error);
     state.retryCount++;
 
     if (state.retryCount <= MAX_RETRY_COUNT) {
       const delay = computeRetryDelay(state.retryCount);
       logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
 
-      // 재시도 예약 (종료 시 정리할 수 있도록 타이머 추적)
+      // Schedule retry (track timer so it can be cleaned up on shutdown)
       state.timers.retry = setTimeout(() => {
         state.timers.retry = null;
         uploadSettingsWithRetry();
@@ -322,7 +322,7 @@ async function uploadSettingsWithRetry() {
   finally {
     state.isSyncing = false;
 
-    // 대기 중인 동기화가 있다면 처리
+    // Process any pending sync
     if (state.pendingSync) {
       logger.info('Processing pending sync request');
       state.pendingSync = false;
@@ -330,31 +330,31 @@ async function uploadSettingsWithRetry() {
         if (state.lastChangeType) {
           scheduleSync(state.lastChangeType);
         }
-      }, 1000); // 1초 후 재시도
+      }, 1000); // Retry after 1 second
     }
   }
 }
 
 /**
- * 현재 설정을 서버에 업로드 (개선된 버전)
- * @param {boolean} isInternalCall - 내부 호출 여부 (uploadSettingsWithRetry에서 호출된 경우)
- * @returns {Promise<Object>} 업로드 결과
+ * Upload current settings to the server (improved version)
+ * @param {boolean} isInternalCall - Whether this is an internal call (called from uploadSettingsWithRetry)
+ * @returns {Promise<Object>} Upload result
  */
 async function uploadSettings(isInternalCall = false) {
   logger.info('Starting settings upload');
 
-  // 동기화 상태 확인
+  // Check sync state
   if (!state.enabled) {
     logger.info('Cloud synchronization is disabled, skipping upload');
     return { success: false, error: 'Cloud sync disabled' };
   }
 
-  // 동기화 가능 여부 확인
+  // Check whether sync is possible
   if (!(await canSync())) {
     return { success: false, error: 'Cloud sync not enabled' };
   }
 
-  // 내부 호출이 아닌 경우에만 sync 상태 확인 및 관리
+  // Only check and manage sync state for non-internal calls
   if (!isInternalCall) {
     if (state.isSyncing) {
       logger.info('Already syncing, skipping upload');
@@ -364,20 +364,20 @@ async function uploadSettings(isInternalCall = false) {
   }
 
   try {
-    // ConfigStore에서 직접 데이터 추출 (단일 소스)
+    // Extract data directly from ConfigStore (single source)
     const advanced = configStore.get('advanced');
     const appearance = configStore.get('appearance');
     let pages = configStore.get('pages') || [];
     const snippets = configStore.get('snippets') || [];
     const syncMeta = getSyncMetadata(configStore);
 
-    // 로컬 file:// 아이콘을 서버 URL 로 정규화 (기기 간 아이콘 공유를 위한 일회성 마이그레이션)
+    // Normalize local file:// icons to server URLs (one-time migration to share icons across devices)
     try {
       const normalized = await normalizeLocalIcons(pages, {
         onUnauthorized: authManager ? authManager.refreshAccessToken : null,
       });
       if (normalized.changed) {
-        // 내부 쓰기가 onDidChange 재업로드를 트리거하지 않도록 억제 (downloadSettings 와 동일한 패턴)
+        // Suppress so the internal write doesn't trigger an onDidChange re-upload (same pattern as downloadSettings)
         state.applyingRemote = true;
         try {
           configStore.set('pages', normalized.pages);
@@ -393,23 +393,23 @@ async function uploadSettings(isInternalCall = false) {
       logger.warn(`Icon normalization skipped due to error: ${normalizeError.message}`);
     }
 
-    // pages/snippets 가 모두 비어 있으면 서버의 정상 데이터를 삭제할 수 있으므로 건너뛴다 (실패가 아닌 스킵)
+    // If both pages and snippets are empty it could delete valid server data, so skip (a skip, not a failure)
     if (pages.length === 0 && snippets.length === 0) {
       logger.warn('No page or snippet data to upload; skipping upload to avoid clobbering server data');
       return { success: false, skipped: true, error: 'No data to upload' };
     }
 
-    // 현재 타임스탬프
+    // Current timestamp
     const timestamp = Date.now();
 
-    // 업로드 데이터 준비 - 메타데이터 포함
-    // 빈 pages 는 서버가 거부하므로 페이지가 있을 때만 포함한다(스니펫만 쓰는 사용자 지원)
+    // Prepare upload data - including metadata
+    // The server rejects empty pages, so include them only when pages exist (supports snippet-only users)
     const uploadData = {
       ...(pages.length > 0 ? { pages } : {}),
       snippets,
       appearance,
       advanced,
-      // 메타데이터 포함
+      // Include metadata
       lastModifiedAt: syncMeta.lastModifiedAt || timestamp,
       lastModifiedDevice: syncMeta.lastModifiedDevice || getDeviceId(),
       lastSyncedAt: timestamp,
@@ -419,7 +419,7 @@ async function uploadSettings(isInternalCall = false) {
     logger.info(`Uploading settings to server with ${pages.length} pages`);
     logger.info(`Last modified: ${new Date(syncMeta.lastModifiedAt).toISOString()} on ${syncMeta.lastModifiedDevice}`);
 
-    // API 호출
+    // API call
     const result = await apiSync.uploadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
@@ -427,19 +427,19 @@ async function uploadSettings(isInternalCall = false) {
       directData: uploadData,
     });
 
-    // 성공 시 ConfigStore의 동기화 메타데이터 업데이트
+    // On success, update the sync metadata in ConfigStore
     if (result.success) {
       state.lastSyncTime = timestamp;
 
-      // ConfigStore에 동기화 완료 마킹
+      // Mark sync complete in ConfigStore
       markAsSynced(configStore);
 
       logger.info('Settings upload successful and sync metadata updated in ConfigStore');
       return result;
     }
 
-    // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
-    // 재시도 로직(uploadSettingsWithRetry)이 참조하는 최상위 statusCode 로 정규화한다
+    // apiSync returns HTTP errors in a nested { error: { statusCode } } form, so
+    // normalize it to a top-level statusCode that the retry logic (uploadSettingsWithRetry) references
     const errorInfo = result.error && typeof result.error === 'object' ? result.error : null;
     const errorMessage = errorInfo ? errorInfo.message || errorInfo.code : result.error;
     logger.error('Upload failed:', errorMessage);
@@ -450,14 +450,14 @@ async function uploadSettings(isInternalCall = false) {
     };
   }
   catch (error) {
-    logger.error('설정 업로드 오류:', error);
+    logger.error('Settings upload error:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
     };
   }
   finally {
-    // 내부 호출이 아닌 경우에만 sync 상태 해제
+    // Only release sync state for non-internal calls
     if (!isInternalCall) {
       state.isSyncing = false;
     }
@@ -465,19 +465,19 @@ async function uploadSettings(isInternalCall = false) {
 }
 
 /**
- * 서버에서 설정 다운로드 (개선된 버전)
- * @returns {Promise<Object>} 다운로드 결과
+ * Download settings from the server (improved version)
+ * @returns {Promise<Object>} Download result
  */
 async function downloadSettings() {
   logger.info('Starting settings download');
 
-  // 동기화 상태 확인
+  // Check sync state
   if (!state.enabled) {
     logger.info('Cloud synchronization is disabled, skipping download');
     return { success: false, error: 'Cloud sync disabled' };
   }
 
-  // 동기화 가능 여부 확인
+  // Check whether sync is possible
   if (!(await canSync())) {
     return { success: false, error: 'Cloud sync not enabled' };
   }
@@ -492,13 +492,13 @@ async function downloadSettings() {
 
     logger.info('Requesting settings from server...');
 
-    // 네트워크 fetch 중에는 변경 감지를 억제하지 않는다(이 구간의 사용자 편집은 정상 큐잉되어야 함).
-    // 데이터만 받아온 뒤(configStore:null), 아래 ConfigStore 저장 구간에만 짧게 억제한다.
+    // Do not suppress change detection during the network fetch (user edits in this window should still be queued normally).
+    // Only fetch the data first (configStore:null), then suppress briefly during the ConfigStore save section below.
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
       configStore: null,
-      directData: {}, // GET 요청에서는 무시됨
+      directData: {}, // Ignored for GET requests
     });
 
     if (!result.success) {
@@ -510,18 +510,18 @@ async function downloadSettings() {
     const normalized = result.normalized || {};
     const serverMetadata = result.syncMetadata || result.data;
 
-    // 원격 데이터를 ConfigStore에 적용하는 짧은 구간에만 onDidChange 재업로드를 억제한다.
+    // Suppress onDidChange re-upload only during the short window of applying remote data to ConfigStore.
     state.applyingRemote = true;
     try {
       if (Array.isArray(normalized.pages)) {
-        // 원격 액션 구조 검증 + 신규 위험 액션 승인 대기 등록 후 저장
+        // Validate remote action structure + register new risky actions for approval, then save
         const sanitizedPages = await sanitizeRemotePages(normalized.pages);
         recordRemoteChanges(configStore, sanitizedPages);
         configStore.set('pages', sanitizedPages);
         logger.info(`Saved ${sanitizedPages.length} pages to ConfigStore`);
       }
       if (Array.isArray(normalized.snippets)) {
-        // 스니펫은 코드 실행이 없어 승인 게이트가 불필요하나, 구조는 검증 후 저장
+        // Snippets have no code execution so no approval gate is needed, but validate structure before saving
         const safeSnippets = normalized.snippets.filter(
           s => s && typeof s.keyword === 'string' && typeof s.content === 'string',
         );
@@ -535,7 +535,7 @@ async function downloadSettings() {
         configStore.set('advanced', normalized.advanced);
       }
 
-      // 서버에서 받은 메타데이터 반영
+      // Apply metadata received from the server
       if (serverMetadata) {
         updateSyncMetadata(configStore, {
           lastSyncedAt: timestamp,
@@ -555,10 +555,10 @@ async function downloadSettings() {
       state.applyingRemote = false;
     }
 
-    // 상태 업데이트
+    // Update state
     state.lastSyncTime = timestamp;
 
-    // 인증 관리자를 통해 UI 업데이트 알림 전송
+    // Send UI update notification through the auth manager
     if (authManager && typeof authManager.notifySettingsSynced === 'function') {
       const configData = {
         pages: configStore.get('pages'),
@@ -575,7 +575,7 @@ async function downloadSettings() {
     return result;
   }
   catch (error) {
-    logger.error('설정 다운로드 오류:', error);
+    logger.error('Settings download error:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
@@ -587,9 +587,9 @@ async function downloadSettings() {
 }
 
 /**
- * 설정 충돌 해결 및 동기화 (개선된 버전)
- * @param {string} action - 동기화 동작 ('upload', 'download', 'resolve')
- * @returns {Promise<Object>} 동기화 결과
+ * Resolve settings conflicts and synchronize (improved version)
+ * @param {string} action - Sync action ('upload', 'download', 'resolve')
+ * @returns {Promise<Object>} Synchronization result
  */
 async function syncSettings(action = 'resolve') {
   logger.info(`Manual synchronization request: ${action}`);
@@ -602,20 +602,20 @@ async function syncSettings(action = 'resolve') {
       return await downloadSettings();
     }
     else {
-      // 스마트 충돌 해결 (해시 및 타임스탬프 기반)
+      // Smart conflict resolution (based on hash and timestamp)
       logger.info('Starting intelligent conflict resolution');
 
-      // 1. 현재 로컬 상태 확인
+      // 1. Check current local state
       const localSyncMeta = getSyncMetadata(configStore);
       const hasLocalChanges = hasUnsyncedChanges(configStore);
 
       logger.info(`Local state - Modified: ${new Date(localSyncMeta.lastModifiedAt).toISOString()}, Has changes: ${hasLocalChanges}`);
 
-      // 2. 서버 설정을 임시로 다운로드 (ConfigStore에 저장하지 않음)
+      // 2. Temporarily download server settings (do not save to ConfigStore)
       const serverResult = await apiSync.downloadSettings({
         hasValidToken: authManager.hasValidToken,
         onUnauthorized: authManager.refreshAccessToken,
-        configStore: null, // ConfigStore에 저장하지 않음
+        configStore: null, // Do not save to ConfigStore
         directData: {},
       });
 
@@ -624,47 +624,47 @@ async function syncSettings(action = 'resolve') {
         return serverResult;
       }
 
-      // 정규화된 섹션을 우선 사용(중첩/배열 응답 형태에서도 데이터 유실 방지)
+      // Prefer normalized sections (prevents data loss even with nested/array response shapes)
       const serverData = serverResult.normalized || serverResult.data || {};
       const serverMeta = serverResult.syncMetadata || serverResult.data || {};
 
       logger.info(`Server state - Modified: ${new Date(serverMeta.lastModifiedAt || 0).toISOString()}`);
 
-      // 3. 충돌 감지 및 해결 전략 결정
+      // 3. Detect conflict and determine resolution strategy
       const conflictResolution = analyzeConflict(localSyncMeta, serverMeta, hasLocalChanges);
 
       logger.info(`Conflict resolution strategy: ${conflictResolution.action}`);
 
       if (conflictResolution.action === 'upload_local') {
-        // 로컬이 더 최신 - 서버로 업로드
+        // Local is newer - upload to server
         logger.info('Local changes are newer, uploading to server');
         return await uploadAndReconcile();
       }
       else if (conflictResolution.action === 'download_server') {
-        // 서버가 더 최신 - 서버에서 다운로드
+        // Server is newer - download from server
         logger.info('Server changes are newer, downloading from server');
         return await downloadSettings();
       }
       else if (conflictResolution.action === 'merge_required') {
-        // 병합 필요
+        // Merge required
         logger.info('Complex conflict detected, performing merge');
 
         const mergeResult = await performIntelligentMerge(serverData, serverMeta);
         if (mergeResult.success) {
-          // 병합 후 서버에 업로드
+          // Upload to server after merge
           return await uploadAndReconcile();
         }
         return mergeResult;
       }
       else {
-        // 변경사항 없음
+        // No changes
         logger.info('No synchronization needed');
         return { success: true, message: 'No changes to synchronize' };
       }
     }
   }
   catch (error) {
-    logger.error('수동 동기화 오류:', error);
+    logger.error('Manual synchronization error:', error);
     return {
       success: false,
       error: error.message || 'Unknown error',
@@ -673,13 +673,13 @@ async function syncSettings(action = 'resolve') {
 }
 
 /**
- * 409(stale write) 거부 후 서버 데이터와 병합하여 로컬 변경을 보존한 채 재업로드
- * @returns {Promise<Object>} 재조정 결과
+ * After a 409 (stale write) rejection, merge with server data and re-upload while preserving local changes
+ * @returns {Promise<Object>} Reconciliation result
  */
 /**
- * 수동/충돌해결 경로용 업로드. 자동 경로(uploadSettingsWithRetry)와 달리 결과를 즉시 반환하되,
- * 409(stale) 응답 시 서버와 병합 재조정하여 로컬 변경을 보존한다.
- * @returns {Promise<Object>} 업로드 또는 재조정 결과
+ * Upload for the manual/conflict-resolution path. Unlike the automatic path (uploadSettingsWithRetry), it returns
+ * the result immediately, but on a 409 (stale) response it reconciles by merging with the server to preserve local changes.
+ * @returns {Promise<Object>} Upload or reconciliation result
  */
 async function uploadAndReconcile() {
   const result = await uploadSettings();
@@ -694,8 +694,8 @@ async function uploadAndReconcile() {
 }
 
 async function reconcileStaleUpload() {
-  // 주기적 다운로드 등 다른 동기화와 ConfigStore 쓰기가 교차하지 않도록 직렬화한다.
-  // (겹치면 applyingRemote 억제 플래그가 조기 해제되어 다운로드→재업로드 루프가 발생할 수 있음)
+  // Serialize with other syncs (e.g. periodic download) so ConfigStore writes don't interleave.
+  // (If they overlap, the applyingRemote suppression flag could be released early, causing a download→re-upload loop)
   if (state.isSyncing) {
     logger.info('Sync in progress; deferring stale-upload reconciliation');
     if (state.timers.reconcile) {
@@ -715,7 +715,7 @@ async function reconcileStaleUpload() {
     const serverResult = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore: null, // ConfigStore에 저장하지 않고 병합에만 사용
+      configStore: null, // Do not save to ConfigStore, use only for merging
       directData: {},
     });
 
@@ -724,7 +724,7 @@ async function reconcileStaleUpload() {
       return serverResult;
     }
 
-    // 정규화된 섹션을 우선 사용(중첩/배열 응답 형태에서도 데이터 유실 방지)
+    // Prefer normalized sections (prevents data loss even with nested/array response shapes)
     const serverData = serverResult.normalized || serverResult.data || {};
     const serverMeta = serverResult.syncMetadata || serverResult.data || {};
 
@@ -733,7 +733,7 @@ async function reconcileStaleUpload() {
       return mergeResult;
     }
 
-    // 내부 호출(isSyncing 은 이 함수가 관리하므로 재진입 가드에 막히지 않도록)
+    // Internal call (isSyncing is managed by this function, so pass true to avoid being blocked by the re-entry guard)
     return await uploadSettings(true);
   }
   catch (error) {
@@ -746,16 +746,16 @@ async function reconcileStaleUpload() {
 }
 
 /**
- * 지능형 설정 병합 수행
- * @param {Object} serverData - 서버 데이터
- * @param {Object} serverMeta - 서버 메타데이터
- * @returns {Promise<Object>} 병합 결과
+ * Perform intelligent settings merge
+ * @param {Object} serverData - Server data
+ * @param {Object} serverMeta - Server metadata
+ * @returns {Promise<Object>} Merge result
  */
 async function performIntelligentMerge(serverData, serverMeta) {
   try {
     logger.info('Starting intelligent merge process');
 
-    // 1. 현재 로컬 데이터 백업
+    // 1. Back up current local data
     const localBackup = {
       pages: configStore.get('pages'),
       snippets: configStore.get('snippets'),
@@ -764,7 +764,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
       _sync: getSyncMetadata(configStore),
     };
 
-    // 2. 서버 데이터 구조 정규화
+    // 2. Normalize server data structure
     const normalizedServerData = {
       pages: serverData.pages || [],
       snippets: serverData.snippets || [],
@@ -772,7 +772,7 @@ async function performIntelligentMerge(serverData, serverMeta) {
       advanced: serverData.advanced || {},
     };
 
-    // 3. 섹션별 병합
+    // 3. Merge by section
     const mergedData = {
       pages: mergePages(localBackup.pages, normalizedServerData.pages),
       snippets: mergeSnippets(localBackup.snippets, normalizedServerData.snippets),
@@ -780,11 +780,11 @@ async function performIntelligentMerge(serverData, serverMeta) {
       advanced: mergeAdvanced(localBackup.advanced, normalizedServerData.advanced),
     };
 
-    // 4. 병합된 데이터를 ConfigStore에 적용 (원격 액션은 구조 검증 + 신규 위험 액션 승인 대기 등록)
+    // 4. Apply merged data to ConfigStore (remote actions get structure validation + register new risky actions for approval)
     mergedData.pages = await sanitizeRemotePages(mergedData.pages);
     recordRemoteChanges(configStore, mergedData.pages);
-    // 병합 결과 적용 중에는 onDidChange가 중복 업로드를 트리거하지 않도록 억제
-    // (merge_required 경로가 직후 uploadSettings를 명시적으로 호출한다)
+    // Suppress so onDidChange doesn't trigger a duplicate upload while applying the merge result
+    // (the merge_required path explicitly calls uploadSettings right after)
     state.applyingRemote = true;
     try {
       configStore.set('pages', mergedData.pages);
@@ -796,11 +796,11 @@ async function performIntelligentMerge(serverData, serverMeta) {
       state.applyingRemote = false;
     }
 
-    // 5. 병합 메타데이터 업데이트
+    // 5. Update merge metadata
     markAsModified(configStore);
 
-    // 서버 타임스탬프가 로컬 시계보다 앞서 있으면(시계 편차) 그보다 크게 올려
-    // 재업로드가 다시 stale(409)로 거부되는 것을 방지한다
+    // If the server timestamp is ahead of the local clock (clock skew), bump above it
+    // to prevent the re-upload from being rejected as stale (409) again
     const serverModifiedAt = Number(serverMeta && serverMeta.lastModifiedAt) || 0;
     const mergedMeta = getSyncMetadata(configStore);
     if (serverModifiedAt >= mergedMeta.lastModifiedAt) {
@@ -829,16 +829,16 @@ async function performIntelligentMerge(serverData, serverMeta) {
 }
 
 /**
- * 동기화 기능 활성화/비활성화
- * @param {boolean} enabled - 활성화 여부
+ * Enable/disable synchronization feature
+ * @param {boolean} enabled - Whether to enable
  */
 function setEnabled(enabled) {
   state.enabled = enabled;
-  // 활성화 상태가 바뀌면 canSync 캐시가 오래되므로 무효화 (로그인 직후 stale false 방지)
+  // When the enabled state changes, the canSync cache becomes stale, so invalidate it (prevents stale false right after login)
   clearCloudSyncCache();
   logger.info(`Cloud synchronization ${enabled ? 'enabled' : 'disabled'}`);
 
-  // Config Store와 동기화 (CloudSyncManager가 단일 진실 원천)
+  // Sync with Config Store (CloudSyncManager is the single source of truth)
   if (configStore) {
     configStore.set('cloudSync.enabled', enabled);
     logger.info('Config store updated with sync enabled state');
@@ -853,20 +853,20 @@ function setEnabled(enabled) {
 }
 
 /**
- * 설정 변경에 대한 이벤트 리스너 등록 (개선된 버전)
+ * Register event listeners for settings changes (improved version)
  */
 function setupConfigListeners() {
-  // 설정 변경 감지 함수 (공통 로직)
+  // Settings change detection function (common logic)
   async function handleConfigChange(changeType, _key) {
     logger.debug(`${changeType} change detected`);
 
-    // 원격 데이터를 적용하는 중이면 무시 (다운로드→업로드 피드백 루프 방지)
+    // Ignore while applying remote data (prevents download→upload feedback loop)
     if (state.applyingRemote) {
       logger.info('Ignoring config change while applying remote data');
       return;
     }
 
-    // 동기화 가능 여부 확인
+    // Check whether sync is possible
     if (!state.enabled) {
       logger.info('Sync disabled - state.enabled is false');
       return;
@@ -878,26 +878,26 @@ function setupConfigListeners() {
     }
 
     logger.info(`${changeType} settings change confirmed (onDidChange event fired), proceeding with sync`);
-    
-    // onDidChange 이벤트가 발생했다는 것은 값이 실제로 변경되었다는 증거
-    // hasUnsyncedChanges 체크를 건너뛰고 바로 동기화 진행
 
-    // 변경사항을 ConfigStore 메타데이터에 반영
+    // The onDidChange event firing is evidence that a value actually changed
+    // Skip the hasUnsyncedChanges check and proceed directly with sync
+
+    // Reflect the change in ConfigStore metadata
     markAsModified(configStore);
 
-    // 동기화 예약
+    // Schedule sync
     scheduleSync(changeType);
   }
 
-  // 페이지 설정 변경 감지
+  // Detect page settings changes
   logger.info('Registering onDidChange listener for pages...');
   configStore.onDidChange('pages', async (newValue, oldValue) => {
     logger.info('🎯 onDidChange event fired for pages!');
     logger.info('Event triggered at:', new Date().toISOString());
     logger.info('NewValue length:', Array.isArray(newValue) ? newValue.length : 'Not array');
     logger.info('OldValue length:', Array.isArray(oldValue) ? oldValue.length : 'Not array');
-    
-    // 변경 유형 자세히 감지
+
+    // Detect change type in detail
     let changeType = 'pages_modified';
     if (Array.isArray(newValue) && Array.isArray(oldValue)) {
       if (newValue.length > oldValue.length) {
@@ -913,22 +913,22 @@ function setupConfigListeners() {
   });
   logger.info('onDidChange listener for pages registered successfully');
 
-  // 스니펫 변경 감지
+  // Detect snippet changes
   configStore.onDidChange('snippets', async () => {
     await handleConfigChange('snippets_modified', 'snippets');
   });
 
-  // 외관 설정 변경 감지
+  // Detect appearance settings changes
   configStore.onDidChange('appearance', async () => {
     await handleConfigChange('appearance', 'appearance');
   });
 
-  // 고급 설정 변경 감지
+  // Detect advanced settings changes
   configStore.onDidChange('advanced', async () => {
     await handleConfigChange('advanced', 'advanced');
   });
 
-  // _sync 메타데이터 변경은 무시 (무한 루프 방지)
+  // Ignore _sync metadata changes (prevents infinite loop)
   configStore.onDidChange('_sync', () => {
     logger.debug('Sync metadata updated - not triggering sync');
   });
@@ -937,14 +937,14 @@ function setupConfigListeners() {
 }
 
 /**
- * 클라우드 동기화 초기화
- * @param {Object} authManagerInstance - 인증 관리자 인스턴스
- * @param {Object} _userDataManagerInstance - 사용자 데이터 관리자 인스턴스 (호환성 유지)
- * @param {Object} configStoreInstance - 설정 저장소 인스턴스 (선택적)
- * @returns {Object} 동기화 관리자 객체
+ * Initialize cloud synchronization
+ * @param {Object} authManagerInstance - Auth manager instance
+ * @param {Object} _userDataManagerInstance - User data manager instance (kept for compatibility)
+ * @param {Object} configStoreInstance - Config store instance (optional)
+ * @returns {Object} Synchronization manager object
  */
 function initCloudSync(authManagerInstance, _userDataManagerInstance, configStoreInstance = null) {
-  // 재초기화 가드: 리스너/타이머 중복 등록을 막고 기존 매니저를 재사용
+  // Re-initialization guard: prevents duplicate listener/timer registration and reuses the existing manager
   if (syncManagerInstance) {
     logger.info('Cloud sync already initialized - reusing existing manager');
     if (authManagerInstance) {
@@ -955,10 +955,10 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
 
   logger.info('Starting cloud synchronization initialization');
 
-  // 인증 관리자 참조 설정
+  // Set up auth manager reference
   setAuthManager(authManagerInstance);
 
-  // 설정 저장소 설정 (외부에서 전달받은 인스턴스 사용 또는 새로 생성)
+  // Set up config store (use an externally provided instance or create a new one)
   if (configStoreInstance) {
     configStore = configStoreInstance;
     logger.info('Using provided config store instance - ID:', configStore.path || 'unknown');
@@ -968,19 +968,19 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     logger.info('Created new config store instance - ID:', configStore.path || 'unknown');
   }
 
-  // 장치 정보 초기화
+  // Initialize device information
   state.deviceId = getDeviceId();
   logger.info(`Device ID: ${state.deviceId}`);
 
-  // 동기화 상태 초기화 (Config Store에서 읽어오거나 기본값 사용)
+  // Initialize sync state (read from Config Store or use default)
   const savedEnabled = configStore.get('cloudSync.enabled');
   state.enabled = savedEnabled !== undefined ? savedEnabled : true;
   logger.info(`Cloud sync initialized: ${state.enabled ? 'enabled' : 'disabled'} (from ${savedEnabled !== undefined ? 'config' : 'default'})`);
 
-  // 설정 변경 감지 이벤트 등록
+  // Register settings change detection events
   setupConfigListeners();
 
-  // 주기적 동기화 조건부 시작
+  // Conditionally start periodic sync
   if (state.enabled) {
     logger.info('Starting periodic sync (enabled)');
     startPeriodicSync();
@@ -989,14 +989,14 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     logger.info('Periodic sync not started (disabled)');
   }
 
-  // 인터페이스 객체 생성
+  // Create interface object
   const syncManager = {
-    // 기본 인터페이스
+    // Base interface
     unsubscribe: () => {
-      // 타이머 중지
+      // Stop timers
       stopPeriodicSync();
 
-      // 디바운스 타이머 취소
+      // Cancel debounce timer
       if (state.timers.debounce) {
         clearTimeout(state.timers.debounce);
         state.timers.debounce = null;
@@ -1017,15 +1017,15 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
     syncAfterLogin: async () => {
       logger.info('Performing cloud synchronization after login');
 
-      // 충돌 해결 경로를 통해 동기화한다(무조건 다운로드가 아님): 로그인 사이 오프라인 상태에서
-      // 편집한 로컬 변경사항이 있으면 서버로 업로드/병합하고, 없으면 기존처럼 서버 데이터를 받는다.
+      // Sync via the conflict resolution path (not an unconditional download): if there are local changes
+      // edited while offline between logins, upload/merge them to the server, otherwise receive server data as before.
       const result = await syncSettings('resolve');
 
-      // 다운로드 성공 후 추가 UI 업데이트
+      // Additional UI update after successful download
       if (result.success) {
-        // settings-window에 현재 설정 전달하여 UI 업데이트
+        // Pass current settings to settings-window for UI update
         if (authManager && typeof authManager.notifySettingsSynced === 'function') {
-          // 현재 설정 데이터 수집
+          // Collect current settings data
           const configData = {
             pages: configStore.get('pages'),
             snippets: configStore.get('snippets'),
@@ -1034,13 +1034,13 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
             subscription: configStore.get('subscription'),
           };
 
-          // UI에 알림 전송 - 토스트 창의 버튼/페이지 업데이트 위함
+          // Send notification to UI - for updating toast window buttons/pages
           authManager.notifySettingsSynced(configData);
           logger.info('Login sync: UI update notification sent for current settings');
         }
       }
 
-      // 동기화 활성화
+      // Enable synchronization
       if (state.enabled) {
         startPeriodicSync();
       }
@@ -1053,7 +1053,7 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
       setEnabled(enabled);
     },
 
-    // 추가 인터페이스
+    // Additional interface
     startPeriodicSync,
     stopPeriodicSync,
     getCurrentStatus: () => ({
@@ -1069,16 +1069,16 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
 }
 
 /**
- * 초기화된 동기화 매니저 반환 (initCloudSync 이후 사용 가능)
- * @returns {Object|null} 동기화 매니저 또는 null
+ * Return the initialized sync manager (available after initCloudSync)
+ * @returns {Object|null} Sync manager or null
  */
 function getSyncManager() {
   return syncManagerInstance;
 }
 
 /**
- * 인증 관리자 참조 설정
- * @param {Object} manager - 인증 관리자 인스턴스
+ * Set up auth manager reference
+ * @param {Object} manager - Auth manager instance
  */
 function setAuthManager(manager) {
   authManager = manager;
@@ -1087,8 +1087,8 @@ function setAuthManager(manager) {
 }
 
 /**
- * 클라우드 동기화 설정 업데이트 (이전 버전과의 호환성 유지)
- * @param {boolean} enabled - 활성화 여부
+ * Update cloud synchronization settings (kept for backward compatibility)
+ * @param {boolean} enabled - Whether to enable
  */
 function updateCloudSyncSettings(enabled) {
   setEnabled(enabled);

@@ -12,7 +12,7 @@ export const authState = {
   subscription: null,
 };
 
-// 탭 초기화 상태 추적을 위한 객체
+// Object for tracking tab initialization state
 export const tabInitState = {
   settings: false,
   account: false,
@@ -20,7 +20,7 @@ export const tabInitState = {
   about: false,
 };
 
-// 중복 호출 방지를 위한 상태 관리
+// State management to prevent duplicate calls
 export let authStateInitialized = false;
 export let profileDataFetchInProgress = false;
 

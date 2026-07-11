@@ -139,7 +139,7 @@ body {
   font-weight: 600;
 }
 
-/* 통합 탭 내 섹션 제목 (General/Appearance/Advanced, Cloud Sync 등) */
+/* Section titles within a combined tab (General/Appearance/Advanced, Cloud Sync, etc.) */
 .settings-tab .settings-section-title {
   font-size: 12px;
   font-weight: 600;
@@ -877,7 +877,7 @@ button:active {
   width: 100%;
 }
 
-/* 로딩 인디케이터 스타일 */
+/* Loading indicator styles */
 .loading-indicator {
   display: flex;
   flex-direction: column;
@@ -906,7 +906,7 @@ button:active {
   animation: spin 0.8s ease-in-out infinite;
 }
 
-/* 인라인 미니 스피너 (배지 안에 사용) */
+/* Inline mini spinner (used inside a badge) */
 .spinner-inline {
   display: inline-block;
   width: 16px;
@@ -918,7 +918,7 @@ button:active {
   vertical-align: middle;
 }
 
-/* 고정된 스피너 (애니메이션 없음) */
+/* Static spinner (no animation) */
 .spinner-static {
   display: inline-block;
   width: 16px;
@@ -929,7 +929,7 @@ button:active {
   vertical-align: middle;
 }
 
-/* 배지 스피너 스타일 */
+/* Badge spinner styles */
 .badge-with-spinner {
   display: flex;
   align-items: center;
@@ -1010,7 +1010,7 @@ button:active {
   gap: 16px;
 }
 
-/* 대체 업데이트 방법 스타일 */
+/* Alternative update method styles */
 .alternative-updates {
   margin-top: 20px;
   padding-top: 16px;
@@ -1057,7 +1057,7 @@ button:active {
   text-decoration: underline;
 }
 
-/* GitHub 버튼 스타일 */
+/* GitHub button styles */
 .github-method {
   padding: 0 !important;
   overflow: hidden;
@@ -1090,7 +1090,7 @@ button:active {
   flex-shrink: 0;
 }
 
-/* 업데이트 다운로드 진행 상태 바 */
+/* Update download progress bar */
 .download-progress-bar {
   margin-top: 16px;
   width: 100%;
@@ -1118,7 +1118,7 @@ button:active {
   color: var(--help-text-color);
 }
 
-/* 설치 중 부정형(indeterminate) 진행 표시 - 설치는 진행률 이벤트가 없음 */
+/* Indeterminate progress indicator during installation - installation emits no progress events */
 .progress-bar.indeterminate {
   width: 40%;
   animation: progress-indeterminate 1.2s ease-in-out infinite;

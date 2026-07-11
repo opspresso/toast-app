@@ -1,55 +1,55 @@
-# Toast 앱 연동 가이드
+# Toast App Integration Guide
 
-이 문서는 Toast 앱과 외부 서비스 간의 연동에 대한 기본적인 가이드를 제공합니다.
+This document provides a basic guide to integrating the Toast app with external services.
 
-> **참고**: OAuth 인증, 환경 변수, API 통신 등의 상세한 내용은 각각의 전용 문서를 참조하세요:
-> - [클라우드 동기화](../features/cloud-sync.md) - 설정 동기화 및 API 통신
-> - [환경 변수](../config/environment.md) - 환경 변수 설정 및 관리
-> - [보안](../architecture/security.md) - 인증 및 보안 관련 사항
+> **Note**: For detailed information on OAuth authentication, environment variables, API communication, and more, see the respective dedicated documents:
+> - [Cloud Sync](../features/cloud-sync.md) - Settings synchronization and API communication
+> - [Environment Variables](../config/environment.md) - Environment variable configuration and management
+> - [Security](../architecture/security.md) - Authentication and security topics
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [설정 동기화](#설정-동기화)
-- [로컬 데이터 관리](#로컬-데이터-관리)
-- [오류 처리](#오류-처리)
-- [보안 고려사항](#보안-고려사항)
+- [Overview](#overview)
+- [Settings Synchronization](#settings-synchronization)
+- [Local Data Management](#local-data-management)
+- [Error Handling](#error-handling)
+- [Security Considerations](#security-considerations)
 
-## 개요
+## Overview
 
-Toast 앱은 다양한 외부 서비스와 연동하여 사용자에게 향상된 기능을 제공합니다. 주요 연동 기능은 다음과 같습니다:
+The Toast app integrates with various external services to provide enhanced functionality to users. The main integration features are:
 
-- **클라우드 동기화**: 설정 및 데이터의 클라우드 저장 및 동기화
-- **인증 시스템**: 사용자 인증 및 권한 관리
-- **API 통신**: 외부 서비스와의 데이터 교환
+- **Cloud sync**: Cloud storage and synchronization of settings and data
+- **Authentication system**: User authentication and permission management
+- **API communication**: Data exchange with external services
 
-## 설정 동기화
+## Settings Synchronization
 
-Toast 앱은 사용자의 설정(페이지 구성, 테마 등)을 클라우드에 동기화하는 기능을 제공합니다.
+The Toast app provides a feature to synchronize user settings (page configuration, theme, etc.) to the cloud.
 
-클라우드 동기화에 대한 자세한 내용은 [클라우드 동기화](../features/cloud-sync.md) 문서를 참조하세요.
+For more details on cloud sync, see the [Cloud Sync](../features/cloud-sync.md) document.
 
-## 로컬 데이터 관리
+## Local Data Management
 
-Toast 앱은 사용자 데이터를 로컬에 안전하게 저장하고 관리합니다:
+The Toast app stores and manages user data locally in a secure manner:
 
-- **구성 데이터**: 앱 설정 및 페이지 구성
-- **사용자 프로필**: 인증된 사용자 정보
-- **캐시 데이터**: 성능 향상을 위한 임시 데이터
+- **Configuration data**: App settings and page configuration
+- **User profile**: Authenticated user information
+- **Cache data**: Temporary data for improved performance
 
-자세한 내용은 [데이터 저장소](../config/data-storage.md) 문서를 참조하세요.
+For more details, see the [Data Storage](../config/data-storage.md) document.
 
-## 오류 처리
+## Error Handling
 
-Toast 앱은 다양한 네트워크 오류와 API 응답 오류를 적절히 처리하여 사용자 경험을 유지합니다.
+The Toast app appropriately handles various network errors and API response errors to preserve the user experience.
 
-### 주요 오류 처리 전략
+### Main Error Handling Strategies
 
-1. **네트워크 연결 오류**: 로컬에 저장된 데이터를 사용하여 오프라인 기능 유지
-2. **토큰 만료 오류**: 자동으로 리프레시 토큰으로 갱신 시도
-3. **API 요청 실패**: 적절한 재시도 로직 및 사용자에게 통보
+1. **Network connection errors**: Maintain offline functionality using locally stored data
+2. **Token expiration errors**: Automatically attempt to refresh using the refresh token
+3. **API request failures**: Appropriate retry logic and user notification
 
-### 오류 응답 형식
+### Error Response Format
 
 ```json
 {
@@ -60,19 +60,19 @@ Toast 앱은 다양한 네트워크 오류와 API 응답 오류를 적절히 처
 }
 ```
 
-### 오류 코드 및 처리 방법
+### Error Codes and Handling
 
-| 오류 코드 | 설명 | 처리 방법 |
+| Error Code | Description | Handling |
 |-----------|------|-----------|
-| `TOKEN_EXPIRED` | 액세스 토큰 만료 | 리프레시 토큰으로 갱신 |
-| `REFRESH_TOKEN_EXPIRED` | 리프레시 토큰 만료 | 재로그인 요청 |
-| `NETWORK_ERROR` | 네트워크 연결 오류 | 로컬 데이터 사용, 재연결 시 동기화 |
-| `API_ERROR` | API 서버 오류 | 일정 시간 후 재시도 |
-| `PERMISSION_DENIED` | 리소스 접근 권한 없음 | 구독 요구 메시지 표시 |
+| `TOKEN_EXPIRED` | Access token expired | Refresh with the refresh token |
+| `REFRESH_TOKEN_EXPIRED` | Refresh token expired | Request re-login |
+| `NETWORK_ERROR` | Network connection error | Use local data, sync on reconnect |
+| `API_ERROR` | API server error | Retry after some time |
+| `PERMISSION_DENIED` | No permission to access the resource | Show subscription-required message |
 
-### 비어있는 파일 처리
+### Handling Empty Files
 
-파일이 손상되었거나 비어있는 경우 기본값을 제공하여 오류를 방지합니다:
+If a file is corrupted or empty, default values are provided to prevent errors:
 
 ```javascript
 function getUserProfile() {
@@ -80,7 +80,7 @@ function getUserProfile() {
     const profileData = readFromFile(PROFILE_FILE_PATH);
 
     if (!profileData) {
-      // 파일이 없거나 비어있는 경우 익명 프로필 반환
+      // Return an anonymous profile if the file is missing or empty
       return {
         id: 'anonymous',
         name: 'Anonymous User',
@@ -95,47 +95,47 @@ function getUserProfile() {
 
     return profileData;
   } catch (error) {
-    // 오류 발생 시 익명 프로필 반환
-    console.error('프로필 정보 가져오기 오류:', error);
+    // Return an anonymous profile if an error occurs
+    console.error('Error fetching profile information:', error);
     return getAnonymousProfile();
   }
 }
 ```
 
-## 보안 고려사항
+## Security Considerations
 
-Toast 앱은 사용자 인증 정보와 개인 데이터를 안전하게 보호하기 위한 여러 보안 조치를 구현합니다.
+The Toast app implements several security measures to protect user authentication information and personal data.
 
-보안에 대한 자세한 내용은 [보안](../architecture/security.md) 문서를 참조하세요.
+For more details on security, see the [Security](../architecture/security.md) document.
 
-### 토큰 보안
+### Token Security
 
-1. **로컬 저장**: 토큰은 사용자 데이터 디렉토리의 `auth-tokens.json` 파일(`CONFIG_SUFFIX` 설정 시 `auth-tokens-<suffix>.json`)에 평문 JSON으로 저장되며, OS 보안 저장소(macOS Keychain / Windows DPAPI / Linux Secret Service)는 사용하지 않습니다
-2. **HTTPS 통신**: 모든 API 통신은 HTTPS를 통해 암호화됨
-3. **토큰 만료 관리**: 액세스 토큰 만료 시 리프레시 토큰으로 자동 갱신 (기본 만료 1년, `TOKEN_EXPIRES_IN` 으로 조정 가능)
+1. **Local storage**: Tokens are stored as plaintext JSON in the `auth-tokens.json` file (or `auth-tokens-<suffix>.json` when `CONFIG_SUFFIX` is set) in the user data directory, and OS secure storage (macOS Keychain / Windows DPAPI / Linux Secret Service) is not used
+2. **HTTPS communication**: All API communication is encrypted over HTTPS
+3. **Token expiration management**: When the access token expires, it is automatically refreshed using the refresh token (default expiration of 1 year, adjustable via `TOKEN_EXPIRES_IN`)
 
-### CSRF 보호
+### CSRF Protection
 
-OAuth 인증 과정에서 `state` 파라미터를 사용하여 CSRF(Cross-Site Request Forgery) 공격을 방지합니다:
+During the OAuth authentication process, a `state` parameter is used to prevent CSRF (Cross-Site Request Forgery) attacks:
 
 ```javascript
 const { randomUUID } = require('crypto');
 
-// 인증 요청 시 상태 생성 및 저장
+// Generate and store state when making the authentication request
 const state = randomUUID();
 storeStateParam(state);
 
-// 인증 응답에서 상태 검증
+// Validate state in the authentication response
 const storedState = retrieveStoredState();
 if (!storedState || state !== storedState) {
-  // CSRF 공격 가능성 대응
+  // Respond to a possible CSRF attack
   console.error('State mismatch. Possible CSRF attack');
   return { success: false, error: 'state_mismatch' };
 }
 ```
 
-### 로컬 데이터 보호
+### Local Data Protection
 
-1. **민감 정보 필터링**: 로컬에 저장되는 정보에서 민감한 정보 제외
-2. **파일 접근 제한**: 사용자 데이터 디렉토리의 적절한 접근 권한 설정
-3. **항상 검증**: 파일에서 로드된 데이터는 사용 전 항상 유효성 검증
+1. **Sensitive information filtering**: Exclude sensitive information from data stored locally
+2. **File access restrictions**: Set appropriate access permissions on the user data directory
+3. **Always validate**: Always validate data loaded from files before use

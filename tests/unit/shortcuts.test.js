@@ -1,7 +1,7 @@
 /**
  * Toast - Global Shortcuts Tests
  *
- * 글로벌 단축키 모듈에 대한 단위 테스트
+ * Unit tests for the global shortcuts module
  */
 
 // Mock Electron globalShortcut

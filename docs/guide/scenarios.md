@@ -1,331 +1,331 @@
-# Toast App 사용자 시나리오
+# Toast App User Scenarios
 
-이 문서는 Toast 앱의 일반적인 사용자 시나리오와 워크플로우를 설명하여 사용자가 애플리케이션을 사용하여 다양한 작업을 수행하는 방법을 보여줍니다.
+This document describes common user scenarios and workflows for the Toast app, showing how users can perform various tasks using the application.
 
-## 시나리오 1: 첫 설정
+## Scenario 1: First-Time Setup
 
-**사용자 목표**: Toast 앱을 처음으로 설치하고 설정합니다.
+**User Goal**: Install and configure the Toast app for the first time.
 
-### 워크플로우
+### Workflow
 
-1. **다운로드 및 설치**
-   - 사용자가 웹사이트나 GitHub 릴리스에서 Toast 앱 설치 프로그램을 다운로드합니다
-   - 사용자가 설치 프로그램을 실행하고 설치 마법사를 따릅니다
-   - 설치 후 Toast 앱이 자동으로 실행됩니다
+1. **Download and Install**
+   - The user downloads the Toast app installer from the website or a GitHub release
+   - The user runs the installer and follows the setup wizard
+   - After installation, the Toast app launches automatically
 
-2. **초기 구성**
-   - 첫 실행 시 설정 창이 자동으로 열립니다
-   - 사용자에게 전역 단축키를 구성하라는 메시지가 표시됩니다(기본값: Alt+Space)
-   - 사용자가 로그인 시 Toast 앱을 실행할지 결정합니다
-   - 사용자가 기본 버튼을 검토합니다
+2. **Initial Configuration**
+   - On first launch, the settings window opens automatically
+   - The user is prompted to configure the global shortcut (default: Alt+Space)
+   - The user decides whether to launch the Toast app at login
+   - The user reviews the default buttons
 
-3. **구성 적용**
-   - 설정은 변경 즉시 저장됩니다 (별도 저장 버튼 없음)
-   - 설정 창을 닫으면 Toast 앱은 시스템 트레이에서 계속 실행됩니다
+3. **Apply Configuration**
+   - Settings are saved immediately upon change (no separate save button)
+   - When the settings window is closed, the Toast app keeps running in the system tray
 
-### 예상 결과
+### Expected Result
 
-- Toast 앱이 설치되고 구성됩니다
-- Toast 앱이 시스템 트레이에 아이콘과 함께 백그라운드에서 실행됩니다
-- 전역 단축키가 설정되고 사용할 준비가 되었습니다
+- The Toast app is installed and configured
+- The Toast app runs in the background with an icon in the system tray
+- The global shortcut is set and ready to use
 
-## 시나리오 2: 애플리케이션 열기
+## Scenario 2: Opening Applications
 
-**사용자 목표**: Toast 앱을 사용하여 자주 사용하는 애플리케이션을 빠르게 엽니다.
+**User Goal**: Quickly open frequently used applications with the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **애플리케이션 버튼 생성**
-   - 사용자가 전역 단축키(Alt+Space)로 Toast 창을 엽니다
-   - 사용자가 편집 모드로 전환합니다(편집 아이콘(📝) 클릭 또는 콤마(,) 키)
-   - 사용자가 빈 버튼을 클릭해 새 버튼을 추가합니다
-   - 사용자가 버튼을 구성합니다:
-     - 이름: "Chrome"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "🌐"
-     - 액션 유형: "명령 실행"
-     - 명령: `open -a "Google Chrome"` (macOS) 또는 `start chrome` (Windows)
-   - 사용자가 버튼을 추가하기 위해 "저장"을 클릭합니다
-   - 사용자가 다른 애플리케이션(예: VS Code, 터미널, Slack)에 대해 과정을 반복합니다
+1. **Create an Application Button**
+   - The user opens the Toast window with the global shortcut (Alt+Space)
+   - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
+   - The user clicks an empty button to add a new button
+   - The user configures the button:
+     - Name: "Chrome"
+     - Shortcut: auto-assigned ("Q" since it's the first button)
+     - Icon: "🌐"
+     - Action type: "Run Command"
+     - Command: `open -a "Google Chrome"` (macOS) or `start chrome` (Windows)
+   - The user clicks "Save" to add the button
+   - The user repeats the process for other applications (e.g., VS Code, Terminal, Slack)
 
-2. **버튼 사용**
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - Toast 창이 나타납니다
-   - 사용자가 다음 중 하나를 수행합니다:
-     - "Chrome" 버튼을 클릭합니다, 또는
-     - "Q" 키를 누릅니다 (첫 번째 버튼의 자동 할당 단축키)
-   - Google Chrome이 실행됩니다
-   - Toast 창이 자동으로 닫힙니다
+2. **Use the Button**
+   - The user presses the global shortcut (Alt+Space)
+   - The Toast window appears
+   - The user does one of the following:
+     - Clicks the "Chrome" button, or
+     - Presses the "Q" key (the auto-assigned shortcut of the first button)
+   - Google Chrome launches
+   - The Toast window closes automatically
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱을 사용하여 애플리케이션을 빠르게, 열 수 있습니다
-- 이 과정은 시작 메뉴나 독을 통해 탐색하는 것보다 빠릅니다
-- 사용자가 마우스나 키보드를 사용하여 액션을 트리거할 수 있습니다
+- The user can quickly open applications with the Toast app
+- This process is faster than navigating through the Start menu or Dock
+- The user can trigger actions using either the mouse or the keyboard
 
-## 시나리오 3: 웹사이트 열기
+## Scenario 3: Opening Websites
 
-**사용자 목표**: Toast 앱을 사용하여 자주 방문하는 웹사이트를 빠르게 엽니다.
+**User Goal**: Quickly open frequently visited websites with the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **웹사이트 버튼 생성**
-   - 사용자가 전역 단축키(Alt+Space)로 Toast 창을 엽니다
-   - 사용자가 편집 모드로 전환합니다(편집 아이콘(📝) 클릭 또는 콤마(,) 키)
-   - 사용자가 빈 버튼을 클릭해 새 버튼을 추가합니다
-   - 사용자가 버튼을 구성합니다:
-     - 이름: "GitHub"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "🐙"
-     - 액션 유형: "URL/파일 열기"
+1. **Create a Website Button**
+   - The user opens the Toast window with the global shortcut (Alt+Space)
+   - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
+   - The user clicks an empty button to add a new button
+   - The user configures the button:
+     - Name: "GitHub"
+     - Shortcut: auto-assigned ("Q" since it's the first button)
+     - Icon: "🐙"
+     - Action type: "Open URL/File"
      - URL: "https://github.com"
-   - 사용자가 버튼을 추가하기 위해 "저장"을 클릭합니다
-   - 사용자가 다른 웹사이트에 대해 과정을 반복합니다
+   - The user clicks "Save" to add the button
+   - The user repeats the process for other websites
 
-2. **버튼 사용**
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - Toast 창이 나타납니다
-   - 사용자가 다음 중 하나를 수행합니다:
-     - "GitHub" 버튼을 클릭합니다, 또는
-     - "Q" 키를 누릅니다 (첫 번째 버튼의 자동 할당 단축키)
-   - 기본 웹 브라우저가 열리고 GitHub로 이동합니다
-   - Toast 창이 자동으로 닫힙니다
+2. **Use the Button**
+   - The user presses the global shortcut (Alt+Space)
+   - The Toast window appears
+   - The user does one of the following:
+     - Clicks the "GitHub" button, or
+     - Presses the "Q" key (the auto-assigned shortcut of the first button)
+   - The default web browser opens and navigates to GitHub
+   - The Toast window closes automatically
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱을 사용하여 웹사이트를 빠르게 열 수 있습니다
-- 이 과정은 브라우저를 열고 URL을 입력하는 것보다 빠릅니다
-- 사용자가 마우스나 키보드를 사용하여 액션을 트리거할 수 있습니다
+- The user can quickly open websites with the Toast app
+- This process is faster than opening a browser and typing the URL
+- The user can trigger actions using either the mouse or the keyboard
 
-## 시나리오 4: 셸 명령 실행
+## Scenario 4: Running Shell Commands
 
-**사용자 목표**: Toast 앱을 사용하여 자주 사용하는 셸 명령을 실행합니다.
+**User Goal**: Run frequently used shell commands with the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **명령 버튼 생성**
-   - 사용자가 전역 단축키(Alt+Space)로 Toast 창을 엽니다
-   - 사용자가 편집 모드로 전환합니다(편집 아이콘(📝) 클릭 또는 콤마(,) 키)
-   - 사용자가 빈 버튼을 클릭해 새 버튼을 추가합니다
-   - 사용자가 버튼을 구성합니다:
-     - 이름: "파일 목록"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "📋"
-     - 액션 유형: "명령 실행"
-     - 명령: `ls -la` (macOS/Linux) 또는 `dir` (Windows)
-     - 터미널에서 실행: 체크됨
-   - 사용자가 버튼을 추가하기 위해 "저장"을 클릭합니다
+1. **Create a Command Button**
+   - The user opens the Toast window with the global shortcut (Alt+Space)
+   - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
+   - The user clicks an empty button to add a new button
+   - The user configures the button:
+     - Name: "List Files"
+     - Shortcut: auto-assigned ("Q" since it's the first button)
+     - Icon: "📋"
+     - Action type: "Run Command"
+     - Command: `ls -la` (macOS/Linux) or `dir` (Windows)
+     - Run in Terminal: checked
+   - The user clicks "Save" to add the button
 
-2. **버튼 사용**
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - Toast 창이 나타납니다
-   - 사용자가 다음 중 하나를 수행합니다:
-     - "파일 목록" 버튼을 클릭합니다, 또는
-     - "Q" 키를 누릅니다 (첫 번째 버튼의 자동 할당 단축키)
-   - 터미널 창이 열리고 명령을 실행합니다
-   - Toast 창이 자동으로 닫힙니다
+2. **Use the Button**
+   - The user presses the global shortcut (Alt+Space)
+   - The Toast window appears
+   - The user does one of the following:
+     - Clicks the "List Files" button, or
+     - Presses the "Q" key (the auto-assigned shortcut of the first button)
+   - A terminal window opens and runs the command
+   - The Toast window closes automatically
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱을 사용하여 셸 명령을 빠르게 실행할 수 있습니다
-- 이 과정은 터미널을 열고 명령을 입력하는 것보다 빠릅니다
-- 사용자가 터미널 창에서 명령 출력을 볼 수 있습니다
+- The user can quickly run shell commands with the Toast app
+- This process is faster than opening a terminal and typing the command
+- The user can view the command output in the terminal window
 
-## 시나리오 5: 스크린샷 캡처
+## Scenario 5: Capturing a Screenshot
 
-**사용자 목표**: Toast 앱을 사용하여 스크린샷 캡처 명령을 실행합니다.
+**User Goal**: Run a screenshot capture command with the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **스크린샷 버튼 생성**
-   - 사용자가 전역 단축키(Alt+Space)로 Toast 창을 엽니다
-   - 사용자가 편집 모드로 전환합니다(편집 아이콘(📝) 클릭 또는 콤마(,) 키)
-   - 사용자가 빈 버튼을 클릭해 새 버튼을 추가합니다
-   - 사용자가 버튼을 구성합니다:
-     - 이름: "스크린샷"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "📷"
-     - 액션 유형: "명령 실행"
-     - 명령: `screencapture -i ~/Desktop/screenshot.png` (macOS) 또는 `explorer ms-screenclip:` (Windows)
-   - 사용자가 버튼을 추가하기 위해 "저장"을 클릭합니다
+1. **Create a Screenshot Button**
+   - The user opens the Toast window with the global shortcut (Alt+Space)
+   - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
+   - The user clicks an empty button to add a new button
+   - The user configures the button:
+     - Name: "Screenshot"
+     - Shortcut: auto-assigned ("Q" since it's the first button)
+     - Icon: "📷"
+     - Action type: "Run Command"
+     - Command: `screencapture -i ~/Desktop/screenshot.png` (macOS) or `explorer ms-screenclip:` (Windows)
+   - The user clicks "Save" to add the button
 
-2. **버튼 사용**
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - Toast 창이 나타납니다
-   - 사용자가 다음 중 하나를 수행합니다:
-     - "스크린샷" 버튼을 클릭합니다, 또는
-     - "Q" 키를 누릅니다 (첫 번째 버튼의 자동 할당 단축키)
-   - 시스템 스크린샷 도구가 실행됩니다
-   - Toast 창이 자동으로 닫힙니다
+2. **Use the Button**
+   - The user presses the global shortcut (Alt+Space)
+   - The Toast window appears
+   - The user does one of the following:
+     - Clicks the "Screenshot" button, or
+     - Presses the "Q" key (the auto-assigned shortcut of the first button)
+   - The system screenshot tool launches
+   - The Toast window closes automatically
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱을 사용하여 스크린샷 도구를 빠르게 실행할 수 있습니다
-- 이 과정은 명령을 기억하기 위한 시각적 인터페이스를 제공합니다
-- 사용자가 마우스나 키보드를 사용하여 액션을 트리거할 수 있습니다
+- The user can quickly launch the screenshot tool with the Toast app
+- This process provides a visual interface for remembering commands
+- The user can trigger actions using either the mouse or the keyboard
 
-## 시나리오 6: 사용자 정의 스크립트 실행
+## Scenario 6: Running a Custom Script
 
-**사용자 목표**: Toast 앱을 사용하여 사용자 정의 스크립트를 실행합니다.
+**User Goal**: Run a custom script with the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **스크립트 버튼 생성**
-   - 사용자가 전역 단축키(Alt+Space)로 Toast 창을 엽니다
-   - 사용자가 편집 모드로 전환합니다(편집 아이콘(📝) 클릭 또는 콤마(,) 키)
-   - 사용자가 빈 버튼을 클릭해 새 버튼을 추가합니다
-   - 사용자가 버튼을 구성합니다:
-     - 이름: "시스템 정보"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "💻"
-     - 액션 유형: "사용자 정의 스크립트"
-     - 스크립트 유형: "JavaScript"
-     - 스크립트:
+1. **Create a Script Button**
+   - The user opens the Toast window with the global shortcut (Alt+Space)
+   - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
+   - The user clicks an empty button to add a new button
+   - The user configures the button:
+     - Name: "System Info"
+     - Shortcut: auto-assigned ("Q" since it's the first button)
+     - Icon: "💻"
+     - Action type: "Custom Script"
+     - Script type: "JavaScript"
+     - Script:
        ```javascript
        const os = require('os');
        result = `Platform: ${process.platform}, Hostname: ${os.hostname()}, Free memory: ${Math.round(os.freemem() / 1024 / 1024)} MB`;
        ```
-   - 사용자가 스크립트가 작동하는지 확인하기 위해 "액션 테스트"를 클릭합니다
-   - 사용자가 버튼을 추가하기 위해 "저장"을 클릭합니다
+   - The user clicks "Test Action" to confirm the script works
+   - The user clicks "Save" to add the button
 
-2. **버튼 사용**
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - Toast 창이 나타납니다
-   - 사용자가 다음 중 하나를 수행합니다:
-     - "시스템 정보" 버튼을 클릭합니다, 또는
-     - "Q" 키를 누릅니다 (첫 번째 버튼의 자동 할당 단축키)
-   - 스크립트가 실행되고 결과가 상태 표시줄에 표시됩니다
-   - Toast 창이 자동으로 닫힙니다 (설정에서 "액션 후 숨기기"를 비활성화하면 열린 상태로 유지되어 결과를 확인할 수 있습니다)
+2. **Use the Button**
+   - The user presses the global shortcut (Alt+Space)
+   - The Toast window appears
+   - The user does one of the following:
+     - Clicks the "System Info" button, or
+     - Presses the "Q" key (the auto-assigned shortcut of the first button)
+   - The script runs and the result is shown in the status bar
+   - The Toast window closes automatically (if you disable "Hide After Action" in settings, it stays open so you can review the result)
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱을 사용하여 사용자 정의 스크립트를 실행할 수 있습니다
-- 스크립트는 복잡한 작업을 수행하고 결과를 표시할 수 있습니다
-- 사용자가 마우스나 키보드를 사용하여 액션을 트리거할 수 있습니다
+- The user can run custom scripts with the Toast app
+- Scripts can perform complex tasks and display results
+- The user can trigger actions using either the mouse or the keyboard
 
-## 시나리오 7: 외관 사용자 지정
+## Scenario 7: Customizing the Appearance
 
-**사용자 목표**: 개인 취향에 맞게 Toast 앱의 외관을 사용자 지정합니다.
+**User Goal**: Customize the appearance of the Toast app to personal taste.
 
-### 워크플로우
+### Workflow
 
-1. **외관 설정 열기**
-   - 사용자가 설정 창을 엽니다
-   - 사용자가 "Settings" 탭의 "Appearance" 섹션으로 이동합니다
+1. **Open Appearance Settings**
+   - The user opens the settings window
+   - The user navigates to the "Appearance" section of the "Settings" tab
 
-2. **설정 사용자 지정**
-   - 사용자가 테마를 "시스템"에서 "다크"로 변경합니다
-   - 사용자가 위치를 "중앙"에서 "상단"으로 변경합니다
-   - 사용자가 크기를 "중간"에서 "크게"로 변경합니다
-   - 사용자가 불투명도 슬라이더를 0.8로 조정합니다
-   - 변경 사항은 즉시 저장됩니다
+2. **Customize Settings**
+   - The user changes the theme from "System" to "Dark"
+   - The user changes the position from "Center" to "Top"
+   - The user changes the size from "Medium" to "Large"
+   - The user adjusts the opacity slider to 0.8
+   - Changes are saved immediately
 
-3. **변경 사항 보기**
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - Toast 창이 새로운 외관 설정으로 나타납니다:
-     - 다크 테마
-     - 화면 상단에 위치
-     - 더 큰 크기
-     - 80% 불투명도
+3. **View the Changes**
+   - The user presses the global shortcut (Alt+Space)
+   - The Toast window appears with the new appearance settings:
+     - Dark theme
+     - Positioned at the top of the screen
+     - Larger size
+     - 80% opacity
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱의 외관을 사용자 지정할 수 있습니다
-- 변경 사항은 즉시 적용됩니다
-- Toast 창은 사용자의 선호도를 반영합니다
+- The user can customize the appearance of the Toast app
+- Changes take effect immediately
+- The Toast window reflects the user's preferences
 
-## 시나리오 8: 문제 해결
+## Scenario 8: Troubleshooting
 
-**사용자 목표**: Toast 앱 관련 문제를 해결합니다.
+**User Goal**: Resolve issues related to the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **전역 단축키가 작동하지 않음**
-   - 사용자가 전역 단축키가 Toast 창을 트리거하지 않는다는 것을 알게 됩니다
-   - 사용자가 시스템 트레이의 Toast 앱 아이콘을 마우스 오른쪽 버튼으로 클릭합니다
-   - 사용자가 컨텍스트 메뉴에서 "설정"을 선택합니다
-   - 사용자가 "Settings" 탭의 "General" 섹션으로 이동합니다
-   - 사용자가 전역 단축키가 다른 애플리케이션과 충돌할 수 있다는 것을 확인합니다
-   - 사용자가 "기록"을 클릭하고 다른 단축키를 설정합니다(예: Ctrl+Space) — 즉시 적용됩니다
-   - 사용자가 새 단축키를 테스트하고 작동함을 확인합니다
+1. **Global Shortcut Not Working**
+   - The user notices that the global shortcut does not trigger the Toast window
+   - The user right-clicks the Toast app icon in the system tray
+   - The user selects "Settings" from the context menu
+   - The user navigates to the "General" section of the "Settings" tab
+   - The user confirms that the global shortcut may conflict with another application
+   - The user clicks "Record" and sets a different shortcut (e.g., Ctrl+Space) — it applies immediately
+   - The user tests the new shortcut and confirms it works
 
-2. **액션이 실행되지 않음**
-   - 사용자가 버튼이 액션을 실행하지 않는다는 것을 알게 됩니다
-   - 사용자가 전역 단축키(Alt+Space)로 Toast 창을 엽니다
-   - 사용자가 편집 모드로 전환합니다(편집 아이콘(📝) 클릭 또는 콤마(,) 키)
-   - 사용자가 문제가 있는 버튼을 클릭해 편집합니다
-   - 사용자가 액션 구성을 검토합니다
-   - 사용자가 오류 메시지를 보기 위해 "액션 테스트"를 클릭합니다
-   - 사용자가 오류에 기반하여 구성을 수정합니다
-   - 사용자가 버튼을 업데이트하기 위해 "저장"을 클릭합니다
-   - 사용자가 버튼을 다시 테스트하고 작동함을 확인합니다
+2. **Action Not Running**
+   - The user notices that a button does not run its action
+   - The user opens the Toast window with the global shortcut (Alt+Space)
+   - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
+   - The user clicks the problematic button to edit it
+   - The user reviews the action configuration
+   - The user clicks "Test Action" to see the error message
+   - The user fixes the configuration based on the error
+   - The user clicks "Save" to update the button
+   - The user tests the button again and confirms it works
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 일반적인 문제를 식별하고 해결할 수 있습니다
-- 애플리케이션이 도움이 되는 오류 메시지를 제공합니다
-- 사용자가 저장하기 전에 액션을 테스트하여 작동하는지 확인할 수 있습니다
+- The user can identify and resolve common issues
+- The application provides helpful error messages
+- The user can test an action before saving to confirm it works
 
-## 시나리오 9: 고급 구성
+## Scenario 9: Advanced Configuration
 
-**사용자 목표**: Toast 앱에 대한 고급 설정을 구성합니다.
+**User Goal**: Configure advanced settings for the Toast app.
 
-### 워크플로우
+### Workflow
 
-1. **고급 설정 열기**
-   - 사용자가 설정 창을 엽니다
-   - 사용자가 "Settings" 탭의 "Advanced" 섹션으로 이동합니다
+1. **Open Advanced Settings**
+   - The user opens the settings window
+   - The user navigates to the "Advanced" section of the "Settings" tab
 
-2. **고급 설정 사용자 지정**
-   - 사용자가 액션 실행 후 Toast 창을 자동으로 닫기 위해 "액션 후 숨기기"를 활성화합니다
-   - 사용자가 외부를 클릭할 때 Toast 창을 닫기 위해 "포커스 상실 시 숨기기"를 활성화합니다
-   - 사용자가 Escape를 누를 때 Toast 창을 닫기 위해 "Escape 키로 숨기기"를 활성화합니다
-   - 사용자가 작업 표시줄/독에서 Toast 창을 숨기기 위해 "작업 표시줄에 표시"를 비활성화합니다
-   - 변경 사항은 즉시 저장됩니다
+2. **Customize Advanced Settings**
+   - The user enables "Hide After Action" to automatically close the Toast window after an action runs
+   - The user enables "Hide on Blur" to close the Toast window when clicking outside
+   - The user enables "Hide with Escape Key" to close the Toast window when pressing Escape
+   - The user disables "Show in Taskbar" to hide the Toast window from the taskbar/dock
+   - Changes are saved immediately
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 Toast 앱의 고급 동작을 사용자 지정할 수 있습니다
-- 변경 사항은 즉시 적용됩니다
-- Toast 창은 사용자의 선호도에 따라 동작합니다
+- The user can customize the advanced behavior of the Toast app
+- Changes take effect immediately
+- The Toast window behaves according to the user's preferences
 
-## 시나리오 10: 워크플로우에서 Toast 앱 사용
+## Scenario 10: Using the Toast App in a Workflow
 
-**사용자 목표**: Toast 앱을 개발 워크플로우에 통합합니다.
+**User Goal**: Integrate the Toast app into a development workflow.
 
-### 워크플로우
+### Workflow
 
-1. **개발 버튼 구성**
-   - 사용자가 일반적인 개발 작업에 대한 버튼을 구성합니다:
-     - "서버 시작" (명령 실행: `npm start`)
-     - "테스트 실행" (명령 실행: `npm run test`)
-     - "빌드" (명령 실행: `npm run build`)
-     - "GitHub" (URL 열기: "https://github.com")
-     - "문서" (URL 열기: "https://developer.mozilla.org")
-     - "터미널" (명령 실행: `open -a Terminal` 또는 `start cmd`)
-     - "VS Code" (명령 실행: `code .`)
+1. **Configure Development Buttons**
+   - The user configures buttons for common development tasks:
+     - "Start Server" (Run Command: `npm start`)
+     - "Run Tests" (Run Command: `npm run test`)
+     - "Build" (Run Command: `npm run build`)
+     - "GitHub" (Open URL: "https://github.com")
+     - "Docs" (Open URL: "https://developer.mozilla.org")
+     - "Terminal" (Run Command: `open -a Terminal` or `start cmd`)
+     - "VS Code" (Run Command: `code .`)
 
-2. **개발 워크플로우에서 사용**
-   - 사용자가 프로젝트 작업 중입니다
-   - 사용자가 개발 서버를 시작해야 합니다
-   - 사용자가 전역 단축키(Alt+Space)를 누릅니다
-   - 사용자가 "서버 시작"을 클릭하거나 해당 단축키를 누릅니다
-   - 서버가 터미널 창에서 시작됩니다
-   - 나중에, 사용자가 문서를 확인해야 합니다
-   - 사용자가 다시 전역 단축키를 누릅니다
-   - 사용자가 "문서"를 클릭하거나 해당 단축키를 누릅니다
-   - 문서가 브라우저에서 열립니다
+2. **Use in the Development Workflow**
+   - The user is working on a project
+   - The user needs to start the development server
+   - The user presses the global shortcut (Alt+Space)
+   - The user clicks "Start Server" or presses the corresponding shortcut
+   - The server starts in a terminal window
+   - Later, the user needs to check the documentation
+   - The user presses the global shortcut again
+   - The user clicks "Docs" or presses the corresponding shortcut
+   - The documentation opens in the browser
 
-### 예상 결과
+### Expected Result
 
-- 사용자가 일반적인 개발 도구와 명령에 빠르게 접근할 수 있습니다
-- Toast 앱이 개발 워크플로우에 원활하게 통합됩니다
-- 사용자가 수동 탐색과 입력을 피함으로써 시간을 절약합니다
+- The user can quickly access common development tools and commands
+- The Toast app integrates seamlessly into the development workflow
+- The user saves time by avoiding manual navigation and typing
 
-## 결론
+## Conclusion
 
-이러한 시나리오는 다양한 사용 사례에서 Toast 앱의 다재다능함과 효율성을 보여줍니다. 애플리케이션, 웹사이트, 명령 및 스크립트에 빠르게 접근할 수 있게 해줌으로써 Toast 앱은 사용자가 워크플로우를 간소화하고 생산성을 높이는 데 도움이 됩니다.
+These scenarios demonstrate the versatility and efficiency of the Toast app across a variety of use cases. By providing quick access to applications, websites, commands, and scripts, the Toast app helps users streamline their workflows and boost productivity.
 
-애플리케이션의 사용자 지정 옵션을 통해 사용자는 특정 요구에 맞게 조정할 수 있으며, 키보드 중심 설계는 마우스에 의존하지 않고 효율적인 작동을 가능하게 합니다.
+The application's customization options let users tailor it to their specific needs, and its keyboard-centric design enables efficient operation without relying on the mouse.
 
-전반적으로 Toast 앱은 반복적인 작업을 자동화하고, 자주 사용하는 도구에 빠르게 접근하며, 개인화된 워크플로우를 구축하는 데 도움이 되는 강력한 생산성 도구입니다.
+Overall, the Toast app is a powerful productivity tool that helps users automate repetitive tasks, quickly access frequently used tools, and build personalized workflows.

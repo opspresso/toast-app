@@ -1,13 +1,13 @@
 /**
- * Toast - App Icon Extractor Tests (리팩토링된 버전)
+ * Toast - App Icon Extractor Tests (refactored version)
  *
- * 비즈니스 로직에 집중하고 Mock 의존성을 최소화한 테스트
+ * Tests that focus on business logic and minimize mock dependencies
  */
 
-// Path 모듈도 mock 처리
+// Mock the path module as well
 const path = require('path');
 
-// Mock dependencies - 의도 기반으로 단순화
+// Mock dependencies - simplified around intent
 const mockFs = {
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
@@ -113,7 +113,7 @@ function setupMockScenario(scenario) {
   }
 }
 
-describe('App Icon Extractor (리팩토링)', () => {
+describe('App Icon Extractor (refactored)', () => {
   let appIconExtractor;
   let originalPlatform;
 

@@ -41,7 +41,7 @@ function newSnippetId() {
  * Initialize the Snippets tab: load snippets, render, and reflect status.
  */
 export function initializeSnippetsSettings() {
-  window.settings.log.info('initializeSnippetsSettings 호출');
+  window.settings.log.info('initializeSnippetsSettings called');
 
   try {
     snippets = Array.isArray(config.snippets) ? config.snippets.map(s => ({ ...s })) : [];
@@ -49,7 +49,7 @@ export function initializeSnippetsSettings() {
     refreshStatus();
   }
   catch (error) {
-    window.settings.log.error('스니펫 탭 초기화 중 오류 발생:', error);
+    window.settings.log.error('Error initializing snippets tab:', error);
   }
 }
 
@@ -90,7 +90,7 @@ function refreshStatus() {
       }
     })
     .catch(error => {
-      window.settings.log.error('스니펫 상태 조회 오류:', error);
+      window.settings.log.error('Error querying snippet status:', error);
     });
 }
 
@@ -171,13 +171,13 @@ function persistSnippets() {
     .saveSnippets(snippets)
     .then(result => {
       if (!result || !result.success) {
-        window.settings.log.error('스니펫 저장 실패:', result && result.error);
+        window.settings.log.error('Failed to save snippets:', result && result.error);
         return;
       }
       updateConfig({ ...config, snippets: snippets.map(s => ({ ...s })) });
     })
     .catch(error => {
-      window.settings.log.error('스니펫 저장 오류:', error);
+      window.settings.log.error('Error saving snippets:', error);
     });
 }
 
@@ -264,7 +264,7 @@ function handleAddSnippet() {
       exitEditMode();
     })
     .catch(error => {
-      window.settings.log.error('스니펫 검증 오류:', error);
+      window.settings.log.error('Snippet validation error:', error);
       showFormError('Validation failed.');
     });
 }
@@ -304,7 +304,7 @@ export function setupSnippetsEventListeners() {
       window.settings.textExpander
         .setEnabled(snippetsEnabledCheckbox.checked)
         .then(() => refreshStatus())
-        .catch(error => window.settings.log.error('텍스트 확장 토글 오류:', error));
+        .catch(error => window.settings.log.error('Text expansion toggle error:', error));
     });
   }
 
@@ -313,7 +313,7 @@ export function setupSnippetsEventListeners() {
       window.settings.textExpander
         .requestPermission()
         .then(() => refreshStatus())
-        .catch(error => window.settings.log.error('권한 요청 오류:', error));
+        .catch(error => window.settings.log.error('Permission request error:', error));
     });
   }
 

@@ -1,121 +1,121 @@
 # Toast App Documentation
 
-Toast App의 완전한 문서 모음입니다. 프로젝트의 아키텍처부터 상세한 사용법까지 모든 정보를 제공합니다.
+The complete documentation set for Toast App. It covers everything from the project's architecture to detailed usage instructions.
 
-## 문서 구조
+## Documentation Structure
 
 ```
 docs/
-├── guide/          사용자 가이드 (5개)
-├── features/       기능 상세 문서 (7개)
-├── api/            API 레퍼런스 (4개)
-├── architecture/   아키텍처 문서 (3개)
-├── config/         설정 및 구성 (4개)
-├── development/    개발 가이드 (4개)
-└── future/         미래 계획 (0개)
+├── guide/          User guides (5)
+├── features/       Feature detail docs (7)
+├── api/            API reference (4)
+├── architecture/   Architecture docs (3)
+├── config/         Settings and configuration (4)
+├── development/    Development guides (4)
+└── future/         Future plans (0)
 ```
 
-## 사용자 문서
+## User Documentation
 
-시작하기 전에 읽어보세요:
+Read these before getting started:
 
-| 문서 | 설명 | 우선순위 |
+| Document | Description | Priority |
 |------|------|----------|
-| [사용자 가이드](./guide/user.md) | Toast 앱 사용법 완전 가이드 | 필수 |
-| [버튼 단축키](./guide/shortcuts.md) | 자동 단축키 할당 시스템 | 필수 |
-| [페이지 시스템](./guide/pages.md) | UI 구조 및 네비게이션 | 권장 |
-| [사용 시나리오](./guide/scenarios.md) | 실제 사용 예제 모음 | 권장 |
-| [버튼 액션](./guide/actions.md) | 5가지 액션 유형 설정 방법 | 권장 |
+| [User Guide](./guide/user.md) | Complete guide to using the Toast app | Essential |
+| [Button Shortcuts](./guide/shortcuts.md) | Automatic shortcut assignment system | Essential |
+| [Page System](./guide/pages.md) | UI structure and navigation | Recommended |
+| [Usage Scenarios](./guide/scenarios.md) | Collection of real-world examples | Recommended |
+| [Button Actions](./guide/actions.md) | How to configure the 5 action types | Recommended |
 
-[전체 가이드 보기](./guide/README.md)
+[View the full guide](./guide/README.md)
 
-## 개발자 문서
+## Developer Documentation
 
-개발에 필요한 핵심 문서:
+Core documents you need for development:
 
-| 문서 | 설명 | 우선순위 |
+| Document | Description | Priority |
 |------|------|----------|
-| [아키텍처](./architecture/overview.md) | 시스템 구조 및 설계 원칙 | 필수 |
-| [개발 가이드](./development/setup.md) | 개발 환경 설정 및 빌드 | 필수 |
-| [구성 스키마](./config/schema.md) | 설정 옵션 및 데이터 구조 | 권장 |
-| [데이터 모델](./config/data-model.md) | 핵심 데이터 구조 및 관계 | 권장 |
-| [데이터 저장소](./config/data-storage.md) | 파일 구조 및 데이터 관리 | 권장 |
+| [Architecture](./architecture/overview.md) | System structure and design principles | Essential |
+| [Development Guide](./development/setup.md) | Development environment setup and builds | Essential |
+| [Configuration Schema](./config/schema.md) | Configuration options and data structures | Recommended |
+| [Data Model](./config/data-model.md) | Core data structures and relationships | Recommended |
+| [Data Storage](./config/data-storage.md) | File structure and data management | Recommended |
 
-[전체 개발 문서 보기](./development/README.md)
+[View all development docs](./development/README.md)
 
-## 기능별 문서
+## Feature Documentation
 
-각 기능의 상세 구현:
+Detailed implementation of each feature:
 
-### 액션 시스템
-| 문서 | 설명 |
+### Action System
+| Document | Description |
 |------|------|
-| [버튼 액션](./guide/actions.md) | 5가지 액션 유형 (exec, open, script, chain, application) |
-| [스크립트](./features/scripts.md) | JavaScript, AppleScript, PowerShell, Bash 스크립트 |
+| [Button Actions](./guide/actions.md) | The 5 action types (exec, open, script, chain, application) |
+| [Scripts](./features/scripts.md) | JavaScript, AppleScript, PowerShell, and Bash scripts |
 
-### 클라우드 & 인증
-| 문서 | 설명 |
+### Cloud & Authentication
+| Document | Description |
 |------|------|
-| [클라우드 동기화](./features/cloud-sync.md) | OAuth 인증 및 설정 동기화 |
-| [보안](./architecture/security.md) | 보안 모델 및 데이터 보호 |
-| [자동 업데이트](./features/auto-update.md) | electron-updater 기반 업데이트 |
+| [Cloud Sync](./features/cloud-sync.md) | OAuth authentication and settings sync |
+| [Security](./architecture/security.md) | Security model and data protection |
+| [Auto Update](./features/auto-update.md) | Updates powered by electron-updater |
 
-### 플랫폼 & 통합
-| 문서 | 설명 |
+### Platform & Integration
+| Document | Description |
 |------|------|
-| [스니펫 (텍스트 확장)](./features/snippets.md) | 다른 앱에서 키워드 입력 시 자동 치환 |
-| [아이콘 추출](./features/icon-extraction.md) | macOS 앱 아이콘 자동 추출 |
-| [플랫폼별 기능](./architecture/platform.md) | macOS/Windows 특화 기능 |
-| [외부 통합](./development/integration.md) | 외부 서비스 연동 |
+| [Snippets (Text Expansion)](./features/snippets.md) | Automatic substitution when typing keywords in other apps |
+| [Icon Extraction](./features/icon-extraction.md) | Automatic macOS app icon extraction |
+| [Platform-Specific Features](./architecture/platform.md) | macOS/Windows-specific capabilities |
+| [External Integration](./development/integration.md) | Integration with external services |
 
-[전체 기능 문서 보기](./features/README.md)
+[View all feature docs](./features/README.md)
 
-## API 레퍼런스
+## API Reference
 
-개발자를 위한 API 문서:
+API documentation for developers:
 
-| 문서 | 설명 |
+| Document | Description |
 |------|------|
-| [API 개요](./api/overview.md) | 전체 API 구조 및 사용법 |
-| [메인 프로세스](./api/main-process.md) | 메인 프로세스 모듈 API |
-| [렌더러](./api/renderer.md) | 렌더러 프로세스 UI API |
-| [액션](./api/actions.md) | 액션 시스템 API |
+| [API Overview](./api/overview.md) | Overall API structure and usage |
+| [Main Process](./api/main-process.md) | Main process module API |
+| [Renderer](./api/renderer.md) | Renderer process UI API |
+| [Actions](./api/actions.md) | Action system API |
 
-[전체 API 문서 보기](./api/README.md)
+[View all API docs](./api/README.md)
 
-## 품질 & 관리
+## Quality & Maintenance
 
-| 문서 | 설명 | 상태 |
+| Document | Description | Status |
 |------|------|------|
-| [테스팅](./development/testing.md) | 테스트 전략 및 실행 | 부분 구현 |
-| [의존성 관리](./development/dependencies.md) | 패키지 및 호환성 관리 | 구현됨 |
-| [환경 변수](./config/environment.md) | 환경 설정 관리 | 구현됨 |
-| [윈도우 표시](./features/window.md) | 창 가시성 제어 | 구현됨 |
+| [Testing](./development/testing.md) | Test strategy and execution | Partially implemented |
+| [Dependency Management](./development/dependencies.md) | Package and compatibility management | Implemented |
+| [Environment Variables](./config/environment.md) | Environment configuration management | Implemented |
+| [Window Display](./features/window.md) | Window visibility control | Implemented |
 
-## 기타 문서
+## Other Documents
 
-| 문서 | 설명 | 상태 |
+| Document | Description | Status |
 |------|------|------|
-| [설정 관리](./features/settings.md) | 사용자 설정 UI | 구현됨 |
+| [Settings Management](./features/settings.md) | User settings UI | Implemented |
 
-## 사용자별 추천 경로
+## Recommended Paths by Audience
 
-### 최종 사용자
-1. [사용자 가이드](./guide/user.md) - 기본 사용법
-2. [버튼 단축키](./guide/shortcuts.md) - 키보드 사용법
-3. [클라우드 동기화](./features/cloud-sync.md) - 계정 및 동기화
+### End Users
+1. [User Guide](./guide/user.md) - Basic usage
+2. [Button Shortcuts](./guide/shortcuts.md) - Keyboard usage
+3. [Cloud Sync](./features/cloud-sync.md) - Account and sync
 
-### 개발자
-1. [아키텍처](./architecture/overview.md) - 시스템 이해
-2. [개발 가이드](./development/setup.md) - 환경 설정
-3. [API 개요](./api/overview.md) - API 구조
-4. [액션 시스템](./guide/actions.md) - 핵심 기능
+### Developers
+1. [Architecture](./architecture/overview.md) - Understanding the system
+2. [Development Guide](./development/setup.md) - Environment setup
+3. [API Overview](./api/overview.md) - API structure
+4. [Action System](./guide/actions.md) - Core functionality
 
-### 기여자
-1. [개발 가이드](./development/setup.md) - 개발 환경
-2. [테스팅](./development/testing.md) - 테스트 실행
-3. [의존성 관리](./development/dependencies.md) - 패키지 정책
+### Contributors
+1. [Development Guide](./development/setup.md) - Development environment
+2. [Testing](./development/testing.md) - Running tests
+3. [Dependency Management](./development/dependencies.md) - Package policy
 
 ---
 
-> 문서 개선: 오타나 개선사항을 발견하시면 [이슈 생성](https://github.com/opspresso/toast-app/issues) 또는 PR을 통해 기여해주세요!
+> Documentation improvements: If you find a typo or something that could be improved, please contribute by [opening an issue](https://github.com/opspresso/toast-app/issues) or submitting a PR!

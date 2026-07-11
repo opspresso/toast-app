@@ -64,15 +64,15 @@ export function setupModalEventListeners() {
   editButtonCommandInput.addEventListener('input', async () => {
     const command = editButtonCommandInput.value.trim();
 
-    // exec 액션에서 'open -a AppName' 패턴 감지
+    // Detect the 'open -a AppName' pattern in exec actions
     if (editButtonActionSelect.value === 'exec' && command) {
-      // 다양한 패턴 지원: open -a AppName, open -a "App Name", open -a domain.com
+      // Supports various patterns: open -a AppName, open -a "App Name", open -a domain.com
       const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))/);
       if (openAppMatch) {
         const appName = (openAppMatch[1] || openAppMatch[2]).trim();
         console.log('Detected app name:', appName, 'from command:', command);
 
-        // 아이콘이 비어있고 로컬 아이콘 추출이 지원되는 경우에만 실행
+        // Only run when the icon is empty and local icon extraction is supported
         console.log('Icon input value:', editButtonIconInput.value.trim());
         console.log('Is local icon extraction supported:', isLocalIconExtractionSupported());
         console.log('Platform:', window.toast?.platform);
@@ -80,24 +80,24 @@ export function setupModalEventListeners() {
 
         if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
           try {
-            // /Applications/AppName.app 경로 생성
+            // Build the /Applications/AppName.app path
             const appPath = `/Applications/${appName}.app`;
 
-            // 아이콘 추출 시도
+            // Attempt icon extraction
             const success = await updateButtonIconFromLocalApp(appPath, editButtonIconInput, editButtonNameInput);
 
             if (success) {
-              showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
+              showStatus(`The ${appName} icon has been set automatically.`, 'success');
             }
           }
           catch (error) {
-            console.warn(`${appName} 아이콘 추출 실패:`, error);
+            console.warn(`Failed to extract ${appName} icon:`, error);
           }
         }
       }
     }
 
-    // 아이콘 미리보기 업데이트
+    // Update the icon preview
     updateIconPreview();
   });
 
@@ -105,26 +105,26 @@ export function setupModalEventListeners() {
   editButtonApplicationInput.addEventListener('input', async () => {
     const applicationPath = editButtonApplicationInput.value.trim();
 
-    // application 액션에서 애플리케이션 경로가 설정되었을 때
+    // When an application path is set in an application action
     if (editButtonActionSelect.value === 'application' && applicationPath) {
-      // 아이콘이 비어있고 로컬 아이콘 추출이 지원되는 경우에만 실행
+      // Only run when the icon is empty and local icon extraction is supported
       if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
         try {
-          // 아이콘 추출 시도
+          // Attempt icon extraction
           const success = await updateButtonIconFromLocalApp(applicationPath, editButtonIconInput, editButtonNameInput);
 
           if (success) {
             const appName = extractAppNameFromPath(applicationPath);
-            showStatus(`${appName} 아이콘이 자동으로 설정되었습니다.`, 'success');
+            showStatus(`The ${appName} icon has been set automatically.`, 'success');
           }
         }
         catch (error) {
-          console.warn('애플리케이션 아이콘 추출 실패:', error);
+          console.warn('Failed to extract application icon:', error);
         }
       }
     }
 
-    // 아이콘 미리보기 업데이트
+    // Update the icon preview
     updateIconPreview();
   });
 
@@ -148,7 +148,7 @@ export function setupModalEventListeners() {
   // Switch input fields based on action type
   editButtonActionSelect.addEventListener('change', () => {
     showActionFields(editButtonActionSelect.value);
-    // 액션 타입 변경 시 미리보기 업데이트
+    // Update the preview when the action type changes
     updateIconPreview();
   });
 
@@ -182,11 +182,11 @@ export function setupModalEventListeners() {
             try {
               const success = await updateButtonIconFromLocalApp(result.filePaths[0], editButtonIconInput, editButtonNameInput);
               if (success) {
-                showStatus('아이콘과 버튼 이름이 자동으로 설정되었습니다.', 'success');
+                showStatus('The icon and button name have been set automatically.', 'success');
               }
             }
             catch (error) {
-              console.warn('자동 아이콘 추출 실패:', error);
+              console.warn('Automatic icon extraction failed:', error);
             }
           }
         }
@@ -280,7 +280,7 @@ export function setupModalEventListeners() {
         if (actionType === 'application') {
           applicationPath = editButtonApplicationInput.value.trim();
           if (!applicationPath) {
-            showStatus('애플리케이션을 먼저 선택해주세요.', 'warning');
+            showStatus('Please select an application first.', 'warning');
             return;
           }
         }
@@ -293,24 +293,24 @@ export function setupModalEventListeners() {
             applicationPath = `/Applications/${appName}.app`;
           }
           else {
-            showStatus('exec 액션에서는 "open -a AppName" 형태의 명령어가 필요합니다.', 'warning');
+            showStatus('exec actions require a command in the form "open -a AppName".', 'warning');
             return;
           }
         }
         else {
-          showStatus('아이콘 추출은 Application 또는 Exec 액션에서만 지원됩니다.', 'warning');
+          showStatus('Icon extraction is only supported for Application or Exec actions.', 'warning');
           return;
         }
 
         if (!isLocalIconExtractionSupported()) {
-          showStatus('아이콘 추출은 macOS에서만 지원됩니다.', 'warning');
+          showStatus('Icon extraction is only supported on macOS.', 'warning');
           return;
         }
 
         // Disable button during extraction
         reloadIconButton.disabled = true;
         reloadIconButton.innerHTML = '⏳';
-        reloadIconButton.title = '아이콘 추출 중...';
+        reloadIconButton.title = 'Extracting icon...';
 
         // Force refresh icon extraction
         const success = await updateButtonIconFromLocalApp(
@@ -321,15 +321,15 @@ export function setupModalEventListeners() {
         );
 
         if (success) {
-          showStatus('아이콘이 성공적으로 새로고침되었습니다.', 'success');
+          showStatus('The icon has been refreshed successfully.', 'success');
         }
         else {
-          showStatus('아이콘 새로고침에 실패했습니다.', 'error');
+          showStatus('Failed to refresh the icon.', 'error');
         }
       }
       catch (error) {
-        console.error('아이콘 리로드 오류:', error);
-        showStatus('아이콘 새로고침 중 오류가 발생했습니다.', 'error');
+        console.error('Icon reload error:', error);
+        showStatus('An error occurred while refreshing the icon.', 'error');
       }
       finally {
         // Re-enable button

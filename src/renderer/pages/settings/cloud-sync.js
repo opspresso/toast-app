@@ -1,29 +1,29 @@
 /**
  * Toast - Cloud Sync UI Module
  *
- * 클라우드 동기화 UI 관련 기능을 처리하는 모듈입니다.
- * 이 모듈은 Settings 창의 Cloud Sync 탭에서 사용됩니다.
+ * Module that handles cloud sync UI-related features.
+ * This module is used in the Cloud Sync tab of the Settings window.
  */
 
-// 상태 관리
+// State management
 const cloudSyncState = {
   enabled: false,
   isLoading: false,
   deviceId: null,
   lastSyncTime: 0,
   hasPermission: false,
-  eventListenersInitialized: false, // 이벤트 리스너 초기화 상태 추적
+  eventListenersInitialized: false, // Track event listener initialization state
 };
 
-// DOM 요소 참조
+// DOM element references
 const DOM = {
-  // 동기화 상태 요소
+  // Sync status elements
   syncStatusBadge: null,
   syncStatusText: null,
   lastSyncedTime: null,
   syncDeviceInfo: null,
 
-  // 컨트롤 요소
+  // Control elements
   enableCloudSyncCheckbox: null,
   manualSyncUploadButton: null,
   manualSyncDownloadButton: null,
@@ -32,7 +32,7 @@ const DOM = {
 };
 
 /**
- * DOM 요소 초기화
+ * Initialize DOM elements
  */
 function initElements() {
   DOM.syncStatusBadge = document.getElementById('sync-status-badge');
@@ -47,53 +47,53 @@ function initElements() {
 }
 
 /**
- * 클라우드 동기화 UI 초기화
- * @param {Object} config - 앱 설정
- * @param {Object} authState - 인증 상태
- * @param {Object} logger - 로거
+ * Initialize the cloud sync UI
+ * @param {Object} config - App settings
+ * @param {Object} authState - Authentication state
+ * @param {Object} logger - Logger
  */
 function initializeCloudSyncUI(config, authState, logger) {
   try {
     logger.info('Starting cloud sync UI initialization');
     initElements();
 
-    // Premium 구독 사용자는 항상 Cloud Sync 기능 활성화
+    // Premium subscription users always have the Cloud Sync feature enabled
     if (authState.subscription?.plan) {
       const plan = authState.subscription.plan.toLowerCase();
       if (plan.includes('premium')) {
         DOM.enableCloudSyncCheckbox.disabled = false;
 
-        // 구독 정보에 cloud_sync 기능 활성화 설정
+        // Enable the cloud_sync feature in the subscription info
         ensureCloudSyncFeature(authState.subscription);
 
         logger.info('Premium subscription user verified - cloud sync enabled');
       }
     }
 
-    // VIP 사용자 확인
+    // Check for VIP user
     if (authState.subscription?.isVip || authState.subscription?.vip) {
       DOM.enableCloudSyncCheckbox.disabled = false;
       logger.info('VIP user verified - cloud sync enabled');
     }
 
-    // 현재 동기화 상태 가져오기 (단일 진실 원천)
+    // Get the current sync status (single source of truth)
     window.settings
       .getSyncStatus()
       .then(status => {
         logger.info('Sync status query result:', status);
         logger.info(`Cloud sync initial state: ${status.enabled ? 'enabled' : 'disabled'}`);
-        // 실제 상태로 체크박스 설정
+        // Set the checkbox to the actual state
         DOM.enableCloudSyncCheckbox.checked = status.enabled;
         updateSyncStatusUI(status, authState, logger);
       })
       .catch(error => {
-        logger.error('동기화 상태 가져오기 오류:', error);
-        // 오류 시 기본값으로 설정
+        logger.error('Error getting sync status:', error);
+        // Fall back to default on error
         DOM.enableCloudSyncCheckbox.checked = false;
         logger.info('Cloud sync initial state: disabled (fallback due to error)');
       });
 
-    // 이벤트 리스너 설정
+    // Set up event listeners
     setupEventListeners(authState, logger);
 
     logger.info('Cloud sync UI initialization completed');
@@ -104,8 +104,8 @@ function initializeCloudSyncUI(config, authState, logger) {
 }
 
 /**
- * Cloud Sync 기능이 구독에 포함되어 있는지 확인하고 없으면 추가
- * @param {Object} subscription - 구독 정보
+ * Check whether the Cloud Sync feature is included in the subscription and add it if not
+ * @param {Object} subscription - Subscription info
  */
 function ensureCloudSyncFeature(subscription) {
   if (!subscription.features) {
@@ -120,25 +120,25 @@ function ensureCloudSyncFeature(subscription) {
 }
 
 /**
- * 이벤트 리스너 설정
- * @param {Object} authState - 인증 상태
- * @param {Object} logger - 로거
+ * Set up event listeners
+ * @param {Object} authState - Authentication state
+ * @param {Object} logger - Logger
  */
 function setupEventListeners(authState, logger) {
-  // 이미 이벤트 리스너가 등록되었으면 중복 등록 방지
+  // Prevent duplicate registration if event listeners are already registered
   if (cloudSyncState.eventListenersInitialized) {
     logger.info('Cloud sync event listeners already initialized, skipping duplicate registration');
     return;
   }
 
-  // 클라우드 동기화 활성화/비활성화 토글
+  // Cloud sync enable/disable toggle
   if (DOM.enableCloudSyncCheckbox) {
     DOM.enableCloudSyncCheckbox.addEventListener('change', () => {
       handleCloudSyncToggle(authState, logger);
     });
   }
 
-  // 수동 동기화 버튼
+  // Manual sync buttons
   if (DOM.manualSyncUploadButton) {
     DOM.manualSyncUploadButton.addEventListener('click', () => {
       handleManualSyncUpload(logger);
@@ -157,61 +157,61 @@ function setupEventListeners(authState, logger) {
     });
   }
 
-  // 이벤트 리스너 초기화 완료 표시
+  // Mark event listener initialization as complete
   cloudSyncState.eventListenersInitialized = true;
   logger.info('Cloud sync event listeners registered successfully');
 }
 
 /**
- * 동기화 상태 UI 업데이트
- * @param {Object} status - 동기화 상태
- * @param {Object} authState - 인증 상태
- * @param {Object} logger - 로거
+ * Update the sync status UI
+ * @param {Object} status - Sync status
+ * @param {Object} authState - Authentication state
+ * @param {Object} logger - Logger
  */
 function updateSyncStatusUI(status, authState, logger) {
   try {
-    // 상태 저장
+    // Save state
     cloudSyncState.enabled = status.enabled;
     cloudSyncState.deviceId = status.deviceId;
     cloudSyncState.lastSyncTime = status.lastSyncTime;
 
-    // 동기화 권한 확인
+    // Check sync permission
     const hasCloudSyncPermission = checkCloudSyncPermission(authState);
     cloudSyncState.hasPermission = hasCloudSyncPermission;
 
     const canUseCloudSync = hasCloudSyncPermission && authState.isLoggedIn;
     logger.info(`Sync permission check: permission=${hasCloudSyncPermission}, logged in=${authState.isLoggedIn}`);
 
-    // 권한이 없으면 UI 비활성화
+    // Disable the UI if there is no permission
     if (!canUseCloudSync) {
       logger.info('No cloud sync permission - UI disabled');
       disableCloudSyncUI(logger);
       return;
     }
 
-    // 동기화 상태 배지 업데이트
+    // Update the sync status badge
     updateStatusBadge(status.enabled);
 
-    // 상태 텍스트 업데이트
+    // Update the status text
     DOM.syncStatusText.textContent = status.enabled ? 'Cloud Sync Enabled' : 'Cloud Sync Disabled';
 
-    // 마지막 동기화 시간 업데이트
+    // Update the last sync time
     updateLastSyncTime(status.lastSyncTime);
 
-    // 장치 정보 업데이트
+    // Update the device info
     DOM.syncDeviceInfo.textContent = status.deviceId ? `Current Device: ${status.deviceId}` : 'Current Device: Unknown';
 
-    // 컨트롤 활성화/비활성화
+    // Enable/disable controls
     DOM.enableCloudSyncCheckbox.disabled = !canUseCloudSync;
     DOM.enableCloudSyncCheckbox.checked = status.enabled;
 
-    // 동기화 버튼 활성화/비활성화
+    // Enable/disable sync buttons
     const buttonDisabled = !canUseCloudSync || !status.enabled;
     DOM.manualSyncUploadButton.disabled = buttonDisabled;
     DOM.manualSyncDownloadButton.disabled = buttonDisabled;
     DOM.manualSyncResolveButton.disabled = buttonDisabled;
 
-    // 버튼 스타일 업데이트
+    // Update button styles
     updateButtonStyles(buttonDisabled);
 
     logger.info('Sync status UI update completed');
@@ -222,12 +222,12 @@ function updateSyncStatusUI(status, authState, logger) {
 }
 
 /**
- * 상태 배지 업데이트
- * @param {boolean} enabled - 동기화 활성화 여부
+ * Update the status badge
+ * @param {boolean} enabled - Whether sync is enabled
  */
 function updateStatusBadge(enabled) {
   if (enabled) {
-    // 활성화 상태 - 애니메이션 스피너 표시
+    // Enabled state - show animated spinner
     DOM.syncStatusBadge.textContent = '';
     DOM.syncStatusBadge.className = 'badge premium badge-with-spinner';
 
@@ -236,15 +236,15 @@ function updateStatusBadge(enabled) {
     DOM.syncStatusBadge.appendChild(spinner);
   }
   else {
-    // 비활성화 상태 - 정지 아이콘 표시
+    // Disabled state - show stop icon
     DOM.syncStatusBadge.textContent = '⏹️';
     DOM.syncStatusBadge.className = 'badge secondary';
   }
 }
 
 /**
- * 마지막 동기화 시간 업데이트
- * @param {number} lastSyncTime - 마지막 동기화 시간
+ * Update the last sync time
+ * @param {number} lastSyncTime - Last sync time
  */
 function updateLastSyncTime(lastSyncTime) {
   const syncTime = lastSyncTime ? new Date(lastSyncTime) : new Date();
@@ -254,9 +254,9 @@ function updateLastSyncTime(lastSyncTime) {
 }
 
 /**
- * 날짜 형식화
- * @param {Date} date - 날짜 객체
- * @returns {string} 형식화된 날짜 문자열
+ * Format a date
+ * @param {Date} date - Date object
+ * @returns {string} Formatted date string
  */
 function formatDate(date) {
   return date.toLocaleDateString('en-US', {
@@ -269,8 +269,8 @@ function formatDate(date) {
 }
 
 /**
- * 버튼 스타일 업데이트
- * @param {boolean} disabled - 비활성화 여부
+ * Update button styles
+ * @param {boolean} disabled - Whether disabled
  */
 function updateButtonStyles(disabled) {
   const buttons = [DOM.manualSyncUploadButton, DOM.manualSyncDownloadButton, DOM.manualSyncResolveButton];
@@ -290,8 +290,8 @@ function updateButtonStyles(disabled) {
 }
 
 /**
- * 클라우드 동기화 UI 비활성화
- * @param {Object} logger - 로거
+ * Disable the cloud sync UI
+ * @param {Object} logger - Logger
  */
 function disableCloudSyncUI(logger) {
   try {
@@ -299,22 +299,22 @@ function disableCloudSyncUI(logger) {
     DOM.syncStatusBadge.className = 'badge secondary';
     DOM.syncStatusText.textContent = 'Cloud Sync Disabled';
 
-    // 현재 날짜 표시
+    // Show the current date
     const currentDate = new Date();
     const formattedDate = formatDate(currentDate);
     DOM.lastSyncedTime.textContent = `Sync Status: Not synced (${formattedDate})`;
     DOM.syncDeviceInfo.textContent = 'Current Device: -';
 
-    // 체크박스 비활성화
+    // Disable the checkbox
     DOM.enableCloudSyncCheckbox.checked = false;
     DOM.enableCloudSyncCheckbox.disabled = true;
 
-    // 모든 버튼 비활성화
+    // Disable all buttons
     DOM.manualSyncUploadButton.disabled = true;
     DOM.manualSyncDownloadButton.disabled = true;
     DOM.manualSyncResolveButton.disabled = true;
 
-    // 버튼 스타일 업데이트
+    // Update button styles
     updateButtonStyles(true);
 
     logger.info('Cloud sync UI disable completed');
@@ -325,29 +325,29 @@ function disableCloudSyncUI(logger) {
 }
 
 /**
- * 구독 정보에서 클라우드 동기화 권한 확인
- * @param {Object} authState - 인증 상태
- * @returns {boolean} 클라우드 동기화 권한 여부
+ * Check cloud sync permission from the subscription info
+ * @param {Object} authState - Authentication state
+ * @returns {boolean} Whether cloud sync is permitted
  */
 function checkCloudSyncPermission(authState) {
   let hasPermission = false;
 
-  // 구독 정보 없으면 권한 없음
+  // No permission if there is no subscription info
   if (!authState.subscription) {
     return false;
   }
 
-  // 1. 직접적인 구독 상태 확인
+  // 1. Check the direct subscription status
   if (authState.subscription.isSubscribed === true || authState.subscription.active === true || authState.subscription.is_subscribed === true) {
     hasPermission = true;
   }
 
-  // 2. VIP 사용자 확인
+  // 2. Check for VIP user
   if (authState.subscription.isVip || authState.subscription.vip) {
     hasPermission = true;
   }
 
-  // 3. Premium 플랜 확인
+  // 3. Check for Premium plan
   if (authState.subscription.plan) {
     const plan = authState.subscription.plan.toLowerCase();
     if (plan.includes('premium')) {
@@ -355,7 +355,7 @@ function checkCloudSyncPermission(authState) {
     }
   }
 
-  // 4. 특정 기능 확인
+  // 4. Check specific features
   if (authState.subscription.features?.cloud_sync === true || authState.subscription.additionalFeatures?.cloudSync === true) {
     hasPermission = true;
   }
@@ -364,8 +364,8 @@ function checkCloudSyncPermission(authState) {
 }
 
 /**
- * 로딩 상태 설정
- * @param {boolean} isLoading - 로딩 중 여부
+ * Set the loading state
+ * @param {boolean} isLoading - Whether loading is in progress
  */
 function setLoading(isLoading) {
   cloudSyncState.isLoading = isLoading;
@@ -379,7 +379,7 @@ function setLoading(isLoading) {
 }
 
 /**
- * 모든 동기화 버튼 비활성화
+ * Disable all sync buttons
  */
 function disableSyncButtons() {
   DOM.manualSyncUploadButton.disabled = true;
@@ -388,15 +388,15 @@ function disableSyncButtons() {
 }
 
 /**
- * 동기화 버튼 상태 복원
+ * Restore the sync button state
  */
 function resetSyncButtons() {
-  // 버튼 텍스트 복원
+  // Restore button text
   DOM.manualSyncUploadButton.textContent = 'Upload to Server';
   DOM.manualSyncDownloadButton.textContent = 'Download from Server';
   DOM.manualSyncResolveButton.textContent = 'Resolve Conflicts';
 
-  // 권한에 따른 버튼 활성화/비활성화
+  // Enable/disable buttons based on permission
   const buttonDisabled = !cloudSyncState.hasPermission || !cloudSyncState.enabled;
   DOM.manualSyncUploadButton.disabled = buttonDisabled;
   DOM.manualSyncDownloadButton.disabled = buttonDisabled;
@@ -404,54 +404,54 @@ function resetSyncButtons() {
 }
 
 /**
- * 클라우드 동기화 활성화/비활성화 처리
- * @param {Object} authState - 인증 상태
- * @param {Object} logger - 로거
+ * Handle enabling/disabling cloud sync
+ * @param {Object} authState - Authentication state
+ * @param {Object} logger - Logger
  */
 function handleCloudSyncToggle(authState, logger) {
   const enabled = DOM.enableCloudSyncCheckbox.checked;
   logger.info(`Cloud sync status change: ${enabled ? 'enabled' : 'disabled'}`);
 
-  // 로딩 표시 및 체크박스 비활성화
+  // Show loading and disable the checkbox
   setLoading(true);
   DOM.enableCloudSyncCheckbox.disabled = true;
 
-  // 서버에 상태 동기화
+  // Sync the state to the server
   window.settings
     .setCloudSyncEnabled(enabled)
     .then(() =>
-      // 상태 업데이트 후 UI 갱신
+      // Refresh the UI after the state update
       window.settings.getSyncStatus(),
     )
     .then(status => {
-      // UI 업데이트
+      // Update the UI
       updateSyncStatusUI(status, authState, logger);
       logger.info('Cloud sync status change successful');
     })
     .catch(error => {
       logger.error('Cloud sync status change error:', error);
-      // 오류 시 상태 복원
+      // Restore the state on error
       DOM.enableCloudSyncCheckbox.checked = !enabled;
     })
     .finally(() => {
-      // 로딩 숨김 및 컨트롤 활성화
+      // Hide loading and enable controls
       setLoading(false);
       DOM.enableCloudSyncCheckbox.disabled = false;
     });
 }
 
 /**
- * 서버에 설정 업로드 처리
- * @param {Object} logger - 로거
+ * Handle uploading settings to the server
+ * @param {Object} logger - Logger
  */
 function handleManualSyncUpload(logger) {
   logger.info('Manual sync - upload started');
 
-  // 로딩 표시 및 버튼 비활성화
+  // Show loading and disable buttons
   setLoading(true);
   disableSyncButtons();
 
-  // 업로드 실행
+  // Run the upload
   window.settings
     .manualSync('upload')
     .then(result => {
@@ -461,7 +461,7 @@ function handleManualSyncUpload(logger) {
       }
       else {
         logger.error('Settings upload failed:', result.error);
-        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        // If the error is an object, convert it to a JSON string or use its message property
         let errorMessage = 'Unknown error';
         if (result.error) {
           if (typeof result.error === 'object') {
@@ -479,7 +479,7 @@ function handleManualSyncUpload(logger) {
       DOM.manualSyncUploadButton.textContent = 'Upload Failed';
     })
     .finally(() => {
-      // 상태 복원
+      // Restore state
       setLoading(false);
 
       setTimeout(() => {
@@ -489,23 +489,23 @@ function handleManualSyncUpload(logger) {
 }
 
 /**
- * 서버에서 설정 다운로드 처리
- * @param {Object} logger - 로거
+ * Handle downloading settings from the server
+ * @param {Object} logger - Logger
  */
 function handleManualSyncDownload(logger) {
   logger.info('Manual sync - download started');
 
-  // 확인 대화상자
+  // Confirmation dialog
   if (!confirm('Downloading settings from the server will overwrite your local settings. Do you want to continue?')) {
     logger.info('User canceled the download');
     return;
   }
 
-  // 로딩 표시 및 버튼 비활성화
+  // Show loading and disable buttons
   setLoading(true);
   disableSyncButtons();
 
-  // 다운로드 실행
+  // Run the download
   window.settings
     .manualSync('download')
     .then(result => {
@@ -513,12 +513,12 @@ function handleManualSyncDownload(logger) {
         logger.info('Settings download successful');
         DOM.manualSyncDownloadButton.textContent = 'Download Complete!';
 
-        // 설정 다시 로드
+        // Reload the settings
         return window.settings.getConfig();
       }
       else {
         logger.error('Settings download failed:', result.error);
-        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        // If the error is an object, convert it to a JSON string or use its message property
         let errorMessage = 'Unknown error';
         if (result.error) {
           if (typeof result.error === 'object') {
@@ -532,7 +532,7 @@ function handleManualSyncDownload(logger) {
       }
     })
     .then(loadedConfig => {
-      // 이벤트 발생 - 설정 로드
+      // Dispatch event - settings loaded
       window.dispatchEvent(new CustomEvent('config-loaded', { detail: loadedConfig }));
       logger.info('New settings loaded and event triggered');
     })
@@ -541,7 +541,7 @@ function handleManualSyncDownload(logger) {
       DOM.manualSyncDownloadButton.textContent = 'Download Failed';
     })
     .finally(() => {
-      // 상태 복원
+      // Restore state
       setLoading(false);
 
       setTimeout(() => {
@@ -551,13 +551,13 @@ function handleManualSyncDownload(logger) {
 }
 
 /**
- * 설정 충돌 해결 처리
- * @param {Object} logger - 로거
+ * Handle settings conflict resolution
+ * @param {Object} logger - Logger
  */
 function handleManualSyncResolve(logger) {
   logger.info('Manual sync - conflict resolution started');
 
-  // 확인 대화상자
+  // Confirmation dialog
   if (
     !confirm('This will resolve conflicts between local and server settings. Settings with more recent timestamps will be applied. Do you want to continue?')
   ) {
@@ -565,11 +565,11 @@ function handleManualSyncResolve(logger) {
     return;
   }
 
-  // 로딩 표시 및 버튼 비활성화
+  // Show loading and disable buttons
   setLoading(true);
   disableSyncButtons();
 
-  // 충돌 해결 실행
+  // Run the conflict resolution
   window.settings
     .manualSync('resolve')
     .then(result => {
@@ -577,12 +577,12 @@ function handleManualSyncResolve(logger) {
         logger.info('Settings conflict resolution successful');
         DOM.manualSyncResolveButton.textContent = 'Resolved!';
 
-        // 설정 다시 로드
+        // Reload the settings
         return window.settings.getConfig();
       }
       else {
         logger.error('Settings conflict resolution failed:', result.error);
-        // 오류가 객체인 경우 JSON 문자열로 변환하거나 메시지 속성 사용
+        // If the error is an object, convert it to a JSON string or use its message property
         let errorMessage = 'Unknown error';
         if (result.error) {
           if (typeof result.error === 'object') {
@@ -596,7 +596,7 @@ function handleManualSyncResolve(logger) {
       }
     })
     .then(loadedConfig => {
-      // 이벤트 발생 - 설정 로드
+      // Dispatch event - settings loaded
       window.dispatchEvent(new CustomEvent('config-loaded', { detail: loadedConfig }));
       logger.info('Merged settings loaded and event triggered');
     })
@@ -605,7 +605,7 @@ function handleManualSyncResolve(logger) {
       DOM.manualSyncResolveButton.textContent = 'Resolution Failed';
     })
     .finally(() => {
-      // 상태 복원
+      // Restore state
       setLoading(false);
 
       setTimeout(() => {
@@ -614,5 +614,5 @@ function handleManualSyncResolve(logger) {
     });
 }
 
-// 모듈 내보내기
+// Export module
 export { initializeCloudSyncUI, updateSyncStatusUI, disableCloudSyncUI };

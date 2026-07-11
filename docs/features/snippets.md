@@ -1,29 +1,29 @@
-# 스니펫 (텍스트 확장)
+# Snippets (Text Expansion)
 
-다른 앱에서 키워드를 입력하면 미리 정의한 텍스트로 자동 치환하는 인라인 텍스트 확장 기능입니다. 예를 들어 Slack, 메모, 브라우저 등 어느 앱에서든 `!email`을 입력하면 `email@toast.sh`로 바뀝니다.
+An inline text expansion feature that automatically replaces a keyword you type in other apps with predefined text. For example, in any app such as Slack, Notes, or a browser, typing `!email` turns it into `email@toast.sh`.
 
-첫 실행 시 예시 스니펫 `!email`이 하나 시드됩니다. 치환 내용은 로그인한 사용자의 이메일이며, 로그인하지 않았다면 `email@toast.sh`입니다. 이 시드는 기기당 한 번만 수행되며, 이미 스니펫이 있으면(예: 클라우드 동기화로 내려받은 경우) 건드리지 않습니다.
+On first launch, one example snippet, `!email`, is seeded. Its replacement content is the logged-in user's email, or `email@toast.sh` if not logged in. This seeding is performed only once per device, and if snippets already exist (e.g., downloaded via cloud sync), it is left untouched.
 
-## 동작 방식
+## How It Works
 
-1. 전역 키 입력 후킹(`uiohook-napi`)으로 타이핑을 감지해 입력 버퍼를 유지합니다.
-2. 버퍼가 활성화된 스니펫의 키워드로 끝나면 매치로 판정합니다(중복 시 가장 긴 키워드 우선).
-3. 치환은 클립보드 기반입니다: 입력한 키워드를 Backspace로 지우고, 기존 클립보드를 백업한 뒤 치환 텍스트를 붙여넣고(⌘V), 잠시 후 클립보드를 복원합니다. 클립보드 방식이라 한글·이모지도 안정적으로 치환됩니다.
+1. It detects typing via global keystroke hooking (`uiohook-napi`) and maintains an input buffer.
+2. When the buffer ends with the keyword of an enabled snippet, it is judged a match (on overlap, the longest keyword wins).
+3. Replacement is clipboard-based: it deletes the typed keyword with Backspace, backs up the existing clipboard, pastes the replacement text (⌘V), and restores the clipboard shortly after. Because it uses the clipboard, it reliably replaces Korean characters and emoji as well.
 
-스페이스·Enter·방향키·마우스 클릭이나 ⌘/Ctrl/Alt 조합은 입력 버퍼를 초기화합니다.
+Space, Enter, arrow keys, mouse clicks, and ⌘/Ctrl/Alt combinations reset the input buffer.
 
-## 권한 (macOS)
+## Permissions (macOS)
 
-전역 키 입력 감지와 치환에는 **손쉬운 사용(Accessibility)** 및 **입력 모니터링(Input Monitoring)** 권한이 필요합니다. 설정 → Snippets 탭에서 권한을 요청하거나 시스템 설정을 열 수 있습니다. 권한이 없으면 기능은 자동으로 비활성 상태로 유지됩니다(크래시 없음).
+Global keystroke detection and replacement require **Accessibility** and **Input Monitoring** permissions. You can request permissions or open System Settings from the Settings → Snippets tab. Without permissions, the feature is automatically kept inactive (no crash).
 
-## 프라이버시
+## Privacy
 
-- 기본값은 **꺼짐**입니다. 사용자가 명시적으로 켜야 동작합니다.
-- 키 입력 내용은 로그에 기록하지 않습니다. 입력 버퍼는 메모리에만 유지되는 고정 길이 슬라이딩 윈도우입니다.
+- The default is **off**. The user must explicitly turn it on for it to work.
+- Keystroke content is not written to logs. The input buffer is a fixed-length sliding window kept only in memory.
 
-## 설정 데이터
+## Configuration Data
 
-스니펫은 구성의 최상위 `snippets` 배열에 저장되며, pages처럼 클라우드 동기화됩니다. 기능 켜짐 여부(`textExpander.enabled`)는 권한이 기기별이므로 동기화하지 않는 기기 로컬 설정입니다. 자세한 스키마는 [config/schema.md](../config/schema.md)를 참조하세요.
+Snippets are stored in the top-level `snippets` array of the configuration and are cloud-synced like pages. Whether the feature is enabled (`textExpander.enabled`) is a device-local setting that is not synced, because permissions are per-device. See [config/schema.md](../config/schema.md) for the detailed schema.
 
 ```json
 {
@@ -34,11 +34,11 @@
 }
 ```
 
-키워드 규칙: 공백 불가, 최소 2자, 출력 가능한 ASCII만, 중복 금지, 다른 키워드의 접미사 금지(모호 매칭 방지). 치환 내용은 임의의 유니코드를 허용합니다.
+Keyword rules: no whitespace, at least 2 characters, printable ASCII only, no duplicates, and not a suffix of another keyword (to prevent ambiguous matching). Replacement content allows arbitrary Unicode.
 
-## 제약
+## Limitations
 
-- **macOS 전용**입니다. Windows는 후속 과제입니다.
-- 트리거 키워드는 ASCII만 지원합니다. 한글 IME 조합 입력은 키코드 기반 버퍼와 맞지 않아 트리거로 쓸 수 없습니다(치환 내용은 한글 가능).
-- macOS Secure Input(비밀번호 입력 필드) 중에는 OS가 이벤트 후킹을 차단하므로 동작하지 않습니다.
-- App Store(MAS) 빌드는 샌드박스 제약으로 이 기능을 지원하지 않습니다. 일반 배포(DMG/ZIP) 빌드에서만 동작합니다.
+- **macOS only**. Windows is a follow-up task.
+- Trigger keywords support ASCII only. Korean IME composition input cannot be used as a trigger because it does not align with the keycode-based buffer (replacement content can be Korean).
+- It does not work during macOS Secure Input (password entry fields), because the OS blocks event hooking.
+- App Store (MAS) builds do not support this feature due to sandbox restrictions. It works only in regular distribution (DMG/ZIP) builds.

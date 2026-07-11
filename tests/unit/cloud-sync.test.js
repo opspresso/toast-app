@@ -1,8 +1,8 @@
 /**
  * Toast - Cloud Sync Module Tests
  *
- * 클라우드 동기화 모듈에 대한 단위 테스트
- * 실제 사용자 시나리오 기반의 중요한 기능들을 검증
+ * Unit tests for the cloud sync module
+ * Verifies critical features based on real user scenarios
  */
 
 // Mock dependencies
@@ -285,7 +285,7 @@ describe('Cloud Sync Module', () => {
       const result = await cloudSync.uploadSettings();
 
       expect(result.success).toBe(true);
-      // 정규화된 pages 가 ConfigStore 에 저장되고 업로드 페이로드에도 실린다
+      // The normalized pages are saved to ConfigStore and also included in the upload payload
       expect(mockConfigStore.set).toHaveBeenCalledWith('pages', normalizedPages);
       const uploadArg = mockApiSync.uploadSettings.mock.calls[0][0];
       expect(uploadArg.directData.pages).toBe(normalizedPages);
@@ -347,8 +347,8 @@ describe('Cloud Sync Module', () => {
     });
 
     test('should propagate HTTP statusCode from API on failure', async () => {
-      // apiSync 는 HTTP 오류를 { error: { statusCode } } 중첩 형태로 반환하므로
-      // wrapper 가 재시도 로직이 읽는 최상위 statusCode 로 정규화해야 한다
+      // apiSync returns HTTP errors nested as { error: { statusCode } }, so
+      // the wrapper must normalize it to a top-level statusCode that the retry logic reads
       mockApiSync.uploadSettings.mockResolvedValue({ error: { code: 'HTTP_409', message: 'stale', statusCode: 409 } });
 
       const result = await cloudSync.uploadSettings();
@@ -445,7 +445,7 @@ describe('Cloud Sync Module', () => {
       const result = await freshCloudSync.downloadSettings();
 
       expect(result.success).toBe(true);
-      // 다운로드는 fetch 전용으로 apiSync를 호출한다(저장은 cloud-sync가 직접 수행).
+      // Download calls apiSync for fetch only (saving is done directly by cloud-sync).
       expect(mockApiSync.downloadSettings).toHaveBeenCalledWith({
         hasValidToken: mockAuthManager.hasValidToken,
         onUnauthorized: mockAuthManager.refreshAccessToken,

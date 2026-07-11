@@ -1,12 +1,12 @@
 # Future Plans
 
-Toast App의 미래 계획 및 로드맵 문서입니다.
+Future plans and roadmap documentation for Toast App.
 
-## 문서 목록
+## Document List
 
-현재 계획된 기능 문서가 없습니다.
+There are no planned feature documents at this time.
 
-## 관련 문서
+## Related Documents
 
-- [아키텍처 개요](../architecture/overview.md)
-- [개발 가이드](../development/README.md)
+- [Architecture Overview](../architecture/overview.md)
+- [Development Guide](../development/README.md)

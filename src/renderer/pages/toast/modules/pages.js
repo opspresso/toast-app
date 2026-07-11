@@ -226,7 +226,7 @@ export function initializePages(configPages) {
   if (configPages) {
     const previousPageIndex = currentPageIndex;
 
-    // 각 페이지의 버튼을 15개로 정규화하고 단축키 재할당
+    // Normalize each page's buttons to 15 and reassign shortcuts
     pages = configPages.map(page => ({
       ...page,
       buttons: reassignButtonShortcuts(normalizePageButtons(page.buttons)),
@@ -263,11 +263,11 @@ export function getCurrentPageButtons() {
  */
 export function updateCurrentPageButtons(buttons) {
   if (currentPageIndex >= 0 && currentPageIndex < pages.length) {
-    // 버튼 위치 변경 시 단축키 자동 재할당
+    // Automatically reassign shortcuts when button positions change
     const buttonsWithReassignedShortcuts = reassignButtonShortcuts(buttons);
     pages[currentPageIndex].buttons = buttonsWithReassignedShortcuts;
 
-    // 구성 저장
+    // Save configuration
     if (window.toast && window.toast.saveConfig) {
       window.toast.saveConfig({ pages });
     }

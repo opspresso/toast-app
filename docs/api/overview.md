@@ -1,67 +1,67 @@
-# Toast 앱 API 문서
+# Toast App API Documentation
 
-이 문서는 Toast 앱의 내부 API에 대한 개요를 제공합니다.
+This document provides an overview of the Toast app's internal APIs.
 
-## API 문서 구조
+## API Documentation Structure
 
-Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
+The Toast app's API documentation is organized as follows:
 
-### 메인 프로세스 API
-- **[메인 프로세스 API](./main-process.md)**: 메인 프로세스 모듈들의 상세 API 문서
-  - 구성 모듈 (`config.js`)
-  - 로거 모듈 (`logger.js`)
-  - 업데이터 모듈 (`updater.js`)
-  - 실행기 모듈 (`executor.js`)
-  - 단축키 모듈 (`shortcuts.js`)
-  - 트레이 모듈 (`tray.js`)
-  - 윈도우 모듈 (`windows.js`)
-  - IPC 모듈 (`ipc.js` 오케스트레이터 + `ipc/` 하위 핸들러)
-  - 인증 모듈 (`auth-manager.js`, `auth.js`)
-  - 클라우드 동기화 모듈 (`cloud-sync.js`, `cloud-sync/conflict-resolver.js`)
-  - 액션 승인 모듈 (`action-approval.js`)
-  - 구독 헬퍼 모듈 (`subscription.js`)
-  - 브로드캐스트 유틸 (`broadcast.js`)
-  - API 클라이언트 모듈 (`api/client.js`)
+### Main Process API
+- **[Main Process API](./main-process.md)**: Detailed API documentation for the main process modules
+  - Configuration module (`config.js`)
+  - Logger module (`logger.js`)
+  - Updater module (`updater.js`)
+  - Executor module (`executor.js`)
+  - Shortcuts module (`shortcuts.js`)
+  - Tray module (`tray.js`)
+  - Window module (`windows.js`)
+  - IPC module (`ipc.js` orchestrator + `ipc/` sub-handlers)
+  - Authentication module (`auth-manager.js`, `auth.js`)
+  - Cloud sync module (`cloud-sync.js`, `cloud-sync/conflict-resolver.js`)
+  - Action approval module (`action-approval.js`)
+  - Subscription helper module (`subscription.js`)
+  - Broadcast utility (`broadcast.js`)
+  - API client module (`api/client.js`)
 
-### 액션 API
-- **[액션 API](./actions.md)**: 액션 모듈들의 상세 API 문서
-  - Application 액션 (`application.js`)
-  - Exec 액션 (`exec.js`)
-  - Open 액션 (`open.js`)
-  - Script 액션 (`script.js`)
-  - Chain 액션 (`chain.js`)
+### Action API
+- **[Action API](./actions.md)**: Detailed API documentation for the action modules
+  - Application action (`application.js`)
+  - Exec action (`exec.js`)
+  - Open action (`open.js`)
+  - Script action (`script.js`)
+  - Chain action (`chain.js`)
 
-### 렌더러 프로세스 API
-- **[렌더러 프로세스 API](./renderer.md)**: 렌더러 프로세스 API 문서
-  - Toast 윈도우 API (`toast.js`)
-  - 설정 윈도우 API (`settings.js`)
+### Renderer Process API
+- **[Renderer Process API](./renderer.md)**: Renderer process API documentation
+  - Toast Window API (`toast.js`)
+  - Settings Window API (`settings.js`)
 
-## 빠른 참조
+## Quick Reference
 
-### 주요 API 패턴
+### Key API Patterns
 
-#### 결과 객체
-모든 API 호출은 일관된 결과 객체를 반환합니다:
+#### Result Object
+Every API call returns a consistent result object:
 
 ```javascript
-// 성공 결과
+// Success result
 {
   success: true,
-  message: '작업이 성공적으로 완료되었습니다',
-  // 작업별 추가 데이터
+  message: 'The operation completed successfully',
+  // Operation-specific extra data
 }
 
-// 오류 결과
+// Error result
 {
   success: false,
-  message: '오류 메시지',
-  error: errorObject, // 원래 오류 객체 또는 문자열
-  // 추가 오류 세부 정보
+  message: 'Error message',
+  error: errorObject, // Original error object or string
+  // Additional error details
 }
 ```
 
-#### 구성 스키마
-기본 구성 스키마의 주요 섹션:
+#### Configuration Schema
+Key sections of the default configuration schema:
 
 ```javascript
 {
@@ -93,60 +93,60 @@ Toast 앱의 API 문서는 다음과 같이 구성되어 있습니다:
 }
 ```
 
-#### 지원되는 액션 유형
-- `application`: 애플리케이션 실행
-- `exec`: 셸 명령 실행
-- `open`: URL, 파일 또는 폴더 열기
-- `script`: 사용자 정의 스크립트 실행
-- `chain`: 일련의 액션을 순차적으로 실행
+#### Supported Action Types
+- `application`: Launch an application
+- `exec`: Run a shell command
+- `open`: Open a URL, file, or folder
+- `script`: Run a custom script
+- `chain`: Run a series of actions sequentially
 
-### IPC 채널 요약
+### IPC Channel Summary
 
-주요 IPC 채널들:
+Key IPC channels:
 
-| 채널 | 유형 | 설명 |
-|------|------|------|
-| `execute-action` | handle | 액션 실행 |
-| `get-config` | handle | 구성 가져오기 |
-| `set-config` | handle | 구성 설정 |
-| `show-toast` | on | Toast 윈도우 표시 |
-| `hide-toast` | on | Toast 윈도우 숨기기 |
-| `show-settings` | on | 설정 윈도우 표시 |
-| `check-for-updates` | handle | 업데이트 확인 |
+| Channel | Type | Description |
+|---------|------|-------------|
+| `execute-action` | handle | Execute an action |
+| `get-config` | handle | Get configuration |
+| `set-config` | handle | Set configuration |
+| `show-toast` | on | Show the Toast window |
+| `hide-toast` | on | Hide the Toast window |
+| `show-settings` | on | Show the settings window |
+| `check-for-updates` | handle | Check for updates |
 
-전체 IPC 채널 목록은 [메인 프로세스 API 문서](./main-process.md#ipc-모듈)를 참조하세요.
+For the full list of IPC channels, see the [Main Process API documentation](./main-process.md#ipc-module-srcmainipcjs).
 
-## 개발 가이드라인
+## Development Guidelines
 
-### API 사용 시 주의사항
+### Notes on Using the API
 
-1. **오류 처리**: 모든 API 호출에 대해 적절한 오류 처리를 구현하세요
-2. **플랫폼 호환성**: 플랫폼별 차이점을 고려하세요
-3. **보안**: 사용자 입력은 항상 검증하세요
-4. **성능**: 비동기 작업을 적절히 활용하세요
+1. **Error handling**: Implement proper error handling for every API call
+2. **Platform compatibility**: Account for platform-specific differences
+3. **Security**: Always validate user input
+4. **Performance**: Make appropriate use of asynchronous operations
 
-### 확장 가이드
+### Extension Guide
 
-새로운 API를 추가할 때:
+When adding a new API:
 
-1. 적절한 모듈에 함수 추가
-2. 일관된 결과 객체 형식 사용
-3. 적절한 오류 처리 구현
-4. 문서 업데이트
-5. 테스트 코드 작성
+1. Add the function to the appropriate module
+2. Use the consistent result object format
+3. Implement proper error handling
+4. Update the documentation
+5. Write test code
 
-## 관련 문서
+## Related Documentation
 
-- [구성 스키마](../config/schema.md): 상세한 구성 옵션
-- [버튼 액션](../guide/actions.md): 지원되는 버튼 액션 유형
-- [보안](../architecture/security.md): 보안 모델 및 고려사항
-- [테스트](../development/testing.md): API 테스트 전략
+- [Configuration Schema](../config/schema.md): Detailed configuration options
+- [Button Actions](../guide/actions.md): Supported button action types
+- [Security](../architecture/security.md): Security model and considerations
+- [Testing](../development/testing.md): API testing strategy
 
-## 버전 정보
+## Version Information
 
-API는 의미적 버전 관리를 따릅니다:
-- **주 버전**: 호환성을 깨는 변경 사항
-- **부 버전**: 호환성을 유지하는 새 기능
-- **패치 버전**: 버그 수정 및 소소한 개선 사항
+The API follows semantic versioning:
+- **Major version**: Backward-incompatible changes
+- **Minor version**: New features that maintain backward compatibility
+- **Patch version**: Bug fixes and minor improvements
 
-현재 API 버전에 대한 자세한 정보는 각 모듈의 문서를 참조하세요.
+For detailed information on the current API version, see the documentation for each module.

@@ -1,7 +1,7 @@
 /**
  * Toast - Exec Action Tests
  *
- * 명령어 실행 액션에 대한 단위 테스트
+ * Unit tests for the command execution action
  */
 
 // Mock dependencies

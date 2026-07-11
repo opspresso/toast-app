@@ -92,7 +92,7 @@ body {
   z-index: 10;
 }
 
-/* 시계 스타일 */
+/* Clock styles */
 .toast-clock {
   position: absolute;
   left: 50%;
@@ -266,7 +266,7 @@ body {
   transform: translateY(0);
 }
 
-/* 설정 모드일 때만 삭제 버튼 표시 */
+/* Show the delete button only in settings mode */
 .settings-mode .remove-page-button {
   display: flex;
 }
@@ -298,12 +298,12 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* 드래그 중인 버튼 스타일 */
+/* Style for a button being dragged */
 .toast-button.dragging {
   opacity: 0.4;
 }
 
-/* 커서를 따라다니는 드래그 고스트 */
+/* Drag ghost that follows the cursor */
 .toast-button.drag-ghost {
   position: fixed;
   z-index: 1000;
@@ -313,13 +313,13 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* 드롭 대상 버튼 하이라이트 */
+/* Drop target button highlight */
 .toast-button.drag-over {
   border: 2px dashed var(--primary-color);
   background-color: var(--accent-soft);
 }
 
-/* 편집 중인 버튼 스타일 */
+/* Style for a button being edited */
 .toast-button.editing {
   border: 2px dashed var(--primary-color);
   box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
@@ -436,7 +436,7 @@ body {
   box-sizing: border-box;
 }
 
-/* 상단 헤어라인 - 액션 타입 색상으로 물듦 */
+/* Top hairline - tinted with the action type color */
 .toast-button::before {
   content: '';
   position: absolute;
@@ -590,7 +590,7 @@ body {
   gap: 8px;
 }
 
-/* 푸터 컨트롤 버튼 (사용자 / 편집 모드 / 설정) */
+/* Footer control buttons (user / edit mode / settings) */
 .toast-user-button,
 .toast-mode-toggle,
 .toast-settings-button {
@@ -628,7 +628,7 @@ body {
   display: block;
 }
 
-/* 로그인 로딩 오버레이 */
+/* Login loading overlay */
 .login-loading-overlay {
   position: fixed;
   top: 0;
@@ -681,7 +681,7 @@ body {
   }
 }
 
-/* 프로필 모달 스타일 */
+/* Profile modal styles */
 .profile-container {
   display: flex;
   flex-direction: column;
@@ -787,7 +787,7 @@ body {
   border: 1px solid var(--border-color);
 }
 
-/* 구독 상태 별 색상 */
+/* Colors by subscription status */
 .subscription-status-active {
   color: var(--success-color);
   border-color: var(--success-color);
@@ -929,7 +929,7 @@ body {
   opacity: 0.8;
 }
 
-/* 아이콘 입력 컨테이너 */
+/* Icon input container */
 .icon-input-container {
   display: flex;
   gap: 8px;
@@ -965,7 +965,7 @@ body {
   transform: scale(1.05);
 }
 
-/* 아이콘 미리보기 */
+/* Icon preview */
 .icon-preview {
   width: 32px;
   height: 32px;
@@ -1002,7 +1002,7 @@ body {
   display: none;
 }
 
-/* 아이콘 검색 모달 스타일 */
+/* Icon search modal styles */
 .icon-browser-modal {
   max-width: 850px;
   width: 95%;
@@ -1151,7 +1151,7 @@ body {
   }
 }
 
-/* 모달 스타일 */
+/* Modal styles */
 .modal {
   display: none;
   position: fixed;
@@ -1284,7 +1284,7 @@ body {
   min-width: 80px;
 }
 
-/* 서브필드 스타일 */
+/* Subfield styles */
 .subfield {
   margin-top: 12px;
   margin-left: 10px;
@@ -1297,13 +1297,13 @@ body {
   color: var(--secondary-text-color);
 }
 
-/* 체크박스가 포함된 서브필드 */
+/* Subfield containing a checkbox */
 .subfield label input[type='checkbox'] {
   width: auto;
   margin-right: 6px;
 }
 
-/* 체인 액션 관련 스타일 */
+/* Chain action related styles */
 .chain-actions-container {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);

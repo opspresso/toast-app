@@ -1,7 +1,7 @@
 /**
  * Toast - Shared Renderer Utilities
  *
- * 여러 renderer 페이지에서 공용으로 사용하는 유틸리티 함수 모음입니다.
+ * A collection of utility functions shared across multiple renderer pages.
  */
 
 /**

@@ -1,45 +1,45 @@
-# Toast App 논리적 데이터 구조
+# Toast App Logical Data Structure
 
-이 문서는 Toast App의 논리적 데이터 구조와 엔티티 관계를 설명합니다.
+This document describes the Toast App's logical data structure and entity relationships.
 
-> **중요**: Toast App은 전통적인 데이터베이스를 사용하지 않고, electron-store를 통해 JSON 형식으로 설정을 저장합니다. 이 문서는 물리적 데이터베이스 스키마가 아닌 논리적 데이터 구조를 설명합니다.
+> **Important**: Toast App does not use a traditional database; it stores settings in JSON format via electron-store. This document describes the logical data structure, not a physical database schema.
 
-> **참고**:
-> - 실제 데이터 저장 방식은 [데이터 저장소](./data-storage.md)를 참조하세요.
-> - 상세한 구성 스키마는 [구성 스키마](./schema.md)를 참조하세요.
+> **Note**:
+> - For how data is actually stored, see [Data Storage](./data-storage.md).
+> - For the detailed configuration schema, see [Configuration Schema](./schema.md).
 
-## 엔티티 관계
+## Entity Relationships
 
-Toast App의 주요 엔티티는 다음과 같은 관계를 가집니다:
+The main entities in Toast App have the following relationships:
 
-1. **사용자** (1) → (n) **페이지**: 사용자는 여러 페이지를 가질 수 있습니다
-2. **페이지** (1) → (n) **버튼**: 페이지는 여러 버튼을 포함할 수 있습니다
-3. **사용자** (1) → (1) **설정**: 사용자는 하나의 설정 세트를 가집니다
-4. **사용자** (1) → (1) **동기화 메타데이터**: 사용자는 하나의 동기화 메타데이터 레코드를 가집니다
+1. **User** (1) → (n) **Page**: A user can have multiple pages
+2. **Page** (1) → (n) **Button**: A page can contain multiple buttons
+3. **User** (1) → (1) **Settings**: A user has a single set of settings
+4. **User** (1) → (1) **Sync Metadata**: A user has a single sync metadata record
 
-## 데이터 계층 구조
+## Data Hierarchy
 
 ```
-사용자 구성
-├── 전역 설정
+User configuration
+├── Global settings
 │   ├── globalHotkey
 │   ├── appearance
 │   ├── advanced
-│   ├── snippets (텍스트 확장 스니펫)
-│   ├── textExpander (기기 로컬 활성화 상태)
+│   ├── snippets (text expansion snippets)
+│   ├── textExpander (device-local enabled state)
 │   ├── subscription
-│   ├── security (exec/script 액션 승인 상태)
+│   ├── security (exec/script action approval state)
 │   └── firstLaunchCompleted
-├── 페이지 (1-9개)
+├── Pages (1-9)
 │   ├── name
 │   ├── shortcut
-│   └── buttons (최대 15개)
+│   └── buttons (up to 15)
 │       ├── name
 │       ├── shortcut
 │       ├── icon
 │       ├── action
-│       └── 액션별 매개변수
-└── 동기화 메타데이터 (_sync)
+│       └── action-specific parameters
+└── Sync metadata (_sync)
     ├── lastModifiedAt
     ├── lastModifiedDevice
     ├── lastSyncedAt
@@ -48,30 +48,30 @@ Toast App의 주요 엔티티는 다음과 같은 관계를 가집니다:
     └── isConflicted
 ```
 
-## 페이지 제한 정책
+## Page Limit Policy
 
-사용자 계정 상태에 따른 페이지 생성 제한:
+Page creation limits based on user account status:
 
-| 계정 유형 | 최대 페이지 수 | 설명 |
+| Account Type | Max Pages | Description |
 |-----------|----------------|------|
-| 무료 사용자 | 1 | 기본 기능 제공 |
-| 인증된 사용자 | 3 | 로그인 후 확장 기능 |
-| 프리미엄 구독자 | 9 | 모든 기능 이용 가능 |
+| Free user | 1 | Basic features |
+| Authenticated user | 3 | Extended features after login |
+| Premium subscriber | 9 | Access to all features |
 
-## 지원되는 액션 유형
+## Supported Action Types
 
-Toast App에서 지원하는 버튼 액션 유형:
+The button action types supported by Toast App:
 
-- `application`: 애플리케이션 실행
-- `exec`: 셸 명령 실행
-- `open`: URL, 파일 또는 폴더 열기
-- `script`: 사용자 정의 스크립트 실행
-- `chain`: 일련의 액션을 순차적으로 실행
+- `application`: Launch an application
+- `exec`: Execute a shell command
+- `open`: Open a URL, file, or folder
+- `script`: Run a custom script
+- `chain`: Run a series of actions sequentially
 
-> **상세 정보**: 각 액션 유형의 자세한 설명은 [버튼 액션](../guide/actions.md)을 참조하세요.
+> **Details**: For a detailed description of each action type, see [Button Actions](../guide/actions.md).
 
-## 관련 문서
+## Related Documents
 
-- [데이터 저장소](./data-storage.md): 저장소 구현 및 파일 구조
-- [구성 스키마](./schema.md): 상세한 구성 옵션 및 스키마
-- [버튼 액션](../guide/actions.md): 액션 유형별 상세 정보
+- [Data Storage](./data-storage.md): Storage implementation and file structure
+- [Configuration Schema](./schema.md): Detailed configuration options and schema
+- [Button Actions](../guide/actions.md): Details on each action type

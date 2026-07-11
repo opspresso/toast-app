@@ -1,316 +1,316 @@
-# Toast 앱 렌더러 프로세스 API
+# Toast App Renderer Process API
 
-이 문서는 Toast 앱의 렌더러 프로세스 API에 대한 문서를 제공합니다.
+This document provides documentation for the Toast app's renderer process API.
 
-## Toast 윈도우 API (`src/renderer/preload/toast.js`)
+## Toast Window API (`src/renderer/preload/toast.js`)
 
-Toast 윈도우 API는 Toast 윈도우가 메인 프로세스와 통신하기 위한 인터페이스를 제공합니다.
+The Toast Window API provides an interface for the Toast window to communicate with the main process.
 
-### 구성 관리
+### Configuration Management
 
 ```javascript
-window.toast.getConfig(key)      // 구성 가져오기
-window.toast.saveConfig(config)  // 구성 변경 사항 저장
-window.toast.resetToDefaults(options) // 설정 초기화 (options.keepAppearance: 외관 설정 유지)
+window.toast.getConfig(key)      // Get configuration
+window.toast.saveConfig(config)  // Save configuration changes
+window.toast.resetToDefaults(options) // Reset settings (options.keepAppearance: keep appearance settings)
 ```
 
-> 현재 메인 프로세스는 `resetToDefaults`/`resetAppSettings` 채널에 대한 IPC 핸들러를 등록하지 않으므로, 이 API를 호출하면 "No handler registered" 오류로 실패합니다.
+> The main process does not currently register an IPC handler for the `resetToDefaults`/`resetAppSettings` channels, so calling this API fails with a "No handler registered" error.
 
-### 액션 실행
+### Action Execution
 
 ```javascript
-window.toast.executeAction(action)  // 액션 실행
+window.toast.executeAction(action)  // Execute an action
 ```
 
-### 윈도우 제어
+### Window Control
 
 ```javascript
-window.toast.hideWindow()             // Toast 윈도우 숨기기
-window.toast.showWindow()             // Toast 윈도우 표시
-window.toast.showSettings()           // 설정 윈도우 표시
-window.toast.setModalOpen(isOpen)     // 모달 상태 설정
-window.toast.setAlwaysOnTop(value)    // alwaysOnTop 속성 설정
-window.toast.getWindowPosition()      // 현재 윈도우 위치 반환
-window.toast.hideWindowTemporarily()  // 다이얼로그 표시를 위해 일시 숨김
-window.toast.showWindowAfterDialog(position) // 다이얼로그 후 윈도우 복원
+window.toast.hideWindow()             // Hide the Toast window
+window.toast.showWindow()             // Show the Toast window
+window.toast.showSettings()           // Show the settings window
+window.toast.setModalOpen(isOpen)     // Set modal state
+window.toast.setAlwaysOnTop(value)    // Set the alwaysOnTop property
+window.toast.getWindowPosition()      // Return the current window position
+window.toast.hideWindowTemporarily()  // Temporarily hide to show a dialog
+window.toast.showWindowAfterDialog(position) // Restore the window after a dialog
 ```
 
-### 인증 관련
+### Authentication
 
 ```javascript
-window.toast.initiateLogin()      // 로그인 프로세스 시작
-window.toast.logout()             // 로그아웃
-window.toast.fetchUserProfile()   // 사용자 프로필 가져오기
-window.toast.fetchSubscription()  // 구독 정보 가져오기
-window.toast.getUserSettings()    // 사용자 설정 가져오기
+window.toast.initiateLogin()      // Start the login process
+window.toast.logout()             // Log out
+window.toast.fetchUserProfile()   // Fetch the user profile
+window.toast.fetchSubscription()  // Fetch subscription information
+window.toast.getUserSettings()    // Get user settings
 ```
 
-### 유틸리티
+### Utilities
 
 ```javascript
-window.toast.showOpenDialog(options)  // 파일 열기 대화 상자
-window.toast.extractAppIcon(path, forceRefresh) // 앱 아이콘 추출
-window.toast.resolveTildePath(tildePath) // 틸드 경로 변환
-window.toast.invoke(channel, ...args) // 허용된 채널에 한해 IPC invoke (logout, resetToDefaults, resetAppSettings)
-window.toast.platform  // 플랫폼 정보 (darwin, win32, linux)
+window.toast.showOpenDialog(options)  // Open file dialog
+window.toast.extractAppIcon(path, forceRefresh) // Extract app icon
+window.toast.resolveTildePath(tildePath) // Resolve tilde path
+window.toast.invoke(channel, ...args) // IPC invoke restricted to allowed channels (logout, resetToDefaults, resetAppSettings)
+window.toast.platform  // Platform information (darwin, win32, linux)
 ```
 
-### 로깅
+### Logging
 
 ```javascript
-window.toast.log.info(message, ...args)   // 정보 로그
-window.toast.log.warn(message, ...args)   // 경고 로그
-window.toast.log.error(message, ...args)  // 오류 로그
-window.toast.log.debug(message, ...args)  // 디버그 로그
+window.toast.log.info(message, ...args)   // Info log
+window.toast.log.warn(message, ...args)   // Warning log
+window.toast.log.error(message, ...args)  // Error log
+window.toast.log.debug(message, ...args)  // Debug log
 ```
 
-### 이벤트 리스너
+### Event Listeners
 
 ```javascript
-// 구성 업데이트 수신
+// Receive configuration updates
 window.toast.onConfigUpdated(callback)
 
-// 인증 이벤트
-window.toast.onLoginSuccess(callback)      // 로그인 성공
-window.toast.onLoginError(callback)        // 로그인 오류
-window.toast.onLogoutSuccess(callback)     // 로그아웃 성공
-window.toast.onAuthStateChanged(callback)  // 인증 상태 변경
-window.toast.onAuthReloadSuccess(callback) // 인증 재로드 성공
+// Authentication events
+window.toast.onLoginSuccess(callback)      // Login success
+window.toast.onLoginError(callback)        // Login error
+window.toast.onLogoutSuccess(callback)     // Logout success
+window.toast.onAuthStateChanged(callback)  // Authentication state changed
+window.toast.onAuthReloadSuccess(callback) // Authentication reload success
 ```
 
-### 이벤트
+### Events
 
 ```javascript
-// 구성 로드 이벤트
+// Configuration loaded event
 window.addEventListener('config-loaded', (event) => {
   const config = event.detail;
-  // detail에는 다음이 포함됩니다: pages, appearance, subscription
+  // detail includes: pages, appearance, subscription
 });
 
-// 윈도우 숨기기 전 이벤트
+// Before-window-hide event
 window.addEventListener('before-window-hide', () => {
-  // 윈도우가 숨겨지기 전에 정리
+  // Clean up before the window is hidden
 });
 ```
 
-### 사용 예시
+### Usage Examples
 
 ```javascript
-// 구성 가져오기
+// Get configuration
 const pages = await window.toast.getConfig('pages');
 const appearance = await window.toast.getConfig('appearance');
 
-// 액션 실행
+// Execute an action
 const result = await window.toast.executeAction({
   action: 'exec',
   command: 'echo "Hello world!"'
 });
 
-// 구성 저장(예: 페이지 업데이트)
+// Save configuration (e.g. update pages)
 await window.toast.saveConfig({ pages: updatedPages });
 
-// 윈도우 숨기기
+// Hide the window
 window.toast.hideWindow();
 
-// 구성 업데이트 수신
+// Receive configuration updates
 const removeListener = window.toast.onConfigUpdated((config) => {
   console.log('Configuration updated:', config);
 });
 
-// 플랫폼별 동작을 위한 플랫폼 확인
+// Check the platform for platform-specific behavior
 if (window.toast.platform === 'darwin') {
-  // macOS 특정 코드
+  // macOS-specific code
 } else if (window.toast.platform === 'win32') {
-  // Windows 특정 코드
+  // Windows-specific code
 }
 
-// 이벤트 리스너 등록
+// Register event listeners
 window.addEventListener('config-loaded', (event) => {
   const { pages, appearance, subscription } = event.detail;
-  // UI 업데이트
+  // Update the UI
 });
 
 window.addEventListener('before-window-hide', () => {
-  // 편집 모드 종료, 상태 저장 등
+  // Exit edit mode, save state, etc.
 });
 ```
 
-## 설정 윈도우 API (`src/renderer/preload/settings.js`)
+## Settings Window API (`src/renderer/preload/settings.js`)
 
-설정 윈도우 API는 설정 윈도우가 메인 프로세스와 통신하기 위한 인터페이스를 제공합니다.
+The Settings Window API provides an interface for the settings window to communicate with the main process.
 
-### 구성 관리
-
-```javascript
-// 구성 CRUD 작업
-window.settings.getConfig(key) // 구성 가져오기
-window.settings.setConfig(key, value) // 구성 설정
-window.settings.resetConfig() // 구성을 기본값으로 재설정
-window.settings.importConfig(filePath) // 파일에서 구성 가져오기
-window.settings.exportConfig(filePath) // 파일로 구성 내보내기
-```
-
-### 액션 관리
+### Configuration Management
 
 ```javascript
-// 액션 테스트 및 검증
-window.settings.testAction(action) // 액션 테스트
-window.settings.validateAction(action) // 액션 유효성 검사
+// Configuration CRUD operations
+window.settings.getConfig(key) // Get configuration
+window.settings.setConfig(key, value) // Set configuration
+window.settings.resetConfig() // Reset configuration to defaults
+window.settings.importConfig(filePath) // Import configuration from a file
+window.settings.exportConfig(filePath) // Export configuration to a file
 ```
 
-### 윈도우 제어
+### Action Management
 
 ```javascript
-// 윈도우 관리
-window.settings.showToast() // Toast 윈도우 표시
-window.settings.closeWindow() // 설정 윈도우 닫기
+// Action testing and validation
+window.settings.testAction(action) // Test an action
+window.settings.validateAction(action) // Validate an action
 ```
 
-### 대화 상자
+### Window Control
 
 ```javascript
-// 파일 대화 상자
-window.settings.showOpenDialog(options) // 파일 열기 대화 상자 표시
-window.settings.showSaveDialog(options) // 파일 저장 대화 상자 표시
-window.settings.showMessageBox(options) // 메시지 상자 표시
+// Window management
+window.settings.showToast() // Show the Toast window
+window.settings.closeWindow() // Close the settings window
 ```
 
-### 앱 제어
+### Dialogs
 
 ```javascript
-// 애플리케이션 제어
-window.settings.restartApp() // 애플리케이션 재시작
-window.settings.quitApp() // 애플리케이션 종료
+// File dialogs
+window.settings.showOpenDialog(options) // Show open file dialog
+window.settings.showSaveDialog(options) // Show save file dialog
+window.settings.showMessageBox(options) // Show message box
 ```
 
-### 단축키 제어
+### App Control
 
 ```javascript
-// 단축키 녹화용
-window.settings.temporarilyDisableShortcuts() // 전역 단축키 일시적으로 비활성화
-window.settings.restoreShortcuts() // 전역 단축키 복원
+// Application control
+window.settings.restartApp() // Restart the application
+window.settings.quitApp() // Quit the application
 ```
 
-### 인증 관련
+### Shortcut Control
 
 ```javascript
-window.settings.initiateLogin()       // 로그인 프로세스 시작
-window.settings.exchangeCodeForToken(code) // 인증 코드를 토큰으로 교환
-window.settings.logout()              // 로그아웃
-window.settings.fetchUserProfile()    // 사용자 프로필 가져오기
-window.settings.fetchSubscription()   // 구독 정보 가져오기
-window.settings.getAuthToken()        // 인증 토큰 가져오기
-window.settings.openUrl(url)          // 외부 브라우저에서 URL 열기
+// For shortcut recording
+window.settings.temporarilyDisableShortcuts() // Temporarily disable global shortcuts
+window.settings.restoreShortcuts() // Restore global shortcuts
 ```
 
-### 클라우드 동기화
+### Authentication
 
 ```javascript
-window.settings.getSyncStatus()       // 동기화 상태 가져오기
-window.settings.setCloudSyncEnabled(enabled) // 클라우드 동기화 활성화/비활성화
-window.settings.manualSync(action)    // 수동 동기화 (upload/download/resolve)
-window.settings.debugSyncStatus()     // 동기화 디버그 정보
+window.settings.initiateLogin()       // Start the login process
+window.settings.exchangeCodeForToken(code) // Exchange an authorization code for a token
+window.settings.logout()              // Log out
+window.settings.fetchUserProfile()    // Fetch the user profile
+window.settings.fetchSubscription()   // Fetch subscription information
+window.settings.getAuthToken()        // Get the authentication token
+window.settings.openUrl(url)          // Open a URL in the external browser
 ```
 
-### 텍스트 확장 (스니펫)
+### Cloud Sync
+
+```javascript
+window.settings.getSyncStatus()       // Get sync status
+window.settings.setCloudSyncEnabled(enabled) // Enable/disable cloud sync
+window.settings.manualSync(action)    // Manual sync (upload/download/resolve)
+window.settings.debugSyncStatus()     // Sync debug information
+```
+
+### Text Expansion (Snippets)
 
 ```javascript
 window.settings.textExpander.getStatus()            // { supported, enabled, running, permissions }
-window.settings.textExpander.requestPermission()    // macOS 접근성 권한 프롬프트
-window.settings.textExpander.openPrivacySettings(section) // 'accessibility' | 'inputMonitoring' 설정 열기
-window.settings.textExpander.setEnabled(enabled)    // 기능 켜기/끄기 (훅 시작/중지)
-window.settings.textExpander.saveSnippets(snippets) // 스니펫 배열 저장 + 매처 갱신
+window.settings.textExpander.requestPermission()    // macOS accessibility permission prompt
+window.settings.textExpander.openPrivacySettings(section) // Open 'accessibility' | 'inputMonitoring' settings
+window.settings.textExpander.setEnabled(enabled)    // Turn the feature on/off (start/stop the hook)
+window.settings.textExpander.saveSnippets(snippets) // Save the snippet array + refresh the matcher
 window.settings.textExpander.validateSnippet(snippet, existing) // { valid, errors }
 ```
 
-### 유틸리티
+### Utilities
 
 ```javascript
-window.settings.extractAppIcon(path, forceRefresh) // 앱 아이콘 추출
-window.settings.resolveTildePath(tildePath) // 틸드 경로 변환
+window.settings.extractAppIcon(path, forceRefresh) // Extract app icon
+window.settings.resolveTildePath(tildePath) // Resolve tilde path
 ```
 
-### 시스템 정보
+### System Information
 
 ```javascript
-window.settings.getPlatform()         // 플랫폼 가져오기 (darwin, win32, linux)
-window.settings.getVersion()          // 애플리케이션 버전 가져오기
-window.settings.checkLatestVersion()  // 최신 버전 확인
+window.settings.getPlatform()         // Get the platform (darwin, win32, linux)
+window.settings.getVersion()          // Get the application version
+window.settings.checkLatestVersion()  // Check the latest version
 ```
 
-### 업데이트 관리
+### Update Management
 
 ```javascript
-// 업데이트 확인 및 다운로드
-window.settings.checkForUpdates(silent) // 업데이트 확인
-window.settings.downloadUpdate()        // 업데이트 다운로드
-window.settings.downloadAutoUpdate()    // 자동 업데이트 다운로드 (확인 후 다운로드)
-window.settings.downloadManualUpdate()  // 수동 업데이트 다운로드
+// Check for and download updates
+window.settings.checkForUpdates(silent) // Check for updates
+window.settings.downloadUpdate()        // Download update
+window.settings.downloadAutoUpdate()    // Download auto-update (download after confirmation)
+window.settings.downloadManualUpdate()  // Download manual update
 
-// 업데이트 설치
-window.settings.installUpdate()         // 업데이트 설치
-window.settings.installAutoUpdate()     // 자동 업데이트 설치
+// Install updates
+window.settings.installUpdate()         // Install update
+window.settings.installAutoUpdate()     // Install auto-update
 ```
 
-### 로깅
+### Logging
 
 ```javascript
-// 로그 기록
-window.settings.log.info(message, ...args) // 정보 로그 기록
-window.settings.log.warn(message, ...args) // 경고 로그 기록
-window.settings.log.error(message, ...args) // 오류 로그 기록
-window.settings.log.debug(message, ...args) // 디버그 로그 기록
+// Log recording
+window.settings.log.info(message, ...args) // Record info log
+window.settings.log.warn(message, ...args) // Record warning log
+window.settings.log.error(message, ...args) // Record error log
+window.settings.log.debug(message, ...args) // Record debug log
 ```
 
-### 이벤트
+### Events
 
 ```javascript
-// 구성 이벤트
+// Configuration events
 window.addEventListener('config-loaded', (event) => {
-  const config = event.detail;  // 전체 구성 객체
+  const config = event.detail;  // Full configuration object
 });
 
 window.addEventListener('config-updated', (event) => {
-  const config = event.detail;  // 업데이트된 구성
+  const config = event.detail;  // Updated configuration
 });
 
-// 인증 이벤트
+// Authentication events
 window.addEventListener('login-success', (event) => {
-  const data = event.detail;  // 로그인 성공 데이터
+  const data = event.detail;  // Login success data
 });
 
 window.addEventListener('login-error', (event) => {
-  const data = event.detail;  // 로그인 오류 정보
+  const data = event.detail;  // Login error information
 });
 
 window.addEventListener('logout-success', (event) => {
-  const data = event.detail;  // 로그아웃 정보
+  const data = event.detail;  // Logout information
 });
 
 window.addEventListener('auth-state-changed', (event) => {
-  const data = event.detail;  // 인증 상태 변경
+  const data = event.detail;  // Authentication state change
 });
 
-// 동기화 이벤트
+// Sync events
 window.addEventListener('settings-synced', (event) => {
-  const data = event.detail;  // 동기화 결과
+  const data = event.detail;  // Sync result
 });
 
-// 업데이트 이벤트
+// Update events
 window.addEventListener('checking-for-update', (event) => {
-  // 업데이트 확인 중
+  // Checking for updates
 });
 
 window.addEventListener('update-available', (event) => {
-  const updateInfo = event.detail.info;  // 업데이트 정보
+  const updateInfo = event.detail.info;  // Update information
 });
 
 window.addEventListener('update-not-available', (event) => {
-  // 사용 가능한 업데이트 없음
+  // No update available
 });
 
 window.addEventListener('download-started', (event) => {
-  // 다운로드 시작됨
+  // Download started
 });
 
 window.addEventListener('download-progress', (event) => {
@@ -318,48 +318,48 @@ window.addEventListener('download-progress', (event) => {
 });
 
 window.addEventListener('update-downloaded', (event) => {
-  // 업데이트 다운로드 완료
+  // Update download complete
 });
 
 window.addEventListener('install-started', (event) => {
-  // 설치 시작됨
+  // Installation started
 });
 
 window.addEventListener('update-error', (event) => {
-  const error = event.detail.error;  // 오류 정보
+  const error = event.detail.error;  // Error information
 });
 
-// 탭 선택 이벤트
+// Tab selection event
 window.addEventListener('select-settings-tab', (event) => {
-  const tabName = event.detail;  // 선택할 탭 이름
+  const tabName = event.detail;  // Name of the tab to select
 });
 
-// 프로토콜 데이터 이벤트
+// Protocol data event
 window.addEventListener('protocol-data', (event) => {
-  const url = event.detail;  // 프로토콜 URL
+  const url = event.detail;  // Protocol URL
 });
 ```
 
-### 사용 예시
+### Usage Examples
 
 ```javascript
-// 구성 관리
+// Configuration management
 const config = await window.settings.getConfig();
 await window.settings.setConfig('globalHotkey', 'Alt+Space');
 
-// 액션 테스트
+// Action testing
 const result = await window.settings.testAction({
   action: 'exec',
   command: 'echo "Hello world!"'
 });
 
 if (result.success) {
-  console.log('액션 테스트 성공:', result.stdout);
+  console.log('Action test succeeded:', result.stdout);
 } else {
-  console.error('액션 테스트 실패:', result.error);
+  console.error('Action test failed:', result.error);
 }
 
-// 파일 대화 상자
+// File dialog
 const openResult = await window.settings.showOpenDialog({
   properties: ['openFile'],
   filters: [
@@ -373,7 +373,7 @@ if (!openResult.canceled) {
   await window.settings.importConfig(filePath);
 }
 
-// 저장 대화 상자
+// Save dialog
 const saveResult = await window.settings.showSaveDialog({
   defaultPath: 'toast-config.json',
   filters: [
@@ -385,33 +385,33 @@ if (!saveResult.canceled) {
   await window.settings.exportConfig(saveResult.filePath);
 }
 
-// 단축키 녹화
+// Shortcut recording
 await window.settings.temporarilyDisableShortcuts();
-// 여기서 단축키 녹화...
+// Record the shortcut here...
 await window.settings.restoreShortcuts();
 
-// 메시지 상자
+// Message box
 await window.settings.showMessageBox({
   type: 'info',
-  title: '정보',
-  message: '설정이 저장되었습니다.',
-  buttons: ['확인']
+  title: 'Information',
+  message: 'Settings have been saved.',
+  buttons: ['OK']
 });
 
-// 업데이트 확인
+// Check for updates
 const updateResult = await window.settings.checkForUpdates(false);
 if (updateResult.hasUpdate) {
-  console.log(`새 버전 사용 가능: ${updateResult.versionInfo.latest}`);
+  console.log(`New version available: ${updateResult.versionInfo.latest}`);
 
-  // 업데이트 다운로드
+  // Download the update
   const downloadResult = await window.settings.downloadUpdate();
   if (downloadResult.success) {
-    // 설치 확인 후 설치
+    // Confirm before installing
     const installConfirm = await window.settings.showMessageBox({
       type: 'question',
-      title: '업데이트 설치',
-      message: '업데이트를 지금 설치하시겠습니까?',
-      buttons: ['설치', '나중에']
+      title: 'Install Update',
+      message: 'Do you want to install the update now?',
+      buttons: ['Install', 'Later']
     });
 
     if (installConfirm.response === 0) {
@@ -420,15 +420,15 @@ if (updateResult.hasUpdate) {
   }
 }
 
-// 로깅
-window.settings.log.info('설정 창이 열렸습니다');
-window.settings.log.warn('구성 파일이 오래되었습니다', { version: '1.0.0' });
-window.settings.log.error('설정 저장 실패', error);
+// Logging
+window.settings.log.info('Settings window opened');
+window.settings.log.warn('Configuration file is outdated', { version: '1.0.0' });
+window.settings.log.error('Failed to save settings', error);
 
-// 이벤트 리스너
+// Event listeners
 window.addEventListener('config-loaded', (event) => {
   const config = event.detail;
-  // UI 초기화
+  // Initialize the UI
   initializeUI(config);
 });
 
@@ -444,112 +444,112 @@ window.addEventListener('download-progress', (event) => {
 });
 ```
 
-## 공통 API 패턴
+## Common API Patterns
 
-### 결과 객체
+### Result Object
 
-모든 API 호출은 일관된 결과 객체를 반환합니다:
+Every API call returns a consistent result object:
 
 ```javascript
-// 성공 결과
+// Success result
 {
   success: true,
-  message: '작업이 성공적으로 완료되었습니다',
-  // 액션별 추가 속성: exec/script는 stdout·stderr, chain은 results 배열
+  message: 'The operation completed successfully',
+  // Action-specific extra properties: exec/script include stdout·stderr, chain includes a results array
 }
 
-// 오류 결과
+// Error result
 {
   success: false,
-  message: '오류 메시지',
-  error: 'Error details', // 오류 세부 정보
-  // 기타 오류 관련 속성
+  message: 'Error message',
+  error: 'Error details', // Error details
+  // Other error-related properties
 }
 ```
 
-### 대화 상자 옵션
+### Dialog Options
 
-#### 파일 열기 대화 상자
+#### Open File Dialog
 
 ```javascript
 const options = {
-  title: '파일 선택',
+  title: 'Select a file',
   defaultPath: '/Users/username/Documents',
-  buttonLabel: '선택',
+  buttonLabel: 'Select',
   filters: [
     { name: 'JSON Files', extensions: ['json'] },
     { name: 'All Files', extensions: ['*'] }
   ],
   properties: [
-    'openFile',        // 파일 선택
-    'openDirectory',   // 디렉토리 선택
-    'multiSelections', // 다중 선택
-    'showHiddenFiles'  // 숨김 파일 표시
+    'openFile',        // Select a file
+    'openDirectory',   // Select a directory
+    'multiSelections', // Multiple selection
+    'showHiddenFiles'  // Show hidden files
   ]
 };
 ```
 
-#### 파일 저장 대화 상자
+#### Save File Dialog
 
 ```javascript
 const options = {
-  title: '파일 저장',
+  title: 'Save file',
   defaultPath: '/Users/username/Documents/config.json',
-  buttonLabel: '저장',
+  buttonLabel: 'Save',
   filters: [
     { name: 'JSON Files', extensions: ['json'] }
   ]
 };
 ```
 
-#### 메시지 상자
+#### Message Box
 
 ```javascript
 const options = {
   type: 'info',        // 'none', 'info', 'error', 'question', 'warning'
-  title: '제목',
-  message: '메시지 내용',
-  detail: '상세 설명',
-  buttons: ['확인', '취소'],
-  defaultId: 0,        // 기본 버튼 인덱스
-  cancelId: 1          // 취소 버튼 인덱스
+  title: 'Title',
+  message: 'Message content',
+  detail: 'Detailed description',
+  buttons: ['OK', 'Cancel'],
+  defaultId: 0,        // Default button index
+  cancelId: 1          // Cancel button index
 };
 ```
 
-## 보안 고려사항
+## Security Considerations
 
-1. **컨텍스트 격리**: 모든 API는 contextBridge를 통해 안전하게 노출
-2. **입력 검증**: 모든 입력은 메인 프로세스에서 검증
-3. **권한 제한**: 필요한 API만 렌더러 프로세스에 노출
-4. **샌드박스**: 렌더러 프로세스는 샌드박스 환경에서 실행
+1. **Context isolation**: All APIs are safely exposed through contextBridge
+2. **Input validation**: All input is validated in the main process
+3. **Permission restriction**: Only the necessary APIs are exposed to the renderer process
+4. **Sandbox**: The renderer process runs in a sandboxed environment
 
-## 오류 처리
+## Error Handling
 
-1. **Promise 기반**: 모든 비동기 API는 Promise를 반환
-2. **일관된 오류 형식**: 모든 오류는 표준화된 형식으로 반환
-3. **사용자 친화적 메시지**: 오류 메시지는 사용자가 이해하기 쉽게 작성
-4. **로깅**: 모든 오류는 자동으로 로그에 기록
+1. **Promise-based**: All asynchronous APIs return a Promise
+2. **Consistent error format**: All errors are returned in a standardized format
+3. **User-friendly messages**: Error messages are written to be easy for users to understand
+4. **Logging**: All errors are automatically recorded in the log
 
-## 플랫폼별 동작
+## Platform-Specific Behavior
 
 ### macOS (`darwin`)
-- Cmd 키 수정자 사용
-- .app 애플리케이션 번들 지원
-- AppleScript 실행 지원
+- Uses the Cmd key modifier
+- Supports .app application bundles
+- Supports AppleScript execution
 
 ### Windows (`win32`)
-- Ctrl 키 수정자 사용
-- .exe 실행 파일 지원
-- PowerShell 스크립트 실행 지원
+- Uses the Ctrl key modifier
+- Supports .exe executables
+- Supports PowerShell script execution
 
 ### Linux (`linux`)
-- Ctrl 키 수정자 사용
-- 패키지 관리자 통합
-- Bash 스크립트 실행 지원
+- Uses the Ctrl key modifier
+- Package manager integration
+- Supports Bash script execution
 
-## 성능 최적화
+## Performance Optimization
 
-1. **비동기 처리**: 모든 API 호출은 비동기적으로 처리
-2. **캐싱**: 자주 사용되는 데이터는 메모리에 캐싱
-3. **배치 처리**: 여러 작업을 효율적으로 배치 처리
-4. **리소스 관리**: 메모리 및 리소스 사용량 최적화
+1. **Asynchronous processing**: All API calls are processed asynchronously
+2. **Caching**: Frequently used data is cached in memory
+3. **Batch processing**: Multiple operations are batched efficiently
+4. **Resource management**: Optimizes memory and resource usage

@@ -9,7 +9,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const { createLogger } = require('../logger');
 
-// 모듈별 로거 생성
+// Create logger for this module
 const logger = createLogger('EnvConfig');
 
 /**

@@ -17,144 +17,144 @@ import { initializeAboutSettings } from './modules/about-settings.js';
 import { initializeSnippetsSettings } from './modules/snippets-settings.js';
 
 /**
- * Initialize UI with config values - 필수적인 작업만 수행
+ * Initialize UI with config values - performs only essential work
  */
 export function initializeUI() {
-  window.settings.log.info('initializeUI 호출 - 모든 필수 설정 초기화');
+  window.settings.log.info('initializeUI called - initializing all required settings');
 
-  // 전체 초기화 전 분석 - 진행상황 로깅
-  window.settings.log.info('작업 분석: 모든 탭 초기화 수행 (최적화된 방식)');
+  // Analysis before full initialization - log progress
+  window.settings.log.info('Task analysis: initializing all tabs (optimized approach)');
 
-  // 필수 사항: 반드시 모든 설정을 초기화해야 함
+  // Requirement: all settings must be initialized
 
-  // General settings - 필수 설정
-  window.settings.log.info('일반 설정 초기화');
+  // General settings - required setting
+  window.settings.log.info('Initializing general settings');
   initializeGeneralSettings();
 
-  // Appearance settings - 필수 설정 (테마 등)
-  window.settings.log.info('모양 설정 초기화');
+  // Appearance settings - required setting (theme, etc.)
+  window.settings.log.info('Initializing appearance settings');
   initializeAppearanceSettings();
 
-  // Advanced settings - 필수 설정
-  window.settings.log.info('고급 설정 초기화');
+  // Advanced settings - required setting
+  window.settings.log.info('Initializing advanced settings');
   initializeAdvancedSettings();
 
   // Account settings
-  window.settings.log.info('계정 설정 초기화');
+  window.settings.log.info('Initializing account settings');
   initializeAccountSettings();
 
   // Cloud Sync settings
-  window.settings.log.info('클라우드 동기화 설정 초기화');
+  window.settings.log.info('Initializing cloud sync settings');
   initializeCloudSyncUI();
 
   // Snippets settings
-  window.settings.log.info('스니펫 설정 초기화');
+  window.settings.log.info('Initializing snippets settings');
   initializeSnippetsSettings();
 
   // About settings
-  window.settings.log.info('정보 탭 초기화');
+  window.settings.log.info('Initializing about tab');
   initializeAboutSettings();
 
-  // 모든 탭 콘텐츠 초기화 완료
-  window.settings.log.info('모든 탭 콘텐츠가 초기화되었습니다.');
+  // All tab content initialization complete
+  window.settings.log.info('All tab content has been initialized.');
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  window.settings.log.info('DOMContentLoaded 이벤트 발생 - 초기화 시작');
+  window.settings.log.info('DOMContentLoaded event fired - starting initialization');
 
   // Load configuration from main process
   window.settings
     .getConfig()
     .then(loadedConfig => {
       try {
-        // 설정 초기화
-        window.settings.log.info('설정 로드 완료');
+        // Initialize settings
+        window.settings.log.info('Settings load complete');
         updateConfig(loadedConfig);
 
-        // 테마 적용 (가장 우선순위로 처리)
-        window.settings.log.info('테마 적용 중...');
+        // Apply theme (handled with the highest priority)
+        window.settings.log.info('Applying theme...');
         applyTheme(config.appearance?.theme || 'system');
         applyAccentColor(config.appearance?.accentColor);
 
-        // 이벤트 리스너 설정 - UI 초기화 전에 처리
-        window.settings.log.info('이벤트 리스너 설정 중...');
+        // Set up event listeners - handled before UI initialization
+        window.settings.log.info('Setting up event listeners...');
         setupEventListeners();
 
-        // 전체 UI 초기화 (모든 필요한 설정 한 번에 처리)
-        window.settings.log.info('전체 UI 초기화 중...');
+        // Full UI initialization (handles all required settings at once)
+        window.settings.log.info('Initializing entire UI...');
         initializeUI();
 
-        // 첫 번째 탭 선택 (반드시 UI 초기화 후)
-        window.settings.log.info('첫 번째 탭 선택 중...');
+        // Select the first tab (must be after UI initialization)
+        window.settings.log.info('Selecting the first tab...');
         const firstTabLink = document.querySelector('.settings-nav li');
         if (firstTabLink) {
           const firstTabId = firstTabLink.getAttribute('data-tab');
-          window.settings.log.info(`기본 탭 선택: ${firstTabId}`);
+          window.settings.log.info(`Selecting default tab: ${firstTabId}`);
           switchTab(firstTabId);
         }
 
-        window.settings.log.info('초기화 완료');
+        window.settings.log.info('Initialization complete');
       }
       catch (error) {
-        window.settings.log.error('초기화 오류:', error);
+        window.settings.log.error('Initialization error:', error);
       }
     })
     .catch(error => {
-      window.settings.log.error('설정 로드 오류:', error);
+      window.settings.log.error('Settings load error:', error);
     });
 
-  // Tab selection listener - 메인 프로세스에서 특정 탭 선택 요청 시 (예: 트레이 About 메뉴)
+  // Tab selection listener - when the main process requests a specific tab (e.g., tray About menu)
   window.addEventListener('select-settings-tab', event => {
     const tabName = event.detail;
-    window.settings.log.info(`select-settings-tab 이벤트 수신 - 탭 전환: ${tabName}`);
+    window.settings.log.info(`select-settings-tab event received - switching tab: ${tabName}`);
     if (tabName) {
       switchTab(tabName);
     }
   });
 
-  // Config update listener - 필요한 설정만 업데이트하도록 최적화
+  // Config update listener - optimized to update only the necessary settings
   window.addEventListener('config-loaded', event => {
-    window.settings.log.info('config-loaded 이벤트 수신 - 최적화된 업데이트 사용');
+    window.settings.log.info('config-loaded event received - using optimized update');
     applyConfigUpdate(event.detail);
   });
 
-  // 백그라운드 클라우드 동기화 병합 등으로 메인 프로세스가 config-updated를
-  // 브로드캐스트할 때도 동일하게 반영 (그렇지 않으면 이 창은 계속 예전 config를
-  // 들고 있다가, 다음 저장 시 병합된 변경사항을 덮어써 버린다)
+  // Apply the same when the main process broadcasts config-updated due to background
+  // cloud sync merges, etc. (otherwise this window keeps holding the old config and,
+  // on the next save, overwrites the merged changes)
   window.addEventListener('config-updated', event => {
-    window.settings.log.info('config-updated 이벤트 수신 - 백그라운드 변경 반영');
+    window.settings.log.info('config-updated event received - reflecting background changes');
     applyConfigUpdate(event.detail);
   });
 });
 
 /**
- * 새 config 페이로드를 이미 초기화된 탭에 반영 (전체 UI 재초기화 없이)
- * @param {Object} newConfig - 갱신된 설정 객체
+ * Apply a new config payload to already-initialized tabs (without full UI re-initialization)
+ * @param {Object} newConfig - Updated settings object
  */
 function applyConfigUpdate(newConfig) {
-  // 이전 설정과 새 설정을 비교해 필요한 요소만 업데이트
+  // Compare the previous and new settings and update only the necessary elements
   if (!newConfig) {
     return;
   }
 
   try {
-    // 일부 config-updated 브로드캐스트(수동 동기화, 로그인 후 동기화 등)는 snippets를
-    // 포함하지 않는 부분 스냅샷을 보낸다. 완전 치환 대신 병합해 누락된 필드가 기존 값을
-    // 지워버리지 않게 한다.
+    // Some config-updated broadcasts (manual sync, post-login sync, etc.) send a partial
+    // snapshot that does not include snippets. Merge instead of fully replacing so that
+    // missing fields do not wipe out existing values.
     updateConfig({ ...config, ...newConfig });
 
-    // 스니펫은 탭 초기화 시점에 로컬 상태로 스냅샷되므로, 백그라운드 동기화로
-    // 병합된 변경사항을 여기서 반영하지 않으면 다음 편집 시 그대로 덮어써진다.
+    // Snippets are snapshotted into local state at tab initialization time, so if changes
+    // merged by background sync are not reflected here, they get overwritten on the next edit.
     initializeSnippetsSettings();
 
-    // 현재 활성화된 탭만 업데이트 (전체 UI 초기화 방지)
+    // Update only the currently active tab (prevents full UI initialization)
     const activeTab = Array.from(document.querySelectorAll('.settings-tab')).find(tab => tab.classList.contains('active'));
     if (activeTab) {
       const tabId = activeTab.id;
-      window.settings.log.info(`현재 활성 탭 "${tabId}"만 선택적으로 업데이트`);
+      window.settings.log.info(`Selectively updating only the currently active tab "${tabId}"`);
 
-      // 선택적으로 필요한 설정만 업데이트 (통합 Settings 탭 = General/Appearance/Advanced 섹션)
+      // Selectively update only the necessary settings (unified Settings tab = General/Appearance/Advanced sections)
       if (tabId === 'settings') {
         const globalHotkeyInput = document.getElementById('global-hotkey');
         const launchAtLoginCheckbox = document.getElementById('launch-at-login');
@@ -209,6 +209,6 @@ function applyConfigUpdate(newConfig) {
     }
   }
   catch (error) {
-    window.settings.log.error('applyConfigUpdate 오류:', error);
+    window.settings.log.error('applyConfigUpdate error:', error);
   }
 }

@@ -1,16 +1,16 @@
-# Toast 앱 버튼 단축키 규칙
+# Toast App Button Shortcut Rules
 
-이 문서는 Toast 앱에서 버튼 단축키가 어떻게 할당되고 관리되는지에 대한 상세한 설명을 제공합니다.
+This document provides a detailed explanation of how button shortcuts are assigned and managed in the Toast app.
 
-## 개요
+## Overview
 
-Toast 앱의 모든 버튼은 페이지 내 위치에 따라 **qwertasdfgzxcvb** 순서로 자동 할당되는 고정된 단축키 시스템을 사용합니다. 이는 사용자가 일관된 키보드 경험을 할 수 있도록 하며, 버튼의 위치만으로도 단축키를 예측할 수 있게 합니다.
+Every button in the Toast app uses a fixed shortcut system that is automatically assigned in the order **qwertasdfgzxcvb** based on its position within the page. This gives users a consistent keyboard experience and makes shortcuts predictable from a button's position alone.
 
-## 단축키 할당 규칙
+## Shortcut Assignment Rules
 
-### 기본 순서
+### Default Order
 
-버튼 단축키는 다음 순서로 할당됩니다:
+Button shortcuts are assigned in the following order:
 
 ```
 Q W E R T
@@ -18,77 +18,77 @@ A S D F G
 Z X C V B
 ```
 
-- **첫 번째 행**: Q, W, E, R, T (5개)
-- **두 번째 행**: A, S, D, F, G (5개)
-- **세 번째 행**: Z, X, C, V, B (5개)
-- **총 15개 버튼**까지 지원
+- **First row**: Q, W, E, R, T (5 keys)
+- **Second row**: A, S, D, F, G (5 keys)
+- **Third row**: Z, X, C, V, B (5 keys)
+- Supports up to **15 buttons** total
 
-### 위치별 할당
+### Assignment by Position
 
-| 위치 | 단축키 | 설명 |
+| Position | Shortcut | Description |
 |------|--------|------|
-| 1번째 버튼 | Q | 첫 번째 행 첫 번째 |
-| 2번째 버튼 | W | 첫 번째 행 두 번째 |
-| 3번째 버튼 | E | 첫 번째 행 세 번째 |
-| 4번째 버튼 | R | 첫 번째 행 네 번째 |
-| 5번째 버튼 | T | 첫 번째 행 다섯 번째 |
-| 6번째 버튼 | A | 두 번째 행 첫 번째 |
-| 7번째 버튼 | S | 두 번째 행 두 번째 |
-| 8번째 버튼 | D | 두 번째 행 세 번째 |
-| 9번째 버튼 | F | 두 번째 행 네 번째 |
-| 10번째 버튼 | G | 두 번째 행 다섯 번째 |
-| 11번째 버튼 | Z | 세 번째 행 첫 번째 |
-| 12번째 버튼 | X | 세 번째 행 두 번째 |
-| 13번째 버튼 | C | 세 번째 행 세 번째 |
-| 14번째 버튼 | V | 세 번째 행 네 번째 |
-| 15번째 버튼 | B | 세 번째 행 다섯 번째 |
+| Button 1 | Q | First row, first |
+| Button 2 | W | First row, second |
+| Button 3 | E | First row, third |
+| Button 4 | R | First row, fourth |
+| Button 5 | T | First row, fifth |
+| Button 6 | A | Second row, first |
+| Button 7 | S | Second row, second |
+| Button 8 | D | Second row, third |
+| Button 9 | F | Second row, fourth |
+| Button 10 | G | Second row, fifth |
+| Button 11 | Z | Third row, first |
+| Button 12 | X | Third row, second |
+| Button 13 | C | Third row, third |
+| Button 14 | V | Third row, fourth |
+| Button 15 | B | Third row, fifth |
 
-## 자동 재할당 시스템
+## Automatic Reassignment System
 
-### 언제 재할당되는가?
+### When Does Reassignment Happen?
 
-버튼의 단축키는 다음 상황에서 자동으로 재할당됩니다:
+A button's shortcut is automatically reassigned in the following situations:
 
-1. **버튼 추가**: 새로운 버튼을 페이지에 추가할 때
-2. **버튼 삭제**: 기존 버튼을 삭제할 때
-3. **버튼 순서 변경**: 설정 모드에서 버튼을 드래그하여 위치를 바꿀 때 (기본 드래그는 삽입, Cmd/Ctrl+드래그는 교환)
-4. **페이지 로드**: 구성 파일에서 페이지를 불러올 때
-5. **버튼 가져오기**: 외부에서 버튼 구성을 가져올 때
+1. **Adding a button**: When adding a new button to the page
+2. **Deleting a button**: When deleting an existing button
+3. **Reordering buttons**: When dragging a button to change its position in settings mode (a plain drag inserts; Cmd/Ctrl+drag swaps)
+4. **Loading a page**: When loading a page from the configuration file
+5. **Importing buttons**: When importing a button configuration from an external source
 
-### 재할당 과정
+### Reassignment Process
 
 ```javascript
-// 예시: 3개의 버튼이 있는 경우
+// Example: when there are 3 buttons
 const buttons = [
   { name: "Chrome", shortcut: "Q", ... },
   { name: "VSCode", shortcut: "W", ... },
   { name: "Terminal", shortcut: "E", ... }
 ];
 
-// 첫 번째와 두 번째 버튼의 위치를 바꾼 후
+// After swapping the positions of the first and second buttons
 const reorderedButtons = [
-  { name: "VSCode", shortcut: "Q", ... },  // 자동으로 Q로 재할당
-  { name: "Chrome", shortcut: "W", ... },  // 자동으로 W로 재할당
-  { name: "Terminal", shortcut: "E", ... } // E 유지
+  { name: "VSCode", shortcut: "Q", ... },  // Automatically reassigned to Q
+  { name: "Chrome", shortcut: "W", ... },  // Automatically reassigned to W
+  { name: "Terminal", shortcut: "E", ... } // E retained
 ];
 ```
 
-## 구현 세부사항
+## Implementation Details
 
-### 상수 정의
+### Constant Definition
 
 ```javascript
 // src/renderer/pages/toast/modules/constants.js
 export const BUTTON_SHORTCUTS = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
 ```
 
-### 재할당 함수
+### Reassignment Function
 
 ```javascript
 /**
- * 버튼 배열의 단축키를 순서대로 재할당하는 함수
- * @param {Array} buttons - 버튼 배열
- * @returns {Array} 단축키가 재할당된 버튼 배열
+ * Reassigns the shortcuts of a button array in order
+ * @param {Array} buttons - Button array
+ * @returns {Array} Button array with reassigned shortcuts
  */
 export function reassignButtonShortcuts(buttons) {
   return buttons.map((button, index) => {
@@ -103,32 +103,32 @@ export function reassignButtonShortcuts(buttons) {
 }
 ```
 
-### 적용 지점
+### Application Points
 
-1. **페이지 초기화 시** (`pages.js`의 `initializePages` 함수)
-2. **버튼 업데이트 시** (`pages.js`의 `updateCurrentPageButtons` 함수)
-3. **새 페이지 생성 시** (기본 버튼 및 빈 버튼 생성)
+1. **On page initialization** (`initializePages` function in `pages.js`)
+2. **On button update** (`updateCurrentPageButtons` function in `pages.js`)
+3. **On new page creation** (creating default buttons and empty buttons)
 
-## 사용자 경험
+## User Experience
 
-### 장점
+### Advantages
 
-1. **일관성**: 항상 같은 위치에 같은 단축키가 할당됨
-2. **예측 가능성**: 버튼의 위치만 보고도 단축키를 알 수 있음
-3. **학습 용이성**: qwerty 키보드 레이아웃을 따라 직관적임
-4. **자동화**: 사용자가 단축키를 수동으로 관리할 필요 없음
+1. **Consistency**: The same position always gets the same shortcut
+2. **Predictability**: You can tell the shortcut just from the button's position
+3. **Easy to learn**: Intuitive as it follows the qwerty keyboard layout
+4. **Automation**: Users don't need to manage shortcuts manually
 
-### 제한사항
+### Limitations
 
-1. **최대 15개**: 한 페이지당 최대 15개 버튼만 지원
-2. **고정 순서**: 사용자가 원하는 단축키를 직접 설정할 수 없음
-3. **키보드 의존성**: qwerty 키보드 레이아웃에 최적화됨
+1. **Maximum of 15**: Only up to 15 buttons per page are supported
+2. **Fixed order**: Users cannot set their preferred shortcut directly
+3. **Keyboard dependency**: Optimized for the qwerty keyboard layout
 
-## 키보드 레이아웃 고려사항
+## Keyboard Layout Considerations
 
-### QWERTY 키보드
+### QWERTY Keyboard
 
-표준 QWERTY 키보드에서 최적의 경험을 제공하도록 설계되었습니다:
+Designed to provide the best experience on a standard QWERTY keyboard:
 
 ```
 Q W E R T Y U I O P
@@ -136,74 +136,74 @@ A S D F G H J K L
 Z X C V B N M
 ```
 
-선택된 키들은 왼손으로 쉽게 접근할 수 있는 위치에 배치되어 있습니다.
+The selected keys are placed in positions that are easily reachable with the left hand.
 
-### 다른 키보드 레이아웃
+### Other Keyboard Layouts
 
-- **DVORAK**: 키 위치가 다르지만 물리적 위치는 동일
-- **AZERTY**: 일부 키의 위치가 다를 수 있음
-- **기타 레이아웃**: 물리적 키 위치를 기준으로 작동
+- **DVORAK**: Key positions differ, but the physical positions are the same
+- **AZERTY**: Some key positions may differ
+- **Other layouts**: Works based on the physical key positions
 
-## 접근성 고려사항
+## Accessibility Considerations
 
-### 키보드 네비게이션
+### Keyboard Navigation
 
-- **화살표 키**: 버튼 간 이동
-- **Tab 키**: 포커스 이동
-- **Enter 키**: 선택된 버튼 실행
-- **단축키**: 직접 버튼 실행
+- **Arrow keys**: Move between buttons
+- **Tab key**: Move focus
+- **Enter key**: Run the selected button
+- **Shortcuts**: Run a button directly
 
-### 시각적 표시
+### Visual Indication
 
-- 각 버튼에 단축키가 명확히 표시됨
-- 호버 시 단축키 강조
-- 키보드 포커스 시 시각적 피드백
+- The shortcut is clearly displayed on each button
+- The shortcut is highlighted on hover
+- Visual feedback on keyboard focus
 
-## 문제 해결
+## Troubleshooting
 
-### 일반적인 문제
+### Common Issues
 
-1. **단축키가 작동하지 않음**
-   - 모달이나 다른 입력 필드에 포커스가 있는지 확인
-   - Toast 창이 활성화되어 있는지 확인
+1. **Shortcut not working**
+   - Check whether focus is on a modal or another input field
+   - Check whether the Toast window is active
 
-2. **예상과 다른 단축키**
-   - 버튼 위치를 확인 (위치에 따라 자동 할당됨)
-   - 페이지를 새로고침하여 최신 할당 확인
+2. **Unexpected shortcut**
+   - Check the button position (assigned automatically by position)
+   - Refresh the page to confirm the latest assignment
 
-3. **단축키 충돌**
-   - Toast 앱 내에서는 충돌이 발생하지 않음 (자동 관리)
-   - 시스템 전역 단축키와의 충돌은 별도 확인 필요
+3. **Shortcut conflict**
+   - No conflicts occur within the Toast app (managed automatically)
+   - Conflicts with system global shortcuts need to be checked separately
 
-### 디버깅
+### Debugging
 
-개발자 도구에서 다음을 확인할 수 있습니다:
+You can check the following in the developer tools:
 
 ```javascript
-// 현재 페이지의 버튼과 단축키 확인
+// Check the buttons and shortcuts of the current page
 console.log(pages[currentPageIndex].buttons.map(b => ({ name: b.name, shortcut: b.shortcut })));
 
-// 단축키 상수 확인
+// Check the shortcut constant
 console.log(BUTTON_SHORTCUTS);
 ```
 
-## 향후 개선 사항
+## Future Improvements
 
-### 계획된 기능
+### Planned Features
 
-1. **사용자 정의 단축키**: 고급 사용자를 위한 옵션
-2. **키보드 레이아웃 감지**: 자동으로 최적의 키 선택
-3. **단축키 충돌 감지**: 시스템 단축키와의 충돌 방지
-4. **접근성 개선**: 스크린 리더 지원 강화
+1. **Custom shortcuts**: An option for advanced users
+2. **Keyboard layout detection**: Automatically choosing the optimal keys
+3. **Shortcut conflict detection**: Preventing conflicts with system shortcuts
+4. **Accessibility improvements**: Stronger screen reader support
 
-### 제안된 개선사항
+### Proposed Enhancements
 
-1. **더 많은 버튼 지원**: 추가 키 조합 사용
-2. **그룹별 단축키**: 페이지별로 다른 단축키 패턴
-3. **학습 모드**: 단축키 학습을 위한 시각적 가이드
+1. **Support for more buttons**: Using additional key combinations
+2. **Per-group shortcuts**: Different shortcut patterns per page
+3. **Learning mode**: A visual guide for learning shortcuts
 
-## 결론
+## Conclusion
 
-Toast 앱의 버튼 단축키 시스템은 일관성과 사용 편의성을 위해 설계되었습니다. qwertasdfgzxcvb 순서의 자동 할당 시스템을 통해 사용자는 복잡한 단축키 관리 없이도 효율적인 키보드 네비게이션을 경험할 수 있습니다.
+The Toast app's button shortcut system is designed for consistency and ease of use. Through the automatic assignment system in qwertasdfgzxcvb order, users can enjoy efficient keyboard navigation without complex shortcut management.
 
-이 시스템은 특히 많은 버튼을 사용하는 파워 유저들에게 유용하며, 버튼의 위치만으로도 해당 단축키를 직관적으로 알 수 있어 학습 곡선을 최소화합니다.
+This system is especially useful for power users who work with many buttons, and it minimizes the learning curve since the shortcut can be intuitively inferred from a button's position alone.

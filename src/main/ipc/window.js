@@ -173,11 +173,11 @@ function setupWindowHandlers(windows) {
     const { showSettingsWindow } = require('../windows');
     const { createConfigStore } = require('../config');
 
-    // tabName 매개변수를 직접 전달하여 설정 창 열기
+    // Open the settings window by passing the tabName parameter directly
     showSettingsWindow(createConfigStore(), tabName);
 
-    // 로그에 탭 선택 요청을 기록
-    logger.info(`settings-tab 이벤트 발생, 대상 탭: ${tabName}`);
+    // Log the tab selection request
+    logger.info(`settings-tab event fired, target tab: ${tabName}`);
   });
 
   // Close settings window

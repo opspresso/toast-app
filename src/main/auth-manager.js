@@ -10,7 +10,7 @@ const { createLogger, maskEmail, maskName } = require('./logger');
 const auth = require('./auth');
 const userDataManager = require('./user-data-manager');
 
-// 모듈별 로거 생성
+// Create logger for this module
 const logger = createLogger('AuthManager');
 const { createConfigStore, markAsSynced } = require('./config');
 const client = require('./api/client');
@@ -487,7 +487,7 @@ function notifySettingsSynced(configData = null) {
     message: 'Settings have been successfully synchronized with the cloud.',
   };
 
-  // 설정 데이터가 없으면 ConfigStore에서 가져옴
+  // If no config data provided, get it from ConfigStore
   if (!configData) {
     const config = createConfigStore();
     configData = {
@@ -499,13 +499,13 @@ function notifySettingsSynced(configData = null) {
     };
   }
 
-  // IPC 전송을 위해 안전하게 클론 가능한 객체로 변환
+  // Convert to a safely cloneable object for IPC transmission
   try {
     configData = JSON.parse(JSON.stringify(configData));
   }
   catch (error) {
     logger.error('Failed to serialize config data for IPC:', error);
-    // 기본값으로 fallback
+    // Fall back to default values
     configData = {
       pages: [],
       snippets: [],
@@ -517,7 +517,7 @@ function notifySettingsSynced(configData = null) {
 
   logger.info('Settings to be synced to UI:', Object.keys(configData || {}).join(', '));
 
-  // 설정 업데이트 알림 + 전체 설정 데이터로 UI 갱신 알림 전송
+  // Send settings update notification + UI refresh notification with full config data
   broadcastToWindows(windows, 'settings-synced', syncData);
   broadcastToWindows(windows, 'config-updated', configData);
 

@@ -187,15 +187,15 @@ async function authenticatedRequest(apiCall, options = {}) {
         const refreshResult = await onUnauthorized();
 
         if (refreshResult && refreshResult.success) {
-          // 스로틀링된 요청이지만 토큰이 여전히 유효한 경우 특별 처리
+          // Special handling for a throttled request whose token is still valid
           if (refreshResult.throttled && refreshResult.tokenValid) {
             try {
-              // 토큰이 여전히 유효하므로 API 호출 재시도
+              // Token is still valid, so retry the API call
               const result = await apiCall();
               return result;
             }
             catch (retryError) {
-              // 여전히 실패하면 오류 반환
+              // If it still fails, return an error
               if (allowUnauthenticated && defaultValue) {
                 return defaultValue;
               }
@@ -212,7 +212,7 @@ async function authenticatedRequest(apiCall, options = {}) {
           }
           else {
             try {
-              // 일반적인 토큰 갱신 성공 케이스
+              // Normal successful token refresh case
               // Increment counter for requests after refresh
               tokenRefreshTracking.requestsAfterRefresh++;
 

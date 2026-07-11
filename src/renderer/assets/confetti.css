@@ -1,4 +1,4 @@
-/* 꽃가루 애니메이션 스타일 - 전체 화면 버전 */
+/* Confetti animation styles - full screen version */
 .confetti-container {
   position: fixed;
   top: 0;
@@ -21,7 +21,7 @@
   will-change: transform;
 }
 
-/* 기본 애니메이션 - 낙하 */
+/* Default animation - fall */
 @keyframes fall {
   0% {
     transform: translateY(0) rotate(0deg);
@@ -36,7 +36,7 @@
   }
 }
 
-/* 회전하면서 낙하하는 애니메이션 */
+/* Animation that falls while rotating */
 @keyframes fallSpin {
   0% {
     transform: translateY(0) rotate(0deg);
@@ -52,7 +52,7 @@
   }
 }
 
-/* 좌우로 흔들리며 낙하하는 애니메이션 */
+/* Animation that falls while swinging side to side */
 @keyframes fallSwing {
   0% {
     transform: translateY(0) translateX(0) rotate(0deg);
@@ -74,7 +74,7 @@
   }
 }
 
-/* 다양한 크기의 꽃가루 */
+/* Confetti of various sizes */
 .confetti.size-small {
   width: 5px;
   height: 5px;
@@ -95,7 +95,7 @@
   height: 20px;
 }
 
-/* 다양한 모양 */
+/* Various shapes */
 .confetti.circle {
   border-radius: 50%;
 }
@@ -181,7 +181,7 @@
   transform: rotate(45deg);
 }
 
-/* 다양한 색상 */
+/* Various colors */
 .confetti.color-red {
   background-color: #ff5252;
   color: #ff5252;

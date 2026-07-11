@@ -13,11 +13,11 @@ const { ENDPOINTS, createApiClient, getAccessToken, authenticatedRequest } = req
 
 const logger = createLogger('ApiIcons');
 
-// 서버가 아이콘 업로드를 지원하지 않을 때(404/405/503) 재시도를 미루는 기간
+// Period to defer retries when the server does not support icon upload (404/405/503)
 const UNAVAILABLE_RETRY_MS = 6 * 60 * 60 * 1000; // 6 hours
 let unavailableUntil = 0;
 
-// 세션 내 중복 업로드 방지 캐시 (파일 경로+수정시각 → 업로드된 URL)
+// In-session cache to prevent duplicate uploads (file path + mtime → uploaded URL)
 const uploadedIconCache = new Map();
 
 /**
@@ -70,7 +70,7 @@ async function uploadIcon({ filePath, onUnauthorized = null }) {
     const form = new FormData();
     form.append('icon', new Blob([fileBuffer], { type: 'image/png' }), path.basename(filePath));
 
-    // multipart boundary 는 axios 가 설정하므로 JSON 기본 헤더 없이 생성한다
+    // axios sets the multipart boundary, so create the client without the default JSON headers
     const client = createApiClient({ timeout: 15000, headers: {} });
     return await client.post(ENDPOINTS.USER_ICONS, form, {
       headers: { Authorization: `Bearer ${getAccessToken()}` },

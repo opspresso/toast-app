@@ -116,11 +116,11 @@ Toast App is an Electron-based desktop application that provides a customizable 
 
 - **Solve the right problem**: Avoid unnecessary complexity or scope creep.
 - **Favor standard solutions**: Use well-known libraries and documented patterns before writing custom code.
-- **Keep code clean and readable**: Use clear naming, logical structure, and avoid deeply nested logic. 명확한 이름짓기, 논리적인 구조, 깊은 중첩 피하기 등을 통해 사람이 이해하기 쉬운 코드를 작성합니다.
+- **Keep code clean and readable**: Use clear naming, logical structure, and avoid deeply nested logic.
 - **Ensure consistent style**: Apply formatters (e.g. Prettier) and linters (e.g. ESLint) across the codebase.
 - **Handle errors thoughtfully**: Consider edge cases and fail gracefully.
 - **Comment with intent**: Use comments to clarify non-obvious logic. Prefer expressive code over excessive comments.
-- **Design for change**: Structure code to be modular and adaptable to future changes. 변경 가능성이 높은 부분을 격리하기 위해 모듈식 컴포넌트를 구축하고 추상화를 사용합니다.
+- **Design for change**: Structure code to be modular and adaptable to future changes.
 - **Maintain file size limits**: Keep files under 500 lines to improve readability and maintainability.
 
 ## SOLID Principles

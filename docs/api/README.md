@@ -1,24 +1,24 @@
 # API Reference
 
-Toast App의 API 레퍼런스 문서입니다.
+The API reference documentation for Toast App.
 
-## 문서 목록
+## Document List
 
-| 문서 | 설명 |
+| Document | Description |
 |------|------|
-| [overview.md](./overview.md) | API 구조 개요 및 주요 패턴 |
-| [main-process.md](./main-process.md) | 메인 프로세스 모듈 API |
-| [renderer.md](./renderer.md) | 렌더러 프로세스 API (Toast, Settings) |
-| [actions.md](./actions.md) | 5가지 액션 타입 상세 API |
+| [overview.md](./overview.md) | API structure overview and key patterns |
+| [main-process.md](./main-process.md) | Main process module API |
+| [renderer.md](./renderer.md) | Renderer process API (Toast, Settings) |
+| [actions.md](./actions.md) | Detailed API for the 5 action types |
 
-## 빠른 링크
+## Quick Links
 
-- **시작하기**: [overview.md](./overview.md)
-- **메인 프로세스**: [main-process.md](./main-process.md)
-- **렌더러 프로세스**: [renderer.md](./renderer.md)
-- **액션 시스템**: [actions.md](./actions.md)
+- **Getting Started**: [overview.md](./overview.md)
+- **Main Process**: [main-process.md](./main-process.md)
+- **Renderer Process**: [renderer.md](./renderer.md)
+- **Action System**: [actions.md](./actions.md)
 
-## 관련 문서
+## Related Documents
 
-- [아키텍처 개요](../architecture/overview.md)
-- [개발 환경 설정](../development/setup.md)
+- [Architecture Overview](../architecture/overview.md)
+- [Development Environment Setup](../development/setup.md)

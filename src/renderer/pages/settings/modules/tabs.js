@@ -10,40 +10,40 @@ import { tabInitState, setTabInitState } from './state.js';
  * @param {string} tabId - ID of the tab to switch to
  */
 export function switchTab(tabId) {
-  window.settings.log.info(`탭 전환 시작: ${tabId}`);
+  window.settings.log.info(`Tab switch started: ${tabId}`);
 
   try {
-    // DOM 조작을 최소화하기 위해 직접 attribute 선택자로 요소 선택
+    // Select elements directly with attribute selector to minimize DOM manipulation
     const allTabLinks = document.querySelectorAll('.settings-nav li');
-    window.settings.log.info(`발견된 탭 링크 수: ${allTabLinks.length}`);
+    window.settings.log.info(`Number of tab links found: ${allTabLinks.length}`);
 
-    // 명확한 로깅을 위해 처음 상태 기록
+    // Record initial state for clear logging
     for (const link of allTabLinks) {
       const tabID = link.getAttribute('data-tab');
       const isActive = link.classList.contains('active');
-      window.settings.log.info(`탭 [${tabID}] 초기 상태: ${isActive ? '활성' : '비활성'}`);
+      window.settings.log.info(`Tab [${tabID}] initial state: ${isActive ? 'active' : 'inactive'}`);
     }
 
-    // 먼저 모든 탭에서 active 클래스 제거 - 기본 DOM API 사용
+    // First remove the active class from all tabs - using basic DOM API
     for (let i = 0; i < allTabLinks.length; i++) {
       allTabLinks[i].className = allTabLinks[i].className.replace(/\bactive\b/g, '').trim();
     }
 
-    // 해당하는 탭에 active 클래스 추가 - 직접 속성 설정
+    // Add the active class to the matching tab - setting attribute directly
     for (let i = 0; i < allTabLinks.length; i++) {
       const link = allTabLinks[i];
       const linkTabId = link.getAttribute('data-tab');
 
       if (linkTabId === tabId) {
-        // active 클래스가 없을 경우에만 추가
+        // Add only if the active class is not present
         if (!link.className.includes('active')) {
           link.className = link.className ? link.className + ' active' : 'active';
-          window.settings.log.info(`탭 링크 [${tabId}] 활성화됨 - 클래스: ${link.className}`);
+          window.settings.log.info(`Tab link [${tabId}] activated - class: ${link.className}`);
         }
       }
     }
 
-    // 모든 컨텐츠 영역 비활성화 및 선택한 영역만 활성화
+    // Deactivate all content areas and activate only the selected one
     const contentTabs = document.querySelectorAll('.settings-tab');
     for (const tab of contentTabs) {
       if (tab.id === tabId) {
@@ -54,55 +54,55 @@ export function switchTab(tabId) {
       }
     }
 
-    // 탭 내용 초기화 (필요한 경우에만)
+    // Initialize tab content (only if needed)
     if (tabId && !tabInitState[tabId]) {
-      window.settings.log.info(`탭 컨텐츠 초기화 필요: ${tabId}`);
+      window.settings.log.info(`Tab content initialization needed: ${tabId}`);
       initializeTabContent(tabId);
     }
 
-    // DOM 갱신 후 최종 검증
+    // Final verification after DOM update
     setTimeout(() => {
-      // 최종 상태 확인
+      // Check final state
       const finalLinks = document.querySelectorAll('.settings-nav li');
-      window.settings.log.info('탭 전환 후 최종 상태:');
+      window.settings.log.info('Final state after tab switch:');
       for (const link of finalLinks) {
         const linkId = link.getAttribute('data-tab');
         const hasActiveClass = link.classList.contains('active');
-        window.settings.log.info(`  탭 [${linkId}]: ${hasActiveClass ? '활성' : '비활성'} (클래스: ${link.className})`);
+        window.settings.log.info(`  Tab [${linkId}]: ${hasActiveClass ? 'active' : 'inactive'} (class: ${link.className})`);
       }
 
-      // 선택된 탭 컨텐츠 확인
+      // Check selected tab content
       const activeContent = document.querySelector('.settings-tab.active');
       if (activeContent) {
-        window.settings.log.info(`활성 컨텐츠: [${activeContent.id}]`);
+        window.settings.log.info(`Active content: [${activeContent.id}]`);
       }
       else {
-        window.settings.log.error('활성화된 컨텐츠 탭이 없습니다.');
+        window.settings.log.error('No active content tab found.');
       }
     }, 10);
   }
   catch (error) {
-    window.settings.log.error(`탭 전환 중 오류 발생: ${error.message}`, error);
+    window.settings.log.error(`Error during tab switch: ${error.message}`, error);
   }
 }
 
 /**
- * 선택한 탭의 콘텐츠만 초기화하는 함수
- * @param {string} tabId - 초기화할 탭 ID
+ * Function that initializes only the selected tab's content
+ * @param {string} tabId - ID of the tab to initialize
  */
 export function initializeTabContent(tabId) {
-  window.settings.log.info(`initializeTabContent 호출 - 탭 ID: ${tabId}`);
+  window.settings.log.info(`initializeTabContent called - tab ID: ${tabId}`);
 
-  // 이미 초기화된 탭이면 다시 초기화하지 않음
+  // Do not re-initialize if the tab is already initialized
   if (tabInitState[tabId]) {
-    window.settings.log.info(`${tabId} 탭은 이미 초기화되어 있습니다.`);
+    window.settings.log.info(`${tabId} tab is already initialized.`);
     return;
   }
 
-  // 각 탭에 맞는 초기화 함수 호출 (동적 import 사용)
+  // Call the initialization function for each tab (using dynamic import)
   switch (tabId) {
     case 'settings':
-      // 통합 Settings 탭: General / Appearance / Advanced 섹션
+      // Combined Settings tab: General / Appearance / Advanced sections
       import('./general-settings.js').then(({ initializeGeneralSettings }) => {
         initializeGeneralSettings();
       });
@@ -114,7 +114,7 @@ export function initializeTabContent(tabId) {
       });
       break;
     case 'account':
-      // 통합 Account 탭: 계정/구독 + Cloud Sync 섹션
+      // Combined Account tab: Account/Subscription + Cloud Sync sections
       import('./account-settings.js').then(({ initializeAccountSettings }) => {
         initializeAccountSettings();
       });
@@ -134,7 +134,7 @@ export function initializeTabContent(tabId) {
       break;
   }
 
-  // 초기화 상태 업데이트
+  // Update initialization state
   setTabInitState(tabId, true);
-  window.settings.log.info(`탭 초기화 상태 업데이트: ${tabId} = 초기화됨`);
+  window.settings.log.info(`Tab initialization state updated: ${tabId} = initialized`);
 }

@@ -196,7 +196,7 @@ function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, ap
       }
     })
     .catch(error => {
-      console.warn('아이콘 미리보기 로드 실패:', error);
+      console.warn('Failed to load icon preview:', error);
       previewImg.style.display = 'none';
       placeholder.style.display = 'block';
       placeholder.textContent = fallbackIcon;
@@ -205,7 +205,7 @@ function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, ap
 }
 
 /**
- * 아이콘 미리보기 업데이트 (toast 창 버튼과 동일한 로직 적용)
+ * Update the icon preview (applies the same logic as the toast window buttons)
  */
 export function updateIconPreview() {
   const iconValue = editButtonIconInput.value.trim();
@@ -215,12 +215,12 @@ export function updateIconPreview() {
   const previewImg = document.getElementById('icon-preview-img');
   const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
 
-  // FlatColorIcons 처리
+  // Handle FlatColorIcons
   if (iconValue && iconValue.startsWith('FlatColorIcons.')) {
     const iconKey = iconValue.replace('FlatColorIcons.', '');
     let iconPath = null;
 
-    // 아이콘 카탈로그에서 검색
+    // Search in the icon catalog
     for (const categoryKey of Object.keys(window.IconsCatalog)) {
       const category = window.IconsCatalog[categoryKey];
       if (category.icons && category.icons[iconKey]) {
@@ -238,14 +238,14 @@ export function updateIconPreview() {
     }
   }
   else if (actionType === 'open' && (!iconValue || iconValue === '') && urlValue) {
-    // open 액션이고 아이콘이 비어있지만 URL이 있는 경우 favicon 사용
+    // For open actions where the icon is empty but a URL exists, use the favicon
     const faviconUrl = getFaviconFromUrl(urlValue);
     previewImg.src = faviconUrl;
     previewImg.style.display = 'block';
     placeholder.style.display = 'none';
     iconPreview.classList.add('has-icon');
 
-    // favicon 로딩 실패 시 기본 아이콘으로 대체
+    // Fall back to the default icon if the favicon fails to load
     previewImg.onerror = function () {
       previewImg.style.display = 'none';
       placeholder.style.display = 'block';
@@ -255,7 +255,7 @@ export function updateIconPreview() {
     return;
   }
   else if (iconValue && (iconValue.startsWith('file://') || iconValue.startsWith('http://') || iconValue.startsWith('https://'))) {
-    // URL 형태의 아이콘 (file://, http://, https://)
+    // URL-form icon (file://, http://, https://)
     // Handle file:// URLs with tilde paths
     if (iconValue.startsWith('file://~/')) {
       const tildePath = iconValue.substring(7); // Remove 'file://' prefix
@@ -282,7 +282,7 @@ export function updateIconPreview() {
       iconPreview.classList.add('has-icon');
     }
 
-    // 이미지 로딩 실패 시 기본 아이콘으로 대체
+    // Fall back to the default icon if the image fails to load
     previewImg.onerror = function () {
       previewImg.style.display = 'none';
       placeholder.style.display = 'block';
@@ -292,7 +292,7 @@ export function updateIconPreview() {
     return;
   }
   else if (iconValue && iconValue !== '') {
-    // 이모지나 텍스트 아이콘
+    // Emoji or text icon
     previewImg.style.display = 'none';
     placeholder.style.display = 'block';
     placeholder.textContent = iconValue;
@@ -300,13 +300,13 @@ export function updateIconPreview() {
     return;
   }
 
-  // exec 액션에서 'open -a AppName' 패턴 감지하여 아이콘 표시
+  // Detect the 'open -a AppName' pattern in exec actions and show the icon
   if (actionType === 'exec' && (!iconValue || iconValue === '') && commandValue) {
-    // 다양한 패턴 지원: open -a AppName, open -a "App Name", open -a domain.com
+    // Supports various patterns: open -a AppName, open -a "App Name", open -a domain.com
     const openAppMatch = commandValue.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))/);
     if (openAppMatch) {
       const appName = (openAppMatch[1] || openAppMatch[2]).trim();
-      // 추출된 아이콘이 있는지 확인하고 로드 시도
+      // Check whether an extracted icon exists and try to load it
       if (window.toast && window.toast.platform === 'darwin') {
         const appPath = `/Applications/${appName}.app`;
         tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, appPath, '📱');
@@ -315,7 +315,7 @@ export function updateIconPreview() {
     }
   }
 
-  // application 액션에서 애플리케이션 경로가 있는 경우 아이콘 표시
+  // For application actions with an application path, show the icon
   if (actionType === 'application' && (!iconValue || iconValue === '') && editButtonApplicationInput.value.trim()) {
     const applicationPath = editButtonApplicationInput.value.trim();
     if (window.toast && window.toast.platform === 'darwin') {
@@ -324,7 +324,7 @@ export function updateIconPreview() {
     }
   }
 
-  // 아이콘이 없는 경우 액션 타입별 기본 아이콘 표시
+  // When there is no icon, show the default icon per action type
   previewImg.style.display = 'none';
   placeholder.style.display = 'block';
   iconPreview.classList.remove('has-icon');

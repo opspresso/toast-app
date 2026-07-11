@@ -1,7 +1,7 @@
 /**
  * Toast - Executor Tests
  *
- * 액션 실행기의 핵심 로직에 대한 단위 테스트
+ * Unit tests for the core logic of the action executor
  */
 
 // Mock all action handlers

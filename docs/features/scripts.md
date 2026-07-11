@@ -1,242 +1,242 @@
-# Toast 앱 사용자 정의 스크립트
+# Toast App Custom Scripts
 
-이 문서는 Toast 앱에서 사용자 정의 스크립트를 생성, 사용 및 관리하는 방법과 스크립트 실행의 보안 특성을 설명합니다.
+This document explains how to create, use, and manage custom scripts in the Toast app, as well as the security characteristics of script execution.
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [지원되는 스크립트 유형](#지원되는-스크립트-유형)
+- [Overview](#overview)
+- [Supported Script Types](#supported-script-types)
   - [JavaScript](#javascript)
-  - [AppleScript (macOS 전용)](#applescript-macos-전용)
-  - [PowerShell (Windows 전용)](#powershell-windows-전용)
+  - [AppleScript (macOS Only)](#applescript-macos-only)
+  - [PowerShell (Windows Only)](#powershell-windows-only)
   - [Bash/Shell](#bashshell)
-- [사용자 정의 스크립트 생성](#사용자-정의-스크립트-생성)
-  - [스크립트 편집기](#스크립트-편집기)
-  - [스크립트 버튼 구성](#스크립트-버튼-구성)
-- [스크립트 실행 환경](#스크립트-실행-환경)
-  - [환경 변수](#환경-변수)
-  - [실행 컨텍스트](#실행-컨텍스트)
-  - [출력 처리](#출력-처리)
-  - [오류 처리](#오류-처리)
-- [보안 모델](#보안-모델)
-  - [실행 격리](#실행-격리)
-  - [권한](#권한)
-- [스크립트 예시](#스크립트-예시)
-  - [JavaScript 예시](#javascript-예시)
-  - [AppleScript 예시](#applescript-예시)
-  - [PowerShell 예시](#powershell-예시)
-  - [Bash/Shell 예시](#bashshell-예시)
-- [모범 사례](#모범-사례)
-- [문제 해결](#문제-해결)
-- [고급 사용법](#고급-사용법)
-  - [외부 API 작업](#외부-api-작업)
-  - [영구 데이터 저장](#영구-데이터-저장)
-  - [스크립트 간 통신](#스크립트-간-통신)
-- [보안 고려사항](#보안-고려사항)
+- [Creating Custom Scripts](#creating-custom-scripts)
+  - [Script Editor](#script-editor)
+  - [Configuring Script Buttons](#configuring-script-buttons)
+- [Script Execution Environment](#script-execution-environment)
+  - [Environment Variables](#environment-variables)
+  - [Execution Context](#execution-context)
+  - [Output Handling](#output-handling)
+  - [Error Handling](#error-handling)
+- [Security Model](#security-model)
+  - [Execution Isolation](#execution-isolation)
+  - [Permissions](#permissions)
+- [Script Examples](#script-examples)
+  - [JavaScript Examples](#javascript-examples)
+  - [AppleScript Examples](#applescript-examples)
+  - [PowerShell Examples](#powershell-examples)
+  - [Bash/Shell Examples](#bashshell-examples)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+- [Advanced Usage](#advanced-usage)
+  - [Working with External APIs](#working-with-external-apis)
+  - [Persistent Data Storage](#persistent-data-storage)
+  - [Inter-Script Communication](#inter-script-communication)
+- [Security Considerations](#security-considerations)
 
-## 개요
+## Overview
 
-Toast 앱은 사용자가 내장 액션을 넘어서 기능을 확장할 수 있도록 사용자 정의 스크립트를 생성하고 실행할 수 있게 해줍니다. 사용자 정의 스크립트는 워크플로우를 자동화하고, 외부 시스템과 상호작용하거나, Toast 인터페이스를 통해 접근 가능한 사용자 정의 도구를 만들 수 있습니다.
+The Toast app lets users create and run custom scripts to extend functionality beyond the built-in actions. Custom scripts can automate workflows, interact with external systems, or create custom tools accessible through the Toast interface.
 
-## 지원되는 스크립트 유형
+## Supported Script Types
 
-Toast 앱은 각각 고유한 기능과 제한사항을 가진 여러 스크립트 유형을 지원합니다:
+The Toast app supports several script types, each with its own capabilities and limitations:
 
 ### JavaScript
 
-JavaScript 스크립트는 Electron 메인 프로세스 내의 Node.js 환경에서 실행됩니다.
+JavaScript scripts run in a Node.js environment within the Electron main process.
 
-- **기능**:
-  - Node.js API 및 모듈에 대한 전체 액세스
-  - 포함된 모듈에 대해 `require()` 사용 가능
-  - async/await 지원
-  - `result` 변수에 값을 할당하여 결과 반환 (`result = ...`, Promise 할당 시 완료 후 값 반환)
-  - `scriptParams`가 `params` 객체로 스크립트에 주입됨
+- **Capabilities**:
+  - Full access to Node.js APIs and modules
+  - `require()` is available for bundled modules
+  - async/await support
+  - Return a result by assigning a value to the `result` variable (`result = ...`; when a Promise is assigned, the resolved value is returned after completion)
+  - `scriptParams` are injected into the script as a `params` object
 
-- **제한사항**:
-  - DOM이나 렌더러 프로세스를 직접 조작할 수 없음 (메인 프로세스에서 실행)
-  - 최상위 `return` 문은 사용할 수 없음 (구문 오류 발생); 대신 `result`에 값을 할당
+- **Limitations**:
+  - Cannot directly manipulate the DOM or the renderer process (runs in the main process)
+  - Top-level `return` statements are not allowed (they cause a syntax error); assign to `result` instead
 
-예시:
+Example:
 ```javascript
-// 랜덤 명언 반환
+// Return a random quote
 const quotes = [
-  "미래를 예측하는 가장 좋은 방법은 그것을 발명하는 것이다.",
-  "코드는 유머와 같다. 설명해야 한다면, 그것은 나쁜 것이다.",
-  "프로그래밍은 당신이 아는 것에 관한 것이 아니라, 당신이 알아낼 수 있는 것에 관한 것이다."
+  "The best way to predict the future is to invent it.",
+  "Code is like humor. When you have to explain it, it's bad.",
+  "Programming isn't about what you know; it's about what you can figure out."
 ];
 
 const randomIndex = Math.floor(Math.random() * quotes.length);
 result = quotes[randomIndex];
 ```
 
-### AppleScript (macOS 전용)
+### AppleScript (macOS Only)
 
-AppleScript는 macOS에서 자동화를 가능하게 하여 시스템 서비스 및 애플리케이션과 상호작용할 수 있습니다.
+AppleScript enables automation on macOS, allowing you to interact with system services and applications.
 
-- **기능**:
-  - macOS 애플리케이션 및 서비스 제어
-  - 시스템 자동화
-  - UI 스크립팅 기능
+- **Capabilities**:
+  - Control macOS applications and services
+  - System automation
+  - UI scripting capabilities
 
-- **제한사항**:
-  - macOS 전용
-  - 보안 권한이 필요할 수 있음
-  - 제한된 오류 보고
+- **Limitations**:
+  - macOS only
+  - May require security permissions
+  - Limited error reporting
 
-예시:
+Example:
 ```applescript
--- 현재 볼륨 레벨 가져오기
+-- Get the current volume level
 set currentVolume to output volume of (get volume settings)
-return "현재 볼륨: " & currentVolume & "%"
+return "Current volume: " & currentVolume & "%"
 ```
 
-### PowerShell (Windows 전용)
+### PowerShell (Windows Only)
 
-PowerShell 스크립트는 Windows 시스템에서 강력한 자동화 기능을 제공합니다.
+PowerShell scripts provide powerful automation capabilities on Windows systems.
 
-- **기능**:
-  - Windows 시스템 자동화
-  - 풍부한 객체 모델
-  - .NET 프레임워크 액세스
+- **Capabilities**:
+  - Windows system automation
+  - Rich object model
+  - .NET Framework access
 
-- **제한사항**:
-  - Windows 전용
-  - 실행 시 `-ExecutionPolicy Bypass`가 적용됨 (시스템 실행 정책 우회)
-  - 특정 작업에 대해 관리자 권한이 필요할 수 있음
+- **Limitations**:
+  - Windows only
+  - Runs with `-ExecutionPolicy Bypass` applied (bypasses the system execution policy)
+  - May require administrator privileges for certain operations
 
-예시:
+Example:
 ```powershell
-# 시스템 가동 시간 가져오기
+# Get system uptime
 $os = Get-WmiObject win32_operatingsystem
 $uptime = (Get-Date) - ($os.ConvertToDateTime($os.LastBootUpTime))
-"시스템 가동 시간: {0}일 {1}시간 {2}분" -f $uptime.Days, $uptime.Hours, $uptime.Minutes
+"System uptime: {0} days {1} hours {2} minutes" -f $uptime.Days, $uptime.Hours, $uptime.Minutes
 ```
 
 ### Bash/Shell
 
-Bash/Shell 스크립트는 기본 시스템 셸에서 실행됩니다. Windows에서는 지원되지 않으며 macOS와 Linux에서만 실행됩니다.
+Bash/Shell scripts run in the default system shell. They are not supported on Windows and run only on macOS and Linux.
 
-- **기능**:
-  - macOS/Linux 지원 (Windows 미지원)
-  - 명령줄 유틸리티에 직접 액세스
-  - 명령줄 사용자에게 친숙한 구문
+- **Capabilities**:
+  - macOS/Linux support (not supported on Windows)
+  - Direct access to command-line utilities
+  - Syntax familiar to command-line users
 
-- **제한사항**:
-  - Windows에서는 실행 불가 (macOS/Linux 전용)
-  - 제한된 오류 처리
-  - 특정 명령줄 도구가 설치되어 있어야 할 수 있음
+- **Limitations**:
+  - Cannot run on Windows (macOS/Linux only)
+  - Limited error handling
+  - Specific command-line tools may need to be installed
 
-예시:
+Example:
 ```bash
-# 시스템 정보 가져오기
-echo "호스트명: $(hostname)"
-echo "커널: $(uname -r)"
-echo "사용자: $(whoami)"
+# Get system information
+echo "Hostname: $(hostname)"
+echo "Kernel: $(uname -r)"
+echo "User: $(whoami)"
 ```
 
-## 사용자 정의 스크립트 생성
+## Creating Custom Scripts
 
-### 스크립트 편집기
+### Script Editor
 
-Toast 창의 편집 모드에서 버튼을 추가하거나 편집할 때 열리는 버튼 편집 모달의 텍스트 입력 영역에 스크립트를 작성하거나 붙여넣을 수 있습니다.
+You can write or paste scripts into the text input area of the button edit modal, which opens when you add or edit a button in the Toast window's edit mode.
 
-스크립트 편집기에 액세스하려면:
+To access the script editor:
 
-1. 전역 단축키(기본값: Alt+Space)로 Toast 창 열기
-2. 편집 모드로 전환 (쉼표 `,` 키)
-3. 새 버튼 추가 또는 기존 버튼 편집
-4. 액션 유형으로 "사용자 정의 스크립트" 선택
-5. 드롭다운 메뉴에서 스크립트 유형 선택
-6. 스크립트 편집기를 사용하여 스크립트 작성 또는 붙여넣기
+1. Open the Toast window with the global shortcut (default: Alt+Space)
+2. Switch to edit mode (comma `,` key)
+3. Add a new button or edit an existing button
+4. Select "Custom Script" as the action type
+5. Choose the script type from the dropdown menu
+6. Write or paste your script using the script editor
 
-### 스크립트 버튼 구성
+### Configuring Script Buttons
 
-스크립트용 버튼을 생성할 때:
+When creating a button for a script:
 
-1. 설명적인 이름 제공
-2. 적절한 아이콘 선택
-3. 단축키 선택 (선택사항)
-4. 스크립트 유형 선택
-5. 스크립트 입력 또는 붙여넣기
+1. Provide a descriptive name
+2. Choose an appropriate icon
+3. Select a shortcut (optional)
+4. Choose the script type
+5. Enter or paste the script
 
-## 스크립트 실행 환경
+## Script Execution Environment
 
-### 환경 변수
+### Environment Variables
 
-스크립트에는 전체 시스템 환경 변수가 아닌, 민감하지 않은 변수의 allowlist만 주입됩니다: `HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`. 시크릿(`CLIENT_SECRET` 등)은 메인 프로세스에만 유지됩니다.
+Scripts are injected only with an allowlist of non-sensitive variables, not the full set of system environment variables: `HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`. Secrets (such as `CLIENT_SECRET`) are kept in the main process only.
 
 ```javascript
-// allowlist에 포함된 환경 변수 접근
+// Access environment variables included in the allowlist
 const home = process.env.HOME;
 const path = process.env.PATH;
 
-// 플랫폼 정보
+// Platform information
 const platform = process.platform; // 'darwin', 'win32', 'linux'
-const arch = process.arch;         // 'x64', 'arm64' 등
+const arch = process.arch;         // 'x64', 'arm64', etc.
 ```
 
-셸 스크립트(Bash, PowerShell, AppleScript)도 동일한 allowlist 환경 변수만 받아 실행됩니다.
+Shell scripts (Bash, PowerShell, AppleScript) also run with only the same allowlisted environment variables.
 
-### 실행 컨텍스트
+### Execution Context
 
-스크립트는 다음 특성으로 실행됩니다:
+Scripts run with the following characteristics:
 
-- JavaScript 스크립트는 Node.js 컨텍스트를 가진 Electron 메인 프로세스에서 실행
-- AppleScript, PowerShell, Bash 스크립트는 자식 프로세스에서 실행
-- 작업 디렉토리는 별도로 지정되지 않으며, Toast 앱 프로세스의 작업 디렉토리를 그대로 상속
-- 표준 입력은 비어있음 (닫힘)
-- 표준 출력 및 오류는 표시를 위해 캡처됨
+- JavaScript scripts run in the Electron main process with a Node.js context
+- AppleScript, PowerShell, and Bash scripts run in child processes
+- The working directory is not specified separately; it inherits the working directory of the Toast app process
+- Standard input is empty (closed)
+- Standard output and error are captured for display
 
-### 출력 처리
+### Output Handling
 
-스크립트 출력은 다음과 같이 처리됩니다:
+Script output is handled as follows:
 
-- **반환 값** (JavaScript만): `result` 변수에 할당한 값 (예: `result = ...`). `result`를 설정하지 않으면 성공 메시지가 반환됨
-- **표준 출력**: 캡처되어 결과에서 사용 가능
-- **표준 오류**: 캡처되어 오류로 표시
-- **종료 코드**: 0이 아닌 종료 코드는 오류로 처리
+- **Return value** (JavaScript only): the value assigned to the `result` variable (e.g., `result = ...`). If `result` is not set, a success message is returned
+- **Standard output**: captured and available in the result
+- **Standard error**: captured and shown as an error
+- **Exit code**: a non-zero exit code is treated as an error
 
-출력은 결과에 캡처되어 표시됩니다.
+Output is captured in the result and displayed.
 
-### 오류 처리
+### Error Handling
 
-오류 보고에는 다음이 포함됩니다:
+Error reporting includes:
 
-- 런타임 오류 메시지 (JavaScript는 try/catch로 포착되어 반환)
-- 셸 스크립트의 종료 코드 정보
+- Runtime error messages (for JavaScript, caught via try/catch and returned)
+- Exit code information for shell scripts
 
-## 보안 모델
+## Security Model
 
-### 실행 격리
+### Execution Isolation
 
-Toast 앱은 스크립트 실행에 별도의 샌드박싱이나 격리를 적용하지 않습니다:
+The Toast app does not apply any separate sandboxing or isolation to script execution:
 
-- JavaScript 스크립트는 Node.js `vm` 컨텍스트에서 실행되지만, 전체 `require`와 `Buffer`가 그대로 주입되어 사실상 제한 없는 Node.js 액세스를 가집니다 (`process.env`는 allowlist 9개 변수만 주입). 실행 전 입력 정화, 명령 주입 필터링, 길이 제한, 형식 검증, 구문 검사는 수행되지 않습니다.
-- 스크립트는 Toast 앱 프로세스와 동일한 권한으로 실행됩니다.
-- 앱 자체가 관리자 권한으로 실행되지 않는 한 관리자 권한은 없습니다.
-- macOS 및 Windows 운영체제의 보안 제한만 적용됩니다.
+- JavaScript scripts run in a Node.js `vm` context, but the full `require` and `Buffer` are injected as-is, effectively granting unrestricted Node.js access (`process.env` injects only the 9 allowlisted variables). No input sanitization, command injection filtering, length limits, format validation, or syntax checking is performed before execution.
+- Scripts run with the same privileges as the Toast app process.
+- They have no administrator privileges unless the app itself is running with administrator privileges.
+- Only the security restrictions of the macOS and Windows operating systems apply.
 
-### 권한
+### Permissions
 
-스크립트는 다음 권한 특성을 가집니다:
+Scripts have the following permission characteristics:
 
-- 사용자 디렉토리 내에서 파일시스템 액세스 (읽기/쓰기)
-- HTTP 요청 및 기타 연결을 위한 네트워크 액세스
-- 보호된 시스템 영역에 대한 특별한 액세스 없음
-- macOS 및 Windows 보안 제한이 여전히 적용됨
+- Filesystem access within the user directory (read/write)
+- Network access for HTTP requests and other connections
+- No special access to protected system areas
+- macOS and Windows security restrictions still apply
 
-## 스크립트 예시
+## Script Examples
 
-### JavaScript 예시
+### JavaScript Examples
 
-**날씨 정보**:
+**Weather information**:
 ```javascript
-// 현재 날씨 정보 가져오기
+// Get current weather information
 const https = require('https');
 
 async function getWeather(city) {
-  const apiKey = 'YOUR_API_KEY'; // API 키로 교체
+  const apiKey = 'YOUR_API_KEY'; // Replace with your API key
   const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
 
   return new Promise((resolve, reject) => {
@@ -246,24 +246,24 @@ async function getWeather(city) {
       res.on('end', () => {
         try {
           const weatherData = JSON.parse(data);
-          resolve(`${weatherData.name}의 날씨: ${weatherData.main.temp}°C, ${weatherData.weather[0].description}`);
+          resolve(`Weather in ${weatherData.name}: ${weatherData.main.temp}°C, ${weatherData.weather[0].description}`);
         } catch (e) {
-          reject(`날씨 데이터 파싱 오류: ${e.message}`);
+          reject(`Error parsing weather data: ${e.message}`);
         }
       });
-    }).on('error', (e) => reject(`날씨 가져오기 오류: ${e.message}`));
+    }).on('error', (e) => reject(`Error fetching weather: ${e.message}`));
   });
 }
 
-// 서울의 날씨 반환 (사용자 정의 가능)
+// Return the weather for Seoul (customizable)
 result = getWeather('Seoul');
 ```
 
-**시스템 정보**:
+**System information**:
 ```javascript
 const os = require('os');
 
-// 바이트를 사람이 읽기 쉬운 형식으로 변환
+// Convert bytes to a human-readable format
 function formatBytes(bytes) {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
@@ -274,148 +274,148 @@ function formatBytes(bytes) {
   return `${bytes.toFixed(2)} ${units[i]}`;
 }
 
-// 시스템 정보 수집
+// Collect system information
 const cpus = os.cpus();
 const totalMem = formatBytes(os.totalmem());
 const freeMem = formatBytes(os.freemem());
 const uptime = (os.uptime() / 3600).toFixed(2);
 
 result = `
-시스템: ${os.type()} ${os.release()} ${os.arch()}
-호스트명: ${os.hostname()}
-CPU: ${cpus[0].model} (${cpus.length} 코어)
-메모리: ${totalMem} 중 ${freeMem} 사용 가능
-가동 시간: ${uptime} 시간
+System: ${os.type()} ${os.release()} ${os.arch()}
+Hostname: ${os.hostname()}
+CPU: ${cpus[0].model} (${cpus.length} cores)
+Memory: ${freeMem} available of ${totalMem}
+Uptime: ${uptime} hours
 `;
 ```
 
-### AppleScript 예시
+### AppleScript Examples
 
-**음악 앱 제어**:
+**Control the Music app**:
 ```applescript
--- 음악 앱에서 재생/일시정지 토글
+-- Toggle play/pause in the Music app
 tell application "Music"
   if player state is playing then
     pause
-    return "음악 일시정지됨"
+    return "Music paused"
   else
     play
     set currentTrack to name of current track
     set currentArtist to artist of current track
-    return "현재 재생 중: " & currentTrack & " - " & currentArtist
+    return "Now playing: " & currentTrack & " - " & currentArtist
   end if
 end tell
 ```
 
-**화면 밝기**:
+**Screen brightness**:
 ```applescript
--- 화면 밝기 가져오기 및 설정
+-- Get and set screen brightness
 tell application "System Events"
   tell appearance preferences
     set currentBrightness to brightness
 
-    -- 최대 밝기와 30% 사이 토글
+    -- Toggle between maximum brightness and 30%
     if currentBrightness > 0.5 then
       set brightness to 0.3
-      return "밝기를 30%로 설정"
+      return "Brightness set to 30%"
     else
       set brightness to 1.0
-      return "밝기를 100%로 설정"
+      return "Brightness set to 100%"
     end if
   end tell
 end tell
 ```
 
-### PowerShell 예시
+### PowerShell Examples
 
-**배터리 상태**:
+**Battery status**:
 ```powershell
-# 노트북의 배터리 상태 가져오기
+# Get the battery status of a laptop
 $battery = Get-WmiObject Win32_Battery
 if ($battery) {
     $status = switch ($battery.BatteryStatus) {
-        1 {"방전 중"}
-        2 {"AC 전원"}
-        3 {"완전 충전"}
-        4 {"낮음"}
-        5 {"위험"}
-        default {"알 수 없음"}
+        1 {"Discharging"}
+        2 {"AC Power"}
+        3 {"Fully Charged"}
+        4 {"Low"}
+        5 {"Critical"}
+        default {"Unknown"}
     }
 
-    "배터리: $($battery.EstimatedChargeRemaining)% ($status)"
+    "Battery: $($battery.EstimatedChargeRemaining)% ($status)"
 } else {
-    "배터리가 감지되지 않음 (데스크톱 시스템)"
+    "No battery detected (desktop system)"
 }
 ```
 
-**Wi-Fi 네트워크 목록**:
+**List Wi-Fi networks**:
 ```powershell
-# 사용 가능한 Wi-Fi 네트워크 가져오기
+# Get available Wi-Fi networks
 $networks = (netsh wlan show networks) -match '(SSID|Signal)'
 $networksFormatted = $networks -join "`n"
-"사용 가능한 Wi-Fi 네트워크:`n$networksFormatted"
+"Available Wi-Fi networks:`n$networksFormatted"
 ```
 
-### Bash/Shell 예시
+### Bash/Shell Examples
 
-**Git 저장소 상태**:
+**Git repository status**:
 ```bash
-# git 저장소 상태 표시
+# Show git repository status
 if [ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1; then
-    echo "Git 저장소 상태:"
+    echo "Git repository status:"
     echo "---------------------"
-    echo "현재 브랜치: $(git branch --show-current)"
-    echo "최근 커밋:"
+    echo "Current branch: $(git branch --show-current)"
+    echo "Recent commits:"
     git log --oneline -n 5
     echo "---------------------"
     git status -s
 else
-    echo "git 저장소가 아닙니다"
+    echo "Not a git repository"
 fi
 ```
 
-**시스템 모니터링**:
+**System monitoring**:
 ```bash
-# 상위 CPU 및 메모리 프로세스 표시
-echo "상위 CPU 프로세스:"
+# Show top CPU and memory processes
+echo "Top CPU processes:"
 ps -eo pid,pcpu,pmem,comm --sort=-pcpu | head -n 6
 
-echo -e "\n상위 메모리 프로세스:"
+echo -e "\nTop memory processes:"
 ps -eo pid,pcpu,pmem,comm --sort=-pmem | head -n 6
 
-echo -e "\n디스크 사용량:"
+echo -e "\nDisk usage:"
 df -h | grep -v "tmpfs"
 ```
 
-## 모범 사례
+## Best Practices
 
-1. **스크립트를 집중적으로 유지**: 각 스크립트는 특정하고 잘 정의된 작업을 수행해야 함
-2. **오류를 우아하게 처리**: 스크립트에 오류 처리 포함
-3. **주석 사용**: 특히 복잡한 작업에 대해 스크립트를 문서화
-4. **성능 고려**: 장시간 실행되는 스크립트는 Toast 앱의 응답성에 영향을 줄 수 있음
-5. **철저히 테스트**: 의존하기 전에 다양한 시나리오에서 스크립트 테스트
-6. **민감한 정보 보안**: 스크립트에 API 키나 비밀번호를 하드코딩하지 않음
-7. **플랫폼 검사 사용**: 셸 스크립트의 경우 플랫폼별 명령을 사용하기 전에 플랫폼 확인
-8. **사용자 피드백 제공**: 스크립트에서 의미 있는 메시지 반환
+1. **Keep scripts focused**: Each script should perform a specific, well-defined task
+2. **Handle errors gracefully**: Include error handling in your scripts
+3. **Use comments**: Document your scripts, especially for complex operations
+4. **Consider performance**: Long-running scripts can affect the Toast app's responsiveness
+5. **Test thoroughly**: Test scripts in various scenarios before relying on them
+6. **Secure sensitive information**: Do not hardcode API keys or passwords in scripts
+7. **Use platform checks**: For shell scripts, check the platform before using platform-specific commands
+8. **Provide user feedback**: Return meaningful messages from scripts
 
-## 문제 해결
+## Troubleshooting
 
-일반적인 문제와 해결책:
+Common problems and solutions:
 
-| 문제 | 해결책 |
+| Problem | Solution |
 |------|--------|
-| 스크립트가 응답하지 않음 | 스크립트 성능 최적화 또는 무한 루프 확인 |
-| "명령을 찾을 수 없음" 오류 | 필요한 도구가 설치되어 있는지 확인하거나 전체 경로 제공 |
-| 권한 오류 | 파일/폴더 권한 확인 또는 필요한 권한으로 Toast 앱 실행 |
-| 네트워크 오류 | 네트워크 연결 및 URL 형식 확인 |
-| 구문 오류 | 스크립트 구문을 검토하고 반환된 오류 메시지를 확인하여 수정 |
-| 출력 없음 | 스크립트가 데이터를 올바르게 반환하거나 출력하는지 확인 |
+| Script not responding | Optimize script performance or check for infinite loops |
+| "Command not found" error | Verify that the required tools are installed or provide the full path |
+| Permission error | Check file/folder permissions or run the Toast app with the required privileges |
+| Network error | Check network connectivity and URL format |
+| Syntax error | Review the script syntax and check the returned error message to fix it |
+| No output | Verify that the script correctly returns or prints data |
 
-## 고급 사용법
+## Advanced Usage
 
-### 외부 API 작업
+### Working with External APIs
 
-JavaScript 스크립트는 외부 API와 작업할 수 있습니다:
+JavaScript scripts can work with external APIs:
 
 ```javascript
 const https = require('https');
@@ -424,7 +424,7 @@ async function fetchFromAPI(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
       if (res.statusCode !== 200) {
-        reject(new Error(`요청 실패, 상태: ${res.statusCode}`));
+        reject(new Error(`Request failed, status: ${res.statusCode}`));
         return;
       }
 
@@ -440,26 +440,26 @@ async function getJoke() {
     const data = await fetchFromAPI('https://icanhazdadjoke.com/');
     return data.joke;
   } catch (error) {
-    return `농담 가져오기 오류: ${error.message}`;
+    return `Error fetching joke: ${error.message}`;
   }
 }
 
 result = getJoke();
 ```
 
-### 영구 데이터 저장
+### Persistent Data Storage
 
-스크립트는 파일시스템을 사용하여 데이터를 저장하고 검색할 수 있습니다:
+Scripts can use the filesystem to store and retrieve data:
 
 ```javascript
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// 데이터 파일 경로 (사용자 홈 디렉토리 기준)
+// Data file path (relative to the user's home directory)
 const dataFile = path.join(os.homedir(), 'script-data.json');
 
-// 기존 데이터 읽기 또는 없으면 새로 생성
+// Read existing data, or create new data if none exists
 function getData() {
   try {
     if (fs.existsSync(dataFile)) {
@@ -471,35 +471,35 @@ function getData() {
   }
 }
 
-// 데이터 업데이트
+// Update data
 function updateData(data) {
   fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 }
 
-// 현재 데이터 가져오기
+// Get current data
 const data = getData();
 
-// 데이터 업데이트
+// Update data
 data.counter += 1;
 data.lastRun = new Date().toISOString();
 updateData(data);
 
-result = `이 스크립트는 ${data.counter}번 실행되었습니다. 마지막 실행: ${data.lastRun}`;
+result = `This script has run ${data.counter} times. Last run: ${data.lastRun}`;
 ```
 
-### 스크립트 간 통신
+### Inter-Script Communication
 
-스크립트는 임시 파일을 사용하여 서로 통신할 수 있습니다:
+Scripts can communicate with each other using temporary files:
 
 ```javascript
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// 공유 데이터 파일 경로 (시스템 임시 디렉토리 기준)
+// Shared data file path (relative to the system temporary directory)
 const sharedFile = path.join(os.tmpdir(), 'script-shared-data.json');
 
-// 다른 스크립트에서 데이터 읽기
+// Read data from another script
 function getSharedData() {
   try {
     if (fs.existsSync(sharedFile)) {
@@ -511,30 +511,30 @@ function getSharedData() {
   }
 }
 
-// 다른 스크립트를 위한 데이터 쓰기
+// Write data for another script
 function setSharedData(data) {
   fs.writeFileSync(sharedFile, JSON.stringify(data, null, 2));
 }
 
-// 사용 예시: 스크립트 간 상태 토글
+// Usage example: toggle state between scripts
 const data = getSharedData() || { state: 'off' };
 data.state = data.state === 'on' ? 'off' : 'on';
 setSharedData(data);
 
-result = `공유 상태를 다음으로 토글: ${data.state}`;
+result = `Toggled shared state to: ${data.state}`;
 ```
 
-## 보안 고려사항
+## Security Considerations
 
-사용자 정의 스크립트 작업 시 다음 보안 가이드라인을 고려하세요:
+When working with custom scripts, consider the following security guidelines:
 
-1. **신뢰할 수 없는 소스의 스크립트를 실행하지 마세요** (검토 없이)
-2. **정화되지 않은 입력으로 시스템 명령을 실행하지 마세요**
-3. **민감한 정보를 저장하지 마세요** (비밀번호, API 키) 평문 스크립트에
-4. **파일 작업 시 주의하세요** 의도하지 않은 데이터 손실을 피하기 위해
-5. **네트워크 요청을 하는 스크립트의 보안 영향을 고려하세요**
-6. **스크립트가 사용자 권한으로 실행되며** 파일에 액세스할 수 있음을 이해하세요
-7. **보안 API 엔드포인트를 사용하세요** (HTTP보다 HTTPS)
-8. **모든 외부 데이터를 검증하고 정화하세요** 처리하기 전에
-9. **JavaScript 스크립트가 Node.js API에 액세스할 수 있음을 기억하세요** 및 관련 기능
-10. **환경이 변경될 때 스크립트를 정기적으로 검토하세요** 잠재적인 보안 문제에 대해
+1. **Do not run scripts from untrusted sources** (without reviewing them)
+2. **Do not run system commands with unsanitized input**
+3. **Do not store sensitive information** (passwords, API keys) in plaintext scripts
+4. **Be careful with file operations** to avoid unintended data loss
+5. **Consider the security implications of scripts that make network requests**
+6. **Understand that scripts run with the user's privileges** and can access files
+7. **Use secure API endpoints** (HTTPS over HTTP)
+8. **Validate and sanitize all external data** before processing it
+9. **Remember that JavaScript scripts can access Node.js APIs** and related capabilities
+10. **Review scripts regularly as the environment changes** for potential security issues

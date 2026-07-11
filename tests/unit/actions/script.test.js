@@ -1,7 +1,7 @@
 /**
  * Toast - Script Action Tests
  *
- * 스크립트 실행 액션에 대한 단위 테스트
+ * Unit tests for the script execution action
  */
 
 // Mock dependencies

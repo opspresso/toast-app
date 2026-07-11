@@ -1,7 +1,7 @@
 /**
  * Toast - IPC Handlers Tests
  *
- * IPC (Inter-Process Communication) 핸들러에 대한 단위 테스트
+ * Unit tests for the IPC (Inter-Process Communication) handlers
  */
 
 // Mock dependencies
@@ -768,7 +768,7 @@ describe('IPC Handlers', () => {
       const result = await handler({}, '/invalid/path');
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('앱 이름을 추출할 수 없습니다');
+      expect(result.error).toContain('Could not extract app name');
     });
   });
 

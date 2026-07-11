@@ -12,7 +12,7 @@ const { createLogger, maskAuthUrl } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest, clearTokens } = require('./client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
-// 모듈별 로거 생성
+// Create a module-specific logger
 const logger = createLogger('ApiAuth');
 
 // Authentication related constants

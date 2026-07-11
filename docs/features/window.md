@@ -1,53 +1,53 @@
-# Toast 앱 창 표시/숨김 동작
+# Toast App Window Show/Hide Behavior
 
-이 문서는 Toast 앱의 창 표시 및 숨김 메커니즘에 대한 상세한 기술 설명을 제공합니다.
+This document provides a detailed technical description of the Toast app's window show and hide mechanism.
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [창 표시/숨김 동작 요약](#창-표시숨김-동작-요약)
-- [창이 숨겨지는 상황](#창이-숨겨지는-상황)
-  - [포커스 손실 (Blur 이벤트)](#포커스-손실-blur-이벤트)
-  - [ESC 키 입력](#esc-키-입력)
-  - [버튼 액션 실행 후](#버튼-액션-실행-후)
-  - [전역 단축키 토글](#전역-단축키-토글)
-  - [명시적 호출](#명시적-호출)
-- [창이 숨겨지지 않는 예외 상황](#창이-숨겨지지-않는-예외-상황)
-  - [모달 창이 열려있을 때](#모달-창이-열려있을-때)
-  - [로그인 진행 중일 때](#로그인-진행-중일-때)
-  - [설정에 따른 예외](#설정에-따른-예외)
-  - [설정 모드에서 ESC 키 다른 용도로 사용 시](#설정-모드에서-esc-키-다른-용도로-사용-시)
-- [관련 설정 옵션](#관련-설정-옵션)
-- [결론](#결론)
+- [Overview](#overview)
+- [Window Show/Hide Behavior Summary](#window-showhide-behavior-summary)
+- [Situations Where the Window Is Hidden](#situations-where-the-window-is-hidden)
+  - [Focus Loss (Blur Event)](#focus-loss-blur-event)
+  - [ESC Key Press](#esc-key-press)
+  - [After Executing a Button Action](#after-executing-a-button-action)
+  - [Global Shortcut Toggle](#global-shortcut-toggle)
+  - [Explicit Calls](#explicit-calls)
+- [Exceptional Situations Where the Window Is Not Hidden](#exceptional-situations-where-the-window-is-not-hidden)
+  - [When a Modal Window Is Open](#when-a-modal-window-is-open)
+  - [When Login Is in Progress](#when-login-is-in-progress)
+  - [Exceptions Based on Settings](#exceptions-based-on-settings)
+  - [When the ESC Key Is Used for Another Purpose in Settings Mode](#when-the-esc-key-is-used-for-another-purpose-in-settings-mode)
+- [Related Settings Options](#related-settings-options)
+- [Conclusion](#conclusion)
 
-## 개요
+## Overview
 
-Toast 앱은 Electron 기반 생산성 도구로, 사용자가 정의한 단축키로 실행되는 다양한 액션을 제공합니다. 이 문서에서는 앱의 메인 창이 언제 나타나고 숨겨지는지에 대한 동작 방식과, 이를 제어하는 설정에 대해 다룹니다.
+The Toast app is an Electron-based productivity tool that provides various actions triggered by user-defined shortcuts. This document covers how and when the app's main window appears and hides, and the settings that control this behavior.
 
-## 창 표시/숨김 동작 요약
+## Window Show/Hide Behavior Summary
 
-Toast App은 다음과 같은 상황에서 창을 표시합니다:
-- 전역 단축키(기본값: Alt+Space)가 눌렸을 때
-- 토스트 표시 API 호출 시
-- 시스템 트레이 아이콘 메뉴에서 "Open Toast" 옵션 선택 시
+Toast App shows the window in the following situations:
+- When the global shortcut (default: Alt+Space) is pressed
+- When the toast-display API is called
+- When the "Open Toast" option is selected from the system tray icon menu
 
-창은 다음 상황에서 자동으로 또는 명시적으로 숨겨집니다:
-- 창이 포커스를 잃을 때 (설정에 따라)
-- ESC 키를 누를 때 (설정에 따라)
-- 버튼 액션 실행 후 (설정에 따라)
-- 토스트 닫기 버튼 클릭 시
-- 전역 단축키 토글 시
+The window is hidden automatically or explicitly in the following situations:
+- When the window loses focus (depending on settings)
+- When the ESC key is pressed (depending on settings)
+- After executing a button action (depending on settings)
+- When the toast close button is clicked
+- When the global shortcut toggle is triggered
 
-특정 상황에서는 창 숨김이 방지됩니다:
-- 모달 창이 열려있을 때
-- 로그인 프로세스가 진행 중일 때
-- 특정 설정이 비활성화되었을 때
+In certain situations, hiding the window is prevented:
+- When a modal window is open
+- When the login process is in progress
+- When a specific setting is disabled
 
-## 창이 숨겨지는 상황
+## Situations Where the Window Is Hidden
 
-### 포커스 손실 (Blur 이벤트)
+### Focus Loss (Blur Event)
 
-사용자가 다른 창으로 포커스를 옮기면 토스트 창이 숨겨집니다. 이는 `windows.js` 파일에서 다음과 같이 구현되어 있습니다:
+When the user moves focus to another window, the toast window is hidden. This is implemented in the `windows.js` file as follows:
 
 ```javascript
 toastWindow.on('blur', () => {
@@ -65,14 +65,14 @@ toastWindow.on('blur', () => {
 });
 ```
 
-다음 조건이 모두 충족될 때 창이 숨겨집니다:
-- `advanced.hideOnBlur` 설정이 활성화됨 (기본값: true)
-- 로그인 프로세스가 진행 중이 아님
-- 모달이 열려있지 않음
+The window is hidden when all of the following conditions are met:
+- The `advanced.hideOnBlur` setting is enabled (default: true)
+- The login process is not in progress
+- No modal is open
 
-### ESC 키 입력
+### ESC Key Press
 
-사용자가 ESC 키를 누르면 창이 숨겨집니다. 이는 렌더러 프로세스의 키보드 핸들러(`src/renderer/pages/toast/modules/keyboard.js`)에서 처리됩니다:
+When the user presses the ESC key, the window is hidden. This is handled by the renderer process's keyboard handler (`src/renderer/pages/toast/modules/keyboard.js`):
 
 ```javascript
 case 'Escape':
@@ -94,20 +94,20 @@ case 'Escape':
   break;
 ```
 
-또한 `src/renderer/preload/toast.js`의 `keydown` 핸들러에서도 모달 상태와 `advanced.hideOnEscape` 설정을 확인한 뒤 `hide-toast`를 전송합니다.
+In addition, the `keydown` handler in `src/renderer/preload/toast.js` also checks the modal state and the `advanced.hideOnEscape` setting before sending `hide-toast`.
 
-다음 조건이 충족될 때 창이 숨겨집니다:
-- `advanced.hideOnEscape` 설정이 활성화됨 (기본값: true)
-- 모달이 열려있지 않음
-- 설정 모드에서는 ESC가 설정 모드 토글에 사용됨
+The window is hidden when the following conditions are met:
+- The `advanced.hideOnEscape` setting is enabled (default: true)
+- No modal is open
+- In settings mode, ESC is used to toggle settings mode
 
-### 버튼 액션 실행 후
+### After Executing a Button Action
 
-버튼 액션이 성공적으로 완료된 후 창이 자동으로 숨겨집니다:
+After a button action completes successfully, the window is hidden automatically:
 
 ```javascript
 async function executeButton(button) {
-  // ... 액션 실행 코드 ...
+  // ... action execution code ...
 
   const result = await window.toast.executeAction(action);
   if (result.success) {
@@ -116,18 +116,18 @@ async function executeButton(button) {
       window.toast.hideWindow();
     }
   } else {
-    // 실패 처리
+    // Failure handling
   }
 }
 ```
 
-다음 조건이 충족될 때 창이 숨겨집니다:
-- `advanced.hideAfterAction` 설정이 활성화됨 (기본값: true)
-- 버튼 액션이 성공적으로 완료됨
+The window is hidden when the following conditions are met:
+- The `advanced.hideAfterAction` setting is enabled (default: true)
+- The button action completes successfully
 
-### 전역 단축키 토글
+### Global Shortcut Toggle
 
-전역 단축키는 창을 토글하는 기능을 합니다. 창이 표시되어 있을 때 같은 단축키를 누르면 창이 숨겨집니다:
+The global shortcut toggles the window. Pressing the same shortcut while the window is shown hides it:
 
 ```javascript
 function toggleToastWindow(toastWindow, config) {
@@ -139,23 +139,23 @@ function toggleToastWindow(toastWindow, config) {
   if (toastWindow.isVisible()) {
     toastWindow.hide();
   } else {
-    // 창 표시 로직...
+    // Window display logic...
   }
 }
 ```
 
-### 명시적 호출
+### Explicit Calls
 
-다음과 같은 명시적 호출로 창이 숨겨질 수 있습니다:
-- 닫기 버튼 클릭 시 `window.toast.hideWindow()` 호출
-- IPC 채널을 통한 `hide-toast` 이벤트 발생 시
-- 메인 프로세스에서 `hideToastWindow()` 함수 직접 호출 시
+The window can be hidden by the following explicit calls:
+- Calling `window.toast.hideWindow()` when the close button is clicked
+- When a `hide-toast` event occurs through the IPC channel
+- When the `hideToastWindow()` function is called directly in the main process
 
-## 창이 숨겨지지 않는 예외 상황
+## Exceptional Situations Where the Window Is Not Hidden
 
-### 모달 창이 열려있을 때
+### When a Modal Window Is Open
 
-모달 창이 열려있는 경우 토스트 창은 숨겨지지 않습니다. 이는 `ipc.js`에서 모달 상태를 추적하여 구현되어 있습니다:
+When a modal window is open, the toast window is not hidden. This is implemented in `ipc.js` by tracking the modal state:
 
 ```javascript
 let isModalOpen = false;
@@ -169,35 +169,35 @@ ipcMain.on('modal-state-changed', (event, open) => {
 });
 ```
 
-렌더러 프로세스에서는 모달이 열리거나 닫힐 때 이 상태를 업데이트합니다:
+The renderer process updates this state when a modal opens or closes:
 
 ```javascript
 function editButtonSettings(button) {
-  // ... 버튼 편집 모달을 열고 설정하는 코드 ...
+  // ... code that opens and configures the button edit modal ...
 
-  // 메인 프로세스에 모달이 열렸음을 알림
+  // Notify the main process that a modal is open
   window.toast.setModalOpen(true);
 
-  // 모달 표시
+  // Show the modal
   buttonEditModal.classList.add('show');
 }
 
 function closeButtonEditModal() {
-  // 메인 프로세스에 모달이 닫혔음을 알림
+  // Notify the main process that the modal is closed
   window.toast.setModalOpen(false);
 
   buttonEditModal.classList.remove('show');
 }
 ```
 
-이러한 방식으로 다음 모달이 열렸을 때 창 숨김이 방지됩니다:
-- 버튼 편집 모달
-- 사용자 프로필 모달
-- 기타 애플리케이션 모달
+In this way, hiding the window is prevented when the following modals are open:
+- Button edit modal
+- User profile modal
+- Other application modals
 
-### 로그인 진행 중일 때
+### When Login Is in Progress
 
-OAuth 인증 과정과 같이 로그인이 진행 중일 때는 창이 숨겨지지 않습니다:
+The window is not hidden while login is in progress, such as during the OAuth authentication process:
 
 ```javascript
 // windows.js
@@ -208,22 +208,22 @@ if (loginInProgress) {
 }
 ```
 
-로그인 상태는 `auth.js`와 `auth-manager.js`에서 관리되며, 인증 토큰 교환 과정이 완료될 때까지 유지됩니다.
+The login state is managed in `auth.js` and `auth-manager.js` and is maintained until the authentication token exchange process completes.
 
-### 설정에 따른 예외
+### Exceptions Based on Settings
 
-사용자가 특정 설정을 비활성화한 경우 해당 동작으로 인한 창 숨김이 발생하지 않습니다:
+If the user has disabled a specific setting, window hiding caused by that behavior does not occur:
 
-- `advanced.hideOnBlur`: false로 설정 시 창이 포커스를 잃어도 숨겨지지 않음
-- `advanced.hideOnEscape`: false로 설정 시 ESC 키를 눌러도 숨겨지지 않음
-- `advanced.hideAfterAction`: false로 설정 시 액션 실행 후에도 숨겨지지 않음
+- `advanced.hideOnBlur`: When set to false, the window is not hidden even when it loses focus
+- `advanced.hideOnEscape`: When set to false, the window is not hidden even when the ESC key is pressed
+- `advanced.hideAfterAction`: When set to false, the window is not hidden even after an action runs
 
-### 설정 모드에서 ESC 키 다른 용도로 사용 시
+### When the ESC Key Is Used for Another Purpose in Settings Mode
 
-설정 모드에서는 ESC 키가 창을 숨기는 대신 설정 모드를 종료하는 데 사용됩니다:
+In settings mode, the ESC key is used to exit settings mode instead of hiding the window:
 
 ```javascript
-// src/renderer/pages/toast/modules/keyboard.js에서
+// In src/renderer/pages/toast/modules/keyboard.js
 case 'Escape':
   // Exit edit mode when ESC key is pressed in settings mode
   // Note: Modal closing is handled separately when modal is open
@@ -234,11 +234,11 @@ case 'Escape':
   break;
 ```
 
-이 경우 창은 ESC 키 입력에도 불구하고 계속 표시됩니다.
+In this case, the window remains visible despite the ESC key press.
 
-## 관련 설정 옵션
+## Related Settings Options
 
-Toast App의 창 표시/숨김 동작은 `config.js`에 정의된 다음 설정을 통해 사용자가 제어할 수 있습니다:
+The Toast App's window show/hide behavior can be controlled by the user through the following settings defined in `config.js`:
 
 ```javascript
 advanced: {
@@ -275,22 +275,22 @@ advanced: {
 }
 ```
 
-### 설정 항목 설명
+### Settings Descriptions
 
-| 설정 | 기본값 | 설명 |
+| Setting | Default | Description |
 |------|--------|------|
-| `hideAfterAction` | `true` | 버튼 액션 실행 후 창 자동 숨김 여부 |
-| `hideOnBlur` | `true` | 창이 포커스를 잃을 때 창 자동 숨김 여부 |
-| `hideOnEscape` | `true` | ESC 키 입력 시 창 숨김 여부 |
-| `showInTaskbar` | `false` | 시스템 작업 표시줄에 앱 표시 여부 |
-| `launchAtLogin` | `false` | 시스템 시작 시 앱 자동 실행 여부 |
+| `hideAfterAction` | `true` | Whether to hide the window automatically after a button action runs |
+| `hideOnBlur` | `true` | Whether to hide the window automatically when it loses focus |
+| `hideOnEscape` | `true` | Whether to hide the window when the ESC key is pressed |
+| `showInTaskbar` | `false` | Whether to show the app in the system taskbar |
+| `launchAtLogin` | `false` | Whether to launch the app automatically when the system starts |
 
-## 결론
+## Conclusion
 
-Toast 앱의 창 표시/숨김 메커니즘은 사용자 경험을 최적화하기 위해 다양한 조건을 고려합니다. 기본적으로 앱은 다음 원칙을 따릅니다:
+The Toast app's window show/hide mechanism considers various conditions to optimize the user experience. By default, the app follows these principles:
 
-1. **최소 간섭**: 사용하지 않을 때는 자동으로 숨겨져서 작업 공간을 차지하지 않음
-2. **콘텍스트 인식**: 모달이 열려 있거나 로그인 중일 때는 예외적으로 표시 상태 유지
-3. **사용자 제어**: 설정을 통해 동작 방식 커스터마이징 가능
+1. **Minimal interference**: When not in use, it hides automatically so it does not take up workspace
+2. **Context awareness**: Exceptionally stays visible when a modal is open or during login
+3. **User control**: The behavior can be customized through settings
 
-이러한 동작은 사용자가 빠르게 앱에 접근하여 필요한 작업을 수행하고, 더 이상 필요하지 않을 때는 자동으로 사라지게 함으로써 원활한 작업 흐름을 제공합니다.
+This behavior provides a smooth workflow by letting users quickly access the app to perform needed tasks and having it disappear automatically when no longer needed.

@@ -1,225 +1,225 @@
-# Toast 앱 자동 업데이트
+# Toast App Auto-Update
 
-이 문서는 Toast 앱의 자동 업데이트 시스템과 사용자 경험에 대해 설명합니다.
+This document describes the Toast app's auto-update system and user experience.
 
-> **구현 상태**: ✅ 완전 구현됨
-> - 업데이트 확인, 다운로드, 설치 기능 모두 구현
-> - electron-updater 기반 자동 업데이트 시스템
-> - IPC를 통한 사용자 인터페이스 연동
+> **Implementation status**: ✅ Fully implemented
+> - Update check, download, and install features are all implemented
+> - Auto-update system based on electron-updater
+> - User interface integration via IPC
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [업데이트 아키텍처](#업데이트-아키텍처)
-  - [업데이트 배포 채널](#업데이트-배포-채널)
-  - [업데이트 구성 요소](#업데이트-구성-요소)
-- [사용자 업데이트 경험](#사용자-업데이트-경험)
-  - [업데이트 확인 및 알림](#업데이트-확인-및-알림)
-  - [다운로드 프로세스](#다운로드-프로세스)
-  - [설치 프로세스](#설치-프로세스)
-- [업데이트 구성](#업데이트-구성)
-  - [자동 업데이트 설정](#자동-업데이트-설정)
-  - [고급 구성 옵션](#고급-구성-옵션)
-- [업데이트 문제 해결](#업데이트-문제-해결)
-  - [일반적인 문제](#일반적인-문제)
-  - [수동 업데이트](#수동-업데이트)
-- [개발자 정보](#개발자-정보)
-  - [업데이트 메커니즘](#업데이트-메커니즘)
-  - [전자 서명 및 코드 사인](#전자-서명-및-코드-사인)
-  - [업데이트 메타데이터](#업데이트-메타데이터)
+- [Overview](#overview)
+- [Update Architecture](#update-architecture)
+  - [Update Distribution Channel](#update-distribution-channel)
+  - [Update Components](#update-components)
+- [User Update Experience](#user-update-experience)
+  - [Update Check and Notification](#update-check-and-notification)
+  - [Download Process](#download-process)
+  - [Install Process](#install-process)
+- [Update Configuration](#update-configuration)
+  - [Auto-Update Settings](#auto-update-settings)
+  - [Advanced Configuration Options](#advanced-configuration-options)
+- [Update Troubleshooting](#update-troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Manual Update](#manual-update)
+- [Developer Information](#developer-information)
+  - [Update Mechanism](#update-mechanism)
+  - [Digital Signing and Code Signing](#digital-signing-and-code-signing)
+  - [Update Metadata](#update-metadata)
 
-## 개요
+## Overview
 
-Toast 앱은 electron-updater 라이브러리를 사용하여 자동 업데이트 기능을 제공합니다. 시스템은 두 가지 방식으로 동작합니다:
+The Toast app provides auto-update functionality using the electron-updater library. The system operates in two ways:
 
-1. **자동 확인**: 앱 시작 5초 후 및 이후 4시간마다 백그라운드로 업데이트를 확인하고 알림 (`updater.js`)
-2. **사용자 제어**: 설정 창에서 수동으로 업데이트 확인, 다운로드, 설치 가능 (`updater.js`)
+1. **Automatic check**: Checks for updates in the background 5 seconds after the app starts and every 4 hours thereafter, and notifies the user (`updater.js`)
+2. **User control**: Manual update check, download, and install available from the settings window (`updater.js`)
 
-업데이트는 사용자 확인 후 다운로드되며 (`autoDownload: false`), 설치는 앱 재시작 시 자동으로 진행됩니다.
+Updates are downloaded after user confirmation (`autoDownload: false`), and installation proceeds automatically when the app restarts.
 
-## 업데이트 아키텍처
+## Update Architecture
 
-### 업데이트 배포 채널
+### Update Distribution Channel
 
-Toast 앱은 `latest` 채널(`autoUpdater.channel = 'latest'`)만 사용하며, 안정/베타와 같은 사용자 선택 채널은 제공하지 않습니다. 사전 릴리스(prerelease)는 개발 환경(`NODE_ENV === 'development'`)에서만 허용됩니다.
+The Toast app uses only the `latest` channel (`autoUpdater.channel = 'latest'`) and does not offer user-selectable channels such as stable/beta. Prereleases are allowed only in the development environment (`NODE_ENV === 'development'`).
 
-업데이트는 GitHub Releases를 통해 배포되며, 각 운영 체제에 대해 적절한 설치 파일이 제공됩니다.
+Updates are distributed through GitHub Releases, with an appropriate installer file provided for each operating system.
 
-### 업데이트 구성 요소
+### Update Components
 
-자동 업데이트 시스템은 다음 구성 요소로 이루어져 있습니다:
+The auto-update system consists of the following components:
 
-1. **업데이터 모듈** (`src/main/updater.js`): 백그라운드 업데이트 확인 및 다운로드를 관리합니다.
-2. **알림 시스템**: 사용자에게 새 업데이트 가용성을 알립니다.
-3. **다운로더**: 업데이트 패키지를 효율적으로 다운로드합니다.
-4. **인스톨러**: 다운로드된 업데이트를 적용합니다.
-5. **무결성 확인**: 다운로드된 패키지의 무결성과 신뢰성을 검증합니다.
+1. **Updater module** (`src/main/updater.js`): Manages background update checks and downloads.
+2. **Notification system**: Notifies the user of new update availability.
+3. **Downloader**: Efficiently downloads update packages.
+4. **Installer**: Applies downloaded updates.
+5. **Integrity verification**: Verifies the integrity and authenticity of downloaded packages.
 
-## 사용자 업데이트 경험
+## User Update Experience
 
-### 업데이트 확인 및 알림
+### Update Check and Notification
 
-Toast 앱은 다음과 같은 시점에 업데이트를 확인합니다:
+The Toast app checks for updates at the following times:
 
-1. **애플리케이션 시작 시**: 앱이 시작되고 5초 후 자동으로 업데이트를 확인합니다 (silent 모드, 프로덕션 환경에서만).
-2. **주기적 확인**: 앱 실행 중 4시간마다 백그라운드에서 자동으로 확인합니다 (프로덕션 환경에서만).
-3. **수동 확인**: 사용자가 설정 창에서 "업데이트 확인" 버튼을 클릭할 때.
+1. **On application start**: Automatically checks for updates 5 seconds after the app starts (silent mode, production environment only).
+2. **Periodic check**: Automatically checks in the background every 4 hours while the app is running (production environment only).
+3. **Manual check**: When the user clicks the "Check for updates" button in the settings window.
 
-새 업데이트가 발견되면:
+When a new update is found:
 
-1. **트레이 메뉴 표시**: 트레이 메뉴의 버전 항목이 `⬆ Update to v{버전}` 항목으로 바뀝니다. 클릭하면 즉시 다운로드 후 재시작·설치가 진행됩니다 (다운로드 중에는 `Downloading v{버전}…`, 다운로드 완료 상태에서는 `Restart to install v{버전}`으로 표시).
-2. **설정 표시**: 설정 창에 업데이트 정보가 표시됩니다.
-3. **앱 내 알림**: IPC를 통해 Toast 및 설정 윈도우에 업데이트 정보가 전송됩니다.
+1. **Tray menu display**: The version item in the tray menu changes to an `⬆ Update to v{version}` item. Clicking it immediately downloads, then restarts and installs (during download it shows `Downloading v{version}…`, and once download completes it shows `Restart to install v{version}`).
+2. **Settings display**: Update information is shown in the settings window.
+3. **In-app notification**: Update information is sent to the Toast and settings windows via IPC.
 
-알림에는 업데이트의 버전 번호, 변경 사항 요약 및 업데이트를 다운로드하고 설치하는 옵션이 포함됩니다.
+The notification includes the update's version number, a summary of changes, and options to download and install the update.
 
-### 다운로드 프로세스
+### Download Process
 
-업데이트 다운로드는 다음과 같이 진행됩니다:
+An update download proceeds as follows:
 
-1. **백그라운드 다운로드**: 사용자가 수락하면 백그라운드에서 다운로드됩니다 (`autoDownload: false` 설정으로 사용자 확인 필요).
-2. **진행 표시기**: 다운로드 중에는 다음 항목이 IPC를 통해 전송됩니다:
-   - 다운로드 진행률 (퍼센트)
-   - 현재 다운로드 속도
-   - 전송된 바이트 / 전체 바이트
+1. **Background download**: When the user accepts, it downloads in the background (`autoDownload: false` setting requires user confirmation).
+2. **Progress indicator**: During the download, the following items are sent via IPC:
+   - Download progress (percentage)
+   - Current download speed
+   - Bytes transferred / total bytes
 
-다운로드가 완료되면 사용자에게 알림이 표시되고 설치를 진행할 수 있는 옵션이 제공됩니다.
+When the download completes, the user is notified and given an option to proceed with installation.
 
-### 설치 프로세스
+### Install Process
 
-설치 과정은 운영 체제에 따라 다릅니다:
+The installation process differs by operating system:
 
 **Windows**:
-1. 사용자가 "지금 설치" 버튼을 클릭합니다.
-2. 앱이 종료됩니다.
-3. 업데이트가 설치됩니다.
-4. 앱이 자동으로 다시 시작됩니다.
+1. The user clicks the "Install now" button.
+2. The app quits.
+3. The update is installed.
+4. The app restarts automatically.
 
 **macOS**:
-1. 사용자가 "지금 설치" 버튼을 클릭합니다.
-2. 앱이 종료됩니다.
-3. 업데이트가 설치됩니다.
-4. 앱이 자동으로 다시 시작됩니다.
+1. The user clicks the "Install now" button.
+2. The app quits.
+3. The update is installed.
+4. The app restarts automatically.
 
 **Linux**:
-1. 사용자가 "지금 설치" 버튼을 클릭합니다.
-2. 앱이 종료됩니다.
-3. 업데이트가 설치됩니다.
-4. 앱이 자동으로 다시 시작됩니다.
+1. The user clicks the "Install now" button.
+2. The app quits.
+3. The update is installed.
+4. The app restarts automatically.
 
-사용자는 "나중에 설치" 옵션을 선택하여 업데이트를 연기할 수도 있습니다. 이 경우 별도의 확인 대화상자 없이 `autoInstallOnAppQuit: true` 설정에 따라 앱 종료 시 조용히 설치됩니다. (설치 여부를 묻는 대화상자는 `AUTO_INSTALL_UPDATES=true` 환경 변수가 설정된 경우, 다운로드 완료 시점에만 표시됩니다.)
+The user can also choose the "Install later" option to defer the update. In this case, without a separate confirmation dialog, it is installed silently on app quit according to the `autoInstallOnAppQuit: true` setting. (The dialog asking whether to install is shown only at download completion, and only when the `AUTO_INSTALL_UPDATES=true` environment variable is set.)
 
-## 업데이트 구성
+## Update Configuration
 
-### 자동 업데이트 설정
+### Auto-Update Settings
 
-현재 업데이트 동작은 `src/main/updater.js`에서 설정됩니다:
+The current update behavior is configured in `src/main/updater.js`:
 
-1. **자동 다운로드 비활성화**: `autoDownload: false` — 사용자 확인 후 다운로드
-2. **앱 종료 시 자동 설치**: `autoInstallOnAppQuit: true` — 다운로드된 업데이트가 있으면 앱 종료 시 설치
-3. **업데이트 채널**: `channel: 'latest'` — `latest` 채널로 고정 (사용자 선택 불가)
-4. **다운그레이드 방지**: `allowDowngrade: false` — 프로덕션 환경에서 다운그레이드 차단 (개발 환경에서만 허용)
+1. **Disable auto-download**: `autoDownload: false` — download after user confirmation
+2. **Auto-install on app quit**: `autoInstallOnAppQuit: true` — install downloaded updates when the app quits
+3. **Update channel**: `channel: 'latest'` — fixed to the `latest` channel (not user-selectable)
+4. **Prevent downgrade**: `allowDowngrade: false` — block downgrades in production (allowed only in development)
 
-## 업데이트 문제 해결
+## Update Troubleshooting
 
-### 일반적인 문제
+### Common Issues
 
-**업데이트 확인 실패**:
-1. 인터넷 연결을 확인하세요.
-2. 방화벽이 앱의 업데이트 서버 접근을 차단하고 있는지 확인하세요.
-3. 앱을 재시작하고 다시 시도하세요.
+**Update check failure**:
+1. Check your internet connection.
+2. Check whether a firewall is blocking the app's access to the update server.
+3. Restart the app and try again.
 
-**업데이트 다운로드 실패**:
-1. 디스크 공간이 충분한지 확인하세요.
-2. 인터넷 연결을 확인하세요.
-3. 방화벽 설정을 확인하세요.
-4. 앱을 재시작하고 다시 시도하세요.
+**Update download failure**:
+1. Check that there is enough disk space.
+2. Check your internet connection.
+3. Check your firewall settings.
+4. Restart the app and try again.
 
-**업데이트 설치 실패**:
-1. 앱을 완전히 종료하고 다시 시도하세요.
-2. 관리자 권한으로 앱을 실행해 보세요.
-3. 바이러스 백신 소프트웨어가 설치를 차단하고 있는지 확인하세요.
-4. macOS에서 게이트키퍼 문제가 있는 경우 수동 업데이트를 시도하세요.
+**Update install failure**:
+1. Fully quit the app and try again.
+2. Try running the app with administrator privileges.
+3. Check whether antivirus software is blocking the installation.
+4. If you have a Gatekeeper issue on macOS, try a manual update.
 
-### 수동 업데이트
+### Manual Update
 
-자동 업데이트가 실패하는 경우 수동 업데이트를 수행할 수 있습니다:
+If auto-update fails, you can perform a manual update:
 
-1. [GitHub Releases](https://github.com/opspresso/toast-app/releases)에서 최신 버전 다운로드
-2. 현재 설치된 Toast 앱 종료
-3. 다운로드한 설치 파일 실행:
-   - **Windows**: `.exe` 파일 실행
-   - **macOS**: `.dmg` 파일 마운트 후 앱을 Applications 폴더로 드래그
-   - **Linux**: 배포판에 따라 `.AppImage`, `.deb` 또는 `.rpm` 파일 설치
+1. Download the latest version from [GitHub Releases](https://github.com/opspresso/toast-app/releases)
+2. Quit the currently installed Toast app
+3. Run the downloaded installer file:
+   - **Windows**: Run the `.exe` file
+   - **macOS**: Mount the `.dmg` file and drag the app to the Applications folder
+   - **Linux**: Install the `.AppImage`, `.deb`, or `.rpm` file depending on your distribution
 
-## 개발자 정보
+## Developer Information
 
-### 업데이트 메커니즘
+### Update Mechanism
 
-Toast 앱의 자동 업데이트 시스템은 `electron-updater` 라이브러리를 사용하여 구현되었습니다. 
+The Toast app's auto-update system is implemented using the `electron-updater` library.
 
-#### 주요 구성 요소
+#### Key Components
 
-1. **app-update.yml / dev-app-update.yml**: 업데이트 서버 설정
-2. **src/main/updater.js**: 상세한 업데이트 로직 구현
-3. **src/main/ipc/updater.js**: IPC 핸들러를 통한 UI 연동
-4. **GitHub Releases**: 업데이트 배포 채널
+1. **app-update.yml / dev-app-update.yml**: Update server configuration
+2. **src/main/updater.js**: Detailed update logic implementation
+3. **src/main/ipc/updater.js**: UI integration via IPC handlers
+4. **GitHub Releases**: Update distribution channel
 
-#### 구현 특징
+#### Implementation Highlights
 
 ```javascript
-// src/main/updater.js — configureUpdater() 주요 설정
+// src/main/updater.js — key settings in configureUpdater()
 autoUpdater.appId = 'com.opspresso.toast-app';
-autoUpdater.forceDevUpdateConfig = true;  // 개발 환경에서도 업데이트 설정 적용
-autoUpdater.allowDowngrade = process.env.NODE_ENV === 'development';  // 개발 환경에서만 허용
-autoUpdater.allowPrerelease = process.env.NODE_ENV === 'development';  // 개발 환경에서만 허용
-autoUpdater.autoDownload = false;  // 사용자 확인 후 다운로드
-autoUpdater.autoInstallOnAppQuit = true;  // 앱 종료 시 자동 설치
-autoUpdater.channel = 'latest';  // 업데이트 채널 (고정)
+autoUpdater.forceDevUpdateConfig = true;  // Apply update config even in the dev environment
+autoUpdater.allowDowngrade = process.env.NODE_ENV === 'development';  // Allowed only in the dev environment
+autoUpdater.allowPrerelease = process.env.NODE_ENV === 'development';  // Allowed only in the dev environment
+autoUpdater.autoDownload = false;  // Download after user confirmation
+autoUpdater.autoInstallOnAppQuit = true;  // Auto-install on app quit
+autoUpdater.channel = 'latest';  // Update channel (fixed)
 
-// 주요 기능
-- checkForUpdates(silent): 업데이트 확인
-- downloadUpdate(): 업데이트 다운로드 (진행률 추적)
-- installUpdate(): 업데이트 설치 (quitAndInstall)
-- downloadAndInstallUpdate(version): 트레이 메뉴 원클릭 업그레이드 (다운로드 후 즉시 설치)
+// Key functions
+- checkForUpdates(silent): Check for updates
+- downloadUpdate(): Download the update (with progress tracking)
+- installUpdate(): Install the update (quitAndInstall)
+- downloadAndInstallUpdate(version): One-click upgrade from the tray menu (install immediately after download)
 ```
 
-#### IPC 핸들러
+#### IPC Handlers
 
 ```javascript
-// src/main/ipc/updater.js에서 제공하는 IPC 채널
-- 'check-for-updates': 업데이트 확인
-- 'check-latest-version': 최신 버전 정보 조회
-- 'download-update': 업데이트 다운로드
-- 'download-auto-update': 자동 다운로드
-- 'download-manual-update': 수동 다운로드
-- 'install-update': 업데이트 설치
-- 'install-auto-update': 자동 설치
+// IPC channels provided by src/main/ipc/updater.js
+- 'check-for-updates': Check for updates
+- 'check-latest-version': Query the latest version info
+- 'download-update': Download the update
+- 'download-auto-update': Auto-download
+- 'download-manual-update': Manual download
+- 'install-update': Install the update
+- 'install-auto-update': Auto-install
 ```
 
-#### 업데이트 이벤트 흐름
+#### Update Event Flow
 
-1. **앱 시작**: 5초 후 자동 업데이트 확인, 이후 4시간마다 반복 확인 (프로덕션 모드에서만, silent 모드)
-2. **업데이트 발견**: IPC를 통해 윈도우에 `update-available` 이벤트 전송, 트레이 메뉴에 업그레이드 항목 표시 (`tray.setUpdateState`)
-3. **다운로드**: 사용자 확인 후 백그라운드 다운로드 (`download-progress` 이벤트로 진행률 전송)
-4. **설치 준비**: 다운로드 완료 시 `update-downloaded` 이벤트 전송
-5. **설치**: `quitAndInstall(false, true)` 호출로 앱 재시작 후 업데이트 적용
+1. **App start**: Check for updates automatically after 5 seconds, then repeat every 4 hours (production mode only, silent mode)
+2. **Update found**: Send the `update-available` event to windows via IPC, and show an upgrade item in the tray menu (`tray.setUpdateState`)
+3. **Download**: Background download after user confirmation (progress sent via the `download-progress` event)
+4. **Install ready**: Send the `update-downloaded` event when the download completes
+5. **Install**: Call `quitAndInstall(false, true)` to restart the app and apply the update
 
-> `AUTO_INSTALL_UPDATES=true` 환경 변수가 설정된 경우, 다운로드 완료(`update-downloaded`) 시점에 재시작 및 설치 여부를 묻는 대화상자를 표시합니다.
+> When the `AUTO_INSTALL_UPDATES=true` environment variable is set, a dialog asking whether to restart and install is shown at download completion (`update-downloaded`).
 
-### 전자 서명 및 코드 사인
+### Digital Signing and Code Signing
 
-모든 Toast 앱 업데이트는 배포 전에 전자 서명됩니다:
+All Toast app updates are digitally signed before distribution:
 
-1. **Windows**: Authenticode 인증서로 서명
-2. **macOS**: Apple Developer ID 인증서로 서명 및 공증
-3. **Linux**: AppImage 및 Debian 패키지는 GPG로 서명
+1. **Windows**: Signed with an Authenticode certificate
+2. **macOS**: Signed and notarized with an Apple Developer ID certificate
+3. **Linux**: AppImage and Debian packages are signed with GPG
 
-이러한 서명을 통해 악의적인 수정이나 변조 위험으로부터 사용자를 보호합니다.
+These signatures protect users from the risk of malicious modification or tampering.
 
-### 업데이트 메타데이터
+### Update Metadata
 
-릴리스 메타데이터는 `update.yml` 파일에 저장되며 다음 정보를 포함합니다:
+Release metadata is stored in the `update.yml` file and includes the following information:
 
 ```yaml
 version: 0.9.2
@@ -236,11 +236,11 @@ sha512: <sha512-hash>
 releaseDate: '2025-12-01T00:00:00.000Z'
 ```
 
-이 메타데이터는 다음과 같은 역할을 합니다:
+This metadata serves the following roles:
 
-1. 사용 가능한 최신 버전 식별
-2. 다운로드할 올바른 파일 결정
-3. 다운로드된 파일의 무결성 확인
-4. 사용자에게 제공할 릴리스 정보 가져오기
+1. Identify the latest available version
+2. Determine the correct file to download
+3. Verify the integrity of the downloaded file
+4. Retrieve release information to present to the user
 
-개발자는 GitHub 릴리스 프로세스를 통해 이 메타데이터를 자동으로 생성할 수 있습니다. 이 프로세스는 `electron-builder` 도구에 의해 처리됩니다.
+Developers can generate this metadata automatically through the GitHub release process. This process is handled by the `electron-builder` tool.

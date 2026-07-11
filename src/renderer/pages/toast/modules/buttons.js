@@ -368,13 +368,13 @@ export function executeButton(button) {
   // Execute button action in normal mode
   showStatus('Executing...', 'info');
 
-  // 특별 명령어 처리 (꽃가루 애니메이션)
+  // Handle special commands (confetti animation)
   if (button.action === 'script' && button.scriptType === 'special' && button.script === 'confetti') {
-    // 꽃가루 애니메이션 실행
+    // Run confetti animation
     showStatus('🎉 Let it go!', 'success');
     window.confetti.start({
-      duration: 5, // 5초 동안 실행
-      density: 100, // 꽃가루 밀도
+      duration: 5, // Run for 5 seconds
+      density: 100, // Confetti density
     });
     return;
   }
@@ -571,7 +571,7 @@ function tryLoadExtractedIcon(iconElement, applicationPath, fallbackIcon) {
       }
     })
     .catch(error => {
-      console.warn(`아이콘 로드 실패 (${appName}):`, error);
+      console.warn(`Failed to load icon (${appName}):`, error);
       iconElement.textContent = fallbackIcon;
     });
 }

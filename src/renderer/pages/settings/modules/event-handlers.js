@@ -16,44 +16,44 @@ import { setupSnippetsEventListeners } from './snippets-settings.js';
  * Sets up all event listeners for UI controls, keyboard shortcuts, authentication events, configuration updates, and modal interactions in the Settings window.
  */
 export function setupEventListeners() {
-  window.settings.log.info('이벤트 리스너 설정 중...');
+  window.settings.log.info('Setting up event listeners...');
 
-  // 이벤트 핸들러 등록 상태 관리를 위한 전역 변수
+  // Global variable to manage event handler registration state
   let eventListenersInitialized = false;
 
-  // 마지막 이벤트 처리 시간 추적을 위한 변수들
+  // Variables to track the last event processing time
   let lastTabClickTime = 0;
   let lastEscKeyTime = 0;
 
-  // 이벤트 디바운싱을 위한 타이머 변수
+  // Timer variables for event debouncing
   let tabClickTimer = null;
   let escKeyTimer = null;
 
-  // 모든 이벤트 리스너를 관리하는 함수
+  // Function that manages all event listeners
   function registerAllEventListeners() {
-    // 이미 초기화되었다면 중복 등록 방지
+    // Prevent duplicate registration if already initialized
     if (eventListenersInitialized) {
-      window.settings.log.info('이벤트 리스너가 이미 초기화되어 있어 중복 등록을 건너뜁니다.');
+      window.settings.log.info('Event listeners are already initialized, skipping duplicate registration.');
       return;
     }
 
-    window.settings.log.info('모든 이벤트 리스너 등록 시작...');
+    window.settings.log.info('Starting registration of all event listeners...');
 
-    // 탭 클릭 이벤트 처리를 위한 이벤트 위임 패턴 사용
-    // 각 탭 요소에 직접 이벤트를 추가하는 대신 부모 요소인 .settings-nav에 이벤트를 추가
+    // Use event delegation pattern to handle tab click events
+    // Instead of adding events directly to each tab element, add the event to the parent .settings-nav
     const settingsNav = document.querySelector('.settings-nav');
     if (settingsNav) {
-      // 이전 이벤트 리스너를 모두 제거하기 위해 새 요소로 복제
+      // Clone into a new element to remove all previous event listeners
       const newNav = settingsNav.cloneNode(true);
       if (settingsNav.parentNode) {
         settingsNav.parentNode.replaceChild(newNav, settingsNav);
       }
 
-      // 이벤트 위임 방식으로 이벤트 리스너 등록
+      // Register event listener using event delegation
       newNav.addEventListener(
         'click',
         function (event) {
-          // li 요소 또는 li의 자식 요소를 클릭했는지 확인
+          // Check whether an li element or a child of an li was clicked
           let targetLi = event.target;
           while (targetLi && targetLi !== newNav) {
             if (targetLi.tagName === 'LI') {
@@ -62,36 +62,36 @@ export function setupEventListeners() {
             targetLi = targetLi.parentNode;
           }
 
-          // 클릭한 요소가 li가 아니면 무시
+          // Ignore if the clicked element is not an li
           if (!targetLi || targetLi === newNav) {
             return;
           }
 
-          // 이벤트 전파 완전 차단
+          // Completely block event propagation
           event.preventDefault();
           event.stopImmediatePropagation();
 
-          // 현재 시간 기록
+          // Record the current time
           const now = Date.now();
           const tabId = targetLi.getAttribute('data-tab');
 
-          // 이미 처리 중인 디바운스 타이머가 있다면 취소
+          // Cancel any debounce timer already in progress
           if (tabClickTimer) {
             clearTimeout(tabClickTimer);
           }
 
-          // 연속 클릭 방지 (300ms 이내 같은 탭)
+          // Prevent rapid consecutive clicks (same tab within 300ms)
           if (now - lastTabClickTime < 300) {
-            window.settings.log.info(`빠른 연속 클릭 감지됨 (${tabId}), 무시합니다.`);
+            window.settings.log.info(`Rapid consecutive click detected (${tabId}), ignoring.`);
             return;
           }
 
-          // 시간 업데이트
+          // Update time
           lastTabClickTime = now;
 
-          // 디바운싱 처리 (10ms 내에 처리가 집중되면 하나로 병합)
+          // Debounce handling (merge into one if processing concentrates within 10ms)
           tabClickTimer = setTimeout(() => {
-            window.settings.log.info(`탭 클릭 감지: ${tabId}`);
+            window.settings.log.info(`Tab click detected: ${tabId}`);
             switchTab(tabId);
             tabClickTimer = null;
           }, 10);
@@ -100,35 +100,35 @@ export function setupEventListeners() {
       );
     }
 
-    // ESC 키 이벤트 핸들러 (전역 핸들러)
+    // ESC key event handler (global handler)
     function handleEscKey(event) {
       if (event.key !== 'Escape' || isRecordingHotkey) {
         return;
       }
 
-      // 이벤트 전파 차단
+      // Block event propagation
       event.stopImmediatePropagation();
 
-      // 현재 시간 기록
+      // Record the current time
       const now = Date.now();
 
-      // 연속 키 입력 방지 (300ms 이내)
+      // Prevent rapid consecutive key input (within 300ms)
       if (now - lastEscKeyTime < 300) {
-        window.settings.log.info('빠른 연속 ESC 키 감지, 무시합니다.');
+        window.settings.log.info('Rapid consecutive ESC key detected, ignoring.');
         return;
       }
 
-      // 시간 업데이트
+      // Update time
       lastEscKeyTime = now;
 
-      // 이미 처리 중인 디바운스 타이머가 있다면 취소
+      // Cancel any debounce timer already in progress
       if (escKeyTimer) {
         clearTimeout(escKeyTimer);
       }
 
-      // 디바운싱 처리
+      // Debounce handling
       escKeyTimer = setTimeout(() => {
-        window.settings.log.info('ESC 키 감지 - 창 닫기 시도');
+        window.settings.log.info('ESC key detected - attempting to close window');
 
         if (unsavedChanges) {
           if (confirm('You have unsaved changes. Do you want to close without saving?')) {
@@ -143,23 +143,23 @@ export function setupEventListeners() {
       }, 10);
     }
 
-    // 기존 이벤트 리스너 제거 후 새로 등록
+    // Remove existing event listeners, then register anew
     document.removeEventListener('keydown', handleHotkeyRecording);
     document.removeEventListener('keydown', handleEscKey);
 
-    // 키보드 이벤트 리스너 등록
+    // Register keyboard event listeners
     document.addEventListener('keydown', handleEscKey, { capture: true });
     document.addEventListener('keydown', handleHotkeyRecording);
 
-    // 이벤트 초기화 완료 표시
+    // Mark event initialization complete
     eventListenersInitialized = true;
-    window.settings.log.info('모든 이벤트 리스너가 성공적으로 등록되었습니다.');
+    window.settings.log.info('All event listeners were registered successfully.');
   }
 
-  // 이벤트 리스너 등록 실행
+  // Execute event listener registration
   registerAllEventListeners();
 
-  // 일반 설정 이벤트 리스너
+  // General settings event listeners
   const recordHotkeyButton = document.getElementById('record-hotkey');
   const clearHotkeyButton = document.getElementById('clear-hotkey');
 
@@ -171,33 +171,33 @@ export function setupEventListeners() {
     clearHotkeyButton.addEventListener('click', clearHotkey);
   }
 
-  // 설정 변경 즉시 저장을 위한 이벤트 리스너
-  // 일반 설정
+  // Event listeners to save settings immediately on change
+  // General settings
   if (launchAtLoginCheckbox) {
     launchAtLoginCheckbox.addEventListener('change', () => {
-      window.settings.log.info('로그인 시 실행 설정 변경:', launchAtLoginCheckbox.checked);
+      window.settings.log.info('Launch at login setting changed:', launchAtLoginCheckbox.checked);
       window.settings.setConfig('advanced.launchAtLogin', launchAtLoginCheckbox.checked);
     });
   }
 
-  // 각 모듈별 이벤트 리스너 설정
+  // Set up event listeners for each module
   setupAppearanceEventListeners();
   setupAdvancedEventListeners();
   setupAccountEventListeners();
   setupAboutEventListeners();
   setupSnippetsEventListeners();
 
-  // Hotkey 녹화 이벤트 리스너는 이미 위에서 등록됨
+  // Hotkey recording event listener is already registered above
   document.addEventListener('keydown', handleHotkeyRecording);
 
-  window.settings.log.info('이벤트 리스너 설정 완료');
+  window.settings.log.info('Event listener setup complete');
 }
 
 /**
  * Confirm cancel changes
  */
 export function confirmCancel() {
-  window.settings.log.info('설정 취소');
+  window.settings.log.info('Cancel settings');
 
   if (unsavedChanges) {
     if (confirm('You have unsaved changes. Do you want to close without saving?')) {
@@ -213,7 +213,7 @@ export function confirmCancel() {
  * Save settings
  */
 export function saveSettings() {
-  window.settings.log.info('설정 저장 시작');
+  window.settings.log.info('Starting to save settings');
 
   try {
     const globalHotkeyInput = document.getElementById('global-hotkey');
@@ -226,7 +226,7 @@ export function saveSettings() {
     const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');
     const showInTaskbarCheckbox = document.getElementById('show-in-taskbar');
 
-    // 설정 객체 생성
+    // Create settings object
     const settings = {
       globalHotkey: globalHotkeyInput ? globalHotkeyInput.value : '',
       appearance: {
@@ -245,19 +245,19 @@ export function saveSettings() {
       },
     };
 
-    // 설정 저장
+    // Save settings
     window.settings.setConfig('globalHotkey', settings.globalHotkey);
     window.settings.setConfig('appearance', settings.appearance);
     window.settings.setConfig('advanced', settings.advanced);
 
-    // 변경 사항 플래그 초기화
+    // Reset the unsaved changes flag
     import('./state.js').then(({ clearUnsavedChanges }) => {
       clearUnsavedChanges();
     });
 
-    window.settings.log.info('설정 저장 완료');
+    window.settings.log.info('Settings saved successfully');
   }
   catch (error) {
-    window.settings.log.error('설정 저장 중 오류:', error);
+    window.settings.log.error('Error occurred while saving settings:', error);
   }
 }

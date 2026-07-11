@@ -7,53 +7,53 @@
 const { globalShortcut } = require('electron');
 const { createLogger } = require('./logger');
 
-// 모듈별 로거 생성
+// Create module-specific logger
 const logger = createLogger('Shortcuts');
 
 /**
- * 단축키 형식을 Electron 형식으로 변환
- * @param {string} hotkey - 사용자 정의 단축키
- * @returns {string} Electron 형식 단축키
+ * Convert a hotkey string to Electron format
+ * @param {string} hotkey - User-defined hotkey
+ * @returns {string} Hotkey in Electron format
  */
 function convertHotkeyToElectronFormat(hotkey) {
   if (!hotkey) {
     return '';
   }
 
-  // 변환 전 원본 핫키 로깅
+  // Log the original hotkey before conversion
   logger.info(`Converting hotkey format: "${hotkey}"`);
 
-  // 특수 케이스 처리 - 스페이스 키가 포함된 경우
+  // Handle special case - when the Space key is included
   if (hotkey.includes('+ ') || hotkey.endsWith('+ ')) {
-    // '+ '를 '+Space'로 변환
+    // Convert '+ ' to '+Space'
     hotkey = hotkey.replace(/\+ (?=\+|$)/g, '+Space');
     hotkey = hotkey.replace(/\+ $/g, '+Space');
-    logger.info(`스페이스 키 포함 감지, 변환된 형식: "${hotkey}"`);
+    logger.info(`Space key detected, converted format: "${hotkey}"`);
   }
 
-  // 또한 마지막 부분이 공백인 경우 ('Alt+'와 같은 경우) 이것도 확인
+  // Also check when the last part is empty (e.g. 'Alt+')
   if (hotkey.endsWith('+')) {
-    // 유효하지 않은 핫키 형식
-    logger.warn(`유효하지 않은 핫키 형식 감지: "${hotkey}"`);
+    // Invalid hotkey format
+    logger.warn(`Invalid hotkey format detected: "${hotkey}"`);
     return '';
   }
 
-  // 공백 제거 및 분할
+  // Trim whitespace and split
   const parts = hotkey.split('+').map(part => part.trim());
 
-  // 변환된 부분들을 보관할 배열
+  // Array to hold the converted parts
   const convertedParts = [];
 
-  // 모디파이어 키와 일반 키 분리
+  // Separate modifier keys from the main key
   const modifiers = [];
   let mainKey = '';
 
   for (const part of parts) {
     if (!part) {
       continue;
-    } // 빈 부분 건너뛰기
+    } // Skip empty parts
 
-    // 모디파이어 키 처리
+    // Handle modifier keys
     if (part === 'Ctrl' || part === 'Control') {
       modifiers.push('CommandOrControl');
     }
@@ -67,8 +67,8 @@ function convertHotkeyToElectronFormat(hotkey) {
       modifiers.push('Super');
     }
     else {
-      // 일반 키 처리 (소문자로 변환)
-      // Space 키는 그대로 space로 변환
+      // Handle the main key (convert to lowercase)
+      // Convert the Space key to 'space'
       if (part === 'Space') {
         mainKey = 'space';
       }
@@ -78,22 +78,22 @@ function convertHotkeyToElectronFormat(hotkey) {
     }
   }
 
-  // 모디파이어 키가 하나도 없거나 일반 키가 없는 경우 - 유효하지 않은 핫키
+  // No modifier key or no main key - invalid hotkey
   if (modifiers.length === 0 || !mainKey) {
-    logger.warn(`유효하지 않은 핫키 구성 감지: 모디파이어=${modifiers.join(',')}, 일반키=${mainKey}`);
+    logger.warn(`Invalid hotkey configuration detected: modifiers=${modifiers.join(',')}, mainKey=${mainKey}`);
     return '';
   }
 
-  // 모디파이어 키가 있으면 먼저 추가
+  // Add the modifier keys first, if any
   convertedParts.push(...modifiers);
 
-  // 일반 키가 있으면 마지막에 추가
+  // Add the main key last, if any
   convertedParts.push(mainKey);
 
-  // 변환된 단축키 형식
+  // Converted hotkey format
   const electronHotkey = convertedParts.join('+');
 
-  // 변환 결과 로깅
+  // Log the conversion result
   logger.info(`Converted hotkey: "${hotkey}" -> "${electronHotkey}"`);
 
   return electronHotkey;
@@ -118,7 +118,7 @@ function registerGlobalShortcuts(config, windows) {
       return false;
     }
 
-    // 핫키 형식 변환
+    // Convert the hotkey format
     const electronHotkey = convertHotkeyToElectronFormat(originalHotkey);
 
     if (!electronHotkey) {

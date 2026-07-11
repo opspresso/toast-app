@@ -52,9 +52,9 @@ export function applyAccentColor(accentColor) {
 }
 
 /**
- * 파일 크기를 읽기 쉬운 형식으로 변환
- * @param {number} bytes - 바이트 수
- * @returns {string} 변환된 문자열 (예: 1.5 MB)
+ * Convert file size to a human-readable format
+ * @param {number} bytes - Number of bytes
+ * @returns {string} Converted string (e.g., 1.5 MB)
  */
 export function formatFileSize(bytes) {
   if (bytes === 0) {
@@ -73,22 +73,22 @@ export function formatFileSize(bytes) {
  * @param {Object} subscription - Subscription information
  */
 export function saveSubscriptionToConfig(subscription) {
-  // expiresAt은 문자열이어야 함
+  // expiresAt must be a string
   let expiresAtStr = null;
   if (subscription.subscribed_until || subscription.expiresAt) {
-    // 먼저 유효한 값이 있는 필드 선택
+    // First select the field that has a valid value
     const expiresValue = subscription.expiresAt || subscription.subscribed_until;
 
-    // 날짜 객체인 경우 ISO 문자열로 변환
+    // Convert to ISO string if it is a Date object
     if (expiresValue instanceof Date) {
       expiresAtStr = expiresValue.toISOString();
     }
     else if (typeof expiresValue === 'number') {
-      // 숫자(타임스탬프)인 경우 ISO 문자열로 변환
+      // Convert to ISO string if it is a number (timestamp)
       expiresAtStr = new Date(expiresValue).toISOString();
     }
     else if (typeof expiresValue === 'string') {
-      // 이미 문자열인 경우 그대로 사용
+      // Use as-is if it is already a string
       expiresAtStr = expiresValue;
     }
   }
@@ -111,7 +111,7 @@ export function saveSubscriptionToConfig(subscription) {
  * Handle token expiration
  */
 export function handleTokenExpired() {
-  window.settings.log.info('토큰 만료 감지, 로그아웃 처리');
+  window.settings.log.info('Token expiration detected, handling logout');
   // Import logout handler dynamically to avoid circular dependency
   import('./account-settings.js').then(({ handleLogout }) => {
     handleLogout();

@@ -1,7 +1,7 @@
 /**
  * Toast - Authentication Manager Tests
  *
- * 인증 관리자 모듈에 대한 단위 테스트
+ * Unit tests for the authentication manager module
  */
 
 // Mock dependencies

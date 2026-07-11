@@ -1,26 +1,26 @@
-# Toast 앱 환경 변수
+# Toast App Environment Variables
 
-이 문서는 Toast 앱에서 실제로 사용하는 환경 변수를 설명합니다.
+This document describes the environment variables that the Toast app actually uses.
 
-## 목차
+## Table of Contents
 
-- [환경 변수 설정 방법](#환경-변수-설정-방법)
-- [인증 관련 변수](#인증-관련-변수)
-- [클라우드 동기화 변수](#클라우드-동기화-변수)
-- [애플리케이션 설정 변수](#애플리케이션-설정-변수)
+- [How to Set Environment Variables](#how-to-set-environment-variables)
+- [Authentication Variables](#authentication-variables)
+- [Token Expiration Variables](#token-expiration-variables)
+- [Application Settings Variables](#application-settings-variables)
 
-## 환경 변수 설정 방법
+## How to Set Environment Variables
 
-환경 변수는 다음 방법으로 설정할 수 있습니다:
+Environment variables can be set in the following ways:
 
-### 1. .env 파일 사용 (권장)
+### 1. Using a .env file (recommended)
 
-`src/main/config/` 디렉토리에 `.env` 또는 `.env.local` 파일을 생성하여 환경 변수를 설정합니다.
+Create a `.env` or `.env.local` file in the `src/main/config/` directory to set environment variables.
 
-**로딩 우선순위**: `.env.local` (로컬 개발 환경) > `.env` (기본 환경)
+**Loading priority**: `.env.local` (local development environment) > `.env` (default environment)
 
 ```bash
-# .env 파일 예시
+# .env file example
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
 TOAST_URL=https://app.toast.sh
@@ -29,16 +29,16 @@ NODE_ENV=production
 ```
 
 ```bash
-# .env.local 파일 예시 (로컬 개발 시 .env보다 우선 적용)
+# .env.local file example (takes priority over .env during local development)
 CLIENT_ID=local_development_client_id
 CLIENT_SECRET=local_development_client_secret
 TOAST_URL=http://localhost:3000
 NODE_ENV=development
 ```
 
-### 2. 시스템 환경 변수
+### 2. System environment variables
 
-운영체제의 환경 변수로 설정:
+Set them as operating system environment variables:
 
 ```bash
 # macOS/Linux
@@ -50,111 +50,111 @@ set CLIENT_ID=your_client_id
 set TOKEN_EXPIRES_IN=31536000
 ```
 
-## 인증 관련 변수
+## Authentication Variables
 
-사용자 인증 및 API 통신에 사용되는 환경 변수들입니다.
+These are the environment variables used for user authentication and API communication.
 
-| 변수명 | 기본값 | 설명 | 예시 |
+| Variable | Default | Description | Example |
 |--------|--------|------|------|
-| `CLIENT_ID` | - | OAuth 클라이언트 ID | `toast_app_client_id` |
-| `CLIENT_SECRET` | - | OAuth 클라이언트 시크릿 | `your_client_secret` |
-| `CONFIG_SUFFIX` | - | 여러 인스턴스를 동시 실행할 때 인증 토큰 파일(`auth-tokens-${CONFIG_SUFFIX}.json`)과 설정 스토어(`config-${CONFIG_SUFFIX}.json`)를 함께 격리 (미설정 시 각각 `auth-tokens.json`, `config.json`) | `dev` |
+| `CLIENT_ID` | - | OAuth client ID | `toast_app_client_id` |
+| `CLIENT_SECRET` | - | OAuth client secret | `your_client_secret` |
+| `CONFIG_SUFFIX` | - | When running multiple instances simultaneously, isolates the auth token file (`auth-tokens-${CONFIG_SUFFIX}.json`) and the settings store (`config-${CONFIG_SUFFIX}.json`) together (defaults to `auth-tokens.json` and `config.json` respectively when unset) | `dev` |
 
-### 인증 변수 설정 예시
+### Authentication Variable Example
 
 ```bash
-# 개발 환경
+# Development environment
 CLIENT_ID=development_client_id
 CLIENT_SECRET=development_client_secret
 
-# 프로덕션 환경
+# Production environment
 CLIENT_ID=production_client_id
 CLIENT_SECRET=production_client_secret
 ```
 
-## 토큰 만료 변수
+## Token Expiration Variables
 
-OAuth 액세스 토큰 만료 시간의 폴백 값으로 사용되는 환경 변수입니다 (서버의 `expires_in` 응답이 항상 우선).
+This environment variable is used as the fallback value for the OAuth access token expiration time (the server's `expires_in` response always takes priority).
 
-| 변수명 | 기본값 | 설명 | 예시 |
+| Variable | Default | Description | Example |
 |--------|--------|------|------|
-| `TOKEN_EXPIRES_IN` | `31536000` | 토큰 만료 시간 (초 단위, 음수는 무기한) | `86400` |
+| `TOKEN_EXPIRES_IN` | `31536000` | Token expiration time (in seconds; negative means indefinite) | `86400` |
 
-### 토큰 만료 시간 설정
+### Setting the Token Expiration Time
 
 ```bash
-# 1년 (기본값)
+# 1 year (default)
 TOKEN_EXPIRES_IN=31536000
 
-# 무기한 (음수 값)
+# Indefinite (negative value)
 TOKEN_EXPIRES_IN=-1
 
-# 30일
+# 30 days
 TOKEN_EXPIRES_IN=2592000
 
-# 1일
+# 1 day
 TOKEN_EXPIRES_IN=86400
 
-# 1시간
+# 1 hour
 TOKEN_EXPIRES_IN=3600
 ```
 
-**토큰 만료 시간 설명**:
-- 서버 응답의 `expires_in` 값이 항상 우선 적용되며, `TOKEN_EXPIRES_IN`은 서버가 값을 주지 않을 때의 fallback입니다.
-- **31536000**: 1년 (기본 설정)
-- **음수 값(-1)**: 무제한(사실상 영구) 토큰으로 설정
-- **0**: falsy 값으로 처리되어 기본값(1년)으로 대체됨
-- **양수 값**: 해당 초 단위만큼 토큰 유효
+**Token expiration time details**:
+- The `expires_in` value in the server response always takes priority; `TOKEN_EXPIRES_IN` is the fallback for when the server does not provide a value.
+- **31536000**: 1 year (default setting)
+- **Negative value (-1)**: Sets the token as unlimited (effectively permanent)
+- **0**: Treated as a falsy value and replaced with the default (1 year)
+- **Positive value**: The token is valid for that number of seconds
 
-## 애플리케이션 설정 변수
+## Application Settings Variables
 
-애플리케이션 기본 설정에 사용되는 환경 변수들입니다.
+These are the environment variables used for the application's basic settings.
 
-| 변수명 | 기본값 | 설명 | 예시 |
+| Variable | Default | Description | Example |
 |--------|--------|------|------|
-| `TOAST_URL` | `https://app.toast.sh` | Toast 웹 서비스 URL | `https://app.toast.sh` |
-| `NODE_ENV` | - | 실행 환경 모드 (development/production) | `development` |
-| `AUTO_INSTALL_UPDATES` | - | `true`이면 업데이트 다운로드 완료 시 자동 설치 | `true` |
+| `TOAST_URL` | `https://app.toast.sh` | Toast web service URL | `https://app.toast.sh` |
+| `NODE_ENV` | - | Runtime environment mode (development/production) | `development` |
+| `AUTO_INSTALL_UPDATES` | - | If `true`, installs updates automatically once the download completes | `true` |
 
-### NODE_ENV 설정
+### NODE_ENV Setting
 
-`NODE_ENV` 환경 변수는 애플리케이션의 실행 모드를 결정합니다:
+The `NODE_ENV` environment variable determines the application's runtime mode:
 
-- **development**: 개발 모드로 실행 (상세한 로그, 자동 업데이트 비활성화)
-- **production**: 프로덕션 모드로 실행 (최소 로그, 자동 업데이트 활성화)
+- **development**: Runs in development mode (verbose logging, auto-update disabled)
+- **production**: Runs in production mode (minimal logging, auto-update enabled)
 
 ```bash
-# 개발 모드로 실행
+# Run in development mode
 NODE_ENV=development npm start
-# 또는
+# or
 npm run dev
 
-# 프로덕션 모드로 실행
+# Run in production mode
 npm start
 ```
 
-**주요 영향:**
-- 자동 업데이트: `NODE_ENV !== 'development'`일 때만 활성화
-- 로그 레벨: 개발 모드에서 더 상세한 로그 출력
-- 환경 변수 로그: 테스트 모드(`NODE_ENV === 'test'`)에서는 환경 변수 로딩 로그 비활성화
+**Key effects:**
+- Auto-update: Enabled only when `NODE_ENV !== 'development'`
+- Log level: More verbose logging in development mode
+- Environment variable logging: In test mode (`NODE_ENV === 'test'`), logging of environment variable loading is disabled
 
-### 애플리케이션 설정 예시
+### Application Settings Example
 
 ```bash
-# 프로덕션 환경
+# Production environment
 TOAST_URL=https://app.toast.sh
 
-# 개발 환경 (로컬 서버 사용 시)
+# Development environment (when using a local server)
 NODE_ENV=development
 TOAST_URL=http://localhost:3000
 ```
 
-## 환경별 설정 예시
+## Per-Environment Configuration Examples
 
-### 기본 환경 (.env)
+### Default Environment (.env)
 
 ```bash
-# 프로덕션 환경 기본 설정
+# Default production environment settings
 CLIENT_ID=production_client_id
 CLIENT_SECRET=production_client_secret
 TOAST_URL=https://app.toast.sh
@@ -162,12 +162,12 @@ TOKEN_EXPIRES_IN=31536000
 NODE_ENV=production
 ```
 
-### 로컬 개발 환경 (.env.local)
+### Local Development Environment (.env.local)
 
-`.env.local` 파일은 `.env`보다 우선 적용되며, Git에서 무시됩니다:
+The `.env.local` file takes priority over `.env` and is ignored by Git:
 
 ```bash
-# 로컬 개발 환경 설정 (프로덕션 설정 덮어쓰기)
+# Local development environment settings (overrides production settings)
 CLIENT_ID=development_client_id
 CLIENT_SECRET=development_client_secret
 TOAST_URL=http://localhost:3000
@@ -175,44 +175,44 @@ TOKEN_EXPIRES_IN=86400
 NODE_ENV=development
 ```
 
-## 보안 고려사항
+## Security Considerations
 
-1. **민감한 정보 보호**:
-   - `.env` 파일을 `.gitignore`에 추가
-   - `CLIENT_SECRET`은 절대 공개 저장소에 커밋하지 않음
-   - 프로덕션 환경에서는 시스템 환경 변수 사용 권장
+1. **Protecting sensitive information**:
+   - Add the `.env` file to `.gitignore`
+   - Never commit `CLIENT_SECRET` to a public repository
+   - In production environments, using system environment variables is recommended
 
-2. **환경별 분리**:
-   - 개발, 테스트, 프로덕션 환경별로 다른 클라이언트 ID/시크릿 사용
-   - 각 환경에 맞는 TOAST_URL 설정
+2. **Separation by environment**:
+   - Use different client IDs/secrets for development, test, and production environments
+   - Set the appropriate TOAST_URL for each environment
 
-3. **기본값 설정**:
-   - 필수 변수가 없을 때 명확한 오류 메시지 표시
-   - TOKEN_EXPIRES_IN은 기본값 제공
+3. **Setting defaults**:
+   - Display a clear error message when a required variable is missing
+   - Provide a default for TOKEN_EXPIRES_IN
 
-## 문제 해결
+## Troubleshooting
 
-### 환경 변수가 인식되지 않는 경우
+### When environment variables are not recognized
 
-1. `.env` 파일 위치 확인: `src/main/config/.env`
-2. 파일 인코딩 확인: UTF-8
-3. 변수명에 공백이나 특수문자 없는지 확인
-4. 애플리케이션 재시작
+1. Check the `.env` file location: `src/main/config/.env`
+2. Check the file encoding: UTF-8
+3. Ensure there are no spaces or special characters in variable names
+4. Restart the application
 
-### 인증 오류가 발생하는 경우
+### When authentication errors occur
 
-1. `CLIENT_ID`와 `CLIENT_SECRET` 값 확인
-2. Toast 웹 서비스에서 발급받은 정확한 값인지 확인
-3. 환경별로 올바른 클라이언트 정보 사용 여부 확인
+1. Verify the `CLIENT_ID` and `CLIENT_SECRET` values
+2. Verify they are the exact values issued by the Toast web service
+3. Verify that the correct client information is used for each environment
 
-### 토큰 관련 문제
+### Token-related problems
 
-1. `TOKEN_EXPIRES_IN` 값이 올바른 형식인지 확인 (숫자)
-2. 무기한 토큰 설정 시 0 또는 음수 값 사용
-3. 토큰 만료 시간이 너무 짧지 않은지 확인
+1. Verify the `TOKEN_EXPIRES_IN` value is in the correct format (a number)
+2. Use 0 or a negative value to set an indefinite token
+3. Verify the token expiration time is not too short
 
-## 관련 문서
+## Related Documents
 
-- [개발 가이드](../development/setup.md) - 개발 환경 설정
-- [클라우드 동기화](../features/cloud-sync.md) - 동기화 관련 환경 변수
-- [구성 스키마](./schema.md) - 애플리케이션 구성 옵션
+- [Development Guide](../development/setup.md) - Setting up the development environment
+- [Cloud Sync](../features/cloud-sync.md) - Sync-related environment variables
+- [Configuration Schema](./schema.md) - Application configuration options

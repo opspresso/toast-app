@@ -1,42 +1,42 @@
-# Toast 앱 사용자 가이드
+# Toast App User Guide
 
-이 가이드는 Toast 앱의 사용 방법을 상세히 설명합니다. UI 구성요소, 기능, 일반적인 사용 시나리오를 다룹니다.
+This guide explains how to use the Toast app in detail. It covers the UI components, features, and common usage scenarios.
 
-## 목차
+## Table of Contents
 
-- [UI 구성요소](#ui-구성요소)
-  - [Toast 윈도우](#toast-윈도우)
-  - [설정 윈도우](#설정-윈도우)
-  - [시스템 트레이 메뉴](#시스템-트레이-메뉴)
-- [기본 기능](#기본-기능)
-  - [전역 단축키](#전역-단축키)
-  - [페이지 및 버튼](#페이지-및-버튼)
-  - [액션 유형](#액션-유형)
-  - [네비게이션](#네비게이션)
-- [사용 시나리오](#사용-시나리오)
-  - [첫 설정](#첫-설정)
-  - [애플리케이션 열기](#애플리케이션-열기)
-  - [웹사이트 열기](#웹사이트-열기)
-  - [셸 명령 실행](#셸-명령-실행)
-  - [사용자 정의 스크립트 실행](#사용자-정의-스크립트-실행)
-  - [구성 가져오기 및 내보내기](#구성-가져오기-및-내보내기)
-- [인증 및 구독](#인증-및-구독)
-  - [계정 등급 및 혜택](#계정-등급-및-혜택)
-  - [인증 과정](#인증-과정)
-  - [클라우드 동기화](#클라우드-동기화)
-- [고급 사용법](#고급-사용법)
-  - [외관 사용자 지정](#외관-사용자-지정)
-  - [고급 구성](#고급-구성)
-  - [워크플로우 통합](#워크플로우-통합)
-- [문제 해결](#문제-해결)
+- [UI Components](#ui-components)
+  - [Toast Window](#toast-window)
+  - [Settings Window](#settings-window)
+  - [System Tray Menu](#system-tray-menu)
+- [Basic Features](#basic-features)
+  - [Global Shortcut](#global-shortcut)
+  - [Pages and Buttons](#pages-and-buttons)
+  - [Action Types](#action-types)
+  - [Navigation](#navigation)
+- [Usage Scenarios](#usage-scenarios)
+  - [First-Time Setup](#first-time-setup)
+  - [Opening an Application](#opening-an-application)
+  - [Opening a Website](#opening-a-website)
+  - [Running a Shell Command](#running-a-shell-command)
+  - [Running a Custom Script](#running-a-custom-script)
+  - [Importing and Exporting Configuration](#importing-and-exporting-configuration)
+- [Authentication and Subscription](#authentication-and-subscription)
+  - [Account Tiers and Benefits](#account-tiers-and-benefits)
+  - [Authentication Process](#authentication-process)
+  - [Cloud Sync](#cloud-sync)
+- [Advanced Usage](#advanced-usage)
+  - [Customizing Appearance](#customizing-appearance)
+  - [Advanced Configuration](#advanced-configuration)
+  - [Workflow Integration](#workflow-integration)
+- [Troubleshooting](#troubleshooting)
 
-## UI 구성요소
+## UI Components
 
-### Toast 윈도우
+### Toast Window
 
-Toast 윈도우는 사용자가 액션을 실행하기 위해 상호작용하는 주요 인터페이스입니다.
+The Toast window is the primary interface that users interact with to run actions.
 
-#### 레이아웃
+#### Layout
 
 ```
 ┌───────────────────────────────────────────────────────────┐
@@ -64,31 +64,31 @@ Toast 윈도우는 사용자가 액션을 실행하기 위해 상호작용하는
 │ │Calendar Z│   │ Chat X  │   │ Stats C │   │Network V│     │
 │ └─────────┘   └─────────┘   └─────────┘   └─────────┘     │
 │                                                           │
-│ 상태: 준비됨                               👤  📝  ⚙️   │
+│ Status: Ready                              👤  📝  ⚙️   │
 └───────────────────────────────────────────────────────────┘
 ```
 
-#### 구성요소
+#### Components
 
-- **헤더**: 윈도우 제목, 현재 시각(HH:MM:SS), 닫기 버튼
-- **페이지 네비게이션**: 페이지 간 전환을 위한 번호 버튼 및 페이지 추가/제거 버튼
-- **버튼 그리드**: 구성된 버튼을 그리드 레이아웃으로 표시
-- **상태 표시줄**: 마지막 액션의 상태와 사용자 버튼(👤), 편집 모드 토글(📝), 설정 버튼(⚙️)
+- **Header**: Window title, current time (HH:MM:SS), and close button
+- **Page Navigation**: Numbered buttons for switching between pages, plus add/remove page buttons
+- **Button Grid**: Displays the configured buttons in a grid layout
+- **Status Bar**: The status of the last action, along with the user button (👤), edit mode toggle (📝), and settings button (⚙️)
 
-### 설정 윈도우
+### Settings Window
 
-설정 윈도우는 애플리케이션을 구성하기 위한 인터페이스입니다.
+The Settings window is the interface for configuring the application.
 
-#### 레이아웃
+#### Layout
 
 ```
 ┌─────────────┬───────────────────────────────────────────────┐
 │             │                                               │
 │  Settings   │  Settings                                     │
 │             │                                               │
-│  Account    │  전역 단축키: [Alt+Space]  [기록] [지우기]    │
+│  Account    │  Global Shortcut: [Alt+Space]  [Record] [Clear]│
 │             │                                               │
-│  Snippets   │  ☑ 로그인 시 시작                             │
+│  Snippets   │  ☑ Launch at login                            │
 │             │                                               │
 │  About      │                                               │
 │             │                                               │
@@ -104,15 +104,15 @@ Toast 윈도우는 사용자가 액션을 실행하기 위해 상호작용하는
 └─────────────┴───────────────────────────────────────────────┘
 ```
 
-#### 구성요소
+#### Components
 
-- **사이드바**: Settings(일반·외관·고급), Account(계정·구독·클라우드 동기화), Snippets, About 탭
-- **메인 콘텐츠**: 선택한 탭에 따른 설정 옵션
-- **버튼 편집기**: 버튼 속성을 편집하기 위한 대화 상자
+- **Sidebar**: Settings (General · Appearance · Advanced), Account (account · subscription · cloud sync), Snippets, and About tabs
+- **Main Content**: Settings options based on the selected tab
+- **Button Editor**: A dialog for editing button properties
 
-창 제목과 닫기는 OS 기본 타이틀바를 사용합니다.
+The window title and close button use the OS's native title bar.
 
-### 시스템 트레이 메뉴
+### System Tray Menu
 
 ```
 ┌─────────────────┐
@@ -130,267 +130,267 @@ Toast 윈도우는 사용자가 액션을 실행하기 위해 상호작용하는
 └─────────────────┘
 ```
 
-## 기본 기능
+## Basic Features
 
-### 전역 단축키
+### Global Shortcut
 
-Toast 앱의 핵심 기능은 글로벌 단축키를 통해 애플리케이션에 빠르게 액세스하는 것입니다.
+The core feature of the Toast app is quick access to the application through a global shortcut.
 
-- **기본 단축키**: Alt+Space (설정에서 변경 가능)
-- **기능**: 단축키를 누르면 Toast 윈도우가 나타나거나 숨겨짐
-- **구성**: 설정 창의 일반 탭에서 구성 가능
+- **Default Shortcut**: Alt+Space (can be changed in settings)
+- **Function**: Pressing the shortcut shows or hides the Toast window
+- **Configuration**: Configurable in the General tab of the Settings window
 
-### 페이지 및 버튼
+### Pages and Buttons
 
-Toast 앱은 버튼을 여러 페이지로 구성하여 더 나은 조직화를 제공합니다.
+The Toast app organizes buttons into multiple pages for better organization.
 
-#### 페이지 관리
+#### Page Management
 
-- **페이지 탐색**: 숫자 키(1-9)나 페이지 탭 클릭으로 페이지 간 이동
-- **페이지 추가**: + 버튼 클릭 또는 Shift+Plus 키
-- **페이지 제거**: - 버튼 클릭 또는 설정 모드에서 마이너스 키
-- **페이지 제한**:
-  - 무료 사용자: 1 페이지
-  - 인증된 사용자: 최대 3 페이지
-  - 구독자: 최대 9 페이지
+- **Page Navigation**: Move between pages with the number keys (1-9) or by clicking a page tab
+- **Add Page**: Click the + button or press Shift+Plus
+- **Remove Page**: Click the - button or press the minus key in settings mode
+- **Page Limits**:
+  - Free users: 1 page
+  - Authenticated users: up to 3 pages
+  - Subscribers: up to 9 pages
 
-#### 버튼 관리
+#### Button Management
 
-- **버튼 구성요소**: 아이콘, 이름, 단축키
-- **단축키**: 페이지 내 위치에 따라 `qwertasdfgzxcvb` 순서로 자동 할당 (자세한 규칙은 [버튼 단축키](./shortcuts.md))
-- **편집**: 설정 모드에서 버튼 클릭하여 편집
+- **Button Components**: Icon, name, and shortcut
+- **Shortcut**: Automatically assigned in `qwertasdfgzxcvb` order based on the position within the page (for detailed rules, see [Button Shortcuts](./shortcuts.md))
+- **Editing**: Click a button in settings mode to edit it
 
-### 액션 유형
+### Action Types
 
-Toast 앱은 다양한 유형의 액션을 지원합니다:
+The Toast app supports various types of actions:
 
-- **애플리케이션 실행**: 지정된 애플리케이션 실행
-- **명령 실행**: 시스템 명령어나 스크립트 실행
-- **URL/파일 열기**: 웹사이트나 로컬 파일 열기
+- **Launch Application**: Launch a specified application
+- **Run Command**: Run a system command or script
+- **Open URL/File**: Open a website or a local file
 
-- **스크립트 실행**: JavaScript, AppleScript, PowerShell, Bash 스크립트 실행
-- **액션 연결**: 여러 액션을 순차적으로 실행
+- **Run Script**: Run a JavaScript, AppleScript, PowerShell, or Bash script
+- **Chain Actions**: Run multiple actions sequentially
 
-### 네비게이션
+### Navigation
 
-#### 키보드 네비게이션
+#### Keyboard Navigation
 
-- **화살표 키**: 버튼 간 이동
-- **Enter**: 선택한 버튼 실행
-- **Escape**: Toast 윈도우 닫기
-- **숫자 키(1-9)**: 페이지 전환
-- **콤마(,)**: 설정 모드 전환
+- **Arrow Keys**: Move between buttons
+- **Enter**: Run the selected button
+- **Escape**: Close the Toast window
+- **Number Keys (1-9)**: Switch pages
+- **Comma (,)**: Toggle settings mode
 
-#### 마우스 네비게이션
+#### Mouse Navigation
 
-- **클릭**: 버튼 실행 또는 설정 모드에서 편집
-- **드래그**: 설정 모드에서 버튼 순서 변경 (Cmd/Ctrl+드래그는 두 버튼 교환)
-- **페이지 번호 클릭**: 페이지 전환
-- **편집 아이콘(📝) 클릭**: 버튼 편집 모드 전환
-- **설정 아이콘(⚙️) 클릭**: 설정 윈도우 열기
+- **Click**: Run a button or edit it in settings mode
+- **Drag**: Reorder buttons in settings mode (Cmd/Ctrl+Drag swaps two buttons)
+- **Click a Page Number**: Switch pages
+- **Click the Edit Icon (📝)**: Toggle button edit mode
+- **Click the Settings Icon (⚙️)**: Open the Settings window
 
-## 사용 시나리오
+## Usage Scenarios
 
-### 첫 설정
+### First-Time Setup
 
-**목표**: Toast 앱을 처음으로 설치하고 설정하기
+**Goal**: Install and set up the Toast app for the first time
 
-1. **다운로드 및 설치**
-   - 웹사이트나 GitHub에서 설치 프로그램 다운로드
-   - 설치 프로그램 실행
-   - 설치 완료 후 애플리케이션 자동 실행
+1. **Download and Install**
+   - Download the installer from the website or GitHub
+   - Run the installer
+   - The application launches automatically after installation completes
 
-2. **초기 구성**
-   - 첫 실행 시 설정 창 자동 열림
-   - 전역 단축키 구성 (기본값: Alt+Space)
-   - 로그인 시 실행 옵션 선택
-   - 기본 버튼 검토
+2. **Initial Configuration**
+   - The Settings window opens automatically on first launch
+   - Configure the global shortcut (default: Alt+Space)
+   - Select the launch-at-login option
+   - Review the default buttons
 
-3. **설정 적용**
-   - 설정은 변경 즉시 저장됨 (별도 저장 버튼 없음)
-   - 설정 창을 닫으면 애플리케이션은 시스템 트레이에서 계속 실행
+3. **Apply Settings**
+   - Settings are saved immediately when changed (no separate save button)
+   - When you close the Settings window, the application keeps running in the system tray
 
-### 애플리케이션 열기
+### Opening an Application
 
-**목표**: Toast 앱을 사용하여 자주 사용하는 애플리케이션 빠르게 열기
+**Goal**: Use the Toast app to quickly open a frequently used application
 
-1. **애플리케이션 버튼 생성**
-   - 전역 단축키로 Toast 창을 연 뒤 편집 모드로 전환
-   - 빈 버튼을 선택하여 새 버튼 추가
-   - 버튼 구성:
-     - 이름: "Chrome"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "🌐"
-     - 액션 유형: "명령 실행"
-     - 명령: `open -a "Google Chrome"` (macOS) 또는 `start chrome` (Windows)
-   - 저장
+1. **Create an Application Button**
+   - Open the Toast window with the global shortcut, then switch to edit mode
+   - Select an empty button to add a new button
+   - Configure the button:
+     - Name: "Chrome"
+     - Shortcut: automatically assigned (since it's the first button, "Q")
+     - Icon: "🌐"
+     - Action type: "Run Command"
+     - Command: `open -a "Google Chrome"` (macOS) or `start chrome` (Windows)
+   - Save
 
-2. **버튼 사용**
-   - 전역 단축키 누름
-   - "Chrome" 버튼 클릭 또는 "Q" 키 누름
-   - Google Chrome 실행 및 Toast 창 자동 닫힘
+2. **Use the Button**
+   - Press the global shortcut
+   - Click the "Chrome" button or press the "Q" key
+   - Google Chrome launches and the Toast window closes automatically
 
-### 웹사이트 열기
+### Opening a Website
 
-**목표**: Toast 앱을 사용하여 자주 방문하는 웹사이트 빠르게 열기
+**Goal**: Use the Toast app to quickly open a frequently visited website
 
-1. **웹사이트 버튼 생성**
-   - Toast 창의 편집 모드에서 새 버튼 추가
-   - 버튼 구성:
-     - 이름: "GitHub"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "🐙"
-     - 액션 유형: "URL/파일 열기"
+1. **Create a Website Button**
+   - Add a new button in the Toast window's edit mode
+   - Configure the button:
+     - Name: "GitHub"
+     - Shortcut: automatically assigned (since it's the first button, "Q")
+     - Icon: "🐙"
+     - Action type: "Open URL/File"
      - URL: "https://github.com"
-   - 저장
+   - Save
 
-2. **버튼 사용**
-   - 전역 단축키 누름
-   - "GitHub" 버튼 클릭 또는 "Q" 키 누름
-   - 기본 웹 브라우저가 열리고 GitHub로 이동
+2. **Use the Button**
+   - Press the global shortcut
+   - Click the "GitHub" button or press the "Q" key
+   - The default web browser opens and navigates to GitHub
 
-### 셸 명령 실행
+### Running a Shell Command
 
-**목표**: Toast 앱을 사용하여 자주 사용하는 셸 명령 실행
+**Goal**: Use the Toast app to run frequently used shell commands
 
-1. **명령 버튼 생성**
-   - Toast 창의 편집 모드에서 새 버튼 추가
-   - 버튼 구성:
-     - 이름: "파일 목록"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "📋"
-     - 액션 유형: "명령 실행"
-     - 명령: `ls -la` (macOS/Linux) 또는 `dir` (Windows)
-     - 터미널에서 실행: 체크
-   - 저장
+1. **Create a Command Button**
+   - Add a new button in the Toast window's edit mode
+   - Configure the button:
+     - Name: "List Files"
+     - Shortcut: automatically assigned (since it's the first button, "Q")
+     - Icon: "📋"
+     - Action type: "Run Command"
+     - Command: `ls -la` (macOS/Linux) or `dir` (Windows)
+     - Run in terminal: checked
+   - Save
 
-2. **버튼 사용**
-   - 전역 단축키 누름
-   - "파일 목록" 버튼 클릭 또는 "Q" 키 누름
-   - 터미널 창이 열리고 명령 실행
+2. **Use the Button**
+   - Press the global shortcut
+   - Click the "List Files" button or press the "Q" key
+   - A terminal window opens and runs the command
 
-### 사용자 정의 스크립트 실행
+### Running a Custom Script
 
-**목표**: Toast 앱을 사용하여 사용자 정의 스크립트 실행
+**Goal**: Use the Toast app to run a custom script
 
-1. **스크립트 버튼 생성**
-   - Toast 창의 편집 모드에서 새 버튼 추가
-   - 버튼 구성:
-     - 이름: "시스템 정보"
-     - 단축키: 자동 할당 (첫 번째 버튼이므로 "Q")
-     - 아이콘: "💻"
-     - 액션 유형: "사용자 정의 스크립트"
-     - 스크립트 유형: "JavaScript"
-     - 스크립트:
+1. **Create a Script Button**
+   - Add a new button in the Toast window's edit mode
+   - Configure the button:
+     - Name: "System Info"
+     - Shortcut: automatically assigned (since it's the first button, "Q")
+     - Icon: "💻"
+     - Action type: "Custom Script"
+     - Script type: "JavaScript"
+     - Script:
        ```javascript
        const os = require('os');
        result = `Platform: ${process.platform}, Hostname: ${os.hostname()}, Free memory: ${Math.round(os.freemem() / 1024 / 1024)} MB`;
        ```
-   - "액션 테스트" 클릭하여 스크립트 테스트
-   - 저장
+   - Click "Test Action" to test the script
+   - Save
 
-2. **버튼 사용**
-   - 전역 단축키 누름
-   - "시스템 정보" 버튼 클릭 또는 "Q" 키 누름
-   - 스크립트 실행 및 결과 상태 표시줄에 표시
+2. **Use the Button**
+   - Press the global shortcut
+   - Click the "System Info" button or press the "Q" key
+   - The script runs and the result is shown in the status bar
 
-## 인증 및 구독
+## Authentication and Subscription
 
-Toast 앱은 사용자 인증 및 구독 관리를 위해 Toast 웹 서비스와 통합됩니다.
+The Toast app integrates with the Toast web service for user authentication and subscription management.
 
-### 계정 등급 및 혜택
+### Account Tiers and Benefits
 
-1. **무료 사용자 (계정 없음)**
-   - 1 페이지의 단축키 액세스
-   - 기본 단축키 기능
-   - 로컬 구성만 가능
+1. **Free Users (No Account)**
+   - Access to 1 page of shortcuts
+   - Basic shortcut features
+   - Local configuration only
 
-2. **인증된 사용자 (무료 계정)**
-   - 3 페이지의 단축키 액세스
-   - 모든 기본 기능
-   - 기기 간 프로파일 동기화
+2. **Authenticated Users (Free Account)**
+   - Access to 3 pages of shortcuts
+   - All basic features
+   - Profile sync across devices
 
-3. **프리미엄 구독자**
-   - 9 페이지의 단축키 액세스
-   - 모든 설정의 클라우드 동기화
-   - 우선 지원
+3. **Premium Subscribers**
+   - Access to 9 pages of shortcuts
+   - Cloud sync of all settings
+   - Priority support
 
-### 인증 과정
+### Authentication Process
 
-1. 설정 창에서 "로그인" 버튼 클릭
-2. 기본 브라우저가 Toast 웹 로그인 페이지로 열림
-3. 로그인 후, 자동으로 Toast 앱으로 리디렉션
-4. 인증 상태와 구독 혜택이 즉시 적용
+1. Click the "Login" button in the Settings window
+2. The default browser opens the Toast web login page
+3. After logging in, you are automatically redirected back to the Toast app
+4. Authentication status and subscription benefits are applied immediately
 
-### 클라우드 동기화
+### Cloud Sync
 
-프리미엄 구독자는 자동 클라우드 동기화의 혜택을 받습니다:
+Premium subscribers benefit from automatic cloud sync:
 
-- **실시간 동기화**: 변경 사항이 수 초 내에 동기화
-- **기기 간 일관성**: 모든 기기에서 동일한 설정 사용
-- **충돌 해결**: 다른 기기에서 변경 시 가장 최근 변경 사항 적용
-- **자동 백업**: 설정이 자동으로 클라우드에 백업
+- **Real-time Sync**: Changes are synced within a few seconds
+- **Cross-device Consistency**: Use the same settings on all devices
+- **Conflict Resolution**: When changes are made on different devices, the most recent change is applied
+- **Automatic Backup**: Settings are automatically backed up to the cloud
 
-## 고급 사용법
+## Advanced Usage
 
-### 외관 사용자 지정
+### Customizing Appearance
 
-다양한 외관 설정을 통해 Toast 앱의 모양과 동작을 사용자 지정할 수 있습니다:
+You can customize the look and behavior of the Toast app through various appearance settings:
 
-- **테마**: 라이트, 다크 또는 시스템 테마
-- **위치**: 화면의 중앙, 상단, 하단 또는 커서 위치
-- **크기**: 작게, 중간, 크게
-- **불투명도**: 윈도우 투명도 조정
+- **Theme**: Light, dark, or system theme
+- **Position**: Center, top, bottom, or cursor position on the screen
+- **Size**: Small, medium, or large
+- **Opacity**: Adjust the window transparency
 
-설정 창 Settings 탭의 Appearance 섹션에서 이러한 설정을 구성할 수 있습니다.
+You can configure these settings in the Appearance section of the Settings tab in the Settings window.
 
-### 고급 구성
+### Advanced Configuration
 
-고급 설정을 통해 애플리케이션의 동작을 더 세밀하게 제어할 수 있습니다:
+Advanced settings give you finer control over the application's behavior:
 
-- **액션 후 숨기기**: 액션 실행 후 Toast 윈도우 자동으로 닫기
-- **포커스 상실 시 숨기기**: 외부 클릭 시 윈도우 닫기
-- **Escape 키로 숨기기**: Escape 키로 윈도우 닫기
-- **작업 표시줄에 표시**: 작업 표시줄/독에 Toast 윈도우 표시 여부
+- **Hide After Action**: Automatically close the Toast window after running an action
+- **Hide on Focus Loss**: Close the window when you click outside it
+- **Hide with Escape Key**: Close the window with the Escape key
+- **Show in Taskbar**: Whether to show the Toast window in the taskbar/dock
 
-설정 창의 고급 탭에서 이러한 설정을 구성할 수 있습니다.
+You can configure these settings in the Advanced tab of the Settings window.
 
-### 워크플로우 통합
+### Workflow Integration
 
-Toast 앱을 개발 워크플로우에 통합하여 생산성을 높일 수 있습니다:
+You can integrate the Toast app into your development workflow to boost productivity:
 
-- **개발 버튼 구성**: 서버 시작, 테스트 실행, 빌드 등
-- **문서 접근**: 자주 사용하는 문서 페이지에 빠르게 접근
-- **개발 도구 열기**: VS Code, 터미널 등 개발 도구 빠르게 실행
+- **Configure Development Buttons**: Start servers, run tests, build, etc.
+- **Access Documentation**: Quickly access frequently used documentation pages
+- **Open Development Tools**: Quickly launch development tools like VS Code, the terminal, etc.
 
-이러한 워크플로우 통합을 통해 개발 과정에서 시간을 절약하고 효율성을 높일 수 있습니다.
+This workflow integration helps you save time and improve efficiency during development.
 
-## 문제 해결
+## Troubleshooting
 
-### 전역 단축키 문제
+### Global Shortcut Issues
 
-**증상**: 전역 단축키가 Toast 창을 트리거하지 않음
+**Symptom**: The global shortcut does not trigger the Toast window
 
-**해결 방법**:
-1. 시스템 트레이 아이콘 우클릭 후 설정 선택
-2. 일반 탭에서 전역 단축키 확인
-3. 다른 애플리케이션과 충돌하지 않는 새 단축키 설정
-4. 저장 후 테스트
+**Solution**:
+1. Right-click the system tray icon and select Settings
+2. Check the global shortcut in the General tab
+3. Set a new shortcut that does not conflict with other applications
+4. Save and test
 
-### 액션이 실행되지 않는 문제
+### Actions Not Running
 
-**증상**: 버튼이 액션을 실행하지 않음
+**Symptom**: A button does not run its action
 
-**해결 방법**:
-1. 설정 창에서 문제 버튼 편집
-2. 액션 구성 검토
-3. "액션 테스트" 클릭하여 오류 메시지 확인
-4. 오류에 기반하여 구성 수정
-5. 저장 후 다시 테스트
+**Solution**:
+1. Edit the problematic button in the Settings window
+2. Review the action configuration
+3. Click "Test Action" to check the error message
+4. Fix the configuration based on the error
+5. Save and test again
 
-### 기타 일반적인 문제
+### Other Common Issues
 
-- **시작 문제**: 시스템 설정에서 시작 항목 확인
-- **로그인 문제**: 인터넷 연결 확인 및 웹 브라우저에서 Toast 웹 접속 테스트
-- **성능 문제**: 로그 확인 및 불필요한 버튼 제거하여 최적화
-- **동기화 문제**: 인증 상태 확인 및 수동 동기화 시도
+- **Startup Issues**: Check the startup items in your system settings
+- **Login Issues**: Check your internet connection and test access to Toast web in a web browser
+- **Performance Issues**: Check the logs and optimize by removing unnecessary buttons
+- **Sync Issues**: Check the authentication status and try a manual sync

@@ -1,46 +1,46 @@
-# Toast 앱 버튼 액션 유형
+# Toast App Button Action Types
 
-이 문서는 Toast 앱에서 지원하는 모든 버튼 액션 유형을 설명합니다.
+This document describes all button action types supported by the Toast app.
 
-버튼 구성 스키마에 대한 자세한 내용은 [구성 스키마](../config/schema.md)를 참조하세요.
+For details on the button configuration schema, see [Configuration Schema](../config/schema.md).
 
-## 버튼 단축키 규칙
+## Button Shortcut Rules
 
-**중요**: 모든 버튼의 단축키는 페이지 내 위치에 따라 순서대로 **qwertasdfgzxcvb**로 자동 할당됩니다.
+**Important**: The shortcut for every button is automatically assigned in the order **qwertasdfgzxcvb** based on its position within the page.
 
-- **첫 번째 행**: Q, W, E, R, T (5개)
-- **두 번째 행**: A, S, D, F, G (5개)
-- **세 번째 행**: Z, X, C, V, B (5개)
-- **총 15개 버튼**까지 지원
+- **First row**: Q, W, E, R, T (5 keys)
+- **Second row**: A, S, D, F, G (5 keys)
+- **Third row**: Z, X, C, V, B (5 keys)
+- Supports up to **15 buttons** total
 
-버튼의 위치가 변경되면 변경된 순서에 따라 단축키가 자동으로 재설정됩니다. 사용자가 직접 단축키를 수정할 수 없으며, 시스템에서 자동으로 관리됩니다.
+When a button's position changes, its shortcut is automatically reassigned according to the new order. Users cannot edit shortcuts directly; they are managed automatically by the system.
 
-## 액션 유형 개요
+## Action Type Overview
 
-Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
+The Toast app supports the following 5 button action types:
 
-1. **application** - 애플리케이션 실행
-2. **exec** - 셸 명령어 실행
-3. **open** - URL, 파일 또는 폴더 열기
-4. **script** - 다양한 언어의 스크립트 실행
-5. **chain** - 여러 액션 순차적 실행
+1. **application** - Launch an application
+2. **exec** - Run a shell command
+3. **open** - Open a URL, file, or folder
+4. **script** - Run scripts in various languages
+5. **chain** - Run multiple actions sequentially
 
-토스트 창의 각 버튼 카드 상단에는 액션 유형별 고유 색상의 라인이 표시되어, 버튼이 어떤 유형의 액션인지 한눈에 구분할 수 있습니다.
+At the top of each button card in the Toast window, a line in a color unique to the action type is displayed, so you can tell at a glance what type of action the button performs.
 
-각 액션 유형에 대한 상세 설명은 아래와 같습니다.
+Detailed descriptions of each action type are provided below.
 
-## 1. application (애플리케이션 실행)
+## 1. application (Launch Application)
 
-### 설명
-지정된 경로의 애플리케이션을 실행하는 액션입니다.
+### Description
+An action that launches the application at the specified path.
 
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
+### Properties
+| Property | Type | Required | Description |
 |------|------|------|------|
-| `applicationPath` | string | 예 | 실행할 애플리케이션의 경로 |
-| `applicationParameters` | string | 아니오 | 애플리케이션에 전달할 명령줄 파라미터. `~` 또는 `~/`로 시작하는 인자는 홈 디렉토리로 확장됩니다 |
+| `applicationPath` | string | Yes | Path of the application to launch |
+| `applicationParameters` | string | No | Command-line parameters to pass to the application. Arguments starting with `~` or `~/` are expanded to the home directory |
 
-### 예시
+### Example
 ```json
 {
   "name": "Photoshop",
@@ -52,24 +52,24 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 }
 ```
 
-### 플랫폼별 구현
-- **macOS**: `open` 명령 사용
-- **Windows**: 직접 애플리케이션 경로 실행
-- **Linux**: 파라미터가 없으면 `xdg-open` 명령 사용, 파라미터가 있으면 경로를 직접 실행
+### Platform-Specific Implementation
+- **macOS**: Uses the `open` command
+- **Windows**: Runs the application path directly
+- **Linux**: Uses the `xdg-open` command when there are no parameters; runs the path directly when parameters are present
 
-## 2. exec (명령어 실행)
+## 2. exec (Run Command)
 
-### 설명
-셸 명령어를 실행하는 액션입니다.
+### Description
+An action that runs a shell command.
 
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
+### Properties
+| Property | Type | Required | Description |
 |------|------|------|------|
-| `command` | string | 예 | 실행할 셸 명령어 |
-| `workingDir` | string | 아니오 | 명령어를 실행할 작업 디렉토리 |
-| `runInTerminal` | boolean | 아니오 | 터미널 창을 열어 명령어를 실행할지 여부 (기본값: false) |
+| `command` | string | Yes | Shell command to run |
+| `workingDir` | string | No | Working directory in which to run the command |
+| `runInTerminal` | boolean | No | Whether to open a terminal window to run the command (default: false) |
 
-### 예시
+### Example
 ```json
 {
   "name": "Git Status",
@@ -82,24 +82,24 @@ Toast 앱은 다음과 같은 5가지 버튼 액션 유형을 지원합니다:
 }
 ```
 
-### 플랫폼별 차이점
-- **macOS**: Terminal.app을 사용하여 명령어 실행 (osascript 경유)
-- **Windows**: cmd.exe를 사용하여 명령어 실행
-- **Linux**: `x-terminal-emulator` 명령을 사용하여 실행
+### Platform-Specific Differences
+- **macOS**: Runs the command using Terminal.app (via osascript)
+- **Windows**: Runs the command using cmd.exe
+- **Linux**: Runs using the `x-terminal-emulator` command
 
-## 3. open (파일/URL 열기)
+## 3. open (Open File/URL)
 
-### 설명
-URL, 파일 또는 폴더를 여는 액션입니다.
+### Description
+An action that opens a URL, file, or folder.
 
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
+### Properties
+| Property | Type | Required | Description |
 |------|------|------|------|
-| `url` | string | url 또는 path 중 하나 | 열 URL |
-| `path` | string | url 또는 path 중 하나 | 열 파일 또는 폴더 경로 |
-| `application` | string | 아니오 | 파일을 열 때 사용할 애플리케이션 |
+| `url` | string | Either url or path | URL to open |
+| `path` | string | Either url or path | Path of the file or folder to open |
+| `application` | string | No | Application to use when opening the file |
 
-### 예시
+### Example
 ```json
 {
   "name": "Documentation",
@@ -121,24 +121,24 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 }
 ```
 
-### 특이사항
-- URL 에 프로토콜 스킴(`http://`, `https://`, `ftp://` 등 `<scheme>://` 형태)이 없으면 자동으로 `http://` 가 추가됩니다. `mailto:` 처럼 `//` 가 없는 스킴은 인식되지 않습니다.
-- `file://` URL 은 허용되지 않습니다. 로컬 파일/폴더를 열 때는 `url` 대신 `path` 속성을 사용하세요.
-- 기본 애플리케이션을 사용하거나 지정된 애플리케이션으로 파일을 열 수 있습니다.
+### Notes
+- If a URL has no protocol scheme (a `<scheme>://` form such as `http://`, `https://`, `ftp://`), `http://` is added automatically. Schemes without `//`, such as `mailto:`, are not recognized.
+- `file://` URLs are not allowed. When opening a local file or folder, use the `path` property instead of `url`.
+- You can open a file with the default application or with a specified application.
 
-## 4. script (스크립트 실행)
+## 4. script (Run Script)
 
-### 설명
-다양한 언어로 작성된 사용자 정의 스크립트를 실행하는 액션입니다.
+### Description
+An action that runs a custom script written in one of several languages.
 
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
+### Properties
+| Property | Type | Required | Description |
 |------|------|------|------|
-| `script` | string | 예 | 스크립트 내용 |
-| `scriptType` | string | 예 | 스크립트 언어 (javascript, applescript, powershell, bash). 기본 Confetti 버튼이 사용하는 `special` 타입은 렌더러에서만 처리되는 클라이언트 전용 값으로, 메인 프로세스 스크립트 실행기는 지원하지 않습니다 |
-| `scriptParams` | object | 아니오 | 스크립트에 전달할 파라미터 (JavaScript에만 적용) |
+| `script` | string | Yes | Script content |
+| `scriptType` | string | Yes | Script language (javascript, applescript, powershell, bash). The `special` type used by the default Confetti button is a client-only value handled only in the renderer; the main-process script executor does not support it |
+| `scriptParams` | object | No | Parameters to pass to the script (applies to JavaScript only) |
 
-### 예시
+### Example
 ```json
 {
   "name": "Hello World Script",
@@ -161,29 +161,29 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 }
 ```
 
-### 플랫폼 제한
-- **JavaScript**: 모든 플랫폼 지원
-- **AppleScript**: macOS에서만 지원
-- **PowerShell**: Windows에서만 지원
-- **Bash**: macOS 및 Linux에서만 지원
+### Platform Restrictions
+- **JavaScript**: Supported on all platforms
+- **AppleScript**: Supported on macOS only
+- **PowerShell**: Supported on Windows only
+- **Bash**: Supported on macOS and Linux only
 
-### 보안 고려사항
-- JavaScript 스크립트는 `vm.runInContext` 컨텍스트에서 실행되지만, 샌드박스에 `require`(모든 내장 모듈), `Buffer` 등이 노출되어 파일 시스템·네트워크·외부 프로세스 접근이 가능합니다. 환경변수는 비민감 allowlist(`HOME`, `PATH`, `LANG` 등)만 전달됩니다. 시스템 수준 샌드박싱은 아니므로 신뢰할 수 있는 스크립트만 실행하세요.
-- 클라우드 동기화로 새로 내려받은 `exec`/`script` 액션은 이 기기에서 최초 실행 전 사용자 확인 다이얼로그를 거칩니다.
-- 외부 스크립트는 임시 파일로 작성된 후 실행되며, 실행 후 임시 파일 삭제
+### Security Considerations
+- JavaScript scripts run in a `vm.runInContext` context, but the sandbox exposes `require` (all built-in modules), `Buffer`, and more, allowing access to the file system, network, and external processes. Only a non-sensitive allowlist of environment variables (`HOME`, `PATH`, `LANG`, etc.) is passed. This is not a system-level sandbox, so run only trusted scripts.
+- `exec`/`script` actions newly downloaded via cloud sync go through a user confirmation dialog before their first run on this device.
+- External scripts are written to a temporary file and then run; the temporary file is deleted after execution.
 
-## 5. chain (연쇄 실행)
+## 5. chain (Chained Execution)
 
-### 설명
-여러 액션을 순차적으로 실행하는 복합 액션입니다.
+### Description
+A composite action that runs multiple actions sequentially.
 
-### 속성
-| 속성 | 타입 | 필수 | 설명 |
+### Properties
+| Property | Type | Required | Description |
 |------|------|------|------|
-| `actions` | array | 예 | 순차적으로 실행할 액션 배열 |
-| `stopOnError` | boolean | 아니오 | 오류 발생 시 실행을 중단할지 여부 (기본값: true) |
+| `actions` | array | Yes | Array of actions to run sequentially |
+| `stopOnError` | boolean | No | Whether to stop execution when an error occurs (default: true) |
 
-### 예시
+### Example
 ```json
 {
   "name": "Development Setup",
@@ -210,48 +210,48 @@ URL, 파일 또는 폴더를 여는 액션입니다.
 }
 ```
 
-### 특이사항
-- 각 액션은 이전 액션이 완료된 후에 실행됩니다.
-- `stopOnError`가 `true`이면 액션 중 하나라도 실패할 경우 연쇄 실행이 중단됩니다.
-- 모든 액션 유형(application, exec, open, script, chain)을 연쇄 실행에 포함할 수 있습니다. chain 안에 chain을 중첩할 수 있으나, 중첩 깊이는 최대 10단계로 제한됩니다.
+### Notes
+- Each action runs after the previous action completes.
+- If `stopOnError` is `true`, the chain stops if any action fails.
+- All action types (application, exec, open, script, chain) can be included in a chain. You can nest a chain within a chain, but the nesting depth is limited to a maximum of 10 levels.
 
 
-## 액션 실행 흐름
+## Action Execution Flow
 
-모든 액션은 `src/main/executor.js`에 정의된 `executeAction` 함수를 통해 중앙에서 관리됩니다. 이 함수는 다음과 같은 작업을 수행합니다:
+All actions are centrally managed through the `executeAction` function defined in `src/main/executor.js`. This function performs the following:
 
-1. 액션 타입 확인 및 유효성 검사
-2. 해당 액션 타입에 맞는 실행 함수 호출
-3. 실행 결과 반환
+1. Checks the action type and validates it
+2. Calls the execution function appropriate for that action type
+3. Returns the execution result
 
-또한 `validateAction` 함수를 통해 액션 구성의 유효성을 미리 검사할 수 있습니다.
+Additionally, the `validateAction` function lets you validate an action configuration in advance.
 
-## 액션 오류 처리
+## Action Error Handling
 
-모든 액션 실행 함수는 다음과 같은 형식의 결과 객체를 반환합니다:
+Every action execution function returns a result object in the following format:
 
 ```javascript
 {
-  success: true|false,     // 액션 성공 여부
-  message: "결과 메시지",    // 상태 설명 메시지
-  // 액션 유형별 추가 정보
+  success: true|false,     // Whether the action succeeded
+  message: "Result message", // Status description message
+  // Additional action-type-specific information
 }
 ```
 
-오류 발생 시에는 다음과 같은 형식의 결과 객체가 반환됩니다:
+When an error occurs, a result object in the following format is returned:
 
 ```javascript
 {
   success: false,
-  message: "오류 메시지",
-  error: errorObject      // 원본 오류 객체
+  message: "Error message",
+  error: errorObject      // Original error object
 }
 ```
 
-## 액션 확장
+## Extending Actions
 
-새로운 액션 유형을 추가하려면:
+To add a new action type:
 
-1. `src/main/actions/` 디렉토리에 새 액션 핸들러 모듈 생성
-2. `src/main/executor.js`의 `executeAction` 함수에 새 액션 타입 처리 추가
-3. 액션 유효성 검사를 위해 `validateAction` 함수 업데이트
+1. Create a new action handler module in the `src/main/actions/` directory
+2. Add handling for the new action type in the `executeAction` function of `src/main/executor.js`
+3. Update the `validateAction` function to validate the action

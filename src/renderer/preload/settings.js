@@ -132,7 +132,7 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('Testing icon change detection...');
         const pages = await window.settings.getConfig('pages');
         if (pages && pages.length > 0 && pages[0].buttons && pages[0].buttons.length > 0) {
-          // 첫 번째 버튼의 아이콘을 임시로 변경
+          // Temporarily change the icon of the first button
           const modifiedPages = JSON.parse(JSON.stringify(pages));
           const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
           modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
@@ -294,7 +294,7 @@ ipcRenderer.on('update-error', (event, data) => {
 });
 
 // Tab selection event handler
-// (주의: preload 컨텍스트에는 window.settings가 없으므로 여기서 로깅하지 않는다)
+// (Note: window.settings is not available in the preload context, so do not log here)
 ipcRenderer.on('select-settings-tab', (event, tabName) => {
   window.dispatchEvent(
     new CustomEvent('select-settings-tab', {

@@ -1,7 +1,7 @@
 /**
  * Toast - Subscription Helpers Tests
  *
- * 구독 파생 판정(활성 여부, 페이지 그룹, cloud_sync 자격)에 대한 단위 테스트
+ * Unit tests for subscription-derived decisions (active status, page groups, cloud_sync eligibility)
  */
 
 const { PAGE_GROUPS } = require('../../src/main/constants');

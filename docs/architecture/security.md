@@ -1,235 +1,235 @@
-# Toast 보안 가이드
+# Toast Security Guide
 
-이 문서는 Toast 앱의 현재 보안 모델, 데이터 보호 방식, 인증 시스템을 설명합니다. 실제 코드 구현을 기준으로 작성되었습니다.
+This document describes the Toast app's current security model, data protection approach, and authentication system. It is written based on the actual code implementation.
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [인증 시스템](#인증-시스템)
-  - [OAuth 인증 흐름](#oauth-인증-흐름)
-  - [토큰 관리](#토큰-관리)
-  - [세션 처리](#세션-처리)
-- [데이터 보호](#데이터-보호)
-  - [저장 데이터 보호](#저장-데이터-보호)
-  - [전송 중 데이터 보호](#전송-중-데이터-보호)
-  - [로컬 스토리지](#로컬-스토리지)
-- [권한 관리](#권한-관리)
-  - [사용자 권한 수준](#사용자-권한-수준)
-  - [기능 액세스 제어](#기능-액세스-제어)
-- [스크립트 보안](#스크립트-보안)
-- [네트워크 보안](#네트워크-보안)
-- [운영체제 통합](#운영체제-통합)
-  - [macOS 보안 통합](#macos-보안-통합)
-  - [Windows 보안 통합](#windows-보안-통합)
-- [보안 모범 사례](#보안-모범-사례)
-- [보안 취약점 보고](#보안-취약점-보고)
-- [관련 문서](#관련-문서)
+- [Overview](#overview)
+- [Authentication System](#authentication-system)
+  - [OAuth Authentication Flow](#oauth-authentication-flow)
+  - [Token Management](#token-management)
+  - [Session Handling](#session-handling)
+- [Data Protection](#data-protection)
+  - [Data-at-Rest Protection](#data-at-rest-protection)
+  - [Data-in-Transit Protection](#data-in-transit-protection)
+  - [Local Storage](#local-storage)
+- [Permission Management](#permission-management)
+  - [User Permission Levels](#user-permission-levels)
+  - [Feature Access Control](#feature-access-control)
+- [Script Security](#script-security)
+- [Network Security](#network-security)
+- [Operating System Integration](#operating-system-integration)
+  - [macOS Security Integration](#macos-security-integration)
+  - [Windows Security Integration](#windows-security-integration)
+- [Security Best Practices](#security-best-practices)
+- [Reporting Security Vulnerabilities](#reporting-security-vulnerabilities)
+- [Related Documentation](#related-documentation)
 
-## 개요
+## Overview
 
-Toast 앱은 인증 토큰, 사용자 프로필, 버튼 구성 등의 사용자 데이터를 처리합니다. 이 문서는 현재 구현된 보안 조치를 사실대로 기술하며, 향후 강화 예정 항목과 현재 한계도 함께 명시합니다.
+The Toast app handles user data such as authentication tokens, user profiles, and button configurations. This document describes the currently implemented security measures factually, and also notes planned future hardening items and current limitations.
 
-또한 모든 애플리케이션 창은 Electron 보안 기본 설정을 따릅니다. 렌더러 프로세스는 `nodeIntegration: false` 와 `contextIsolation: true` 로 격리되며(`src/main/windows.js`), 메인 프로세스 기능은 `preload` 스크립트의 `contextBridge.exposeInMainWorld` 로 노출된 제한된 API 를 통해서만 접근할 수 있습니다(`src/renderer/preload/toast.js`, `settings.js`). 이를 통해 렌더러가 Node.js API 에 직접 접근하는 것을 차단합니다.
+In addition, all application windows follow Electron's secure defaults. The renderer process is isolated with `nodeIntegration: false` and `contextIsolation: true` (`src/main/windows.js`), and main process functionality is accessible only through the limited APIs exposed by the `preload` scripts via `contextBridge.exposeInMainWorld` (`src/renderer/preload/toast.js`, `settings.js`). This prevents the renderer from accessing Node.js APIs directly.
 
-## 인증 시스템
+## Authentication System
 
-Toast 앱은 OAuth 2.0 Authorization Code Flow 를 사용하여 사용자 인증을 수행합니다. 상세한 흐름과 API 연동은 [연동 가이드](../development/integration.md)를 참조하세요.
+The Toast app authenticates users using the OAuth 2.0 Authorization Code Flow. For the detailed flow and API integration, see the [Integration Guide](../development/integration.md).
 
-### OAuth 인증 흐름
+### OAuth Authentication Flow
 
-1. **인증 시작**:
-   - 사용자가 설정에서 '로그인' 버튼을 클릭합니다.
-   - 앱이 시스템 기본 브라우저(`shell.openExternal`)를 열어 Toast 웹 서비스 인증 페이지로 이동합니다.
-   - `CLIENT_ID`, `redirect_uri=toast-app://auth`, `response_type=code` 등을 쿼리 파라미터로 전달합니다.
+1. **Authentication initiation**:
+   - The user clicks the 'Login' button in settings.
+   - The app opens the system default browser (`shell.openExternal`) and navigates to the Toast web service authentication page.
+   - It passes `CLIENT_ID`, `redirect_uri=toast-app://auth`, `response_type=code`, and so on as query parameters.
 
-2. **사용자 인증**:
-   - 사용자가 Toast 웹에서 로그인합니다.
-   - 인증 성공 시 서비스는 사용자를 사용자 정의 프로토콜 URI(`toast-app://auth?code=...`)로 리디렉션합니다.
+2. **User authentication**:
+   - The user logs in on Toast web.
+   - On successful authentication, the service redirects the user to the custom protocol URI (`toast-app://auth?code=...`).
 
-3. **토큰 교환**:
-   - 앱이 등록한 `toast-app://` 프로토콜 핸들러가 인증 코드를 수신합니다 (`src/index.js`).
-   - 앱은 `CLIENT_ID` / `CLIENT_SECRET`과 코드를 사용해 토큰 엔드포인트로 액세스/리프레시 토큰을 요청합니다.
-   - 토큰은 로컬 파일(`auth-tokens.json`)에 저장됩니다.
-   - 딥링크 처리 로그에서 URL 의 `code`·`token` 파라미터는 마스킹되어 기록되므로, 인증 코드·토큰이 로그 파일에 평문으로 남지 않습니다.
+3. **Token exchange**:
+   - The `toast-app://` protocol handler registered by the app receives the authorization code (`src/index.js`).
+   - The app requests access/refresh tokens from the token endpoint using `CLIENT_ID` / `CLIENT_SECRET` and the code.
+   - Tokens are stored in a local file (`auth-tokens.json`).
+   - In the deep-link handling logs, the `code` and `token` parameters of the URL are masked, so authorization codes and tokens are not left in plaintext in log files.
 
-4. **프로필 검색**:
-   - 토큰 저장 후 사용자 프로필 및 구독 정보 엔드포인트를 호출하여 정보를 가져옵니다.
+4. **Profile retrieval**:
+   - After storing the tokens, the app calls the user profile and subscription information endpoints to fetch that data.
 
-> **현재 한계**: PKCE(Proof Key for Code Exchange)는 현재 구현되어 있지 않습니다. 데스크톱 OAuth 클라이언트에서 권장되는 PKCE 도입은 후속 개선 항목입니다.
+> **Current limitation**: PKCE (Proof Key for Code Exchange) is not currently implemented. Adopting PKCE, which is recommended for desktop OAuth clients, is a follow-up improvement item.
 
-### 토큰 관리
+### Token Management
 
-토큰은 다음과 같이 관리됩니다:
+Tokens are managed as follows:
 
-1. **저장 방식**:
-   - 토큰은 사용자 데이터 디렉토리의 `auth-tokens.json` 파일에 **평문 JSON** 으로 저장됩니다 (`src/main/auth.js`).
-   - 임시 파일을 거쳐 원자적 rename 으로 기록되어 부분 쓰기로 인한 손상을 방지합니다.
-   - 토큰 파일은 소유자만 읽기/쓰기 가능한 권한(`0600`)으로 저장됩니다. 같은 사용자 계정 내 다른 프로세스의 접근은 여전히 가능합니다.
+1. **Storage method**:
+   - Tokens are stored as **plaintext JSON** in the `auth-tokens.json` file in the user data directory (`src/main/auth.js`).
+   - They are written via a temp file with an atomic rename to prevent corruption from partial writes.
+   - The token file is stored with owner-only read/write permissions (`0600`). Access by other processes within the same user account is still possible.
 
-   > **현재 한계**: macOS Keychain / Windows DPAPI / Linux Secret Service 와 같은 OS 보안 저장소는 사용하지 않습니다. 동일 사용자 계정의 다른 프로세스는 토큰 파일에 접근할 수 있으므로, 신뢰할 수 없는 코드를 실행하지 않도록 주의하세요.
+   > **Current limitation**: OS secure storage such as the macOS Keychain / Windows DPAPI / Linux Secret Service is not used. Other processes under the same user account can access the token file, so be careful not to run untrusted code.
 
-2. **토큰 만료 정책**:
-   - 액세스 토큰 기본 만료: 1년 (`TOKEN_EXPIRES_IN=31536000`, 환경 변수로 변경 가능).
-   - 서버가 반환하는 `expires_in` 값이 항상 우선하며, 이 값이 없을 때만 `TOKEN_EXPIRES_IN` 이 적용됩니다.
-   - `TOKEN_EXPIRES_IN=0` 은 falsy 값이라 1년 기본값으로 대체됩니다. 무기한 만료(`8640000000000000`, JavaScript 최대 날짜)를 적용하려면 음수 값(예: `-1`)을 사용해야 합니다.
-   - 만료가 임박하면(30초 안전 마진) 리프레시 토큰으로 자동 갱신합니다.
-   - 중복 요청 방지를 위해 갱신 호출에 스로틀링 로직이 적용되어 있습니다.
+2. **Token expiration policy**:
+   - Access token default expiration: 1 year (`TOKEN_EXPIRES_IN=31536000`, changeable via environment variable).
+   - The `expires_in` value returned by the server always takes priority, and `TOKEN_EXPIRES_IN` is applied only when that value is absent.
+   - `TOKEN_EXPIRES_IN=0` is a falsy value, so it falls back to the 1-year default. To apply indefinite expiration (`8640000000000000`, the maximum JavaScript date), you must use a negative value (e.g., `-1`).
+   - As expiration approaches (30-second safety margin), the token is automatically refreshed using the refresh token.
+   - Throttling logic is applied to refresh calls to prevent duplicate requests.
 
-3. **로그아웃 처리**:
-   - 로그아웃 시 로컬 토큰 파일과 메모리상의 토큰이 제거됩니다.
-   - 서버 측 revoke 엔드포인트도 호출됩니다(가능한 경우).
+3. **Logout handling**:
+   - On logout, the local token file and the in-memory tokens are removed.
+   - The server-side revoke endpoint is also called (when possible).
 
-### 세션 처리
+### Session Handling
 
-- 토큰 갱신은 만료 시점 또는 401 응답 시 자동으로 수행됩니다.
-- 세션 상태(`auth-manager.js`)는 모든 창에 IPC 이벤트(`auth-state-changed`)로 전파됩니다.
+- Token refresh is performed automatically at expiration or on a 401 response.
+- Session state (`auth-manager.js`) is propagated to all windows via an IPC event (`auth-state-changed`).
 
-## 데이터 보호
+## Data Protection
 
-### 저장 데이터 보호
+### Data-at-Rest Protection
 
-1. **구성 데이터** (`config.json`):
-   - electron-store 를 통해 JSON 형식으로 저장됩니다.
-   - 민감 정보를 포함하지 않습니다(단축키, 버튼 구성, 외관 설정 등).
-   - 파일 시스템 권한으로만 보호됩니다.
+1. **Configuration data** (`config.json`):
+   - Stored in JSON format via electron-store.
+   - Contains no sensitive information (shortcuts, button configuration, appearance settings, etc.).
+   - Protected only by file system permissions.
 
-2. **인증 토큰** (`auth-tokens.json`):
-   - 위 [토큰 관리](#토큰-관리) 항목 참조. 평문 저장.
+2. **Authentication tokens** (`auth-tokens.json`):
+   - See the [Token Management](#token-management) section above. Stored in plaintext.
 
-3. **사용자 프로필 데이터** (`user-profile.json`):
-   - 이메일, 이름, 구독 상태 등 최소 정보만 저장합니다.
-   - 평문 JSON 으로 저장됩니다.
+3. **User profile data** (`user-profile.json`):
+   - Stores only minimal information such as email, name, and subscription status.
+   - Stored as plaintext JSON.
 
-4. **스크립트 데이터**:
-   - 사용자 정의 스크립트는 구성 파일 내부에 평문으로 저장됩니다.
-   - 스크립트에 API 키 등 민감 정보를 직접 포함하지 마세요.
+4. **Script data**:
+   - Custom scripts are stored in plaintext inside the configuration file.
+   - Do not include sensitive information such as API keys directly in scripts.
 
-### 전송 중 데이터 보호
+### Data-in-Transit Protection
 
-- 서버 API 통신은 HTTPS(`TOAST_URL` 기본값 `https://app.toast.sh`)로 이루어집니다.
-- TLS 검증은 Node.js / Electron 의 기본 동작(시스템 루트 CA 사용)을 따릅니다.
-- 인증서 핀닝은 적용되지 않습니다.
+- Server API communication uses HTTPS (`TOAST_URL` defaults to `https://app.toast.sh`).
+- TLS verification follows the default behavior of Node.js / Electron (using the system root CAs).
+- Certificate pinning is not applied.
 
-### 로컬 스토리지
+### Local Storage
 
-- 데이터 파일은 운영체제의 사용자 데이터 디렉토리에 저장되며, 위치 및 구조는 [데이터 저장소](../config/data-storage.md)를 참조하세요.
-- 파일 권한은 일반적으로 현재 사용자만 읽기/쓰기 가능하도록 설정되지만, 별도의 ACL 강화 로직은 적용하지 않습니다.
+- Data files are stored in the operating system's user data directory; for the location and structure, see [Data Storage](../config/data-storage.md).
+- File permissions are generally set to allow read/write only by the current user, but no separate ACL hardening logic is applied.
 
-## 권한 관리
+## Permission Management
 
-### 사용자 권한 수준
+### User Permission Levels
 
-| 등급 | 페이지 수 | 클라우드 동기화 | 비고 |
-|------|-----------|------------------|------|
-| 익명 사용자 | 1 | 비활성 | 로그인하지 않은 상태 |
-| 인증된 사용자 | 3 | 비활성(기본) | 무료 계정 로그인 |
-| 프리미엄 구독자 | 9 | 활성 | 유효 구독 보유 |
+| Tier | Pages | Cloud Sync | Notes |
+|------|-------|------------|-------|
+| Anonymous user | 1 | Disabled | Not logged in |
+| Authenticated user | 3 | Disabled (default) | Logged in with a free account |
+| Premium subscriber | 9 | Enabled | Holds a valid subscription |
 
-### 기능 액세스 제어
+### Feature Access Control
 
-- 보호된 기능은 사용 전에 구독 상태(`config.subscription`)와 페이지 그룹(`pageGroups`)을 확인합니다.
-- 구독 정보는 로그인 시 및 주기적으로 서버에서 갱신됩니다.
-- 네트워크 단절 시에는 마지막으로 캐시된 구독 상태를 사용합니다.
+- Protected features check the subscription status (`config.subscription`) and page groups (`pageGroups`) before use.
+- Subscription information is refreshed from the server at login and periodically.
+- When the network is disconnected, the last cached subscription status is used.
 
-## 스크립트 보안
+## Script Security
 
-> **중요**: 사용자 정의 스크립트는 Toast 앱 프로세스와 **동일한 권한** 으로 실행됩니다. 시스템 수준의 샌드박싱은 적용되지 않으므로, 신뢰할 수 없는 출처의 스크립트는 실행하지 마세요.
+> **Important**: Custom scripts run with the **same permissions** as the Toast app process. No system-level sandboxing is applied, so do not run scripts from untrusted sources.
 
-### JavaScript 스크립트
+### JavaScript Scripts
 
-- Node.js `vm.runInContext` 를 사용해 격리된 컨텍스트에서 실행되지만, 다음이 컨텍스트에 노출됩니다:
-  - `require`: 모든 내장 모듈 사용 가능 (`fs`, `child_process`, `http` 등)
-  - `process`: `platform`, `arch`, 그리고 비민감 환경 변수만 담은 `env`
-  - `Buffer`, `setTimeout`, `setInterval` 등 표준 전역
-- `process.env` 로는 허용 목록(`HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`)에 포함된 변수만 전달되어, `CLIENT_SECRET` 등 메인 프로세스의 시크릿은 기본적으로 스크립트에 노출되지 않습니다. 다만 스크립트가 `require('child_process')` 로 자식 프로세스를 띄우면 그 자식은 전체 환경을 다시 읽을 수 있으므로, 이 제한은 완전한 격리가 아닙니다.
-- 따라서 파일 시스템 접근, 네트워크 호출, 외부 프로세스 실행은 여전히 가능합니다.
-- 실행 시간 제한, 메모리 제한, API 화이트리스트는 적용되지 않습니다.
+- They run in an isolated context using Node.js `vm.runInContext`, but the following are exposed to the context:
+  - `require`: all built-in modules are available (`fs`, `child_process`, `http`, etc.)
+  - `process`: `platform`, `arch`, and `env` containing only non-sensitive environment variables
+  - Standard globals such as `Buffer`, `setTimeout`, `setInterval`
+- Through `process.env`, only variables in the allowlist (`HOME`, `USER`, `USERPROFILE`, `PATH`, `LANG`, `SHELL`, `TMPDIR`, `TEMP`, `TMP`) are passed, so main process secrets such as `CLIENT_SECRET` are not exposed to scripts by default. However, if a script spawns a child process with `require('child_process')`, that child can read the full environment again, so this restriction is not complete isolation.
+- Therefore, file system access, network calls, and external process execution are still possible.
+- No execution time limit, memory limit, or API whitelist is applied.
 
-### 셸 / 시스템 스크립트
+### Shell / System Scripts
 
-- AppleScript(`osascript`), PowerShell, Bash 스크립트는 `child_process.exec` 로 자식 프로세스에서 실행되며, JavaScript 스크립트와 동일한 허용 목록 환경 변수(`env`)만 전달받아 메인 프로세스의 시크릿 상속을 제한합니다.
-- 별도의 작업 디렉토리(`cwd`)를 지정하지 않으므로 스크립트는 앱 프로세스의 작업 디렉토리를 그대로 상속하며, 실행 권한은 현재 사용자와 동일합니다.
+- AppleScript (`osascript`), PowerShell, and Bash scripts run in child processes via `child_process.exec`, receiving only the same allowlisted environment variables (`env`) as JavaScript scripts, which limits inheritance of main process secrets.
+- Because no separate working directory (`cwd`) is specified, scripts inherit the app process's working directory as-is, and their execution privileges are the same as the current user.
 
-### 클라우드 동기화 액션 보호
+### Cloud Sync Action Protection
 
-다른 기기에서 만든 `exec`/`script` 액션이 클라우드 동기화로 내려올 때 임의 코드가 자동 실행되지 않도록 다음 보호가 적용됩니다 (`src/main/action-approval.js`):
+To prevent arbitrary code from running automatically when `exec`/`script` actions created on another device arrive via cloud sync, the following protections are applied (`src/main/action-approval.js`):
 
-- **구조 검증**: 다운로드한 페이지는 저장 전에 `validateAction` 으로 모든 버튼 액션을 검증하며, 유효하지 않은 액션은 제거됩니다.
-- **기기별 1회 승인**: 원격 데이터에서 처음 나타난 위험 액션(`exec`/`script`)은 승인 대기 목록에 등록되고, 실행 시점에 사용자가 승인해야 실행됩니다. 로컬에서 만든 액션과 이미 신뢰된 액션은 다이얼로그 없이 실행됩니다.
-- **로컬 전용 신뢰 목록**: 신뢰·대기 상태의 fingerprint 는 config `security` 키에 기기 로컬로만 저장되며 클라우드에 업로드되지 않습니다.
+- **Structural validation**: downloaded pages have all button actions validated with `validateAction` before being stored, and invalid actions are removed.
+- **One-time per-device approval**: risky actions (`exec`/`script`) that appear for the first time in remote data are added to a pending-approval list and only run after the user approves them at execution time. Locally created actions and already-trusted actions run without a dialog.
+- **Local-only trust list**: fingerprints in the trusted/pending state are stored device-locally under the config `security` key only and are not uploaded to the cloud.
 
-### open 액션 인자 처리
+### `open` Action Argument Handling
 
-`open` 액션의 애플리케이션 실행은 셸을 거치지 않고 `execFile` 로 인자를 배열로 전달하므로, 파일 경로·애플리케이션 이름을 통한 명령 주입을 방지합니다 (`src/main/actions/open.js`).
+Application launches from the `open` action pass arguments as an array via `execFile` without going through a shell, preventing command injection through file paths or application names (`src/main/actions/open.js`).
 
-### 사용자 책임
+### User Responsibilities
 
-- 신뢰할 수 있는 출처의 스크립트만 등록하세요.
-- 명령 주입을 유발할 수 있는 입력은 사전에 정화하세요.
-- 민감 정보(API 키, 비밀번호)는 스크립트에 하드코딩하지 말고, 환경 변수나 외부 비밀 관리자에서 가져오세요.
+- Register only scripts from trusted sources.
+- Sanitize input that could cause command injection in advance.
+- Do not hardcode sensitive information (API keys, passwords) in scripts; instead, retrieve it from environment variables or an external secret manager.
 
-## 네트워크 보안
+## Network Security
 
-### API 통신
+### API Communication
 
-- 모든 API 요청은 `Authorization: Bearer <access_token>` 헤더로 인증합니다.
-- 401 응답 시 자동으로 리프레시 토큰 갱신을 시도합니다.
-- 요청 실패에 대한 재시도는 클라우드 동기화 등 특정 모듈에서 제한적으로 적용됩니다 (최대 3회).
+- All API requests are authenticated with the `Authorization: Bearer <access_token>` header.
+- On a 401 response, an automatic refresh token renewal is attempted.
+- Retries on request failure are applied in a limited way in specific modules such as cloud sync (up to 3 times).
 
-### 인증서 검증
+### Certificate Verification
 
-- 시스템 신뢰 저장소(루트 CA)를 사용한 표준 TLS 검증을 수행합니다.
-- 인증서 핀닝, Certificate Transparency 검사 등은 적용되지 않습니다.
+- Standard TLS verification is performed using the system trust store (root CAs).
+- Certificate pinning, Certificate Transparency checks, and the like are not applied.
 
-## 운영체제 통합
+## Operating System Integration
 
-### macOS 보안 통합
+### macOS Security Integration
 
 1. **App Sandbox / Hardened Runtime**:
-   - 일반 배포 빌드(`mac` 타깃)는 Hardened Runtime 을 활성화하여 빌드됩니다(`package.json`의 `mac.hardenedRuntime: true`).
-   - 권한은 `entitlements.mac.plist` 에 선언됩니다.
-   - Mac App Store(mas) 타깃은 별도의 `entitlements.mac.mas.plist` 와 App Sandbox 를 적용합니다.
+   - Regular distribution builds (the `mac` target) are built with Hardened Runtime enabled (`mac.hardenedRuntime: true` in `package.json`).
+   - Permissions are declared in `entitlements.mac.plist`.
+   - The Mac App Store (mas) target applies a separate `entitlements.mac.mas.plist` and the App Sandbox.
 
-2. **코드 서명**:
-   - 배포 빌드는 Apple Developer ID 인증서로 서명됩니다.
-   - GitHub Actions 빌드 파이프라인(`.github/workflows/build-release.yml`)에서 App Store Connect API 키를 준비하고 electron-builder 공증 환경 변수(`APPLE_API_KEY` 등)를 설정하여 공증(notarization)을 수행합니다.
+2. **Code signing**:
+   - Distribution builds are signed with an Apple Developer ID certificate.
+   - Notarization is performed in the GitHub Actions build pipeline (`.github/workflows/build-release.yml`) by preparing an App Store Connect API key and setting the electron-builder notarization environment variables (`APPLE_API_KEY`, etc.).
 
-3. **글로벌 단축키**:
-   - macOS 의 접근성 권한이 필요할 수 있습니다.
+3. **Global shortcuts**:
+   - macOS accessibility permissions may be required.
 
-### Windows 보안 통합
+### Windows Security Integration
 
-1. **코드 서명**:
-   - 배포 빌드는 SmartScreen 경고를 줄이기 위해 코드 서명 인증서로 서명됩니다.
+1. **Code signing**:
+   - Distribution builds are signed with a code signing certificate to reduce SmartScreen warnings.
 
-2. **권한**:
-   - 일반 사용자 권한으로 실행되며, 관리자 권한은 요구하지 않습니다.
+2. **Permissions**:
+   - Runs with normal user privileges and does not require administrator privileges.
 
-## 보안 모범 사례
+## Security Best Practices
 
-사용자가 Toast 앱을 안전하게 사용하기 위한 권장 사항:
+Recommendations for using the Toast app safely:
 
-1. **최신 버전 유지**: 자동 업데이트를 활성화하여 보안 수정을 적시에 받으세요.
-2. **계정 보안**: Toast 계정에 강력하고 고유한 암호를 사용하세요.
-3. **스크립트 검토**: 신뢰할 수 있는 출처의 스크립트만 실행하고, 실행 전에 코드를 검토하세요.
-4. **공유 컴퓨터 사용 후 로그아웃**: 토큰 파일이 평문이므로 사용 종료 시 반드시 로그아웃하세요.
-5. **구성 백업**: 구성을 정기적으로 안전한 위치에 백업하세요.
+1. **Keep it up to date**: enable auto-update to receive security fixes promptly.
+2. **Account security**: use a strong, unique password for your Toast account.
+3. **Review scripts**: run only scripts from trusted sources, and review the code before running.
+4. **Log out after using a shared computer**: because the token file is plaintext, always log out when you are done.
+5. **Back up your configuration**: back up your configuration regularly to a safe location.
 
-## 보안 취약점 보고
+## Reporting Security Vulnerabilities
 
-Toast 앱에서 보안 취약점을 발견한 경우:
+If you discover a security vulnerability in the Toast app:
 
-1. **책임 있는 공개**: 취약점 세부 정보를 공개적으로 공유하지 마세요.
-2. **보고 채널**: [GitHub Issues](https://github.com/opspresso/toast-app/issues) 의 비공개 보안 보고 또는 저장소 메인테이너에게 직접 연락해 주세요.
-3. **보고 가이드라인**:
-   - 명확한 취약점 설명
-   - 재현 단계 (가능한 경우)
-   - 잠재적 영향 범위
-   - 완화 또는 수정 제안 (선택)
+1. **Responsible disclosure**: do not share vulnerability details publicly.
+2. **Reporting channel**: use the private security reporting on [GitHub Issues](https://github.com/opspresso/toast-app/issues), or contact the repository maintainers directly.
+3. **Reporting guidelines**:
+   - A clear description of the vulnerability
+   - Reproduction steps (if possible)
+   - Potential scope of impact
+   - Suggested mitigation or fix (optional)
 
-## 관련 문서
+## Related Documentation
 
-- **인증 시스템 전체 개요**: [연동 가이드](../development/integration.md)
-- **클라우드 동기화 구현**: [클라우드 동기화](../features/cloud-sync.md)
-- **사용자 정의 스크립트**: [스크립트](../features/scripts.md)
-- **API 문서**: [API 개요](../api/overview.md)
+- **Full authentication system overview**: [Integration Guide](../development/integration.md)
+- **Cloud sync implementation**: [Cloud Sync](../features/cloud-sync.md)
+- **Custom scripts**: [Scripts](../features/scripts.md)
+- **API documentation**: [API Overview](../api/overview.md)

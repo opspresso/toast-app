@@ -32,31 +32,31 @@ import { setLoading, getInitials, saveSubscriptionToConfig, handleTokenExpired }
 import * as cloudSyncUI from '../cloud-sync.js';
 
 /**
- * 계정 설정 탭 초기화
+ * Initialize Account Settings tab
  */
 export function initializeAccountSettings() {
-  window.settings.log.info('initializeAccountSettings 호출');
+  window.settings.log.info('initializeAccountSettings called');
 
   try {
-    // 중복 호출 방지를 위해 인증 상태 초기화만 수행
-    // initializeAuthState()는 이미 내부적으로 필요한 프로필 및 구독 정보를 로드함
+    // Only initialize auth state to prevent duplicate calls
+    // initializeAuthState() already loads the necessary profile and subscription info internally
     initializeAuthState();
   }
   catch (error) {
-    window.settings.log.error('계정 설정 초기화 중 오류 발생:', error);
+    window.settings.log.error('Error occurred while initializing account settings:', error);
   }
 }
 
 /**
- * Initialize authentication state - 중복 호출 방지 및 최적화
+ * Initialize authentication state - prevent duplicate calls and optimize
  */
 export async function initializeAuthState() {
   if (authStateInitialized) {
-    window.settings.log.info('인증 상태가 이미 초기화되어 있어 중복 초기화를 건너뜁니다.');
+    window.settings.log.info('Auth state is already initialized, skipping duplicate initialization.');
     return;
   }
 
-  // 초기화 진행 중 표시
+  // Mark initialization in progress
   setAuthStateInitialized(true);
 
   try {
@@ -64,10 +64,10 @@ export async function initializeAuthState() {
     const token = await window.settings.getAuthToken();
 
     if (token) {
-      // 로그인 상태 UI 업데이트
+      // Update logged-in state UI
       updateAuthStateUI(true);
 
-      // 프로필 및 구독 정보 로드 (중복 호출 방지)
+      // Load profile and subscription info (prevent duplicate calls)
       if (!profileDataFetchInProgress && !authState.profile) {
         await loadUserDataEfficiently();
       }
@@ -81,27 +81,27 @@ export async function initializeAuthState() {
     window.settings.log.error('Failed to initialize auth state:', error);
     // Show login UI when error occurs
     updateAuthStateUI(false);
-    // 오류 발생 시 초기화 상태 리셋
+    // Reset initialization state on error
     setAuthStateInitialized(false);
   }
 }
 
 /**
- * 프로필 및 구독 정보 효율적으로 로드 (중복 호출 방지)
+ * Efficiently load profile and subscription info (prevent duplicate calls)
  */
 export async function loadUserDataEfficiently() {
-  // 이미 데이터 로드 중이면 건너뜀
+  // Skip if data is already loading
   if (profileDataFetchInProgress) {
-    window.settings.log.info('프로필 데이터 로드가 이미 진행 중입니다.');
+    window.settings.log.info('Profile data load is already in progress.');
     return;
   }
 
   setProfileDataFetchInProgress(true);
 
   try {
-    window.settings.log.info('사용자 프로필 및 구독 정보 효율적 로드 시작');
+    window.settings.log.info('Starting efficient load of user profile and subscription info');
 
-    // 로딩 표시
+    // Show loading
     if (authLoading) {
       setLoading(authLoading, true);
     }
@@ -109,13 +109,13 @@ export async function loadUserDataEfficiently() {
       setLoading(subscriptionLoading, true);
     }
 
-    // 프로필 정보 로드
+    // Load profile info
     await fetchUserProfile();
 
-    // 구독 정보 로드 (프로필 이미 있으면 중복 요청 방지)
+    // Load subscription info (prevent duplicate request if profile already exists)
     await fetchSubscriptionInfo();
 
-    // 로딩 숨김
+    // Hide loading
     if (authLoading) {
       setLoading(authLoading, false);
     }
@@ -123,10 +123,10 @@ export async function loadUserDataEfficiently() {
       setLoading(subscriptionLoading, false);
     }
 
-    window.settings.log.info('사용자 프로필 및 구독 정보 로드 완료');
+    window.settings.log.info('User profile and subscription info load complete');
   }
   catch (error) {
-    window.settings.log.error('사용자 데이터 로드 중 오류:', error);
+    window.settings.log.error('Error occurred while loading user data:', error);
     if (authLoading) {
       setLoading(authLoading, false);
     }
@@ -135,7 +135,7 @@ export async function loadUserDataEfficiently() {
     }
   }
   finally {
-    // 데이터 로드 완료 표시
+    // Mark data load complete
     setProfileDataFetchInProgress(false);
   }
 }
@@ -195,10 +195,10 @@ export function updateAuthStateUI(isLoggedIn) {
  * Handle login button click
  */
 export function handleLogin() {
-  window.settings.log.info('로그인 시작');
+  window.settings.log.info('Login started');
 
   try {
-    // 로딩 표시
+    // Show loading
     if (authLoading) {
       setLoading(authLoading, true);
     }
@@ -206,24 +206,24 @@ export function handleLogin() {
       loginButton.disabled = true;
     }
 
-    // 로그인 시작
+    // Start login
     window.settings
       .initiateLogin()
       .then(success => {
         if (!success) {
-          // 로그인 실패
+          // Login failed
           if (authLoading) {
             setLoading(authLoading, false);
           }
           if (loginButton) {
             loginButton.disabled = false;
           }
-          window.settings.log.error('로그인 시작 실패');
+          window.settings.log.error('Failed to start login');
         }
       })
       .catch(error => {
-        // 오류 처리
-        window.settings.log.error('로그인 오류:', error);
+        // Handle error
+        window.settings.log.error('Login error:', error);
         if (authLoading) {
           setLoading(authLoading, false);
         }
@@ -233,7 +233,7 @@ export function handleLogin() {
       });
   }
   catch (error) {
-    window.settings.log.error('로그인 처리 중 오류:', error);
+    window.settings.log.error('Error occurred while processing login:', error);
     if (authLoading) {
       setLoading(authLoading, false);
     }
@@ -247,22 +247,22 @@ export function handleLogin() {
  * Handle logout button click
  */
 export function handleLogout() {
-  window.settings.log.info('로그아웃 시작');
+  window.settings.log.info('Logout started');
 
   try {
     window.settings
       .logout()
       .then(() => {
-        // 로그아웃 성공 시 UI 업데이트
+        // Update UI on successful logout
         updateAuthStateUI(false);
-        window.settings.log.info('로그아웃 성공');
+        window.settings.log.info('Logout successful');
       })
       .catch(error => {
-        window.settings.log.error('로그아웃 오류:', error);
+        window.settings.log.error('Logout error:', error);
       });
   }
   catch (error) {
-    window.settings.log.error('로그아웃 처리 중 오류:', error);
+    window.settings.log.error('Error occurred while processing logout:', error);
   }
 }
 
@@ -270,7 +270,7 @@ export function handleLogout() {
  * Handle manage subscription button click
  */
 export function handleManageSubscription() {
-  window.settings.log.info('구독 관리 페이지 열기');
+  window.settings.log.info('Opening subscription management page');
   window.settings.openUrl('https://app.toast.sh/subscription');
 }
 
@@ -278,10 +278,10 @@ export function handleManageSubscription() {
  * Handle refresh subscription button click
  */
 export function handleRefreshSubscription() {
-  window.settings.log.info('구독 정보 새로고침');
+  window.settings.log.info('Refreshing subscription info');
 
   try {
-    // 버튼 비활성화 및 로딩 표시
+    // Disable button and show loading
     if (refreshSubscriptionButton) {
       refreshSubscriptionButton.disabled = true;
       refreshSubscriptionButton.textContent = 'Refreshing...';
@@ -291,10 +291,10 @@ export function handleRefreshSubscription() {
       setLoading(subscriptionLoading, true);
     }
 
-    // 구독 정보 다시 로드
+    // Reload subscription info
     fetchSubscriptionInfo()
       .then(() => {
-        // 성공 메시지 표시
+        // Show success message
         if (refreshSubscriptionButton) {
           refreshSubscriptionButton.textContent = 'Refresh Complete!';
           setTimeout(() => {
@@ -304,9 +304,9 @@ export function handleRefreshSubscription() {
         }
       })
       .catch(error => {
-        window.settings.log.error('구독 정보 새로고침 오류:', error);
+        window.settings.log.error('Subscription info refresh error:', error);
 
-        // 오류 메시지 표시
+        // Show error message
         if (refreshSubscriptionButton) {
           refreshSubscriptionButton.textContent = 'Refresh Failed';
           setTimeout(() => {
@@ -317,9 +317,9 @@ export function handleRefreshSubscription() {
       });
   }
   catch (error) {
-    window.settings.log.error('구독 정보 새로고침 처리 중 오류:', error);
+    window.settings.log.error('Error occurred while processing subscription info refresh:', error);
 
-    // 오류 시 버튼 및 로딩 상태 복원
+    // Restore button and loading state on error
     if (subscriptionLoading) {
       setLoading(subscriptionLoading, false);
     }
@@ -331,13 +331,13 @@ export function handleRefreshSubscription() {
 }
 
 /**
- * Fetch user profile information - 중복 요청 방지
+ * Fetch user profile information - prevent duplicate requests
  */
 export async function fetchUserProfile() {
   try {
-    // 이미 프로필 정보가 있으면 중복 요청 방지
+    // Prevent duplicate request if profile info already exists
     if (authState.profile) {
-      window.settings.log.info('기존 프로필 정보 사용 (중복 요청 방지)');
+      window.settings.log.info('Using existing profile info (preventing duplicate request)');
       updateProfileDisplay(authState.profile);
       return authState.profile;
     }
@@ -349,7 +349,7 @@ export async function fetchUserProfile() {
       return null;
     }
 
-    window.settings.log.info('프로필 정보 새로 요청');
+    window.settings.log.info('Requesting profile info anew');
     const profile = await window.settings.fetchUserProfile();
     if (profile) {
       updateAuthState({ profile });
@@ -405,13 +405,13 @@ export function updateProfileDisplay(profile) {
 }
 
 /**
- * Fetch subscription information - 중복 요청 및 불필요한 API 호출 방지
+ * Fetch subscription information - prevent duplicate requests and unnecessary API calls
  */
 export async function fetchSubscriptionInfo() {
   try {
-    // 이미 구독 정보가 있으면 중복 요청 방지
+    // Prevent duplicate request if subscription info already exists
     if (authState.subscription) {
-      window.settings.log.info('기존 구독 정보 사용 (중복 요청 방지)');
+      window.settings.log.info('Using existing subscription info (preventing duplicate request)');
       updateSubscriptionUI(authState.subscription);
       return authState.subscription;
     }
@@ -424,40 +424,40 @@ export async function fetchSubscriptionInfo() {
       return null;
     }
 
-    // 구독 정보 확인을 위한 로그
-    window.settings.log.info('구독 정보 요청 시작');
+    // Log for subscription info check
+    window.settings.log.info('Starting subscription info request');
 
-    // 이미 프로필 정보가 있으면 재사용, 없으면 가져오기
+    // Reuse profile info if it already exists, otherwise fetch it
     let profile = authState.profile;
     if (!profile) {
       profile = await fetchUserProfile();
     }
 
-    // 프로필에 이미 구독 정보가 포함되어 있으면 재사용
+    // Reuse subscription info if the profile already contains it
     if (profile && profile.subscription) {
-      window.settings.log.info('프로필에서 구독 정보 사용:', JSON.stringify(profile.subscription));
+      window.settings.log.info('Using subscription info from profile:', JSON.stringify(profile.subscription));
       updateAuthState({ subscription: profile.subscription });
       updateSubscriptionUI(profile.subscription);
       saveSubscriptionToConfig(profile.subscription);
       return profile.subscription;
     }
 
-    // 프로필에 구독 정보가 없는 경우에만 별도 요청
-    window.settings.log.info('구독 정보 별도 요청');
+    // Make a separate request only if the profile has no subscription info
+    window.settings.log.info('Making separate subscription info request');
     const subscription = await window.settings.fetchSubscription();
-    window.settings.log.info('구독 정보 수신:', subscription ? '성공' : '실패');
+    window.settings.log.info('Subscription info received:', subscription ? 'success' : 'failure');
 
     if (subscription) {
-      window.settings.log.info('수신된 구독 정보:', JSON.stringify({ plan: subscription.plan, active: subscription.active, isSubscribed: subscription.isSubscribed }));
+      window.settings.log.info('Received subscription info:', JSON.stringify({ plan: subscription.plan, active: subscription.active, isSubscribed: subscription.isSubscribed }));
 
-      // 구독 정보에 cloud_sync 정보가 없으면 추가 (프리미엄 사용자면)
+      // Add cloud_sync info if missing from subscription info (for premium users)
       if (subscription.plan && subscription.plan.toLowerCase().includes('premium')) {
         if (!subscription.features) {
           subscription.features = {};
         }
-        // 프리미엄 사용자라면 cloud_sync 기능 활성화
+        // Enable cloud_sync feature for premium users
         subscription.features.cloud_sync = true;
-        window.settings.log.info('Premium 구독 감지, cloud_sync 활성화');
+        window.settings.log.info('Premium subscription detected, enabling cloud_sync');
       }
 
       updateAuthState({ subscription });
@@ -468,7 +468,7 @@ export async function fetchSubscriptionInfo() {
       // Save subscription info to config
       saveSubscriptionToConfig(subscription);
 
-      // 구독 정보를 설정에 직접 저장
+      // Save subscription info directly to config
       await window.settings.setConfig('subscription', subscription);
 
       return subscription;
@@ -540,7 +540,7 @@ export function updateSubscriptionUI(subscription) {
  * Setup account settings event listeners
  */
 export function setupAccountEventListeners() {
-  // 계정 관련 버튼
+  // Account buttons
   if (loginButton) {
     loginButton.addEventListener('click', handleLogin);
   }
@@ -557,7 +557,7 @@ export function setupAccountEventListeners() {
     refreshSubscriptionButton.addEventListener('click', handleRefreshSubscription);
   }
 
-  // 구독 정보와 관련된 이벤트
+  // Subscription-related events
   window.addEventListener('login-success', event => {
     window.settings.log.info('Login success event received in settings window');
     // Load user data and update UI when login is successful
@@ -566,14 +566,14 @@ export function setupAccountEventListeners() {
 }
 
 /**
- * Load user profile information and update UI - 효율적 데이터 로드 사용
+ * Load user profile information and update UI - uses efficient data loading
  */
 export async function loadUserDataAndUpdateUI() {
-  window.settings.log.info('loadUserDataAndUpdateUI 호출');
+  window.settings.log.info('loadUserDataAndUpdateUI called');
 
-  // 최적화된 데이터 로드 함수 호출
+  // Call the optimized data load function
   await loadUserDataEfficiently();
 
-  // 인증 상태 UI 업데이트
+  // Update auth state UI
   updateAuthStateUI(true);
 }

@@ -1,29 +1,29 @@
 # User Guide
 
-Toast App 사용자 가이드입니다.
+The Toast App user guide.
 
-## 문서 목록
+## Document List
 
-| 문서 | 설명 |
+| Document | Description |
 |------|------|
-| [user.md](./user.md) | 사용자 가이드, UI 설명 |
-| [pages.md](./pages.md) | 페이지 구조, 네비게이션 |
-| [scenarios.md](./scenarios.md) | 실제 사용 시나리오 |
-| [actions.md](./actions.md) | 버튼 액션 타입 및 설정 방법 |
-| [shortcuts.md](./shortcuts.md) | 자동 단축키 할당 시스템 |
+| [user.md](./user.md) | User guide and UI overview |
+| [pages.md](./pages.md) | Page structure and navigation |
+| [scenarios.md](./scenarios.md) | Real-world usage scenarios |
+| [actions.md](./actions.md) | Button action types and how to configure them |
+| [shortcuts.md](./shortcuts.md) | Automatic shortcut assignment system |
 
-## 시작하기
+## Getting Started
 
-1. [user.md](./user.md) - 기본 사용법
-2. [pages.md](./pages.md) - 페이지 구성 이해
-3. [actions.md](./actions.md) - 버튼 액션 설정
-4. [shortcuts.md](./shortcuts.md) - 단축키 활용
+1. [user.md](./user.md) - Basic usage
+2. [pages.md](./pages.md) - Understanding page layout
+3. [actions.md](./actions.md) - Configuring button actions
+4. [shortcuts.md](./shortcuts.md) - Using shortcuts
 
-## 활용 사례
+## Use Cases
 
-- [scenarios.md](./scenarios.md) - 다양한 사용 시나리오
+- [scenarios.md](./scenarios.md) - Various usage scenarios
 
-## 관련 문서
+## Related Documents
 
-- [기능 상세](../features/README.md)
-- [설정 스키마](../config/schema.md)
+- [Feature Details](../features/README.md)
+- [Configuration Schema](../config/schema.md)

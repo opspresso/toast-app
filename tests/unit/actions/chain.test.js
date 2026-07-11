@@ -1,7 +1,7 @@
 /**
  * Toast - Chain Action Tests
  *
- * 체인 액션에 대한 단위 테스트 - 여러 액션을 순서대로 실행
+ * Unit tests for the chain action - executes multiple actions in sequence
  */
 
 // Mock dependencies

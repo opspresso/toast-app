@@ -224,14 +224,14 @@ describe('Auto Updater', () => {
       mockApp.isQuitting = false;
       updater.initAutoUpdater(mockWindows);
 
-      // update-downloaded 이벤트 핸들러를 직접 호출하여 다운로드 완료 상태로 만듦
+      // Call the update-downloaded event handler directly to reach the download-complete state
       const downloadedHandler = mockAutoUpdater.on.mock.calls.find(([eventName]) => eventName === 'update-downloaded')[1];
       downloadedHandler({ version: '1.1.0', releaseDate: '2026-01-01', files: [] });
 
       const result = await updater.installUpdate();
 
       expect(result.success).toBe(true);
-      // isQuitting을 설정해야 창 close 핸들러가 종료를 막지 않아 재시작이 진행됨
+      // isQuitting must be set so the window close handler does not block quitting and the restart proceeds
       expect(mockApp.isQuitting).toBe(true);
       expect(mockAutoUpdater.quitAndInstall).toHaveBeenCalledWith(false, true);
     });

@@ -14,7 +14,7 @@ const apiIcons = require('../api/icons');
 
 const logger = createLogger('IconNormalizer');
 
-// 오프라인·서버 장애 시 남은 버튼 업로드를 포기하는 연속 실패 한도
+// Consecutive-failure limit at which remaining button uploads are abandoned when offline or the server is down
 const MAX_CONSECUTIVE_FAILURES = 3;
 
 /**
@@ -39,7 +39,7 @@ function iconToAbsolutePath(icon) {
 async function normalizeLocalIcons(pages, options = {}) {
   const { uploadIcon = apiIcons.uploadIcon, onUnauthorized = null, platform = process.platform } = options;
 
-  // 로컬 아이콘 파일은 macOS 추출 기능으로만 생성되므로 다른 플랫폼에서는 할 일이 없다
+  // Local icon files are only created by the macOS extraction feature, so there is nothing to do on other platforms
   if (platform !== 'darwin' || !Array.isArray(pages)) {
     return { pages, changed: false, failures: 0 };
   }
@@ -65,7 +65,7 @@ async function normalizeLocalIcons(pages, options = {}) {
 
       const absolutePath = iconToAbsolutePath(icon);
       if (!fs.existsSync(absolutePath)) {
-        // 이 기기에 파일이 없는 아이콘(다른 기기에서 동기화된 값 등)은 건드리지 않는다
+        // Leave icons whose file is not present on this device (e.g. values synced from another device) untouched
         buttons.push(button);
         continue;
       }
@@ -78,7 +78,7 @@ async function normalizeLocalIcons(pages, options = {}) {
       }
       else {
         failures++;
-        // 엔드포인트 미지원(unavailable)은 즉시 전체 중단, 그 외에는 연속 실패 한도까지 시도
+        // An unsupported endpoint (unavailable) aborts everything immediately; otherwise retry up to the consecutive-failure limit
         consecutiveFailures = result.unavailable ? MAX_CONSECUTIVE_FAILURES : consecutiveFailures + 1;
         buttons.push(button);
       }

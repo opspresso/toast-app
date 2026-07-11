@@ -11,7 +11,7 @@ const { createConfigStore } = require('./config');
 let trayInstance = null;
 let windowsRef = null;
 
-// 자동 업데이트 상태 (updater.js 가 setUpdateState 로 갱신)
+// Auto-update state (updated by updater.js via setUpdateState)
 let updateState = { status: null, version: null };
 
 /**
@@ -80,9 +80,9 @@ function hasUpdateAvailable() {
  * @param {Object} windows - Object containing application windows
  */
 function updateTrayMenu(tray, windows) {
-  // 현재 구성된 Global Hotkey 가져오기
+  // Get the currently configured Global Hotkey
   const config = createConfigStore();
-  const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // 기본값 사용
+  const configuredHotkey = config.get('globalHotkey') || 'Alt+Space'; // Use default value
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -120,7 +120,7 @@ function updateTrayMenu(tray, windows) {
       accelerator: 'Cmd+,',
       click: () => {
         const { ipcMain } = require('electron');
-        // 두 번째 인자는 이벤트 객체
+        // The second argument is the event object
         ipcMain.emit('show-settings', null);
       },
     },
@@ -128,8 +128,8 @@ function updateTrayMenu(tray, windows) {
       label: 'About',
       click: () => {
         const { ipcMain } = require('electron');
-        // 설정 창을 열고 about 탭을 선택하도록 이벤트 발생
-        // 두 번째 인자는 이벤트 객체, 세 번째 인자부터 추가 데이터
+        // Emit an event to open the settings window and select the about tab
+        // The second argument is the event object; additional data follows from the third argument
         ipcMain.emit('show-settings-tab', null, 'about');
       },
     },
@@ -158,7 +158,7 @@ function buildUpdateMenuItems() {
       {
         label: `⬆ Update to v${version}`,
         click: () => {
-          // 순환 참조를 피하기 위해 클릭 시점에 로드
+          // Load at click time to avoid a circular dependency
           require('./updater').downloadAndInstallUpdate(version);
         },
       },
@@ -199,7 +199,7 @@ function buildUpdateMenuItems() {
  * @param {string} [version] - Target update version
  */
 function setUpdateState(status, version) {
-  // 동일 상태로의 중복 갱신은 무시 (주기 체크마다 메뉴가 다시 만들어지는 것 방지)
+  // Ignore redundant updates to the same state (prevents the menu from being rebuilt on every periodic check)
   if (updateState.status === status && updateState.version === (version || null)) {
     return;
   }

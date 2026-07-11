@@ -214,28 +214,28 @@ jobs:
       - name: Calculate DMG SHA256 🔐
         id: sha256
         run: |
-          # 아티팩트 디렉토리에서 DMG 파일 찾기
+          # Find the DMG file in the artifacts directory
           DMG_FILE=$(find ./artifacts -name "*.dmg" | head -n 1)
 
           if [ -z "$DMG_FILE" ]; then
-            echo "⚠️ DMG 파일을 찾을 수 없습니다."
+            echo "⚠️ DMG file not found."
             exit 1
           fi
 
-          echo "📦 찾은 DMG 파일: $DMG_FILE"
+          echo "📦 Found DMG file: $DMG_FILE"
 
-          # DMG 파일의 SHA256 해시 계산
+          # Calculate the SHA256 hash of the DMG file
           DMG_SHA256=$(shasum -a 256 "$DMG_FILE" | awk '{print $1}')
           echo "🔑 DMG SHA256: $DMG_SHA256"
 
-          # 출력으로 SHA256 값 설정
+          # Set the SHA256 value as output
           echo "sha256=$DMG_SHA256" >> $GITHUB_OUTPUT
 
       - name: Trigger for Homebrew 🚀
         run: |
           echo "🚀 Triggering Homebrew tap update..."
 
-          # 변수 설정
+          # Set variables
           GITOPS_REPO="opspresso/homebrew-tap"
           PROJECT="toast"
           VERSION="${{ github.ref_name }}"
@@ -246,7 +246,7 @@ jobs:
           echo "  Version: $VERSION"
           echo "  SHA256: $SHA256"
 
-          # repository_dispatch 이벤트 트리거를 위한 JSON 페이로드 생성
+          # Build the JSON payload to trigger the repository_dispatch event
           PAYLOAD=$(cat <<EOF
           {
             "event_type": "gitops",
@@ -259,7 +259,7 @@ jobs:
           EOF
           )
 
-          # GitHub API를 통해 repository_dispatch 이벤트 트리거
+          # Trigger the repository_dispatch event via the GitHub API
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \

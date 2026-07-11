@@ -1,61 +1,61 @@
-# 클라우드 동기화 가이드
+# Cloud Sync Guide
 
-이 문서는 Toast App과 Toast Web 간의 웹 API를 통한 클라우드 동기화 구현 방법을 설명합니다.
+This document explains how cloud synchronization is implemented between Toast App and Toast Web via the web API.
 
-## 목차
+## Table of Contents
 
-- [개요](#개요)
-- [인증 및 토큰 관리](#인증-및-토큰-관리)
-- [기본 동기화 흐름](#기본-동기화-흐름)
-- [동기화 API](#동기화-api)
-- [구현 방법](#구현-방법)
-- [문제 해결](#문제-해결)
+- [Overview](#overview)
+- [Authentication and Token Management](#authentication-and-token-management)
+- [Basic Sync Flow](#basic-sync-flow)
+- [Sync API](#sync-api)
+- [Implementation](#implementation)
+- [Troubleshooting](#troubleshooting)
 
-## 개요
+## Overview
 
-Toast App의 클라우드 동기화는 REST API 통신을 통해 설정 데이터를 서버(Toast Web)와 동기화합니다. 사용자가 여러 기기에서 일관된 설정을 유지할 수 있게 해주는 핵심 기능입니다. 동기화 시 데이터 일관성 확보와 충돌 해결이 중요합니다.
+Toast App's cloud sync synchronizes configuration data with the server (Toast Web) through REST API communication. It is a core feature that lets users maintain consistent settings across multiple devices. Ensuring data consistency and resolving conflicts are critical during synchronization.
 
-**핵심 이점:**
-- 여러 기기에서 동일한 설정 사용
-- 새 기기 설치 시 설정 복원 (충돌 해결 로직에 따라 최신 또는 병합된 설정 적용)
-- 변경 사항 반영 (양방향 동기화)
-- 무기한 토큰으로 지속적인 동기화 보장
+**Key Benefits:**
+- Use the same settings across multiple devices
+- Restore settings when installing on a new device (the latest or merged settings are applied according to the conflict-resolution logic)
+- Reflect changes (two-way synchronization)
+- Ensure continuous sync with unlimited tokens
 
-## 인증 및 토큰 관리
+## Authentication and Token Management
 
-클라우드 동기화를 위해서는 안정적인 인증 시스템이 필요합니다. Toast App은 OAuth 2.0 기반의 토큰 인증을 사용하며, 동기화 중단을 방지하기 위해 토큰 만료를 무기한으로 설정했습니다.
+Cloud sync requires a reliable authentication system. Toast App uses OAuth 2.0-based token authentication, and to prevent sync interruptions, token expiration is set to unlimited.
 
-### 토큰 만료 설정
+### Token Expiration Settings
 
-**서버 측 (toast-web):**
-- 액세스/리프레시 토큰의 만료 정책은 서버가 결정합니다. 동기화 중단을 최소화하기 위해 매우 긴 만료 시간을 사용하지만, 정확한 값은 서버 설정에 따라 달라질 수 있습니다.
+**Server side (toast-web):**
+- The expiration policy for access/refresh tokens is determined by the server. Very long expiration times are used to minimize sync interruptions, but the exact values may vary depending on server configuration.
 
-**클라이언트 측 (toast-app):**
-- **기본 토큰 만료 시간**: 1년 (31,536,000초)
-- **무기한 토큰 처리**: `TOKEN_EXPIRES_IN` 이 음수면 JavaScript 최대 날짜값(8640000000000000) 사용 (0은 falsy라 기본값 1년으로 대체됨)
-- **환경 변수 지원**: `TOKEN_EXPIRES_IN` 환경 변수로 커스터마이징 가능
+**Client side (toast-app):**
+- **Default token expiration**: 1 year (31,536,000 seconds)
+- **Unlimited token handling**: When `TOKEN_EXPIRES_IN` is negative, the JavaScript maximum date value (8640000000000000) is used (0 is falsy, so it falls back to the default of 1 year)
+- **Environment variable support**: Customizable via the `TOKEN_EXPIRES_IN` environment variable
 
-### 토큰 만료 처리 로직
+### Token Expiration Handling Logic
 
 ```javascript
-// 토큰 만료 확인 (무기한 토큰 지원)
+// Check token expiration (supports unlimited tokens)
 async function isTokenExpired() {
   try {
     const expiresAt = await getStoredTokenExpiry();
 
     if (!expiresAt) {
-      return true; // 만료 시간이 없으면 만료된 것으로 처리
+      return true; // Treat as expired if there is no expiration time
     }
 
-    // 무기한 토큰인 경우 (매우 먼 미래 날짜) 만료되지 않은 것으로 처리
+    // For unlimited tokens (very far future date), treat as not expired
     if (expiresAt >= 8640000000000000) {
       logger.info('Token is set to unlimited expiration');
       return false;
     }
 
-    // 일반 토큰의 경우 현재 시간과 비교
+    // For regular tokens, compare with the current time
     const now = Date.now();
-    const safetyMargin = 30 * 1000; // 30초 안전 마진
+    const safetyMargin = 30 * 1000; // 30-second safety margin
     const isNearExpiry = now >= expiresAt - safetyMargin;
 
     if (isNearExpiry) {
@@ -66,24 +66,24 @@ async function isTokenExpired() {
     return false;
   } catch (error) {
     logger.error('Error checking token expiration:', error);
-    return true; // 오류 발생 시 안전을 위해 만료된 것으로 처리
+    return true; // Treat as expired for safety if an error occurs
   }
 }
 
-// 액세스·리프레시 토큰을 한 번의 원자적 쓰기로 저장 (무기한 지원)
+// Store access and refresh tokens in a single atomic write (supports unlimited)
 async function storeTokens(token, refreshToken, expiresIn = 31536000) {
   try {
     let expiresAt;
     if (expiresIn <= 0) {
-      // 0 이하 값은 무기한으로 처리
-      expiresAt = 8640000000000000; // JavaScript 최대 날짜값
+      // Values of 0 or less are treated as unlimited
+      expiresAt = 8640000000000000; // JavaScript maximum date value
       logger.info('Token expiration time set to unlimited.');
     } else {
       expiresAt = Date.now() + expiresIn * 1000;
     }
 
-    // 토큰과 만료 시간을 함께 저장 (readTokenFile/writeTokenFile이
-    // 평문 JSON 파일 읽기/쓰기와 0600 권한 설정을 처리)
+    // Store the token and expiration time together (readTokenFile/writeTokenFile
+    // handle reading/writing the plaintext JSON file and setting 0600 permissions)
     const tokenData = readTokenFile() || {};
     tokenData[TOKEN_KEY] = token;
     if (refreshToken) {
@@ -103,47 +103,47 @@ async function storeTokens(token, refreshToken, expiresIn = 31536000) {
 }
 ```
 
-### 환경 변수 설정
+### Environment Variable Configuration
 
-토큰 만료 시간은 환경 변수로 커스터마이징할 수 있습니다:
+The token expiration time can be customized via an environment variable:
 
 ```bash
-# 1년 (기본값)
+# 1 year (default)
 TOKEN_EXPIRES_IN=31536000
 
-# 무기한 (음수 값 — 0은 기본값 1년으로 대체됨)
+# Unlimited (negative value — 0 falls back to the default of 1 year)
 TOKEN_EXPIRES_IN=-1
 
-# 커스텀 시간 (초 단위)
-TOKEN_EXPIRES_IN=86400  # 1일
+# Custom time (in seconds)
+TOKEN_EXPIRES_IN=86400  # 1 day
 ```
 
-### 토큰 관리 모범 사례
+### Token Management Best Practices
 
-1. **무기한 토큰 사용**: 동기화 중단 방지를 위해 토큰을 무기한으로 설정
-2. **로컬 파일 저장**: 토큰을 로컬 JSON 파일(`auth-tokens.json`)에 평문으로 저장하고, 소유자만 읽기/쓰기 가능한 권한(`0600`)으로 보호합니다. macOS Keychain 등 OS 보안 저장소는 사용하지 않습니다(자세한 내용은 [보안](../architecture/security.md#토큰-관리) 참조). 과거 `safeStorage`로 암호화되어 저장된 레거시 파일도 읽을 때 자동으로 인식되어 평문으로 마이그레이션됩니다.
-3. **원자적 쓰기**: 액세스·리프레시 토큰을 `storeTokens()` 한 번의 쓰기로 함께 저장(임시 파일 사용). 서버가 갱신할 때마다 리프레시 토큰을 회전시키므로, 두 토큰을 따로 저장하면 그 사이 크래시 시 이미 폐기된 리프레시 토큰만 남아 강제 재로그인이 발생할 수 있습니다.
-4. **오류 처리**: 토큰 관련 오류 시 적절한 로깅 및 복구 로직
-5. **로그아웃 시 서버 폐기**: 로그아웃 시 저장된 리프레시 토큰을 서버에 revoke 요청(`/oauth/revoke`)해 로컬 파일 삭제 후에도 서버에서 재사용되지 않도록 합니다.
+1. **Use unlimited tokens**: Set tokens to unlimited to prevent sync interruptions
+2. **Local file storage**: Store tokens in a local JSON file (`auth-tokens.json`) in plaintext, protected with owner-only read/write permissions (`0600`). OS-level secure stores such as the macOS Keychain are not used (see [Security](../architecture/security.md#token-management) for details). Legacy files that were previously encrypted with `safeStorage` are automatically recognized on read and migrated to plaintext.
+3. **Atomic writes**: Store access and refresh tokens together in a single `storeTokens()` write (using a temporary file). Because the server rotates the refresh token on every renewal, storing the two tokens separately could leave only an already-discarded refresh token if a crash occurs in between, forcing a re-login.
+4. **Error handling**: Appropriate logging and recovery logic for token-related errors
+5. **Server revocation on logout**: On logout, send a revoke request for the stored refresh token to the server (`/oauth/revoke`) so it cannot be reused on the server even after the local file is deleted.
 
-## 기본 동기화 흐름
+## Basic Sync Flow
 
 ```mermaid
 sequenceDiagram
-    Toast App->>Toast Web: 설정 가져오기 (GET /api/users/settings)
-    Toast Web-->>Toast App: 현재 설정 데이터 (서버 메타데이터 포함)
+    Toast App->>Toast Web: Fetch settings (GET /api/users/settings)
+    Toast Web-->>Toast App: Current settings data (including server metadata)
 
-    Note over Toast App: 사용자가 설정 변경 (로컬 메타데이터 업데이트)
+    Note over Toast App: User changes settings (updates local metadata)
 
-    Toast App->>Toast Web: 설정 업데이트 (PUT /api/users/settings, 로컬 메타데이터 포함)
-    Toast Web-->>Toast App: 업데이트 결과 (서버 메타데이터 포함)
+    Toast App->>Toast Web: Update settings (PUT /api/users/settings, including local metadata)
+    Toast Web-->>Toast App: Update result (including server metadata)
 ```
 
-## 동기화 API
+## Sync API
 
-동기화 API는 서버(Toast Web)에서 제공하며, 클라이언트는 이 API를 통해 설정을 주고받습니다. 모든 API 요청에는 Bearer 토큰이 필요합니다.
+The sync API is provided by the server (Toast Web), and the client exchanges settings through this API. All API requests require a Bearer token.
 
-### 설정 가져오기
+### Fetch Settings
 
 ```http
 GET /api/users/settings HTTP/1.1
@@ -151,14 +151,14 @@ Host: app.toast.sh
 Authorization: Bearer {access_token}
 ```
 
-**응답:**
+**Response:**
 ```json
 {
   "success": true,
   "data": {
     "pages": [
       {
-        "name": "메인",
+        "name": "Main",
         "buttons": [...]
       }
     ],
@@ -169,16 +169,16 @@ Authorization: Bearer {access_token}
     "advanced": {
       "launchAtLogin": true
     },
-    "lastModifiedAt": 1682932130000,     // 마지막으로 로컬에서 설정이 수정된 시간
-    "lastModifiedDevice": "device-id-1", // 마지막으로 설정을 수정한 기기 ID
-    "lastSyncedAt": 1682932134590,       // 마지막으로 서버와 동기화된 시간
-    "lastSyncedDevice": "device-id-1"    // 마지막으로 서버와 동기화한 기기 ID
+    "lastModifiedAt": 1682932130000,     // Time settings were last modified locally
+    "lastModifiedDevice": "device-id-1", // ID of the device that last modified settings
+    "lastSyncedAt": 1682932134590,       // Time last synced with the server
+    "lastSyncedDevice": "device-id-1"    // ID of the device that last synced with the server
   }
 }
 ```
-*참고: 서버 응답 구조는 구현에 따라 다를 수 있으며, 클라이언트는 `pages`가 최상위 또는 `data` 하위에 오는 형식을 모두 처리합니다.*
+*Note: The server response structure may vary by implementation; the client handles both formats where `pages` appears at the top level or under `data`.*
 
-### 설정 업데이트
+### Update Settings
 
 ```http
 PUT /api/users/settings HTTP/1.1
@@ -189,32 +189,32 @@ Content-Type: application/json
 {
   "pages": [
     {
-      "name": "메인 수정됨",
+      "name": "Main Modified",
       "buttons": [...]
     }
   ],
-  "appearance": {          // appearance 객체 전체를 동기화
+  "appearance": {          // Sync the entire appearance object
     "theme": "dark",
     "position": "center"
   },
-  "advanced": {            // advanced 객체 전체를 동기화
+  "advanced": {            // Sync the entire advanced object
     "launchAtLogin": true
   },
-  "lastModifiedAt": 1682932768123,     // 마지막으로 로컬에서 설정이 수정된 시간
-  "lastModifiedDevice": "device-id-1", // 마지막으로 설정을 수정한 기기 ID
-  "lastSyncedAt": 1682932769000,       // 이번 업로드(동기화) 시간
-  "lastSyncedDevice": "device-id-1"    // 현재 기기 ID
+  "lastModifiedAt": 1682932768123,     // Time settings were last modified locally
+  "lastModifiedDevice": "device-id-1", // ID of the device that last modified settings
+  "lastSyncedAt": 1682932769000,       // Time of this upload (sync)
+  "lastSyncedDevice": "device-id-1"    // Current device ID
 }
 ```
 
-**응답 (예시):**
+**Response (example):**
 ```json
 {
   "success": true,
   "data": {
-    "message": "설정이 업데이트되었습니다",
-    "lastSyncedAt": 1682932769000, // 서버에서 동기화가 완료된 시간
-    // 업데이트된 전체 설정 또는 주요 메타데이터를 포함할 수 있음
+    "message": "Settings updated",
+    "lastSyncedAt": 1682932769000, // Time the sync completed on the server
+    // May include the full updated settings or key metadata
     "settings": {
         "pages": [...],
         "appearance": {
@@ -231,122 +231,122 @@ Content-Type: application/json
   }
 }
 ```
-*참고: API 응답 형식은 서버 구현에 따라 달라질 수 있으며, 클라이언트는 이에 맞춰 처리합니다.*
+*Note: The API response format may vary by server implementation, and the client handles it accordingly.*
 
-## 구현 방법
+## Implementation
 
-클라우드 동기화는 다음 모듈로 구성됩니다:
+Cloud sync consists of the following modules:
 
-- **`src/main/cloud-sync.js`**: 동기화 오케스트레이션 — 변경 감지, 디바운싱, 재시도, 충돌 해결을 담당합니다.
-- **`src/main/api/sync.js`**: 서버와의 HTTP 통신(`uploadSettings`, `downloadSettings`)과 동기화 가능 여부 판단(`isCloudSyncEnabled`)을 담당합니다. 동기화 시점 자격 판정은 `src/main/subscription.js`의 `isCloudSyncAllowed`에 위임합니다.
-- **`src/main/cloud-sync/conflict-resolver.js`**: 충돌 분석(`analyzeConflict`)과 섹션별 병합(`mergePages`/`mergeButtons`/`mergeSnippets`/`mergeAppearance`/`mergeAdvanced`)을 담당하는 순수 로직 모듈입니다.
+- **`src/main/cloud-sync.js`**: Sync orchestration — responsible for change detection, debouncing, retries, and conflict resolution.
+- **`src/main/api/sync.js`**: Responsible for HTTP communication with the server (`uploadSettings`, `downloadSettings`) and determining sync eligibility (`isCloudSyncEnabled`). Point-in-time eligibility decisions are delegated to `isCloudSyncAllowed` in `src/main/subscription.js`.
+- **`src/main/cloud-sync/conflict-resolver.js`**: A pure logic module responsible for conflict analysis (`analyzeConflict`) and section-level merging (`mergePages`/`mergeButtons`/`mergeSnippets`/`mergeAppearance`/`mergeAdvanced`).
 
-ConfigStore가 단일 진실 원천(single source of truth)이며, `pages`·`snippets`·`appearance`·`advanced`가 동기화 대상입니다.
+ConfigStore is the single source of truth, and `pages`, `snippets`, `appearance`, and `advanced` are the sync targets.
 
-### 동기화 가능 조건
+### Sync Eligibility Conditions
 
-`isCloudSyncEnabled`는 다음을 모두 만족할 때 `true`를 반환합니다(`src/main/api/sync.js`):
+`isCloudSyncEnabled` returns `true` when all of the following are satisfied (`src/main/api/sync.js`):
 
-- 유효한 인증 토큰 보유
-- 구독 활성화(`subscription.isSubscribed` 또는 `subscription.active`)
-- `cloud_sync` 기능 보유(`features.cloud_sync` 또는 `additionalFeatures.cloudSync`) **또는** 플랜 이름이 `premium`/`vip`로 시작 **또는** `subscription.isVip`가 `true`
-- 예외: 개발 모드에서는 `Basic` 플랜도 `cloud_sync` 기능 플래그가 있으면 허용
+- Holds a valid authentication token
+- Subscription is active (`subscription.isSubscribed` or `subscription.active`)
+- Has the `cloud_sync` feature (`features.cloud_sync` or `additionalFeatures.cloudSync`) **or** the plan name starts with `premium`/`vip` **or** `subscription.isVip` is `true`
+- Exception: in development mode, the `Basic` plan is also allowed if it has the `cloud_sync` feature flag
 
-### 자동 동기화
+### Automatic Sync
 
-`cloud-sync.js`는 ConfigStore의 `pages`·`snippets`·`appearance`·`advanced` 변경을 `onDidChange`로 감지합니다.
+`cloud-sync.js` detects changes to `pages`, `snippets`, `appearance`, and `advanced` in ConfigStore via `onDidChange`.
 
-- **디바운스 업로드**: 변경 감지 시 `scheduleSync`가 `SYNC_DEBOUNCE_MS`(5초) 뒤에 업로드를 예약합니다. 짧은 시간 내 연속 변경은 마지막 변경 기준으로 병합됩니다.
-- **재시도**: 업로드 실패 시 `uploadSettingsWithRetry`가 재시도합니다. 지연 시간은 `computeRetryDelay`가 시도 횟수에 따라 지수적으로 증가시키며(기본 5초 → 10초 → 20초, `MAX_RETRY_DELAY_MS` 30초로 제한) 최대 20%의 임의 지터를 더해, 같은 순간 실패한 여러 기기가 동시에 재시도하며 다시 충돌하는 것을 방지합니다. 최대 `MAX_RETRY_COUNT`(3회)까지 재시도하며, 응답에 따라 다르게 처리합니다:
-  - 업로드할 `pages`와 `snippets`가 모두 비어 있으면 서버 데이터 보호를 위해 업로드를 건너뜁니다(스킵, 재시도 없음). 빈 `pages`는 서버가 거부하므로 페이지가 있을 때만 payload에 포함합니다.
-  - `400`(검증 실패)은 재시도해도 동일하게 실패하므로 재시도하지 않습니다.
-  - `409`(stale write)는 재시도 대신 서버 데이터를 내려받아 병합 후 재업로드하는 재조정(`reconcileStaleUpload`)을 예약합니다. 로컬 변경이 유실되지 않습니다.
-- **주기적 동기화**: `SYNC_INTERVAL_MS`(15분)마다 `syncSettings('resolve')`를 호출해 충돌 해결 경로로 동기화합니다(`startPeriodicSync`). 서버 데이터를 무조건 다운로드하지 않고, 업로드 디바운스 대기 중이던 로컬 변경이 있으면 이를 우선 반영하거나 병합합니다.
-- **원격 적용 중 변경 감지 억제**: 다운로드·병합으로 원격 데이터를 ConfigStore에 쓰는 동안에는 변경 감지를 무시하여, 다운로드가 다시 업로드를 유발하는 피드백 루프를 차단합니다.
+- **Debounced upload**: When a change is detected, `scheduleSync` schedules an upload after `SYNC_DEBOUNCE_MS` (5 seconds). Consecutive changes within a short window are merged based on the last change.
+- **Retry**: When an upload fails, `uploadSettingsWithRetry` retries. The delay is increased exponentially by `computeRetryDelay` based on the number of attempts (default 5s → 10s → 20s, capped by `MAX_RETRY_DELAY_MS` at 30 seconds) plus up to 20% random jitter, to prevent multiple devices that failed at the same moment from retrying simultaneously and colliding again. It retries up to `MAX_RETRY_COUNT` (3 times), and handles responses differently:
+  - If both `pages` and `snippets` to upload are empty, the upload is skipped to protect server data (skip, no retry). Empty `pages` are rejected by the server, so `pages` is included in the payload only when there are pages.
+  - `400` (validation failure) is not retried because it would fail identically on retry.
+  - `409` (stale write) schedules a reconciliation (`reconcileStaleUpload`) that downloads server data, merges, and re-uploads instead of retrying. No local changes are lost.
+- **Periodic sync**: Every `SYNC_INTERVAL_MS` (15 minutes), `syncSettings('resolve')` is called to sync through the conflict-resolution path (`startPeriodicSync`). Rather than unconditionally downloading server data, if there are local changes still waiting on the upload debounce, they are prioritized or merged.
+- **Suppressing change detection during remote application**: While writing remote data to ConfigStore via download/merge, change detection is ignored to block the feedback loop where a download triggers another upload.
 
-업로드 데이터에는 `pages`·`snippets`·`appearance`·`advanced`와 메타데이터(`lastModifiedAt`, `lastModifiedDevice`, `lastSyncedAt`, `lastSyncedDevice`)가 포함되며, 성공 시 `markAsSynced`로 동기화 메타데이터를 갱신합니다.
+The upload data includes `pages`, `snippets`, `appearance`, `advanced`, and metadata (`lastModifiedAt`, `lastModifiedDevice`, `lastSyncedAt`, `lastSyncedDevice`), and on success, `markAsSynced` updates the sync metadata.
 
-### 충돌 해결
+### Conflict Resolution
 
-수동 동기화(`syncSettings('resolve')`)는 서버 설정을 임시로 내려받아 `analyzeConflict`로 전략을 결정합니다. 로컬 `lastModifiedAt`과 서버 타임스탬프를 비교하며, 시간 차이가 `TIME_THRESHOLD`(60초) 이내이면 동일한 것으로 간주합니다.
+Manual sync (`syncSettings('resolve')`) temporarily downloads the server settings and uses `analyzeConflict` to decide the strategy. It compares the local `lastModifiedAt` with the server timestamp, and if the time difference is within `TIME_THRESHOLD` (60 seconds), they are considered identical.
 
-- **`upload_local`**: 로컬이 더 최신 → 서버로 업로드
-- **`download_server`**: 서버가 더 최신 → 서버에서 다운로드
-- **`merge_required`**: 시간이 비슷한 동시 변경 → 병합 후 업로드
+- **`upload_local`**: Local is newer → upload to the server
+- **`download_server`**: Server is newer → download from the server
+- **`merge_required`**: Concurrent changes with similar times → merge then upload
 
-병합(`performIntelligentMerge`)은 페이지를 로컬 우선으로 유지하되(`mergePages`):
-- 로컬 페이지의 버튼이 비어 있고 이름이 같은 서버 페이지에 버튼이 있으면 서버 버전을 유지해 데이터 유실을 막습니다.
-- 같은 이름의 페이지에 로컬·서버 양쪽 모두 버튼이 있으면 페이지 전체를 교체하지 않고 **버튼 단위로 병합**합니다(`mergeButtons`). 이름 기준 로컬 우선 + 서버 전용 버튼 append 정책이라, 두 기기가 같은 페이지의 다른 버튼을 동시에 추가/수정해도 한쪽 변경이 통째로 유실되지 않습니다.
+Merging (`performIntelligentMerge`) keeps pages local-first (`mergePages`), but:
+- If a local page's buttons are empty and a server page with the same name has buttons, the server version is kept to prevent data loss.
+- If both local and server have buttons on a page with the same name, the page is not replaced entirely but **merged at the button level** (`mergeButtons`). Because the policy is name-based local-first plus appending server-only buttons, even if two devices add/modify different buttons on the same page at the same time, neither side's changes are lost wholesale.
 
-스니펫은 keyword 기준 로컬 우선 병합에 서버 전용 keyword를 뒤에 보존합니다(`mergeSnippets`). `appearance`·`advanced`는 로컬 값을 우선합니다(`mergeAppearance`/`mergeAdvanced`). 병합 후에는 `lastModifiedAt`이 서버 타임스탬프 이하이면 서버 값보다 크게 보정하여, 시계가 느린 기기가 stale write(409) 루프에 갇히지 않도록 합니다.
+Snippets are merged keyword-based local-first, preserving server-only keywords at the end (`mergeSnippets`). `appearance` and `advanced` prioritize local values (`mergeAppearance`/`mergeAdvanced`). After merging, if `lastModifiedAt` is less than or equal to the server timestamp, it is adjusted to be greater than the server value so that a device with a slow clock does not get stuck in a stale-write (409) loop.
 
-### 로그인 시 동기화
+### Sync on Login
 
-로그인 성공 후 `syncAfterLogin`은 (주기 동기화와 동일하게) `syncSettings('resolve')`로 충돌 해결 경로를 통해 동기화합니다. 로그인 사이 오프라인 상태에서 로컬에 편집한 내용이 있으면 서버 데이터로 무조건 덮어쓰지 않고 업로드/병합하며, 로컬 변경이 없을 때만 서버 설정을 다운로드합니다. 성공하면 토스트 창 UI에 갱신을 알립니다(`notifySettingsSynced`).
+After a successful login, `syncAfterLogin` synchronizes through the conflict-resolution path via `syncSettings('resolve')` (identical to periodic sync). If there are local edits made while offline between logins, server data is not unconditionally overwritten but uploaded/merged, and server settings are downloaded only when there are no local changes. On success, it notifies the toast window UI of the update (`notifySettingsSynced`).
 
-### 다운로드 검증 및 액션 승인
+### Download Validation and Action Approval
 
-다른 기기에서 만든 `exec`/`script` 액션이 동기화로 내려와 임의 코드가 자동 실행되는 것을 막기 위해, 다운로드한 페이지에는 두 단계 보호가 적용됩니다 (`src/main/action-approval.js`).
+To prevent `exec`/`script` actions created on another device from being downloaded via sync and automatically executing arbitrary code, downloaded pages are subject to two-stage protection (`src/main/action-approval.js`).
 
-1. **구조 검증** (`sanitizeRemotePages`): 저장 전에 모든 버튼 액션을 `validateAction`으로 검증하고, 유효하지 않은 액션은 제거합니다. 형식이 잘못되었거나 악의적인 동기화 데이터가 로컬 구성에 들어오지 못하게 합니다. 단, 빈 슬롯 버튼(자리표시자)은 검증 대상에서 제외하고 그대로 보존하여 페이지의 15슬롯 레이아웃이 유지됩니다.
-2. **기기별 1회 승인** (`recordRemoteChanges` → `ensureApproved`): 원격 데이터에서 처음 나타난 위험 액션은 승인 대기 목록(`security.pendingApprovals`)에 등록됩니다. 해당 액션을 실행하는 시점에 확인 다이얼로그가 표시되며, 사용자가 승인하면 신뢰 목록(`security.trustedActions`)으로 이동해 이후 다이얼로그 없이 실행됩니다. 사용자가 거부하면 실행이 차단됩니다.
+1. **Structural validation** (`sanitizeRemotePages`): Before saving, all button actions are validated with `validateAction`, and invalid actions are removed. This prevents malformed or malicious sync data from entering the local configuration. However, empty-slot buttons (placeholders) are excluded from validation and preserved as-is, so the page's 15-slot layout is maintained.
+2. **One-time per-device approval** (`recordRemoteChanges` → `ensureApproved`): Dangerous actions that first appear in remote data are registered in the pending-approval list (`security.pendingApprovals`). When such an action is executed, a confirmation dialog is shown; if the user approves, it moves to the trusted list (`security.trustedActions`) and runs without a dialog thereafter. If the user rejects, execution is blocked.
 
-로컬에서 생성·편집한 액션은 저장 시 `trustCurrentConfig`로 신뢰 처리되므로 자신의 액션에 대해서는 승인을 요구받지 않습니다. 신뢰·대기 목록은 fingerprint 형태로 config `security` 키에 **기기 로컬로만** 저장되며 클라우드에 업로드되지 않습니다 (스키마는 [구성 스키마 – 보안](../config/schema.md#보안-기기-로컬) 참조).
+Actions created or edited locally are trusted via `trustCurrentConfig` when saved, so you are never asked to approve your own actions. The trusted and pending lists are stored as fingerprints under the config `security` key **device-locally only** and are not uploaded to the cloud (see [Configuration Schema – Security](../config/schema.md#security-device-local) for the schema).
 
-## 충돌 해결 전략
+## Conflict Resolution Strategy
 
-여러 기기에서 동시에 설정을 변경할 경우 충돌이 발생할 수 있습니다. 효과적인 충돌 해결 전략이 중요합니다.
+When settings are changed simultaneously on multiple devices, conflicts can occur. An effective conflict-resolution strategy is important.
 
-1.  **타임스탬프 기반 해결:**
-    *   각 설정 항목(예: 페이지 객체) 및 전체 설정에 `lastModifiedAt` (로컬 최종 수정 시간)과 `lastSyncedAt` (서버 최종 동기화 시간) 같은 타임스탬프를 기록합니다.
-    *   동기화 시 이 타임스탬프들을 비교하여 최신 데이터를 결정합니다.
-2.  **항목 레벨 병합:**
-    *   `pages`와 같은 배열 데이터의 경우, 배열 전체를 덮어쓰기보다 각 항목(페이지)에 고유 ID를 부여하고, ID별로 변경 사항(추가, 수정, 삭제)을 식별하여 병합합니다.
-    *   이를 위해 각 페이지 객체 내에도 `lastModifiedAt`과 같은 메타데이터를 포함하는 것이 좋습니다.
-3.  **사용자 알림 및 선택 (선택적):**
-    *   자동으로 해결하기 어려운 복잡한 충돌 발생 시, 사용자에게 알리고 어떤 버전의 설정을 유지할지 선택하도록 할 수 있습니다. (구현 복잡도 높음)
+1.  **Timestamp-based resolution:**
+    *   Record timestamps such as `lastModifiedAt` (local last-modified time) and `lastSyncedAt` (server last-synced time) on each settings item (e.g., a page object) and on the overall settings.
+    *   During sync, compare these timestamps to determine the latest data.
+2.  **Item-level merging:**
+    *   For array data such as `pages`, rather than overwriting the entire array, assign a unique ID to each item (page) and identify and merge changes (additions, modifications, deletions) by ID.
+    *   To support this, it is helpful to include metadata such as `lastModifiedAt` inside each page object as well.
+3.  **User notification and choice (optional):**
+    *   For complex conflicts that are hard to resolve automatically, you can notify the user and let them choose which version of the settings to keep. (High implementation complexity.)
 
-## 문제 해결
+## Troubleshooting
 
-| 문제 | 해결 방법 |
+| Issue | Resolution |
 |------|-----------|
-| 동기화 실패 | 인터넷 연결 확인, 재로그인 시도. 서버 API 응답 코드(4xx, 5xx) 및 오류 메시지 확인. |
-| 설정 불일치 | 수동 동기화 실행 (예: `await downloadSettingsFromServer()` 후 필요한 경우 `await uploadSettingsToServer()`). 충돌 해결 로직 점검. |
-| 인증 오류 (401) | 토큰 갱신 또는 재로그인. `getAccessToken()` 함수 및 토큰 저장/관리 로직 확인. 무기한 토큰 설정 확인. |
-| 토큰 만료 | 무기한 토큰 설정이 적용되었는지 확인. 환경 변수 `TOKEN_EXPIRES_IN` 값 점검. |
-| 잘못된 요청 (400) | 업로드하는 데이터의 형식 및 내용이 서버 API 요구사항과 일치하는지 확인. 앱은 400 응답을 재시도하지 않음. |
-| 충돌 거부 (409) | 서버에 더 최신 데이터가 있는 상태(stale write). 앱이 자동으로 서버 데이터와 병합 후 재업로드하므로 별도 조치 불필요. |
-| 서버 오류 (5xx) | 서버 측 문제일 가능성이 높음. 잠시 후 재시도 또는 관리자에게 문의. |
+| Sync failure | Check the internet connection and try logging in again. Check the server API response codes (4xx, 5xx) and error messages. |
+| Settings mismatch | Run a manual sync (e.g., `await downloadSettingsFromServer()` followed by `await uploadSettingsToServer()` if needed). Review the conflict-resolution logic. |
+| Authentication error (401) | Refresh the token or log in again. Check the `getAccessToken()` function and the token storage/management logic. Verify the unlimited token setting. |
+| Token expiration | Verify that the unlimited token setting is applied. Check the value of the `TOKEN_EXPIRES_IN` environment variable. |
+| Bad request (400) | Verify that the format and content of the uploaded data match the server API requirements. The app does not retry 400 responses. |
+| Conflict rejected (409) | The server has newer data (stale write). The app automatically merges with server data and re-uploads, so no separate action is needed. |
+| Server error (5xx) | Likely a server-side problem. Retry after a while or contact the administrator. |
 
-### 토큰 관련 문제 해결
+### Troubleshooting Token Issues
 
-**토큰 파일 확인:**
+**Check the token file:**
 - macOS: `~/Library/Application Support/Toast/auth-tokens.json`
 - Windows: `%APPDATA%\Toast\auth-tokens.json`
 
-**토큰 상태 확인:**
+**Check the token status:**
 ```javascript
-// 토큰 만료 시간 확인
+// Check the token expiration time
 const expiresAt = await getStoredTokenExpiry();
 console.log('Token expires at:', new Date(expiresAt));
 
-// 무기한 토큰 여부 확인
+// Check whether the token is unlimited
 if (expiresAt >= 8640000000000000) {
   console.log('Token is set to unlimited expiration');
 }
 ```
 
-**로그 확인:**
+**Check the logs:**
 - macOS: `~/Library/Application Support/Toast/logs/toast-app.log`
 - Windows: `%APPDATA%\Toast\logs\toast-app.log`
-- 개발자 도구 콘솔에서도 네트워크 요청/응답 및 로그 확인 가능.
+- Network requests/responses and logs can also be checked in the DevTools console.
 
-### 동기화 상태 모니터링
+### Monitoring Sync Status
 
-정기적으로 동기화 상태를 모니터링하여 문제를 조기에 발견할 수 있습니다:
+You can monitor sync status regularly to catch problems early:
 
 ```javascript
-// 동기화 상태 확인
+// Check sync status
 async function checkSyncStatus() {
   const hasValidToken = await hasValidToken();
   const lastSync = configStore.get('lastSyncTime');
@@ -360,8 +360,9 @@ async function checkSyncStatus() {
   };
 }
 
-// 무기한 토큰 여부 확인
+// Check whether the token is unlimited
 async function isTokenUnlimited() {
   const expiresAt = await getStoredTokenExpiry();
   return expiresAt >= 8640000000000000;
 }
+```

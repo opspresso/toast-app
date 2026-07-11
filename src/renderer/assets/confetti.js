@@ -1,39 +1,39 @@
 /**
- * 꽃가루 애니메이션 효과
- * Toast 앱 특별 효과 - 전체 화면 버전
+ * Confetti animation effect
+ * Toast app special effect - full screen version
  */
 
-// 컨테이너를 한 번만 생성하기 위한 변수
+// Variable to create the container only once
 let confettiContainer = null;
 
-// 애니메이션 진행 중인지 추적
+// Track whether an animation is in progress
 let isAnimationActive = false;
 
-// 꽃가루 색상 배열 - 더 화려한 색상으로 확장
+// Confetti color array - expanded with more vivid colors
 const COLORS = ['red', 'blue', 'green', 'yellow', 'pink', 'purple', 'orange', 'cyan', 'magenta', 'lime', 'gold', 'violet', 'coral', 'turquoise'];
 
-// 꽃가루 크기 배열
+// Confetti size array
 const SIZES = ['small', 'medium', 'large', 'xlarge'];
 
-// 꽃가루 모양 배열
+// Confetti shape array
 const SHAPES = ['circle', 'square', 'triangle', 'heart', 'star', 'petal'];
 
 /**
- * 꽃가루 컨테이너 생성 및 초기화
- * @returns {HTMLElement} 꽃가루 컨테이너 요소
+ * Create and initialize the confetti container
+ * @returns {HTMLElement} Confetti container element
  */
 function createConfettiContainer() {
-  // 이미 있으면 재사용
+  // Reuse if it already exists
   if (confettiContainer) {
     confettiContainer.innerHTML = '';
     return confettiContainer;
   }
 
-  // 새로 생성
+  // Create a new one
   confettiContainer = document.createElement('div');
   confettiContainer.className = 'confetti-container';
 
-  // 전체 화면을 덮기 위한 설정
+  // Settings to cover the full screen
   confettiContainer.style.position = 'fixed';
   confettiContainer.style.top = '0';
   confettiContainer.style.left = '0';
@@ -49,38 +49,38 @@ function createConfettiContainer() {
 }
 
 /**
- * 랜덤한 숫자 생성 (최소, 최대 사이)
- * @param {number} min 최소값
- * @param {number} max 최대값
- * @returns {number} 랜덤한 숫자
+ * Generate a random number (between min and max)
+ * @param {number} min Minimum value
+ * @param {number} max Maximum value
+ * @returns {number} Random number
  */
 function random(min, max) {
   return Math.random() * (max - min) + min;
 }
 
 /**
- * 랜덤한 정수 생성 (최소, 최대 사이)
- * @param {number} min 최소값
- * @param {number} max 최대값
- * @returns {number} 랜덤한 정수
+ * Generate a random integer (between min and max)
+ * @param {number} min Minimum value
+ * @param {number} max Maximum value
+ * @returns {number} Random integer
  */
 function randomInt(min, max) {
   return Math.floor(random(min, max));
 }
 
 /**
- * 랜덤한 항목 가져오기
- * @param {Array} array 배열
- * @returns {*} 배열에서 랜덤하게 선택된 항목
+ * Get a random item
+ * @param {Array} array Array
+ * @returns {*} Randomly selected item from the array
  */
 function randomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
 /**
- * 특별한 모양의 꽃가루 생성
- * @param {string} shape 모양 이름
- * @returns {string} CSS 클래스 이름
+ * Create confetti of a special shape
+ * @param {string} shape Shape name
+ * @returns {string} CSS class name
  */
 function createShapeClass(shape) {
   switch (shape) {
@@ -102,52 +102,52 @@ function createShapeClass(shape) {
 }
 
 /**
- * 꽃가루 요소 생성
- * @param {HTMLElement} container 부모 컨테이너 요소
- * @param {Object} position 시작 위치 (옵션)
+ * Create a confetti element
+ * @param {HTMLElement} container Parent container element
+ * @param {Object} position Start position (optional)
  */
 function createConfetti(container, position = null) {
-  // 꽃가루 요소 생성
+  // Create the confetti element
   const confetti = document.createElement('div');
   confetti.className = 'confetti';
 
-  // 랜덤한 속성 지정
+  // Assign random properties
   const size = randomItem(SIZES);
   const color = randomItem(COLORS);
   const shape = randomItem(SHAPES);
 
-  // 클래스 추가
+  // Add classes
   confetti.classList.add(`size-${size}`);
   confetti.classList.add(`color-${color}`);
   confetti.classList.add(createShapeClass(shape));
 
-  // 랜덤한 시작 위치
+  // Random start position
   let left;
   if (position) {
     left = position.x;
   }
   else {
-    // 전체 화면에 고르게 분포
+    // Distribute evenly across the full screen
     left = `${random(0, 100)}%`;
   }
 
-  // 랜덤한 시작 높이 (화면 상단에서 시작)
+  // Random start height (starts at the top of the screen)
   const startY = position ? position.y : -20;
 
-  // 랜덤한 애니메이션 속성
-  const initialDelay = random(0, 4); // 0-4초 초기 딜레이
-  const fallDuration = random(4, 12); // 4-12초 낙하 시간 (더 길게)
+  // Random animation properties
+  const initialDelay = random(0, 4); // 0-4s initial delay
+  const fallDuration = random(4, 12); // 4-12s fall duration (longer)
 
-  // 스타일 지정
+  // Assign styles
   confetti.style.left = left;
   confetti.style.top = `${startY}px`;
   confetti.style.animationDelay = `${initialDelay}s`;
   confetti.style.animationDuration = `${fallDuration}s`;
 
-  // 회전 및 흔들림 추가
+  // Add rotation and swing
   const rotate = random(0, 360);
-  const swing = random(-50, 50); // 더 큰 흔들림 범위
-  const scale = random(0.8, 1.5); // 크기 변화 추가
+  const swing = random(-50, 50); // Larger swing range
+  const scale = random(0.8, 1.5); // Add size variation
 
   confetti.style.transform = `
     rotate(${rotate}deg)
@@ -155,15 +155,15 @@ function createConfetti(container, position = null) {
     scale(${scale})
   `;
 
-  // 애니메이션 종류 랜덤 지정
+  // Randomly assign the animation type
   const animationTypes = ['fall', 'fallSpin', 'fallSwing'];
   const animation = randomItem(animationTypes);
   confetti.style.animationName = animation;
 
-  // 컨테이너에 추가
+  // Add to the container
   container.appendChild(confetti);
 
-  // 애니메이션 완료 후 제거
+  // Remove after the animation completes
   setTimeout(
     () => {
       if (confetti.parentNode === container) {
@@ -175,28 +175,28 @@ function createConfetti(container, position = null) {
 }
 
 /**
- * 꽃가루 애니메이션 시작 - 전체 화면
- * @param {Object} options 애니메이션 옵션
- * @param {number} options.duration 지속 시간 (초)
- * @param {number} options.density 밀도 (갯수)
- * @param {Function} options.onComplete 완료 콜백
+ * Start the confetti animation - full screen
+ * @param {Object} options Animation options
+ * @param {number} options.duration Duration (seconds)
+ * @param {number} options.density Density (count)
+ * @param {Function} options.onComplete Completion callback
  */
 function startConfetti(options = {}) {
-  // 이미 실행 중이면 무시
+  // Ignore if already running
   if (isAnimationActive) {
     return;
   }
 
-  // 옵션 기본값 설정 - 전체 화면용으로 더 많은 밀도와 더 긴 지속 시간
-  const duration = options.duration || 8; // 기본 8초로 연장
-  const density = options.density || 200; // 기본 밀도 대폭 증가
+  // Set default option values - higher density and longer duration for full screen
+  const duration = options.duration || 8; // Extended to 8s by default
+  const density = options.density || 200; // Default density greatly increased
   const onComplete = options.onComplete || (() => {});
 
-  // 컨테이너 생성
+  // Create the container
   const container = createConfettiContainer();
   isAnimationActive = true;
 
-  // 화면 전체에 골고루 꽃가루가 나타나도록 여러 위치에서 시작
+  // Start from multiple positions so confetti appears evenly across the whole screen
   const startPositions = [];
   for (let i = 0; i < 9; i++) {
     startPositions.push({
@@ -205,7 +205,7 @@ function startConfetti(options = {}) {
     });
   }
 
-  // 추가적인 랜덤 위치
+  // Additional random positions
   for (let i = 0; i < 6; i++) {
     startPositions.push({
       x: `${random(0, 100)}%`,
@@ -213,43 +213,43 @@ function startConfetti(options = {}) {
     });
   }
 
-  // 꽃가루 생성 간격 - 더 짧게 설정하여 한꺼번에 많이 생성
-  const interval = 1000 / (density / 5); // 1초 동안 밀도/5 만큼 생성
+  // Confetti generation interval - set shorter to create many at once
+  const interval = 1000 / (density / 5); // Generate density/5 per second
   let count = 0;
 
-  // 주기적으로 꽃가루 생성
+  // Generate confetti periodically
   const generator = setInterval(() => {
-    // 한 번에 여러 개의 꽃가루 생성 (더 풍성한 효과)
+    // Generate multiple confetti at once (richer effect)
     for (let i = 0; i < 5; i++) {
       const position = randomItem(startPositions);
       createConfetti(container, position);
       count++;
     }
 
-    // 밀도에 도달하면 생성 중단
+    // Stop generating once density is reached
     if (count >= density) {
       clearInterval(generator);
     }
   }, interval);
 
-  // 애니메이션 종료 후 정리
+  // Clean up after the animation ends
   setTimeout(() => {
     clearInterval(generator);
 
-    // 모든 꽃가루가 떨어질 시간을 추가로 대기
+    // Wait additionally for all confetti to fall
     setTimeout(() => {
-      // 컨테이너의 모든 꽃가루 제거
+      // Remove all confetti from the container
       container.innerHTML = '';
       isAnimationActive = false;
 
-      // 완료 콜백 호출
+      // Invoke the completion callback
       onComplete();
-    }, 13000); // 13초 추가 대기 (가장 느린 꽃가루가 떨어질 시간)
+    }, 13000); // Wait an extra 13s (time for the slowest confetti to fall)
   }, duration * 1000);
 }
 
 /**
- * 꽃가루 애니메이션 중지
+ * Stop the confetti animation
  */
 function stopConfetti() {
   if (confettiContainer) {
@@ -258,13 +258,13 @@ function stopConfetti() {
   isAnimationActive = false;
 }
 
-// 모듈 내보내기
+// Export module
 window.confetti = {
   start: startConfetti,
   stop: stopConfetti,
 };
 
-// 애니메이션 테스트 함수 (window 객체에 등록)
+// Animation test function (registered on the window object)
 window.startConfettiAnimation = function (options) {
   startConfetti(options);
 };

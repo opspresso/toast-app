@@ -1,7 +1,7 @@
 /**
  * Toast - Action Approval Tests
  *
- * 클라우드 동기화로 유입된 exec/script 액션의 승인 흐름에 대한 단위 테스트
+ * Unit tests for the approval flow of exec/script actions ingested via cloud sync
  */
 
 const { dialog } = require('electron');
@@ -363,7 +363,7 @@ describe('Action Approval', () => {
     test('should keep valid actions and drop invalid ones', async () => {
       const pages = pagesWith(
         execAction(),
-        { name: 'Broken', action: 'exec' }, // command 누락
+        { name: 'Broken', action: 'exec' }, // missing command
         { name: 'Bad type', action: 'unknown-type' },
       );
 

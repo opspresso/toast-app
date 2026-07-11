@@ -12,7 +12,7 @@ const { app } = require('electron');
 const vm = require('vm');
 const { createLogger } = require('../logger');
 
-// 모듈별 로거 생성
+// Create a module-specific logger
 const logger = createLogger('ScriptAction');
 
 // Only expose non-sensitive environment variables to user scripts
@@ -179,7 +179,7 @@ async function executeAppleScript(script) {
         }
 
         if (error) {
-          // 실패도 {success:false} resolve 로 반환해 상위(executor)의 오류 채널을 일원화한다
+          // Return failures as a {success:false} resolve too, to unify the error channel at the caller (executor)
           resolve({
             success: false,
             message: error.message,
@@ -240,7 +240,7 @@ async function executePowerShell(script) {
         }
 
         if (error) {
-          // 실패도 {success:false} resolve 로 반환해 상위(executor)의 오류 채널을 일원화한다
+          // Return failures as a {success:false} resolve too, to unify the error channel at the caller (executor)
           resolve({
             success: false,
             message: error.message,
@@ -304,7 +304,7 @@ async function executeBash(script) {
         }
 
         if (error) {
-          // 실패도 {success:false} resolve 로 반환해 상위(executor)의 오류 채널을 일원화한다
+          // Return failures as a {success:false} resolve too, to unify the error channel at the caller (executor)
           resolve({
             success: false,
             message: error.message,

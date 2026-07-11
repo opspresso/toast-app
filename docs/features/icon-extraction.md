@@ -1,27 +1,27 @@
-# Toast 앱 아이콘 추출 유틸리티
+# Toast App Icon Extraction Utility
 
-이 문서는 macOS 애플리케이션의 .icns 파일에서 PNG 아이콘을 추출하여 Toast 앱에서 사용하는 로컬 아이콘 추출 기능에 대해 설명합니다.
+This document describes the local icon extraction feature used by the Toast app, which extracts PNG icons from the .icns files of macOS applications.
 
-## 개요
+## Overview
 
-Toast 앱의 아이콘 추출 시스템은 로컬에서 직접 애플리케이션의 아이콘을 추출하여 사용하는 기능입니다. macOS의 Applications 폴더에 설치된 앱들의 .icns 파일을 찾아 PNG 형식으로 변환하여 Toast 앱에서 활용할 수 있습니다.
+The Toast app's icon extraction system extracts and uses application icons directly from the local system. It finds the .icns files of apps installed in the macOS Applications folder and converts them to PNG format for use in the Toast app.
 
-로그인한 클라우드 동기화 사용자의 경우, 추출된 PNG 아이콘은 서버(S3)에 업로드되고 버튼의 아이콘 값이 로컬 `file://` 경로에서 기기 간 공유 가능한 `https://` URL로 교체됩니다(아래 "기기 간 아이콘 공유" 참고). 비로그인 사용자는 로컬 `file://` 경로만 사용합니다.
+For logged-in cloud sync users, the extracted PNG icon is uploaded to the server (S3), and the button's icon value is replaced from a local `file://` path with a shareable `https://` URL that works across devices (see "Cross-Device Icon Sharing" below). Users who are not logged in use only local `file://` paths.
 
-### 주요 특징
+### Key Features
 
-- **로컬 시스템에서 직접 아이콘 추출**: 추출 자체는 로컬에서 수행
-- **설치된 모든 앱 지원**: Applications 폴더의 모든 .app 번들
-- **기기 간 공유**: 로그인 사용자는 추출한 아이콘을 서버에 업로드해 다른 기기에서도 동일하게 표시
-- **실시간 미리보기**: 버튼 설정 시 즉시 아이콘 확인
-- **자동 감지**: `open -a AppName` 명령어에서 자동 아이콘 추출
-- **스마트 캐싱**: 한 번 추출한 아이콘은 캐시하여 재사용
+- **Direct icon extraction from the local system**: extraction itself is performed locally
+- **Support for all installed apps**: every .app bundle in the Applications folder
+- **Cross-device sharing**: logged-in users upload extracted icons to the server so they display identically on other devices
+- **Real-time preview**: check the icon immediately when configuring a button
+- **Automatic detection**: automatic icon extraction from `open -a AppName` commands
+- **Smart caching**: once extracted, an icon is cached and reused
 
-## 핵심 기능
+## Core Features
 
-### 1. 실시간 아이콘 미리보기
+### 1. Real-Time Icon Preview
 
-버튼 설정 모달에서 Toast 창 버튼과 동일한 스타일로 실시간 아이콘 미리보기를 제공합니다.
+The button settings modal provides a real-time icon preview in the same style as the Toast window buttons.
 
 ```javascript
 function updateIconPreview() {
@@ -30,13 +30,13 @@ function updateIconPreview() {
   const previewImg = document.getElementById('icon-preview-img');
   const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
 
-  // FlatColorIcons 처리
+  // Handle FlatColorIcons
   if (iconValue && iconValue.startsWith('FlatColorIcons.')) {
     const iconKey = iconValue.replace('FlatColorIcons.', '');
-    // 아이콘 카탈로그에서 검색하여 표시
+    // Look up in the icon catalog and display
   }
 
-  // file:// URL 완벽 지원
+  // Full support for file:// URLs
   else if (iconValue && iconValue.startsWith('file://')) {
     previewImg.src = iconValue;
     previewImg.style.display = 'block';
@@ -45,12 +45,12 @@ function updateIconPreview() {
 }
 ```
 
-### 2. Exec 액션에서 자동 아이콘 추출
+### 2. Automatic Icon Extraction from Exec Actions
 
-`open -a AppName` 패턴을 자동으로 감지하여 해당 애플리케이션의 아이콘을 추출합니다.
+Automatically detects the `open -a AppName` pattern and extracts the icon of the corresponding application.
 
 ```javascript
-// 지원되는 명령어 패턴
+// Supported command patterns
 const patterns = [
   'open -a Mail',
   'open -a "Visual Studio Code"',
@@ -58,25 +58,25 @@ const patterns = [
   'open -a "Final Cut Pro"'
 ];
 
-// 패턴 감지 정규식
+// Pattern detection regex
 const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
 if (openAppMatch) {
   const appName = (openAppMatch[1] || openAppMatch[2]).trim();
   const appPath = `/Applications/${appName}.app`;
-  // 자동 아이콘 추출 실행
+  // Run automatic icon extraction
 }
 ```
 
-### 3. 강화된 아이콘 리로드 기능
+### 3. Enhanced Icon Reload
 
-🔄 버튼을 통해 Application 및 Exec 액션에서 아이콘을 강제로 새로고침할 수 있습니다.
+The 🔄 button lets you force-refresh the icon for Application and Exec actions.
 
 ```javascript
-// Application 액션: 선택된 애플리케이션에서 아이콘 추출
+// Application action: extract the icon from the selected application
 if (actionType === 'application') {
   applicationPath = editButtonApplicationInput.value.trim();
 }
-// Exec 액션: open -a 명령어에서 앱 이름 추출
+// Exec action: extract the app name from the open -a command
 else if (actionType === 'exec') {
   const command = editButtonCommandInput.value.trim();
   const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s\.\-]+))/);
@@ -87,26 +87,26 @@ else if (actionType === 'exec') {
 }
 ```
 
-### 4. 스마트한 favicon 지원
+### 4. Smart Favicon Support
 
-Open 액션에서 아이콘이 비어있을 때 URL의 favicon을 자동으로 표시합니다.
+For Open actions, when the icon is empty, the URL's favicon is displayed automatically.
 
 ```javascript
-// open 액션이고 아이콘이 비어있지만 URL이 있는 경우 favicon 사용
+// For an open action with an empty icon but a URL present, use the favicon
 if (actionType === 'open' && (!iconValue || iconValue === '') && urlValue) {
   const faviconUrl = getFaviconFromUrl(urlValue);
   previewImg.src = faviconUrl;
 
-  // favicon 로딩 실패 시 기본 아이콘으로 대체
+  // Fall back to a default icon if the favicon fails to load
   previewImg.onerror = function() {
     placeholder.textContent = '🌐';
   };
 }
 ```
 
-### 5. 액션별 기본 아이콘
+### 5. Per-Action Default Icons
 
-각 액션 타입에 맞는 기본 아이콘을 제공합니다.
+Provides a default icon appropriate for each action type.
 
 ```javascript
 switch (actionType) {
@@ -119,13 +119,13 @@ switch (actionType) {
 }
 ```
 
-## 시스템 아키텍처
+## System Architecture
 
-### 메인 프로세스 (`src/main/utils/app-icon-extractor.js`)
+### Main Process (`src/main/utils/app-icon-extractor.js`)
 
 ```javascript
 /**
- * macOS 애플리케이션에서 아이콘을 추출하여 PNG로 변환
+ * Extract an icon from a macOS application and convert it to PNG
  */
 async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
   if (process.platform !== 'darwin') {
@@ -135,7 +135,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
 
   const appPath = `/Applications/${appName}.app`;
   if (!fs.existsSync(appPath)) {
-    logger.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
+    logger.error(`❌ App does not exist: ${appPath}`);
     return null;
   }
 
@@ -147,7 +147,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
 
     fs.mkdirSync(outputDir, { recursive: true });
 
-    // 캐시 확인: forceRefresh가 아니면 기존 아이콘 재사용, 맞으면 삭제 후 재추출
+    // Check cache: reuse the existing icon unless forceRefresh, otherwise delete and re-extract
     const existingIcon = getExistingIconPath(appName, outputDir);
     if (existingIcon && !forceRefresh) {
       return existingIcon;
@@ -155,10 +155,10 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
       fs.unlinkSync(existingIcon);
     }
 
-    // .icns 파일 단계별 탐색
+    // Search for the .icns file step by step
     let icnsPath = null;
 
-    // 1) Info.plist의 CFBundleIconFile 확인
+    // 1) Check CFBundleIconFile in Info.plist
     const infoPlistPath = path.join(appPath, 'Contents', 'Info.plist');
     if (fs.existsSync(infoPlistPath)) {
       const plistContent = fs.readFileSync(infoPlistPath, 'utf8');
@@ -171,7 +171,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
       }
     }
 
-    // 2) 일반적인 아이콘 파일명 확인
+    // 2) Check common icon file names
     if (!icnsPath) {
       const commonIconNames = ['app.icns', 'icon.icns', 'AppIcon.icns'];
       const resourcesPath = path.join(appPath, 'Contents', 'Resources');
@@ -184,21 +184,21 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
       }
     }
 
-    // 3) find 명령어로 검색 (fallback)
+    // 3) Search with the find command (fallback)
     if (!icnsPath) {
       const findCommand = `find "${appPath}" -name "*.icns" -type f | head -n 1`;
       icnsPath = execSync(findCommand, { encoding: 'utf8' }).trim();
     }
 
     if (!icnsPath) {
-      logger.error(`❌ .icns 파일을 찾을 수 없습니다: ${appPath}`);
+      logger.error(`❌ Could not find .icns file: ${appPath}`);
       return null;
     }
 
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const outputPath = path.join(outputDir, `${safeAppName}.png`);
 
-    // 변환 1) iconutil로 iconset 변환 후 가장 큰 PNG 선택
+    // Conversion 1) Convert to iconset with iconutil and pick the largest PNG
     const tempIconsetPath = path.join(outputDir, `${safeAppName}_temp.iconset`);
     try {
       execSync(`iconutil -c iconset "${icnsPath}" -o "${tempIconsetPath}"`, { stdio: 'pipe' });
@@ -208,7 +208,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
         .sort((a, b) => {
           const sizeA = parseInt(a.match(/(\d+)x\d+/)?.[1] || '0');
           const sizeB = parseInt(b.match(/(\d+)x\d+/)?.[1] || '0');
-          return sizeB - sizeA; // 큰 것부터
+          return sizeB - sizeA; // Largest first
         });
       if (iconFiles.length > 0) {
         fs.copyFileSync(path.join(tempIconsetPath, iconFiles[0]), outputPath);
@@ -216,40 +216,40 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
         if (fs.existsSync(outputPath)) return outputPath;
       }
     } catch (iconutilError) {
-      // iconutil 실패 시 임시 디렉토리 정리 후 sips로 대체
+      // On iconutil failure, clean up the temp directory and fall back to sips
       fs.rmSync(tempIconsetPath, { recursive: true, force: true });
     }
 
-    // 변환 2) sips fallback (최대 512px)
+    // Conversion 2) sips fallback (max 512px)
     execSync(`sips -s format png -Z 512 "${icnsPath}" --out "${outputPath}"`, { stdio: 'pipe' });
 
     return fs.existsSync(outputPath) ? outputPath : null;
   } catch (err) {
-    logger.error(`❌ 아이콘 추출 오류 (${appName}): ${err.message}`);
+    logger.error(`❌ Icon extraction error (${appName}): ${err.message}`);
     return null;
   }
 }
 ```
 
-### IPC 통신 (`src/main/ipc/system.js`)
+### IPC Communication (`src/main/ipc/system.js`)
 
 ```javascript
-// 아이콘 추출 IPC 핸들러
+// Icon extraction IPC handler
 ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false) => {
   try {
     const appName = extractAppNameFromPath(applicationPath);
     if (!appName) {
-      return { success: false, error: '앱 이름을 추출할 수 없습니다' };
+      return { success: false, error: 'Could not extract the app name' };
     }
 
     const iconPath = await extractAppIcon(appName, null, forceRefresh);
     if (!iconPath) {
-      return { success: false, error: '아이콘을 추출할 수 없습니다' };
+      return { success: false, error: 'Could not extract the icon' };
     }
 
     const tildePath = convertToTildePath(iconPath);
 
-    // 인증 상태이면 서버에 업로드해 기기 간 공유 가능한 remoteUrl 확보 (실패해도 로컬 동작 유지)
+    // If authenticated, upload to the server to obtain a shareable remoteUrl (local operation is preserved even on failure)
     let remoteUrl = null;
     if (await authManager.hasValidToken()) {
       const uploadResult = await apiIcons.uploadIcon({ filePath: iconPath, onUnauthorized: authManager.refreshAccessToken });
@@ -259,24 +259,24 @@ ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh =
     return {
       success: true,
       iconUrl: `file://${iconPath}`,
-      iconPath: tildePath, // ~ 형식으로 변환된 경로
+      iconPath: tildePath, // Path converted to ~ format
       appName,
       ...(remoteUrl ? { remoteUrl } : {})
     };
   } catch (err) {
     return {
       success: false,
-      error: `아이콘 추출 중 오류 발생: ${err.message}`
+      error: `Error during icon extraction: ${err.message}`
     };
   }
 });
 ```
 
-### 렌더러 프로세스 (`src/renderer/pages/toast/modules/local-icon-utils.js`)
+### Renderer Process (`src/renderer/pages/toast/modules/local-icon-utils.js`)
 
 ```javascript
 /**
- * 핵심 기능: 애플리케이션에서 아이콘과 이름을 추출하여 UI 업데이트
+ * Core feature: extract the icon and name from an application and update the UI
  */
 async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInput = null, forceRefresh = false) {
   if (!applicationPath || !iconInput) return false;
@@ -285,89 +285,89 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
     const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
 
     if (result.success) {
-      // 1. 아이콘 입력 필드 업데이트
-      //    서버 업로드에 성공했으면 기기 간 공유 가능한 https URL(remoteUrl)을 우선 사용,
-      //    아니면 로컬 경로 기반 file:// URL 사용
+      // 1. Update the icon input field
+      //    If the server upload succeeded, prefer the shareable https URL (remoteUrl),
+      //    otherwise use the local path-based file:// URL
       iconInput.value = result.remoteUrl || `file://${result.iconPath}`;
 
-      // 2. 버튼 이름 업데이트 (비어있을 때만)
+      // 2. Update the button name (only if empty)
       if (nameInput && !nameInput.value.trim()) {
         nameInput.value = result.appName;
       }
 
-      // 3. input 이벤트 트리거 (미리보기 업데이트용)
+      // 3. Trigger the input event (to update the preview)
       iconInput.dispatchEvent(new Event('input', { bubbles: true }));
 
       return true;
     }
     return false;
   } catch (err) {
-    console.error('아이콘 추출 오류:', err);
+    console.error('Icon extraction error:', err);
     return false;
   }
 }
 
 /**
- * 로컬 아이콘 추출 지원 여부 확인
+ * Check whether local icon extraction is supported
  */
 function isLocalIconExtractionSupported() {
   return window.toast.platform === 'darwin' && typeof window.toast.extractAppIcon === 'function';
 }
 ```
 
-## 사용자 워크플로우
+## User Workflows
 
-### Application 액션
+### Application Action
 
-1. **애플리케이션 선택**: Browse 버튼으로 애플리케이션 선택
-2. **자동 아이콘 추출**: 선택과 동시에 아이콘 자동 추출 및 미리보기 표시
-3. **강제 새로고침**: 🔄 버튼으로 언제든지 아이콘 재추출 가능
+1. **Select an application**: choose an application with the Browse button
+2. **Automatic icon extraction**: the icon is extracted automatically and shown in the preview upon selection
+3. **Force refresh**: re-extract the icon anytime with the 🔄 button
 
-### Exec 액션
+### Exec Action
 
-1. **명령어 입력**: `open -a Mail` 형태의 명령어 입력
-2. **자동 감지**: 명령어 패턴 자동 감지 및 Mail.app 아이콘 추출
-3. **실시간 업데이트**: 명령어 변경 시 즉시 미리보기 업데이트
-4. **강제 새로고침**: 🔄 버튼으로 아이콘 재추출
+1. **Enter a command**: enter a command like `open -a Mail`
+2. **Automatic detection**: automatically detect the command pattern and extract the Mail.app icon
+3. **Real-time update**: the preview updates immediately when the command changes
+4. **Force refresh**: re-extract the icon with the 🔄 button
 
-### Open 액션
+### Open Action
 
-1. **URL 입력**: 웹사이트 URL 입력 (예: https://github.com)
-2. **Favicon 자동 표시**: 아이콘 필드를 비워두면 자동으로 favicon 표시
-3. **실시간 미리보기**: URL 변경 시 즉시 favicon 업데이트
+1. **Enter a URL**: enter a website URL (e.g., https://github.com)
+2. **Automatic favicon display**: leave the icon field empty to display the favicon automatically
+3. **Real-time preview**: the favicon updates immediately when the URL changes
 
-## 시스템 요구사항
+## System Requirements
 
-### macOS 지원
-- **필수**: macOS 10.12 (Sierra) 이상
-- **필수**: `iconutil` 명령어 (시스템 기본 제공, 기본 변환)
-- **필수**: `sips` 명령어 (시스템 기본 제공, 대체 변환)
-- **필수**: `find` 명령어 (시스템 기본 제공)
-- **권장**: Applications 폴더에 설치된 앱들
+### macOS Support
+- **Required**: macOS 10.12 (Sierra) or later
+- **Required**: the `iconutil` command (included with the system, primary conversion)
+- **Required**: the `sips` command (included with the system, fallback conversion)
+- **Required**: the `find` command (included with the system)
+- **Recommended**: apps installed in the Applications folder
 
-### 지원 형식
-- **입력**: `.icns` (Apple Icon Image format)
-- **출력**: `.png` (Portable Network Graphics)
-- **애플리케이션**: `.app` 번들 (macOS 표준)
+### Supported Formats
+- **Input**: `.icns` (Apple Icon Image format)
+- **Output**: `.png` (Portable Network Graphics)
+- **Applications**: `.app` bundles (macOS standard)
 
-## 성능 및 최적화
+## Performance and Optimization
 
-### 캐싱 전략
+### Caching Strategy
 
 ```javascript
-// 스마트 캐싱: 한 번 추출한 아이콘은 재사용
+// Smart caching: reuse a once-extracted icon
 function getExistingIconPath(appName, outputDir) {
   try {
     const safeAppName = appName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     const iconPath = path.join(outputDir, `${safeAppName}.png`);
     return fs.existsSync(iconPath) ? iconPath : null;
   } catch (err) {
-    console.error(`❌ 기존 아이콘 확인 오류: ${err.message}`);
+    console.error(`❌ Error checking existing icon: ${err.message}`);
     return null;
   }
 }
 
-// 오래된 아이콘 정리 함수 (30일 기준) - 정의만 되어 있고 현재 어디에서도 호출되지 않음
+// Function to clean up old icons (30-day threshold) - only defined and currently not called anywhere
 function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
   try {
     if (!fs.existsSync(iconsDir)) return;
@@ -381,65 +381,65 @@ function cleanupOldIcons(iconsDir, maxAge = 30 * 24 * 60 * 60 * 1000) {
 
       if (now - stats.mtime.getTime() > maxAge) {
         fs.unlinkSync(filePath);
-        console.log(`🗑️ 오래된 아이콘 파일 삭제: ${filePath}`);
+        console.log(`🗑️ Deleted old icon file: ${filePath}`);
       }
     });
   } catch (err) {
-    console.error(`❌ 아이콘 캐시 정리 오류: ${err.message}`);
+    console.error(`❌ Error cleaning up icon cache: ${err.message}`);
   }
 }
 ```
 
-> **참고**: `cleanupOldIcons` 함수는 정의되어 있지만 현재 어디에서도 호출되지 않으므로, 오래된 아이콘 캐시의 자동 정리는 수행되지 않습니다.
+> **Note**: The `cleanupOldIcons` function is defined but is currently not called anywhere, so automatic cleanup of old icon caches is not performed.
 
-### 비동기 처리
+### Asynchronous Processing
 
-- **UI 블로킹 방지**: 모든 아이콘 추출은 비동기로 처리
-- **백그라운드 작업**: 사용자 인터페이스에 영향 없이 처리
-- **진행 상태 표시**: 🔄 → ⏳ → 🔄 버튼 상태 변화로 진행 상황 표시
+- **Prevent UI blocking**: all icon extraction is handled asynchronously
+- **Background work**: processed without affecting the user interface
+- **Progress indication**: the 🔄 → ⏳ → 🔄 button state changes indicate progress
 
-## 오류 처리 및 보안
+## Error Handling and Security
 
-### 오류 처리
+### Error Handling
 
 ```javascript
-// 1. 플랫폼 미지원
+// 1. Unsupported platform
 if (process.platform !== 'darwin') {
   console.warn('⚠️ App icon extraction is only supported on macOS');
   return null;
 }
 
-// 2. 애플리케이션 없음
+// 2. Application not found
 if (!fs.existsSync(appPath)) {
-  console.error(`❌ 앱이 존재하지 않습니다: ${appPath}`);
+  console.error(`❌ App does not exist: ${appPath}`);
   return null;
 }
 
-// 3. 아이콘 파일 없음
+// 3. Icon file not found
 if (!icnsPath) {
-  console.error(`❌ .icns 파일을 찾을 수 없습니다: ${appPath}`);
+  console.error(`❌ Could not find .icns file: ${appPath}`);
   return null;
 }
 
-// 4. 변환 실패
+// 4. Conversion failure
 try {
   execSync(convertCommand, { stdio: 'pipe' });
 } catch (err) {
-  console.error(`❌ 아이콘 변환 실패: ${err.message}`);
+  console.error(`❌ Icon conversion failed: ${err.message}`);
   return null;
 }
 ```
 
-### 보안 고려사항
+### Security Considerations
 
-- **경로 검증**: 애플리케이션 경로 유효성 검사
-- **안전한 파일명**: 특수 문자 제거 및 안전한 파일명 생성
-- **명령어 인젝션 방지**: 사용자 입력 이스케이핑
-- **권한 제한**: 최소 권한으로 실행
+- **Path validation**: validate the application path
+- **Safe file names**: remove special characters and generate safe file names
+- **Command injection prevention**: escape user input
+- **Least privilege**: run with minimal privileges
 
-## 테스트 및 검증
+## Testing and Verification
 
-### 단위 테스트
+### Unit Tests
 
 ```javascript
 describe('App Icon Extractor', () => {
@@ -461,7 +461,7 @@ describe('App Icon Extractor', () => {
 });
 ```
 
-### 통합 테스트
+### Integration Tests
 
 ```javascript
 const testApps = ['Finder', 'Safari', 'System Preferences', 'Terminal'];
@@ -472,66 +472,66 @@ for (const appName of testApps) {
 }
 ```
 
-## 문제 해결
+## Troubleshooting
 
-### 일반적인 문제
+### Common Problems
 
-1. **아이콘이 추출되지 않는 경우**
-   - Applications 폴더에 앱이 설치되어 있는지 확인
-   - 앱 이름의 대소문자 정확성 확인
-   - 앱 내부에 .icns 파일 존재 여부 확인
+1. **Icon is not extracted**
+   - Verify that the app is installed in the Applications folder
+   - Verify the correct capitalization of the app name
+   - Verify whether an .icns file exists inside the app
 
-2. **sips 명령어 오류**
-   - macOS 시스템 확인
-   - Xcode Command Line Tools 설치
-   - 시스템 PATH 환경변수 확인
+2. **sips command error**
+   - Verify the macOS system
+   - Install Xcode Command Line Tools
+   - Check the system PATH environment variable
 
-3. **권한 오류**
-   - Applications 폴더 읽기 권한 확인
-   - 임시 디렉토리 쓰기 권한 확인
+3. **Permission errors**
+   - Check read permissions for the Applications folder
+   - Check write permissions for the temporary directory
 
-4. **메모리 사용량 증가**
-   - 아이콘 캐시 크기 제한
-   - 임시 파일 정리 확인
+4. **Increased memory usage**
+   - Limit the icon cache size
+   - Check that temporary files are cleaned up
 
-## 기기 간 아이콘 공유 (클라우드 업로드)
+## Cross-Device Icon Sharing (Cloud Upload)
 
-로그인한 클라우드 동기화 사용자는 로컬에서 추출한 아이콘을 서버(S3)에 업로드하여 어느 기기에서든 동일한 버튼 아이콘을 볼 수 있습니다. 비로그인 사용자는 로컬 `file://` 경로만 사용하며 이 단계는 건너뜁니다.
+Logged-in cloud sync users can upload locally extracted icons to the server (S3) so they see the same button icons on any device. Users who are not logged in use only local `file://` paths and skip this step.
 
-동작:
+Behavior:
 
-1. **추출 시 업로드**: `extract-app-icon` IPC 핸들러(`src/main/ipc/system.js`)가 아이콘 추출 후 인증 상태이면 `apiIcons.uploadIcon`으로 서버에 업로드하고, 성공 시 응답에 `remoteUrl`(https URL)을 포함합니다. 렌더러(`local-icon-utils.js`)는 `remoteUrl`이 있으면 이를, 없으면 기존 `file://` 경로를 버튼 아이콘 값으로 사용합니다.
-2. **업로드 API**: `src/main/api/icons.js`의 `uploadIcon`이 `USER_ICONS`(`/users/icons`) 엔드포인트로 multipart 업로드합니다. 401 시 토큰 갱신, 세션 내 중복 업로드 캐시, 서버 미지원(404/405/503) 시 6시간 백오프를 포함합니다.
-3. **기존 아이콘 마이그레이션**: 클라우드 동기화 업로드 직전, `src/main/utils/icon-normalizer.js`의 `normalizeLocalIcons`가 페이지의 남은 `file://` 아이콘을 일회성으로 업로드해 `https://` URL로 교체합니다(`src/main/cloud-sync.js`의 `uploadSettings` 내부). 이 기기에 파일이 없는 아이콘은 건드리지 않습니다.
+1. **Upload on extraction**: after extracting an icon, the `extract-app-icon` IPC handler (`src/main/ipc/system.js`) uploads it to the server via `apiIcons.uploadIcon` if authenticated, and on success includes a `remoteUrl` (https URL) in the response. The renderer (`local-icon-utils.js`) uses `remoteUrl` as the button icon value if present, otherwise the existing `file://` path.
+2. **Upload API**: `uploadIcon` in `src/main/api/icons.js` performs a multipart upload to the `USER_ICONS` (`/users/icons`) endpoint. It handles token refresh on 401, a within-session duplicate upload cache, and a 6-hour backoff when the server does not support it (404/405/503).
+3. **Migrating existing icons**: just before the cloud sync upload, `normalizeLocalIcons` in `src/main/utils/icon-normalizer.js` performs a one-time upload of the remaining `file://` icons on a page and replaces them with `https://` URLs (inside `uploadSettings` in `src/main/cloud-sync.js`). Icons whose files do not exist on this device are left untouched.
 
-> 서버 아이콘 URL은 사용자 해시 + 콘텐츠 해시 기반으로 추측이 어렵지만 비인증 접근이 가능하므로, 앱 아이콘 등 비민감 이미지 전용입니다.
+> Server icon URLs are hard to guess since they are based on a user hash plus a content hash, but they allow unauthenticated access, so they are intended only for non-sensitive images such as app icons.
 
-## 관련 파일
+## Related Files
 
-- `src/main/utils/app-icon-extractor.js` - 핵심 아이콘 추출 유틸리티
-- `src/main/api/icons.js` - 아이콘 서버 업로드 API (`uploadIcon`)
-- `src/main/utils/icon-normalizer.js` - `file://` → `https://` 일회성 마이그레이션
-- `src/renderer/pages/toast/modules/local-icon-utils.js` - 렌더러 프로세스 유틸리티 (remoteUrl 우선)
-- `src/main/ipc/system.js` - IPC 핸들러 (extract-app-icon, 인증 시 업로드)
-- `src/main/cloud-sync.js` - 업로드 전 아이콘 정규화 호출
-- `src/renderer/preload/toast.js` - Preload 스크립트 확장
-- `src/renderer/pages/toast/modules/modals-button-edit.js` - 버튼 편집 모달 (아이콘 미리보기)
-- `src/renderer/pages/toast/modules/modals-icon-browser.js` - 아이콘 브라우저 모달
-- `src/renderer/pages/toast/styles.css` - 아이콘 미리보기 스타일
+- `src/main/utils/app-icon-extractor.js` - core icon extraction utility
+- `src/main/api/icons.js` - icon server upload API (`uploadIcon`)
+- `src/main/utils/icon-normalizer.js` - one-time `file://` → `https://` migration
+- `src/renderer/pages/toast/modules/local-icon-utils.js` - renderer process utility (prefers remoteUrl)
+- `src/main/ipc/system.js` - IPC handler (extract-app-icon, uploads when authenticated)
+- `src/main/cloud-sync.js` - calls icon normalization before upload
+- `src/renderer/preload/toast.js` - preload script extensions
+- `src/renderer/pages/toast/modules/modals-button-edit.js` - button edit modal (icon preview)
+- `src/renderer/pages/toast/modules/modals-icon-browser.js` - icon browser modal
+- `src/renderer/pages/toast/styles.css` - icon preview styles
 
-## 향후 개선 계획
+## Future Improvements
 
-### 다중 플랫폼 지원
-- **Windows**: .exe, .ico 파일 지원
-- **Linux**: .desktop, .svg 파일 지원
+### Multi-Platform Support
+- **Windows**: support for .exe and .ico files
+- **Linux**: support for .desktop and .svg files
 
-### 고급 기능
-- **다양한 해상도**: 16x16, 32x32, 64x64, 128x128 지원
-- **레티나 디스플레이**: 고해상도 디스플레이 대응
-- **배치 처리**: 여러 앱 아이콘 동시 추출
-- **진행률 표시**: 대량 처리 시 진행 상황 표시
+### Advanced Features
+- **Multiple resolutions**: support for 16x16, 32x32, 64x64, 128x128
+- **Retina displays**: support for high-resolution displays
+- **Batch processing**: extract multiple app icons simultaneously
+- **Progress indicator**: show progress during bulk processing
 
-### 성능 최적화
-- **디스크 기반 캐시**: 영구 캐시 시스템
-- **LRU 캐시**: 메모리 효율적인 캐시 정책
-- **백그라운드 프리로딩**: 자주 사용되는 앱 아이콘 미리 로드
+### Performance Optimization
+- **Disk-based cache**: a persistent cache system
+- **LRU cache**: a memory-efficient cache policy
+- **Background preloading**: preload frequently used app icons

@@ -1,170 +1,170 @@
-# Toast 앱에 기여하기
+# Contributing to Toast App
 
-Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문서는 프로젝트에 기여하기 위한 가이드라인과 지침을 제공합니다.
+Thank you for your interest in contributing to Toast App! This document provides guidelines and instructions for contributing to the project.
 
-## 목차
+## Table of Contents
 
-- [행동 강령](#행동-강령)
-- [시작하기](#시작하기)
-- [개발 환경](#개발-환경)
-- [프로젝트 구조](#프로젝트-구조)
-- [워크플로우](#워크플로우)
-- [풀 리퀘스트 프로세스](#풀-리퀘스트-프로세스)
-- [코딩 표준](#코딩-표준)
-- [테스팅](#테스팅)
-- [문서화](#문서화)
-- [이슈 보고](#이슈-보고)
-- [기능 요청](#기능-요청)
-- [커뮤니티](#커뮤니티)
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [Development Environment](#development-environment)
+- [Project Structure](#project-structure)
+- [Workflow](#workflow)
+- [Pull Request Process](#pull-request-process)
+- [Coding Standards](#coding-standards)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [Reporting Issues](#reporting-issues)
+- [Feature Requests](#feature-requests)
+- [Community](#community)
 
-## 행동 강령
+## Code of Conduct
 
-서로를 존중하는 태도로 협업해 주세요. 부적절한 행동을 발견하면 [GitHub Issues](https://github.com/opspresso/toast-app/issues) 또는 저장소 메인테이너에게 비공개로 신고해 주세요.
+Please collaborate with a respectful attitude toward one another. If you encounter inappropriate behavior, report it privately through [GitHub Issues](https://github.com/opspresso/toast-app/issues) or to a repository maintainer.
 
-## 시작하기
+## Getting Started
 
-### 필수 조건
+### Prerequisites
 
-- Node.js (v20.18 이상, `package.json` 의 `engines.node` 기준)
-- npm (v10 이상)
+- Node.js (v20.18 or higher, per `engines.node` in `package.json`)
+- npm (v10 or higher)
 - Git
-- Electron, JavaScript 및 데스크톱 애플리케이션 개발에 대한 기본 지식
+- Basic knowledge of Electron, JavaScript, and desktop application development
 
-### 포크 및 클론
+### Fork and Clone
 
-1. GitHub에서 저장소를 포크합니다
-2. 로컬에 포크를 클론합니다:
+1. Fork the repository on GitHub
+2. Clone your fork locally:
    ```
    git clone https://github.com/YOUR-USERNAME/toast-app.git
    cd toast-app
    ```
 
-3. 원본 저장소를 업스트림 원격으로 추가합니다:
+3. Add the original repository as the upstream remote:
    ```
    git remote add upstream https://github.com/opspresso/toast-app.git
    ```
 
-4. 의존성을 설치합니다:
+4. Install dependencies:
    ```
    npm install
    ```
 
-5. 개발 서버를 시작합니다:
+5. Start the development server:
    ```
    npm run dev
    ```
 
-## 개발 환경
+## Development Environment
 
-### 권장 도구
+### Recommended Tools
 
-- 다음 확장 기능이 있는 **Visual Studio Code**:
+- **Visual Studio Code** with the following extensions:
   - ESLint
   - Prettier
   - Debugger for Chrome/Electron
   - Jest
-- 디버깅을 위한 **Chrome DevTools**
-- 버전 관리를 위한 **Git**
+- **Chrome DevTools** for debugging
+- **Git** for version control
 
-### 환경 설정
+### Environment Setup
 
-1. 권장 도구 설치
-2. 에디터에서 ESLint 및 Prettier 구성 (저장소 루트의 `.eslintrc.js`, `.prettierrc` 사용)
-3. 의존성 설치: `npm install`
+1. Install the recommended tools
+2. Configure ESLint and Prettier in your editor (using `.eslintrc.js` and `.prettierrc` in the repository root)
+3. Install dependencies: `npm install`
 
-### 애플리케이션 실행
+### Running the Application
 
-- **개발 모드**:
+- **Development mode**:
   ```
   npm run dev
   ```
 
-- **프로덕션 빌드**:
+- **Production build**:
   ```
   npm run build
   ```
 
-- **테스팅**:
+- **Testing**:
   ```
   npm run test
   ```
 
-## 프로젝트 구조
+## Project Structure
 
-프로젝트 구조에 대한 자세한 개요는 [docs/development/setup.md](docs/development/setup.md) 문서를 참조하세요.
+For a detailed overview of the project structure, see the [docs/development/setup.md](docs/development/setup.md) document.
 
-주요 디렉토리:
-- `src/` - 소스 코드
-  - `main/` - 메인 프로세스 코드
-  - `renderer/` - 렌더러 프로세스 코드
-  - `index.js` - 애플리케이션 진입점
-- `assets/` - 정적 자산
-- `tests/` - 테스트 파일
+Main directories:
+- `src/` - Source code
+  - `main/` - Main process code
+  - `renderer/` - Renderer process code
+  - `index.js` - Application entry point
+- `assets/` - Static assets
+- `tests/` - Test files
 
-## 워크플로우
+## Workflow
 
-우리는 기능 브랜치 워크플로우를 따릅니다:
+We follow a feature branch workflow:
 
-1. 포크가 최신 상태인지 확인:
+1. Make sure your fork is up to date:
    ```
    git fetch upstream
    git checkout main
    git merge upstream/main
    ```
 
-2. 기능 또는 버그 수정을 위한 새 브랜치 생성:
+2. Create a new branch for your feature or bug fix:
    ```
    git checkout -b feature/your-feature-name
    ```
-   또는
+   or
    ```
    git checkout -b fix/issue-number-description
    ```
 
-3. [코딩 표준](#코딩-표준)을 따라 변경 사항 적용
+3. Make your changes following the [Coding Standards](#coding-standards)
 
-4. 명확하고 설명적인 커밋 메시지로 변경 사항 커밋:
+4. Commit your changes with a clear, descriptive commit message:
    ```
    git commit -m "feat: add new button type for custom scripts"
    ```
-   또는
+   or
    ```
    git commit -m "fix: resolve global hotkey conflict on Windows"
    ```
 
-5. 브랜치를 포크에 푸시:
+5. Push the branch to your fork:
    ```
    git push origin feature/your-feature-name
    ```
 
-6. 브랜치에서 메인 저장소로 풀 리퀘스트 생성
+6. Create a pull request from your branch to the main repository
 
-## 풀 리퀘스트 프로세스
+## Pull Request Process
 
-1. 코드가 [코딩 표준](#코딩-표준)을 따르는지 확인
-2. 필요에 따라 문서 업데이트
-3. 새 기능 또는 버그 수정에 대한 테스트 포함
-4. 모든 테스트가 통과하는지 확인
-5. 풀 리퀘스트 설명에 변경 내용과 이유를 명확하게 작성
-6. 메인테이너로부터 리뷰 요청
-7. 리뷰어의 피드백 반영
-8. 승인되면 메인테이너가 풀 리퀘스트를 병합할 것입니다
+1. Ensure your code follows the [Coding Standards](#coding-standards)
+2. Update documentation as needed
+3. Include tests for new features or bug fixes
+4. Make sure all tests pass
+5. Clearly describe what changed and why in the pull request description
+6. Request a review from the maintainers
+7. Address feedback from reviewers
+8. Once approved, a maintainer will merge the pull request
 
-## 코딩 표준
+## Coding Standards
 
-코드베이스 전체의 일관성을 유지하기 위해 코딩 표준 세트를 따릅니다:
+We follow a set of coding standards to maintain consistency across the codebase:
 
 ### JavaScript/TypeScript
 
-- 코드 포맷팅 및 린팅을 위해 ESLint 및 Prettier 사용
-- ESLint 권장 규칙(`eslint:recommended`)과 Prettier 설정 준수
-- 적절한 곳에 ES6+ 기능 사용
-- 비동기 코드에 async/await 사용
-- JSDoc 주석으로 코드 문서화
+- Use ESLint and Prettier for code formatting and linting
+- Follow the ESLint recommended rules (`eslint:recommended`) and the Prettier configuration
+- Use ES6+ features where appropriate
+- Use async/await for asynchronous code
+- Document code with JSDoc comments
 
-### 커밋 메시지
+### Commit Messages
 
-[Conventional Commits](https://www.conventionalcommits.org/) 사양을 따릅니다:
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 ```
 <type>[optional scope]: <description>
@@ -174,152 +174,152 @@ Toast 앱에 기여하는 데 관심을 가져주셔서 감사합니다! 이 문
 [optional footer(s)]
 ```
 
-타입:
-- `feat`: 새 기능
-- `fix`: 버그 수정
-- `docs`: 문서 변경
-- `style`: 코드의 의미에 영향을 주지 않는 변경 사항
-- `refactor`: 버그를 수정하거나 기능을 추가하지 않는 코드 변경
-- `perf`: 성능 개선
-- `test`: 테스트 추가 또는 수정
-- `chore`: 빌드 프로세스 또는 보조 도구의 변경 사항
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Changes that do not affect the meaning of the code
+- `refactor`: Code changes that neither fix a bug nor add a feature
+- `perf`: Performance improvements
+- `test`: Adding or modifying tests
+- `chore`: Changes to the build process or auxiliary tools
 
-예시:
+Examples:
 ```
 feat(button): add new script action type
 fix(shortcut): resolve global hotkey conflict on Windows
 docs: update README with new features
 ```
 
-### 코드 품질
+### Code Quality
 
-- 명확한 변수 및 함수 이름으로 자체 문서화 코드 작성
-- 함수는 작고 단일 책임에 집중
-- 깊은 조건문 및 루프 중첩 피하기
-- 복잡한 로직을 설명하는 의미 있는 주석 사용
-- 적절하게 오류 처리
-- 코드 중복 피하기
+- Write self-documenting code with clear variable and function names
+- Keep functions small and focused on a single responsibility
+- Avoid deep nesting of conditionals and loops
+- Use meaningful comments to explain complex logic
+- Handle errors appropriately
+- Avoid code duplication
 
-## 테스팅
+## Testing
 
-단위 및 통합 테스트에 Jest를 사용합니다. 코드에 적절한 테스트가 포함되어 있는지 확인하세요:
+We use Jest for unit and integration tests. Make sure your code includes appropriate tests:
 
-### 테스트 작성
+### Writing Tests
 
-- 테스트를 `tests/` 디렉토리에 배치
-- 테스트 파일 이름을 `.test.js` 또는 `.spec.js` 접미사로 지정
-- 소스 코드의 구조를 반영하도록 테스트 구성
-- 성공과 실패 사례 모두를 위한 테스트 작성
-- 필요에 따라 외부 종속성 모킹
+- Place tests in the `tests/` directory
+- Name test files with a `.test.js` or `.spec.js` suffix
+- Structure tests to mirror the structure of the source code
+- Write tests for both success and failure cases
+- Mock external dependencies as needed
 
-### 테스트 실행
+### Running Tests
 
 ```
-# 모든 테스트 실행
+# Run all tests
 npm run test
 
-# 커버리지가 있는 테스트 실행
+# Run tests with coverage
 npx jest --coverage
 
-# 감시 모드에서 테스트 실행
+# Run tests in watch mode
 npx jest --watch
 
-# 특정 테스트 실행 (이름 패턴 매칭)
+# Run specific tests (by name pattern matching)
 npx jest -t "test name pattern"
 ```
 
-> `test` 외의 변형은 `package.json`에 별도 스크립트로 등록돼 있지 않으므로 `npx jest`를 직접 호출합니다.
+> Variants other than `test` are not registered as separate scripts in `package.json`, so call `npx jest` directly.
 
-### 테스트 커버리지
+### Test Coverage
 
-특히 중요한 컴포넌트에 대해 높은 테스트 커버리지를 목표로 합니다:
-- 핵심 기능은 80%+ 커버리지
-- 중요 경로는 100% 커버리지
-- UI 컴포넌트는 적절한 스냅샷 또는 상호 작용 테스트
+We aim for high test coverage, especially for critical components:
+- 80%+ coverage for core functionality
+- 100% coverage for critical paths
+- Appropriate snapshot or interaction tests for UI components
 
-## 문서화
+## Documentation
 
-좋은 문서화는 프로젝트의 성공에 중요합니다:
+Good documentation is essential to the success of the project:
 
-### 코드 문서화
+### Code Documentation
 
-- 함수, 클래스 및 복잡한 코드에 JSDoc 주석 사용
-- 매개변수 및 반환 유형 설명 포함
-- 예외 및 경계 사례 문서화
+- Use JSDoc comments for functions, classes, and complex code
+- Include descriptions of parameters and return types
+- Document exceptions and edge cases
 
-### 프로젝트 문서화
+### Project Documentation
 
-- 새 기능이나 변경 사항으로 README.md 업데이트
-- 인터페이스 변경 시 API 문서 업데이트
-- 새 기능에 대한 예제 추가
-- 사용자 가이드 최신 상태 유지
+- Update README.md with new features or changes
+- Update API documentation when interfaces change
+- Add examples for new features
+- Keep the user guide up to date
 
-### 문서 파일
+### Documentation Files
 
-- `README.md`: 프로젝트 개요 및 빠른 시작
-- `docs/architecture/overview.md`: 시스템 설계 및 컴포넌트
-- `docs/api/`: API 참조
-- `docs/guide/user.md`: 사용자 지침
-- `CONTRIBUTING.md`: 기여 가이드라인(이 파일)
+- `README.md`: Project overview and quick start
+- `docs/architecture/overview.md`: System design and components
+- `docs/api/`: API reference
+- `docs/guide/user.md`: User instructions
+- `CONTRIBUTING.md`: Contributing guidelines (this file)
 
-## 이슈 보고
+## Reporting Issues
 
-### 버그 보고서
+### Bug Reports
 
-버그를 보고할 때는 다음을 포함하세요:
+When reporting a bug, please include:
 
-1. 명확하고 설명적인 제목
-2. 이슈를 재현하는 단계
-3. 예상 동작
-4. 실제 동작
-5. 해당되는 경우 스크린샷
-6. 환경 정보:
-   - 운영 체제 및 버전
-   - Toast 앱 버전
-   - Node.js 버전
-   - 관련 시스템 정보
+1. A clear, descriptive title
+2. Steps to reproduce the issue
+3. Expected behavior
+4. Actual behavior
+5. Screenshots, if applicable
+6. Environment information:
+   - Operating system and version
+   - Toast App version
+   - Node.js version
+   - Relevant system information
 
-### 보안 이슈
+### Security Issues
 
-보안 이슈의 경우 공개 이슈를 만들지 마세요. 대신 GitHub 저장소의 **Security → Report a vulnerability** 메뉴([Security Advisories](https://github.com/opspresso/toast-app/security/advisories/new))를 통해 비공개로 신고해 주세요.
+For security issues, do not create a public issue. Instead, report it privately through the **Security → Report a vulnerability** menu of the GitHub repository ([Security Advisories](https://github.com/opspresso/toast-app/security/advisories/new)).
 
-## 기능 요청
+## Feature Requests
 
-기능 요청을 환영합니다! 새로운 기능을 제안할 때:
+Feature requests are welcome! When proposing a new feature:
 
-1. 기능이 이미 제안되거나 구현되었는지 확인
-2. 기능이 해결할 문제를 명확하게 설명
-3. 가능하면 해결책 제안
-4. 기능이 어떻게 사용될지 예제 제공
+1. Check whether the feature has already been proposed or implemented
+2. Clearly describe the problem the feature would solve
+3. Propose a solution if possible
+4. Provide examples of how the feature would be used
 
-## 커뮤니티
+## Community
 
-### 커뮤니케이션 채널
+### Communication Channels
 
-- **GitHub Issues**: 버그 보고서 및 기능 요청용
-- **GitHub Discussions**: 일반적인 질문 및 토론용
+- **GitHub Issues**: For bug reports and feature requests
+- **GitHub Discussions**: For general questions and discussions
 
-### 코드 리뷰
+### Code Reviews
 
-- 코드 리뷰에서 존중하고 건설적인 태도 유지
-- 사람이 아닌 코드에 집중
-- 제안된 변경 사항에 대한 이유 설명
-- 대안적 접근 방식에 열려 있기
+- Be respectful and constructive in code reviews
+- Focus on the code, not the person
+- Explain the reasoning behind suggested changes
+- Be open to alternative approaches
 
-### 인정
+### Recognition
 
-우리는 크고 작은 모든 기여를 소중히 여깁니다. 기여자는 다음에서 인정받습니다:
-- 프로젝트 README
-- 릴리스 노트
+We value all contributions, large and small. Contributors are recognized in:
+- The project README
+- Release notes
 
-## 개발 팁
+## Development Tips
 
-### 디버깅
+### Debugging
 
-- 빠른 디버깅을 위해 `console.log` 사용
-- 더 복잡한 디버깅의 경우:
+- Use `console.log` for quick debugging
+- For more complex debugging:
   ```javascript
-  // 메인 프로세스에서
+  // In the main process
   const { app } = require('electron');
   app.on('ready', () => {
     const mainWindow = new BrowserWindow({
@@ -330,23 +330,23 @@ npx jest -t "test name pattern"
   });
   ```
 
-- 렌더러 프로세스 디버깅에 Chrome DevTools 사용
-- 메인 프로세스 디버깅에 VS Code의 디버거 사용
+- Use Chrome DevTools for debugging the renderer process
+- Use the VS Code debugger for debugging the main process
 
-### 일반적인 이슈
+### Common Issues
 
-- **글로벌 단축키 등록**: 플랫폼별 차이점을 처리하고 있는지 확인
-- **IPC 통신**: 채널이 올바르게 명명되고 핸들러가 등록되어 있는지 확인
-- **윈도우 관리**: 윈도우 참조 및 수명 주기 이벤트에 주의
-- **구성**: 구성 손상을 방지하기 위해 사용자 입력 검증
+- **Global shortcut registration**: Make sure you handle platform-specific differences
+- **IPC communication**: Verify that channels are named correctly and handlers are registered
+- **Window management**: Pay attention to window references and lifecycle events
+- **Configuration**: Validate user input to prevent configuration corruption
 
-### 성능 고려 사항
+### Performance Considerations
 
-- 메인 프로세스 작업량 최소화
-- 대규모 데이터 전송에 IPC 사용 최소화
-- 부드러운 UI를 위해 렌더러 프로세스 최적화
-- 특히 장기 실행 프로세스의 경우 메모리 사용량에 주의
+- Minimize the workload in the main process
+- Minimize IPC usage for large data transfers
+- Optimize the renderer process for a smooth UI
+- Pay attention to memory usage, especially for long-running processes
 
-## 라이선스
+## License
 
-Toast 앱에 기여함으로써, 귀하의 기여가 프로젝트의 [MIT 라이선스](LICENSE)에 따라 라이선스 부여된다는 데 동의합니다.
+By contributing to Toast App, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).

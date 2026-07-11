@@ -13,11 +13,11 @@ export function createNoResultsElement() {
   const container = document.createElement('div');
   container.className = 'no-results';
 
-  // 단축키 섹션 - 앱 디자인 스타일에 맞게 구성
+  // Shortcuts section - styled to match the app design
   const shortcutsContainer = document.createElement('div');
   shortcutsContainer.className = 'shortcuts-container';
 
-  // 간결한 단축키 그리드 형태로 표시
+  // Display as a compact shortcut grid
   const shortcutsGrid = document.createElement('div');
   shortcutsGrid.className = 'shortcuts-grid';
 
@@ -51,7 +51,7 @@ export function createNoResultsElement() {
   shortcutsContainer.appendChild(shortcutsGrid);
   container.appendChild(shortcutsContainer);
 
-  // 컨테이너에 스타일 추가
+  // Add styles to the container
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.alignItems = 'center';

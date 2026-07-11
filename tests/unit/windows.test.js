@@ -1,7 +1,7 @@
 /**
  * Toast - Windows Management Tests
  *
- * 윈도우 관리 모듈에 대한 단위 테스트
+ * Unit tests for the window management module
  */
 
 // Mock dependencies

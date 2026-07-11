@@ -1,7 +1,7 @@
 /**
  * Toast - System Tray Tests
  *
- * 시스템 트레이 모듈에 대한 단위 테스트
+ * Unit tests for the system tray module
  */
 
 // Mock Electron modules
@@ -428,7 +428,7 @@ describe('System Tray', () => {
 
   describe('Update Menu State', () => {
     afterEach(() => {
-      // 모듈 상태가 다른 테스트로 새어나가지 않도록 초기화
+      // Reset so module state does not leak into other tests
       tray.setUpdateState(null);
     });
 

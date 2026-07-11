@@ -109,7 +109,7 @@ function setupSystemHandlers(windows, config) {
     }
   });
 
-  // 로깅 핸들러 추가
+  // Add logging handlers
   ipcMain.handle('log-info', (event, message, ...args) => handleIpcLogging('info', message, ...args));
 
   ipcMain.handle('log-warn', (event, message, ...args) => handleIpcLogging('warn', message, ...args));
@@ -123,18 +123,18 @@ function setupSystemHandlers(windows, config) {
     try {
       const appName = extractAppNameFromPath(applicationPath);
       if (!appName) {
-        return { success: false, error: '앱 이름을 추출할 수 없습니다' };
+        return { success: false, error: 'Could not extract app name' };
       }
 
       const iconPath = await extractAppIcon(appName, null, forceRefresh);
       if (!iconPath) {
-        return { success: false, error: '아이콘을 추출할 수 없습니다' };
+        return { success: false, error: 'Could not extract icon' };
       }
 
       const tildePath = convertToTildePath(iconPath);
 
-      // 인증된 사용자는 아이콘을 서버(S3)에 업로드해 기기 간 공유 가능한 URL 확보.
-      // 실패해도 로컬 아이콘 동작에는 영향 없음 (remoteUrl 필드만 생략).
+      // For authenticated users, upload the icon to the server (S3) to obtain a cross-device shareable URL.
+      // Failure does not affect local icon behavior (only the remoteUrl field is omitted).
       let remoteUrl = null;
       try {
         if (await authManager.hasValidToken()) {
@@ -162,7 +162,7 @@ function setupSystemHandlers(windows, config) {
     catch (err) {
       return {
         success: false,
-        error: `아이콘 추출 중 오류 발생: ${err.message}`,
+        error: `Error extracting icon: ${err.message}`,
       };
     }
   });

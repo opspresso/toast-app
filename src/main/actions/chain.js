@@ -18,7 +18,7 @@ const MAX_CHAIN_DEPTH = 10;
  * @returns {Promise<Object>} Result object
  */
 async function executeChainedActions(action, depth = 0) {
-  // 순환 참조를 피하기 위해 executeAction을 동적으로 가져옵니다
+  // Dynamically require executeAction to avoid a circular reference
   const { executeAction } = require('../executor');
   try {
     if (depth >= MAX_CHAIN_DEPTH) {

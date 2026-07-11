@@ -11,7 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const { createLogger, maskAuthUrl } = require('./main/logger');
 
-// 모듈별 로거 생성
+// Create module-specific logger
 const logger = createLogger('Main');
 
 // Load environment variables
@@ -145,7 +145,7 @@ function initialize() {
   // Initialize authentication manager and cloud sync
   authManager.initialize(windows);
 
-  // Initialize cloud sync and connect with auth manager (중요: config 인스턴스 전달)
+  // Initialize cloud sync and connect with auth manager (important: pass the config instance)
   const syncManager = cloudSync.initCloudSync(authManager, userDataManager, config);
   authManager.setSyncManager(syncManager);
   logger.info('Cloud sync module initialized and connected to auth manager with shared config');
@@ -189,7 +189,7 @@ function initialize() {
         }
 
         if (code) {
-          // CSRF 방지: 서버가 되돌려준 state 를 저장값과 대조한 뒤에만 코드 교환 진행
+          // CSRF protection: only exchange the code after matching the server-returned state against the stored value
           const receivedState = urlObj.searchParams.get('state');
           if (!auth.validateStateParam(receivedState)) {
             logger.error('Auth redirect rejected: state validation failed');
@@ -197,7 +197,7 @@ function initialize() {
             return;
           }
 
-          // 기존 OAuth 코드 처리 로직
+          // Existing OAuth code handling logic
           logger.info('Starting authentication code exchange:', code.substring(0, 6) + '...');
           authManager
             .exchangeCodeForTokenAndUpdateSubscription(code)
@@ -210,7 +210,7 @@ function initialize() {
             });
         }
         else if (action === 'reload_auth' && token && userId) {
-          // connect 페이지에서 온 딥링크 처리
+          // Handle deep link coming from the connect page
           logger.info('Processing auth reload request with token:', token.substring(0, 8) + '...');
           auth
             .handleAuthRedirect(url)
@@ -257,7 +257,7 @@ function initialize() {
 }
 
 // When Electron has finished initialization
-// (자동 업데이트는 src/main/updater.js 가 단독 소유 — ipc.js 의 initAutoUpdater 에서 초기화)
+// (auto-update is owned solely by src/main/updater.js — initialized in ipc.js's initAutoUpdater)
 app.whenReady().then(() => {
   initialize();
 
@@ -314,7 +314,7 @@ app.on('activate', () => {
     createToastWindow(config);
   }
   else {
-    // 이미 창이 존재하면 표시하고 포커스를 줌
+    // If the window already exists, show it and give it focus
     const { showToastWindow } = require('./main/windows');
     showToastWindow(config);
   }

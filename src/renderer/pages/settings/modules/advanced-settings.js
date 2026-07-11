@@ -9,33 +9,33 @@ import { config, updateConfig } from './state.js';
  * Initialize Advanced Settings tab
  */
 export function initializeAdvancedSettings() {
-  window.settings.log.info('initializeAdvancedSettings 호출');
+  window.settings.log.info('initializeAdvancedSettings called');
 
   try {
-    // 작업 후 숨기기 설정
+    // Hide after action setting
     if (hideAfterActionCheckbox) {
       hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
     }
 
-    // 포커스 잃을 때 숨기기 설정
+    // Hide on blur setting
     if (hideOnBlurCheckbox) {
       hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
     }
 
-    // ESC 키로 숨기기 설정
+    // Hide on ESC key setting
     if (hideOnEscapeCheckbox) {
       hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
     }
 
-    // 작업 표시줄에 표시 설정
+    // Show in taskbar setting
     if (showInTaskbarCheckbox) {
       showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
     }
 
-    window.settings.log.info('고급 설정 탭 초기화 완료');
+    window.settings.log.info('Advanced settings tab initialization complete');
   }
   catch (error) {
-    window.settings.log.error('고급 설정 탭 초기화 중 오류 발생:', error);
+    window.settings.log.error('Error occurred while initializing Advanced settings tab:', error);
   }
 }
 
@@ -43,31 +43,31 @@ export function initializeAdvancedSettings() {
  * Setup advanced settings event listeners
  */
 export function setupAdvancedEventListeners() {
-  // 고급 설정
+  // Advanced settings
   if (hideAfterActionCheckbox) {
     hideAfterActionCheckbox.addEventListener('change', () => {
-      window.settings.log.info('작업 후 숨기기 설정 변경:', hideAfterActionCheckbox.checked);
+      window.settings.log.info('Hide after action setting changed:', hideAfterActionCheckbox.checked);
       window.settings.setConfig('advanced.hideAfterAction', hideAfterActionCheckbox.checked);
     });
   }
 
   if (hideOnBlurCheckbox) {
     hideOnBlurCheckbox.addEventListener('change', () => {
-      window.settings.log.info('포커스 잃을 때 숨기기 설정 변경:', hideOnBlurCheckbox.checked);
+      window.settings.log.info('Hide on blur setting changed:', hideOnBlurCheckbox.checked);
       window.settings.setConfig('advanced.hideOnBlur', hideOnBlurCheckbox.checked);
     });
   }
 
   if (hideOnEscapeCheckbox) {
     hideOnEscapeCheckbox.addEventListener('change', () => {
-      window.settings.log.info('ESC 키로 숨기기 설정 변경:', hideOnEscapeCheckbox.checked);
+      window.settings.log.info('Hide on ESC key setting changed:', hideOnEscapeCheckbox.checked);
       window.settings.setConfig('advanced.hideOnEscape', hideOnEscapeCheckbox.checked);
     });
   }
 
   if (showInTaskbarCheckbox) {
     showInTaskbarCheckbox.addEventListener('change', () => {
-      window.settings.log.info('작업 표시줄에 표시 설정 변경:', showInTaskbarCheckbox.checked);
+      window.settings.log.info('Show in taskbar setting changed:', showInTaskbarCheckbox.checked);
       window.settings.setConfig('advanced.showInTaskbar', showInTaskbarCheckbox.checked);
     });
   }
@@ -78,19 +78,19 @@ export function setupAdvancedEventListeners() {
         window.settings
           .resetConfig()
           .then(() =>
-            // 설정 다시 로드
+            // Reload settings
             window.settings.getConfig(),
           )
           .then(loadedConfig => {
             updateConfig(loadedConfig);
-            // UI 초기화는 동적 import로 처리
+            // UI initialization handled via dynamic import
             import('../index.js').then(({ initializeUI }) => {
               initializeUI();
             });
             alert('Settings have been reset.');
           })
           .catch(error => {
-            window.settings.log.error('설정 초기화 오류:', error);
+            window.settings.log.error('Settings reset error:', error);
             alert('An error occurred while resetting settings.');
           });
       }

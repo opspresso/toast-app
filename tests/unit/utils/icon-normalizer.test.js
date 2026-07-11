@@ -60,7 +60,7 @@ describe('normalizeLocalIcons', () => {
       filePath: '/Users/test/Library/icons/Slack.png',
       onUnauthorized: null,
     });
-    // 원본 배열은 변형하지 않는다 (불변성)
+    // Does not mutate the original array (immutability)
     expect(pages[0].buttons[0].icon).toBe('file://~/Library/icons/Slack.png');
   });
 
@@ -156,7 +156,7 @@ describe('normalizeLocalIcons', () => {
 
     const result = await normalizeLocalIcons(pages, { uploadIcon, platform: 'darwin' });
 
-    // 성공으로 카운터가 리셋되어 5개 모두 시도된다
+    // A success resets the counter, so all 5 are attempted
     expect(uploadIcon).toHaveBeenCalledTimes(5);
     expect(result.changed).toBe(true);
     expect(result.pages[0].buttons[2].icon).toBe('https://icons.example.com/c.png');

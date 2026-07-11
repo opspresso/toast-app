@@ -26,28 +26,28 @@ function updateAccentSwatchSelection(accentColor) {
  * Initialize Appearance Settings tab
  */
 export function initializeAppearanceSettings() {
-  window.settings.log.info('initializeAppearanceSettings 호출');
+  window.settings.log.info('initializeAppearanceSettings called');
 
   try {
-    // 테마 설정
+    // Theme setting
     if (themeSelect) {
       themeSelect.value = config.appearance?.theme || 'system';
     }
 
-    // 액센트 색상 설정
+    // Accent color setting
     updateAccentSwatchSelection(config.appearance?.accentColor || 'blue');
 
-    // 창 위치 설정
+    // Window position setting
     if (positionSelect) {
       positionSelect.value = config.appearance?.position || 'center';
     }
 
-    // 창 크기 설정
+    // Window size setting
     if (sizeSelect) {
       sizeSelect.value = config.appearance?.size || 'medium';
     }
 
-    // 창 투명도 설정
+    // Window opacity setting
     if (opacityRange) {
       opacityRange.value = config.appearance?.opacity || 0.95;
 
@@ -56,10 +56,10 @@ export function initializeAppearanceSettings() {
       }
     }
 
-    window.settings.log.info('모양 설정 탭 초기화 완료');
+    window.settings.log.info('Appearance settings tab initialization complete');
   }
   catch (error) {
-    window.settings.log.error('모양 설정 탭 초기화 중 오류 발생:', error);
+    window.settings.log.error('Error occurred while initializing Appearance settings tab:', error);
   }
 }
 
@@ -67,10 +67,10 @@ export function initializeAppearanceSettings() {
  * Setup appearance settings event listeners
  */
 export function setupAppearanceEventListeners() {
-  // 모양 설정
+  // Appearance settings
   if (themeSelect) {
     themeSelect.addEventListener('change', () => {
-      window.settings.log.info('테마 설정 변경:', themeSelect.value);
+      window.settings.log.info('Theme setting changed:', themeSelect.value);
       window.settings.setConfig('appearance.theme', themeSelect.value);
       applyTheme(themeSelect.value);
     });
@@ -84,7 +84,7 @@ export function setupAppearanceEventListeners() {
       }
 
       const accentColor = swatch.dataset.accentColor;
-      window.settings.log.info('액센트 색상 설정 변경:', accentColor);
+      window.settings.log.info('Accent color setting changed:', accentColor);
       window.settings.setConfig('appearance.accentColor', accentColor);
       updateAccentSwatchSelection(accentColor);
       applyAccentColor(accentColor);
@@ -93,29 +93,29 @@ export function setupAppearanceEventListeners() {
 
   if (positionSelect) {
     positionSelect.addEventListener('change', () => {
-      window.settings.log.info('창 위치 설정 변경:', positionSelect.value);
+      window.settings.log.info('Window position setting changed:', positionSelect.value);
       window.settings.setConfig('appearance.position', positionSelect.value);
     });
   }
 
   if (sizeSelect) {
     sizeSelect.addEventListener('change', () => {
-      window.settings.log.info('창 크기 설정 변경:', sizeSelect.value);
+      window.settings.log.info('Window size setting changed:', sizeSelect.value);
       window.settings.setConfig('appearance.size', sizeSelect.value);
     });
   }
 
   if (opacityRange) {
     opacityRange.addEventListener('input', () => {
-      // 슬라이더 이동 중에 값 표시 업데이트
+      // Update value display while the slider is moving
       if (opacityValue) {
         opacityValue.textContent = opacityRange.value;
       }
     });
 
     opacityRange.addEventListener('change', () => {
-      // 슬라이더 변경 완료 시 설정 저장
-      window.settings.log.info('창 투명도 설정 변경:', opacityRange.value);
+      // Save setting when slider change is complete
+      window.settings.log.info('Window opacity setting changed:', opacityRange.value);
       window.settings.setConfig('appearance.opacity', parseFloat(opacityRange.value));
     });
   }

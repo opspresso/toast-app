@@ -1,7 +1,7 @@
 /**
  * Toast - Application Action Tests
  *
- * 애플리케이션 실행 액션에 대한 단위 테스트
+ * Unit tests for the application launch action
  */
 
 // Mock dependencies

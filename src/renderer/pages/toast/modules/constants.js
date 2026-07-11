@@ -16,7 +16,7 @@ export const UI_ICONS = {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
 };
 
-// 버튼 단축키 순서 정의 (qwertasdfgzxcvb)
+// Button shortcut key order definition (qwertasdfgzxcvb)
 export const BUTTON_SHORTCUTS = ['Q', 'W', 'E', 'R', 'T', 'A', 'S', 'D', 'F', 'G', 'Z', 'X', 'C', 'V', 'B'];
 
 // Define default button set
@@ -145,11 +145,12 @@ export const emptyButtons = Array(15)
   }));
 
 /**
- * 페이지 버튼 배열을 15개로 정규화하는 함수
- * 과거 버전 데이터나 동기화로 버튼이 15개 미만이 된 페이지의 부족분을 빈 버튼으로 채운다.
- * 빈 페이지(0개)는 "페이지 추가 안내" 동작을 유지하기 위해 그대로 둔다.
- * @param {Array} buttons - 버튼 배열
- * @returns {Array} 15개로 채워진 버튼 배열
+ * Normalize a page's button array to 15 buttons
+ * Fills the shortfall with empty buttons for pages that ended up with fewer than 15 buttons
+ * due to legacy version data or synchronization.
+ * Empty pages (0 buttons) are left as-is to preserve the "add page guidance" behavior.
+ * @param {Array} buttons - Button array
+ * @returns {Array} Button array padded to 15 buttons
  */
 export function normalizePageButtons(buttons) {
   const result = [...(buttons || [])];
@@ -163,9 +164,9 @@ export function normalizePageButtons(buttons) {
 }
 
 /**
- * 버튼 배열의 단축키를 순서대로 재할당하는 함수
- * @param {Array} buttons - 버튼 배열
- * @returns {Array} 단축키가 재할당된 버튼 배열
+ * Reassign the button array's shortcuts in order
+ * @param {Array} buttons - Button array
+ * @returns {Array} Button array with reassigned shortcuts
  */
 export function reassignButtonShortcuts(buttons) {
   return buttons.map((button, index) => {

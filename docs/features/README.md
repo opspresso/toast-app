@@ -1,28 +1,28 @@
 # Features
 
-Toast App의 기능 상세 문서입니다.
+Detailed feature documentation for Toast App.
 
-## 문서 목록
+## Document List
 
-| 문서 | 설명 |
+| Document | Description |
 |------|------|
-| [cloud-sync.md](./cloud-sync.md) | 클라우드 동기화 (OAuth, 동기화 메커니즘) |
-| [auto-update.md](./auto-update.md) | 자동 업데이트 시스템 (electron-updater) |
-| [scripts.md](./scripts.md) | 사용자 정의 스크립트 실행 |
-| [snippets.md](./snippets.md) | 인라인 텍스트 확장 (스니펫) |
-| [settings.md](./settings.md) | 설정 UI, 4개 탭 구조 |
-| [window.md](./window.md) | 창 표시/숨김 메커니즘 |
-| [icon-extraction.md](./icon-extraction.md) | macOS 앱 아이콘 추출 |
+| [cloud-sync.md](./cloud-sync.md) | Cloud sync (OAuth, sync mechanism) |
+| [auto-update.md](./auto-update.md) | Auto-update system (electron-updater) |
+| [scripts.md](./scripts.md) | Custom script execution |
+| [snippets.md](./snippets.md) | Inline text expansion (snippets) |
+| [settings.md](./settings.md) | Settings UI, 4-tab structure |
+| [window.md](./window.md) | Window show/hide mechanism |
+| [icon-extraction.md](./icon-extraction.md) | macOS app icon extraction |
 
-## 주요 기능
+## Key Features
 
-- **클라우드 동기화**: [cloud-sync.md](./cloud-sync.md)
-- **자동 업데이트**: [auto-update.md](./auto-update.md)
-- **스크립트 실행**: [scripts.md](./scripts.md)
-- **텍스트 확장(스니펫)**: [snippets.md](./snippets.md)
-- **설정 관리**: [settings.md](./settings.md)
+- **Cloud Sync**: [cloud-sync.md](./cloud-sync.md)
+- **Auto Update**: [auto-update.md](./auto-update.md)
+- **Script Execution**: [scripts.md](./scripts.md)
+- **Text Expansion (Snippets)**: [snippets.md](./snippets.md)
+- **Settings Management**: [settings.md](./settings.md)
 
-## 관련 문서
+## Related Documents
 
-- [사용자 가이드](../guide/README.md)
-- [설정 스키마](../config/schema.md)
+- [User Guide](../guide/README.md)
+- [Configuration Schema](../config/schema.md)

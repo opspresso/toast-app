@@ -76,11 +76,11 @@ function setupConfigHandlers(windows, config) {
         });
       }
       else if (key === 'subscription' && typeof value === 'object') {
-        // sanitizeSubscription 함수를 사용하여 객체 정리
+        // Sanitize the object using the sanitizeSubscription function
         const { sanitizeSubscription } = require('../config');
         const subscriptionValue = sanitizeSubscription(value);
 
-        // 정리된 subscription 객체 저장
+        // Store the sanitized subscription object
         config.set(key, subscriptionValue);
       }
       else {
@@ -110,7 +110,7 @@ function setupConfigHandlers(windows, config) {
       if (windows.toast && !windows.toast.isDestroyed()) {
         // If entire settings or specific section is updated
         if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages' || (typeof key === 'string' && key.startsWith('appearance.'))) {
-          // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
+          // Sanitize the subscription object using the sanitizeSubscription function
           const { sanitizeSubscription } = require('../config');
           const subscription = sanitizeSubscription(config.get('subscription'));
 
@@ -186,7 +186,7 @@ function setupConfigHandlers(windows, config) {
 
         // Immediately notify toast window when settings change
         if (windows.toast && !windows.toast.isDestroyed()) {
-          // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
+          // Sanitize the subscription object using the sanitizeSubscription function
           const { sanitizeSubscription } = require('../config');
           const subscription = sanitizeSubscription(config.get('subscription'));
 
@@ -241,7 +241,7 @@ function setupConfigHandlers(windows, config) {
 
       // Send change notification to toast window after settings reset
       if (windows.toast && !windows.toast.isDestroyed()) {
-        // sanitizeSubscription 함수를 사용하여 subscription 객체 정리
+        // Sanitize the subscription object using the sanitizeSubscription function
         const { sanitizeSubscription } = require('../config');
         const subscription = sanitizeSubscription(config.get('subscription'));
 

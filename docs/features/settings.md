@@ -1,77 +1,77 @@
-# Toast 앱 설정 관리
+# Toast App Settings Management
 
-이 문서는 Toast 앱의 설정 시스템에 대한 개요와 상세 정보를 제공합니다.
+This document provides an overview and detailed information about the Toast app's settings system.
 
-## 목차
+## Table of Contents
 
-- [설정 시스템 개요](#설정-시스템-개요)
-- [설정 창 구조](#설정-창-구조)
-- [설정 스키마](#설정-스키마)
-- [주요 기능](#주요-기능)
-- [미래 개선 계획](#미래-개선-계획)
-- [설정 문제 해결](#설정-문제-해결)
-- [결론](#결론)
+- [Settings System Overview](#settings-system-overview)
+- [Settings Window Structure](#settings-window-structure)
+- [Settings Schema](#settings-schema)
+- [Key Features](#key-features)
+- [Future Improvement Plans](#future-improvement-plans)
+- [Settings Troubleshooting](#settings-troubleshooting)
+- [Conclusion](#conclusion)
 
-## 설정 시스템 개요
+## Settings System Overview
 
-Toast 앱의 설정 관리는 Electron-store를 기반으로 구현되어 있으며, 사용자 인터페이스를 통해 직관적으로 설정을 변경할 수 있습니다.
+Toast app's settings management is implemented on top of Electron-store, allowing settings to be changed intuitively through the user interface.
 
-Toast 앱의 설정 시스템은 다음 구성 요소로 이루어져 있습니다:
+The Toast app settings system consists of the following components:
 
-1. **설정 저장소**: `electron-store`를 사용하여 JSON 형식으로 설정을 로컬에 저장합니다.
-2. **설정 관리 모듈**: `src/main/config.js`에서 설정 스키마 정의 및 관리 기능을 제공합니다.
-3. **설정 UI**: 사용자 친화적인 인터페이스를 통해 설정을 확인하고 변경할 수 있습니다.
-4. **클라우드 동기화**: 프리미엄 사용자를 위한 설정 동기화 기능을 제공합니다.
+1. **Settings store**: Uses `electron-store` to store settings locally in JSON format.
+2. **Settings management module**: `src/main/config.js` provides settings schema definition and management functionality.
+3. **Settings UI**: Lets users view and change settings through a user-friendly interface.
+4. **Cloud sync**: Provides settings synchronization for premium users.
 
-## 설정 창 구조
+## Settings Window Structure
 
-설정 창은 4개 탭으로 구성되며, 탭 이름과 페이지 제목이 동일합니다.
+The settings window consists of four tabs, where the tab name matches the page title.
 
 ### 1. Settings
-General / Appearance / Advanced 섹션이 하나의 스크롤 페이지에 배치됩니다.
+The General / Appearance / Advanced sections are laid out on a single scrolling page.
 
 - **General**
-  - **Global Hotkey**: 애플리케이션을 호출하기 위한 전역 단축키 설정
-  - **Launch at login**: 시스템 로그인 시 자동 실행 설정
+  - **Global Hotkey**: Sets the global shortcut used to invoke the application
+  - **Launch at login**: Sets whether the app runs automatically when the system logs in
 - **Appearance**
-  - **테마**: 시스템/라이트/다크 테마 선택
-  - **Accent Color**: 파랑(기본)/빨강/주황/녹색/보라/모노 액센트 색상 선택. 클라우드 싱크로 기기 간 동기화됨
-  - **창 위치**: 중앙, 상단, 하단, 커서 위치 중 선택. 창을 드래그해 옮기면 모니터별로 위치가 저장되며(`appearance.monitorPositions`), 저장된 위치가 이 설정보다 우선 적용됨
-  - **창 크기**: 작게, 중간, 크게 중 선택
-  - **창 투명도**: 슬라이더를 통한 투명도 조절 (0.1-1.0)
-  - 스키마의 `buttonLayout`(grid/list)은 렌더러에서 적용되지만 설정 UI에는 변경 컨트롤이 노출되지 않습니다 (기본값 `grid`)
+  - **Theme**: Choose the System/Light/Dark theme
+  - **Accent Color**: Choose the accent color: Blue (default)/Red/Orange/Green/Purple/Mono. Synced across devices via cloud sync
+  - **Window position**: Choose Center, Top, Bottom, or Cursor position. If you drag the window to move it, the position is saved per monitor (`appearance.monitorPositions`), and the saved position takes precedence over this setting
+  - **Window size**: Choose Small, Medium, or Large
+  - **Window opacity**: Adjust opacity via a slider (0.1-1.0)
+  - The schema's `buttonLayout` (grid/list) is applied by the renderer but no control to change it is exposed in the settings UI (default `grid`)
 - **Advanced**
-  - **Hide after action / Hide on blur / Hide on Escape key**: 창 자동 숨김 설정
-  - **Show in taskbar**: 작업 표시줄에 앱 표시 여부 설정
-  - **Reset to Defaults**: 페이지(`pages`)와 스니펫(`snippets`)을 제외한 모든 설정을 기본값으로 초기화
+  - **Hide after action / Hide on blur / Hide on Escape key**: Automatic window-hiding settings
+  - **Show in taskbar**: Sets whether the app appears in the taskbar
+  - **Reset to Defaults**: Resets all settings to their defaults except pages (`pages`) and snippets (`snippets`)
 
 ### 2. Account
-계정/구독과 Cloud Sync 섹션이 함께 배치됩니다.
+The account/subscription and Cloud Sync sections are placed together.
 
-- **계정·구독**
-  - **로그인/로그아웃**: 사용자 계정 인증 기능
-  - **프로필 정보**: 로그인 후 사용자 이름, 이메일, 프로필 이미지 표시
-  - **구독 정보/관리**: 현재 구독 상태, 만료일, 제공 기능 표시 및 관리 페이지 이동
+- **Account & Subscription**
+  - **Login/Logout**: User account authentication
+  - **Profile information**: Displays the user name, email, and profile image after login
+  - **Subscription info/management**: Displays the current subscription status, expiration date, and provided features, and navigates to the management page
 - **Cloud Sync**
-  - **동기화 상태**: 현재 동기화 상태 및 마지막 동기화 시간 표시
-  - **동기화 활성화/비활성화**: 클라우드 동기화 기능 토글
-  - **수동 동기화**: 서버에 업로드, 서버에서 다운로드, 충돌 해결 기능
+  - **Sync status**: Displays the current sync status and the last sync time
+  - **Enable/disable sync**: Toggles the cloud sync feature
+  - **Manual sync**: Upload to server, download from server, and conflict resolution
 
 ### 3. Snippets
-- **텍스트 확장 활성화**: 다른 앱에서 키워드 입력 시 자동 치환 기능 토글 (기본값 꺼짐, macOS 전용)
-- **권한 상태/요청**: 접근성·입력 모니터링 권한 안내 및 시스템 설정 열기
-- **스니펫 관리**: 키워드/치환 텍스트 추가·수정·삭제, 항목별 활성화
-- 자세한 동작은 [스니펫 (텍스트 확장)](./snippets.md) 참조
+- **Enable text expansion**: Toggles the feature that automatically replaces keywords typed in other apps (default off, macOS only)
+- **Permission status/request**: Guidance on Accessibility and Input Monitoring permissions and opening System Settings
+- **Snippet management**: Add/edit/delete keyword/replacement text, and enable items individually
+- For detailed behavior, see [Snippets (Text Expansion)](./snippets.md)
 
 ### 4. About
-- **버전 정보**: 현재 앱 버전 표시
-- **업데이트 관리**: 업데이트 확인 시 자동 다운로드·설치·재시작
-- **홈페이지 링크**: 공식 웹사이트로 이동
-- **대체 업데이트 방법**: Homebrew, GitHub 릴리스 등 대체 업데이트 방법 안내
+- **Version info**: Displays the current app version
+- **Update management**: Automatic download, install, and restart when checking for updates
+- **Homepage link**: Navigates to the official website
+- **Alternative update methods**: Guidance on alternative update methods such as Homebrew and GitHub Releases
 
-## 설정 스키마
+## Settings Schema
 
-Toast 앱은 다음과 같은 설정 스키마를 사용합니다 (주요 키 발췌 — 전체 스키마에는 `_sync` 동기화 메타데이터와 `security` 액션 승인 상태 키도 포함됩니다. [스키마 문서](../config/schema.md) 참조):
+The Toast app uses the following settings schema (key excerpts — the full schema also includes the `_sync` sync metadata and the `security` action-approval state keys. See the [schema documentation](../config/schema.md)):
 
 ```javascript
 const schema = {
@@ -207,52 +207,52 @@ const schema = {
 };
 ```
 
-## 주요 기능
+## Key Features
 
-### 설정 저장 및 로드
+### Saving and Loading Settings
 
-Toast 앱의 설정은 자동으로 저장되며, 애플리케이션 시작 시 로드됩니다. 별도의 '저장' 버튼은 없으며, 설정 변경 이벤트 발생 시 `setConfig`를 통해 즉시 적용 및 저장됩니다.
+Toast app settings are saved automatically and loaded when the application starts. There is no separate "Save" button; when a settings-change event occurs, the change is applied and saved immediately via `setConfig`.
 
 ```javascript
-// 설정 저장 예시
+// Example of saving settings
 window.settings.setConfig('globalHotkey', 'Alt+Space');
 window.settings.setConfig('appearance.theme', 'dark');
 
-// 설정 로드 예시
+// Example of loading settings
 const config = await window.settings.getConfig();
 ```
 
-### 설정 마이그레이션
+### Settings Migration
 
-애플리케이션 업데이트 시 설정 스키마가 변경될 수 있습니다. 이를 위해 Toast 앱은 마이그레이션 메커니즘을 제공합니다:
+The settings schema may change when the application is updated. To handle this, the Toast app provides a migration mechanism:
 
 ```javascript
 function createConfigStore() {
   try {
-    // 먼저 스키마 검증 없이 구성을 로드하여 마이그레이션
+    // First load the config without schema validation to migrate it
     const migrationStore = new Store({
-      schema: null, // 스키마 검증 비활성화
+      schema: null, // Disable schema validation
       clearInvalidConfig: false,
     });
 
-    // 구독 정보 마이그레이션
+    // Migrate subscription information
     // ...
 
-    // 이제 정상적인 스키마 검증으로 Store 객체 생성
+    // Now create the Store object with normal schema validation
     return new Store({ schema });
   } catch (error) {
-    // 오류 발생 시 대체 처리
+    // Fallback handling on error
     // ...
   }
 }
 ```
 
-### 설정 가져오기/내보내기
+### Importing/Exporting Settings
 
-사용자는 설정을 파일로 내보내거나 파일에서 가져올 수 있습니다:
+Users can export settings to a file or import them from a file:
 
 ```javascript
-// 설정 내보내기
+// Export settings
 function exportConfig(config, filePath) {
   const configData = {
     globalHotkey: config.get('globalHotkey'),
@@ -265,79 +265,79 @@ function exportConfig(config, filePath) {
   fs.writeFileSync(filePath, JSON.stringify(configData, null, 2), 'utf8');
 }
 
-// 설정 가져오기
+// Import settings
 function importConfig(config, filePath) {
   const importedConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  // 검증 및 적용
+  // Validate and apply
   // ...
 }
 ```
 
-### 클라우드 동기화
+### Cloud Sync
 
-프리미엄 구독자는 설정을 클라우드에 동기화하여 여러 기기에서 일관된 환경을 유지할 수 있습니다:
+Premium subscribers can sync their settings to the cloud to maintain a consistent environment across multiple devices:
 
-1. **자동 동기화**: 설정 변경 시 자동으로 서버와 동기화
-2. **수동 동기화**: 사용자가 명시적으로 업로드/다운로드 요청
-3. **충돌 해결**: 로컬 및 원격 설정이 충돌할 경우 해결 메커니즘 제공
+1. **Automatic sync**: Automatically syncs with the server when settings change
+2. **Manual sync**: The user explicitly requests upload/download
+3. **Conflict resolution**: Provides a resolution mechanism when local and remote settings conflict
 
-### 인증 및 구독 관리
+### Authentication and Subscription Management
 
-Toast 앱은 사용자 계정 및 구독 관리를 위한 기능을 제공합니다:
+The Toast app provides features for managing user accounts and subscriptions:
 
-1. **로그인/로그아웃**: OAuth 기반 인증
-2. **구독 상태 확인**: 현재 구독 상태 및 제공 기능 표시
-3. **구독 갱신**: 구독 관리 페이지로 연결
+1. **Login/Logout**: OAuth-based authentication
+2. **Subscription status check**: Displays the current subscription status and provided features
+3. **Subscription renewal**: Links to the subscription management page
 
-### 업데이트 관리
+### Update Management
 
-Toast 앱은 자동 업데이트 시스템을 통해 최신 버전을 유지할 수 있습니다:
+The Toast app can stay up to date through its automatic update system:
 
-1. **업데이트 확인**: 서버에서 최신 버전 정보 확인
-2. **업데이트 다운로드**: 최신 버전 파일 다운로드
-3. **업데이트 설치**: 앱 재시작을 통한 업데이트 적용
-4. **대체 업데이트 방법**: Homebrew, GitHub 릴리스 등 제공
+1. **Check for updates**: Checks the server for the latest version information
+2. **Download update**: Downloads the latest version file
+3. **Install update**: Applies the update by restarting the app
+4. **Alternative update methods**: Provides options such as Homebrew and GitHub Releases
 
-## 미래 개선 계획
+## Future Improvement Plans
 
-현재 설정 시스템을 기반으로 다음과 같은 개선이 계획되어 있습니다:
+Building on the current settings system, the following improvements are planned:
 
-### 1. 사용자 경험 개선
+### 1. User Experience Improvements
 
-- **통합 검색 기능**: 설정 항목을 빠르게 찾을 수 있는 검색 기능 추가
-- **설정 미리보기**: 설정 변경 효과를 실시간으로 미리 볼 수 있는 기능
-- **반응형 디자인 강화**: 다양한 화면 크기에 최적화된 설정 UI 제공
+- **Unified search**: Add a search feature to quickly find settings items
+- **Settings preview**: A feature to preview the effect of settings changes in real time
+- **Enhanced responsive design**: Provide a settings UI optimized for various screen sizes
 
-### 2. 기능 확장
+### 2. Feature Expansion
 
-- **더 세분화된 알림 설정**: 알림 종류별 설정 기능
-- **언어 및 지역화 설정**: 다국어 인터페이스 지원
-- **접근성 개선**: 스크린 리더 호환성, 고대비 모드 등 추가
+- **More granular notification settings**: Settings for each notification type
+- **Language and localization settings**: Multilingual interface support
+- **Accessibility improvements**: Add screen reader compatibility, high-contrast mode, and more
 
-### 3. 기술적 개선
+### 3. Technical Improvements
 
-- **성능 최적화**: 설정 로드 및 저장 속도 개선
-- **모듈화 강화**: 각 설정 섹션을 독립적인 모듈로 분리
-- **플러그인 시스템**: 타사 개발자를 위한 설정 확장 기능
-- **향상된 동기화 알고리즘**: 더 효율적인 클라우드 동기화 지원
+- **Performance optimization**: Improve settings load and save speed
+- **Stronger modularization**: Separate each settings section into an independent module
+- **Plugin system**: Settings extensibility for third-party developers
+- **Improved sync algorithm**: Support more efficient cloud sync
 
-## 설정 문제 해결
+## Settings Troubleshooting
 
-사용자가 설정 관련 문제를 해결하는 데 도움이 되는 일반적인 방법:
+Common methods to help users resolve settings-related issues:
 
-1. **설정 초기화**: Advanced 탭에서 'Reset to Defaults' 버튼을 사용하여 페이지(`pages`)와 스니펫(`snippets`)을 제외한 모든 설정을 기본값으로 초기화할 수 있습니다.
-2. **설정 파일 위치**: 설정 파일은 다음 위치에 저장됩니다:
+1. **Reset settings**: In the Advanced tab, use the 'Reset to Defaults' button to reset all settings to their defaults except pages (`pages`) and snippets (`snippets`).
+2. **Settings file location**: The settings file is stored in the following locations:
    - Windows: `%APPDATA%\Toast\config.json`
    - macOS: `~/Library/Application Support/Toast/config.json`
    - Linux: `~/.config/Toast/config.json`
-3. **로그 확인**: 문제 진단을 위해 로그 파일을 확인할 수 있습니다:
+3. **Check the logs**: You can check the log files to diagnose problems:
    - Windows: `%APPDATA%\Toast\logs`
    - macOS: `~/Library/Application Support/Toast/logs`
    - Linux: `~/.config/Toast/logs`
-4. **클라우드 동기화 문제**: 동기화 오류 발생 시 'Resolve Conflicts' 기능을 사용하거나, 동기화를 비활성화한 후 재활성화해볼 수 있습니다.
+4. **Cloud sync issues**: If a sync error occurs, try the 'Resolve Conflicts' feature, or disable and then re-enable sync.
 
-## 결론
+## Conclusion
 
-Toast 앱의 설정 시스템은 사용자 경험을 중심으로 설계되어 있으며, 다양한 기능과 확장성을 제공합니다. 클라우드 동기화 및 업데이트 관리 기능을 통해 여러 기기에서 일관된 환경을 유지하고 최신 기능을 활용할 수 있습니다.
+The Toast app's settings system is designed with user experience at its center and provides a wide range of features and extensibility. Through cloud sync and update management, you can maintain a consistent environment across multiple devices and take advantage of the latest features.
 
-향후 개선을 통해 더욱 직관적이고 사용자 친화적인 설정 경험을 제공할 계획입니다.
+Future improvements are planned to provide an even more intuitive and user-friendly settings experience.

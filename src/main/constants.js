@@ -4,13 +4,13 @@
  * Defines constants used throughout the application.
  */
 
-// 앱 기본 정보 (package.json 정보를 읽을 수 없을 때 사용)
+// Default app info (used when package.json info cannot be read)
 const APP_DEFAULT_INFO = {
   author: 'nalbam <me@nalbam.com>',
   homepage: 'https://app.toast.sh',
   description: 'A customizable shortcut launcher for macOS and Windows',
   license: 'MIT',
-  version: 'v0.0.0', // 버전을 가져오지 못할 때 기본값
+  version: 'v0.0.0', // Default when the version cannot be retrieved
   name: 'Toast',
   repository: 'https://github.com/opspresso/toast-app',
 };

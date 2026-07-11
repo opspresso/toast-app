@@ -63,7 +63,7 @@ describe('API Icons Module', () => {
       expect(result).toEqual({ success: true, url: 'https://icons.example.com/icons/abc/def.png' });
       expect(fs.promises.readFile).toHaveBeenCalledWith('/mock/icons/App.png');
 
-      // multipart 요청: JSON 기본 헤더 없이 생성, Authorization 만 명시
+      // multipart request: created without default JSON headers, only Authorization specified
       expect(mockClient.createApiClient).toHaveBeenCalledWith({ timeout: 15000, headers: {} });
       const [url, body, config] = mockPost.mock.calls[0];
       expect(url).toBe(mockClient.ENDPOINTS.USER_ICONS);
@@ -102,7 +102,7 @@ describe('API Icons Module', () => {
       const second = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
       expect(second.success).toBe(false);
       expect(second.unavailable).toBe(true);
-      // 두 번째 호출은 파일도 읽지 않고 단락되어야 한다
+      // The second call should short-circuit without even reading the file
       expect(fs.promises.readFile).toHaveBeenCalledTimes(1);
     });
 

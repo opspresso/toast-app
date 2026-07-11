@@ -20,10 +20,10 @@ const logger = createLogger('IPC');
  */
 function setupCloudSyncHandlers(windows, config) {
   // Cloud synchronization related handlers
-  // 매니저는 src/index.js가 initCloudSync로 1회 초기화하며, 여기서는 조회만 한다
+  // The manager is initialized once by src/index.js via initCloudSync; here we only read it
   const getCloudSyncManager = () => require('../cloud-sync').getSyncManager();
 
-  // Settings Synced 이벤트 핸들러 전달
+  // Forward the Settings Synced event handler
   ipcMain.on('settings-synced', (event, data) => {
     broadcastToWindows(windows, 'settings-synced', data);
   });
@@ -33,11 +33,11 @@ function setupCloudSyncHandlers(windows, config) {
     try {
       const cloudSyncManager = getCloudSyncManager();
       if (cloudSyncManager) {
-        // getCurrentStatus() 메서드로 현재 상태 조회
+        // Get current status via the getCurrentStatus() method
         return cloudSyncManager.getCurrentStatus();
       }
       else {
-        // CloudSyncManager 초기화할 수 없으면 Config Store에서 실제 상태 읽기
+        // If CloudSyncManager cannot be initialized, read the actual status from the Config Store
         const savedEnabled = config.get('cloudSync.enabled');
         const actualEnabled = savedEnabled !== undefined ? savedEnabled : true;
 
@@ -53,7 +53,7 @@ function setupCloudSyncHandlers(windows, config) {
     catch (error) {
       logger.error('Error getting sync status:', error);
 
-      // 오류 시에도 Config Store에서 상태 읽기 시도
+      // Even on error, try to read the status from the Config Store
       try {
         const savedEnabled = config.get('cloudSync.enabled');
         const actualEnabled = savedEnabled !== undefined ? savedEnabled : false;
@@ -80,12 +80,12 @@ function setupCloudSyncHandlers(windows, config) {
   // Set cloud sync enabled/disabled
   ipcMain.handle('set-cloud-sync-enabled', async (event, enabled) => {
     try {
-      // 동기화 설정 변경 로그
+      // Log the sync setting change
       logger.info(`Setting cloud sync to ${enabled ? 'enabled' : 'disabled'}`);
 
       const cloudSyncManager = getCloudSyncManager();
       if (cloudSyncManager) {
-        // enable/disable 메서드를 사용하여 클라우드 동기화 활성화/비활성화
+        // Enable/disable cloud sync using the enable/disable methods
         if (enabled) {
           cloudSyncManager.enable();
         }
@@ -93,14 +93,14 @@ function setupCloudSyncHandlers(windows, config) {
           cloudSyncManager.disable();
         }
 
-        // 현재 상태 반환 (CloudSyncManager가 단일 진실 원천)
+        // Return the current status (CloudSyncManager is the single source of truth)
         return {
           success: true,
           status: cloudSyncManager.getCurrentStatus(),
         };
       }
       else {
-        // 매니저가 초기화되지 않은 경우
+        // When the manager is not initialized
         logger.warn('Cloud sync manager not initialized, cannot enable/disable');
         return {
           success: false,
@@ -120,20 +120,20 @@ function setupCloudSyncHandlers(windows, config) {
   // Manual sync (upload, download, resolve)
   ipcMain.handle('manual-sync', async (event, action) => {
     try {
-      // 유효성 검사
+      // Validation
       if (!['upload', 'download', 'resolve'].includes(action)) {
         throw new Error(`Invalid sync action: ${action}`);
       }
 
       const cloudSyncManager = getCloudSyncManager();
       if (cloudSyncManager) {
-        // 수동 동기화 실행
+        // Perform manual sync
         logger.info(`Performing manual sync action: ${action}`);
         const result = await cloudSyncManager.manualSync(action);
 
-        // 동기화 결과가 성공이면 UI 업데이트 메시지 전송
+        // If the sync result is successful, send a UI update message
         if (result.success) {
-          // 현재 설정 데이터 수집
+          // Collect current configuration data
           const configData = {
             pages: config.get('pages'),
             snippets: config.get('snippets'),
@@ -142,14 +142,14 @@ function setupCloudSyncHandlers(windows, config) {
             subscription: config.get('subscription'),
           };
 
-          // 동기화 완료 알림 (설정 데이터 포함)
+          // Sync completion notification (includes configuration data)
           broadcastToWindows(windows, 'config-updated', configData);
         }
 
         return result;
       }
       else {
-        // 매니저가 초기화되지 않은 경우
+        // When the manager is not initialized
         logger.warn('Cloud sync manager not initialized, cannot perform manual sync');
         return {
           success: false,
