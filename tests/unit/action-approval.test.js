@@ -94,6 +94,41 @@ describe('Action Approval', () => {
       const other = { action: 'application', applicationPath: '/Applications/Calculator.app', applicationParameters: '--other' };
       expect(computeFingerprint(withParams)).not.toBe(computeFingerprint(other));
     });
+
+    describe('on Windows', () => {
+      let originalPlatform;
+      let originalEnv;
+
+      beforeEach(() => {
+        originalPlatform = process.platform;
+        originalEnv = { ...process.env };
+        Object.defineProperty(process, 'platform', { value: 'win32' });
+        process.env.ProgramFiles = 'C:\\Program Files';
+        process.env['ProgramFiles(x86)'] = 'C:\\Program Files (x86)';
+        process.env.LOCALAPPDATA = 'C:\\Users\\test\\AppData\\Local';
+        process.env.WINDIR = 'C:\\Windows';
+      });
+
+      afterEach(() => {
+        Object.defineProperty(process, 'platform', { value: originalPlatform });
+        process.env = originalEnv;
+      });
+
+      test('should stay gate-free for a .exe under a standard install directory', () => {
+        expect(computeFingerprint({ action: 'application', applicationPath: 'C:\\Program Files\\Toast\\Toast.exe' })).toBeNull();
+        expect(computeFingerprint({ action: 'application', applicationPath: 'C:\\Program Files (x86)\\App\\App.exe' })).toBeNull();
+        expect(computeFingerprint({ action: 'application', applicationPath: 'C:\\Users\\test\\AppData\\Local\\Programs\\App\\App.exe' })).toBeNull();
+        expect(computeFingerprint({ action: 'application', applicationPath: 'C:\\Windows\\notepad.exe' })).toBeNull();
+      });
+
+      test('should fingerprint a .exe outside the standard install directories', () => {
+        expect(computeFingerprint({ action: 'application', applicationPath: 'C:\\Users\\test\\Downloads\\random.exe' })).not.toBeNull();
+      });
+
+      test('should fingerprint a non-.exe launch even under a standard install directory', () => {
+        expect(computeFingerprint({ action: 'application', applicationPath: 'C:\\Program Files\\Toast\\run.bat' })).not.toBeNull();
+      });
+    });
   });
 
   describe('collectRiskyFingerprints', () => {

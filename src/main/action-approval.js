@@ -11,12 +11,59 @@
  */
 
 const crypto = require('crypto');
+const path = require('path');
 const { createLogger } = require('./logger');
 
 const logger = createLogger('ActionApproval');
 
 const MAX_TRUSTED_ACTIONS = 1000;
 const PREVIEW_LENGTH = 200;
+
+/**
+ * Directories Windows installers place executables under. A .exe launched
+ * from one of these is the Windows equivalent of a macOS .app bundle — it
+ * came from a normal install, not a script dropped in an arbitrary location.
+ * @returns {string[]} Existing trusted install directories
+ */
+function getWindowsTrustedInstallDirs() {
+  return [
+    process.env.ProgramFiles,
+    process.env['ProgramFiles(x86)'],
+    process.env.LOCALAPPDATA && path.win32.join(process.env.LOCALAPPDATA, 'Programs'),
+    process.env.WINDIR,
+  ].filter(Boolean);
+}
+
+/**
+ * Whether a parameterless application launch targets something that looks
+ * like a normal installed app rather than an arbitrary script or executable.
+ * macOS: an actual .app bundle. Windows: a .exe under a standard install
+ * directory (Program Files, per-user Programs, or the Windows directory).
+ * Other platforms have no equivalent convention, so nothing qualifies.
+ * @param {string} applicationPath - Application path to check
+ * @returns {boolean} Whether the launch stays gate-free without parameters
+ */
+function isTrustedAppLaunch(applicationPath) {
+  if (process.platform === 'darwin') {
+    return /\.app\/?$/i.test(applicationPath);
+  }
+
+  if (process.platform === 'win32') {
+    if (!/\.exe$/i.test(applicationPath)) {
+      return false;
+    }
+    // Use path.win32 explicitly rather than the platform-dependent path module,
+    // since this branch must parse Windows-style paths correctly even when
+    // Toast itself is (hypothetically) running on a non-Windows host.
+    const normalizedPath = path.win32.normalize(applicationPath).toLowerCase();
+    return getWindowsTrustedInstallDirs().some(dir => {
+      const normalizedDir = path.win32.normalize(dir).toLowerCase();
+      return normalizedPath === normalizedDir || normalizedPath.startsWith(`${normalizedDir}${path.win32.sep}`);
+    });
+  }
+
+  return false;
+}
 
 // Set via initializeApprovals(); ensureApproved falls back to allow when unset
 const state = {
@@ -61,14 +108,13 @@ function computeFingerprint(action) {
       return null;
     }
 
-    // A plain launch of an installed .app bundle stays gate-free to avoid
+    // A plain launch of a trusted installed app stays gate-free to avoid
     // prompting on every synced button. Launch parameters are
     // attacker-controllable capability regardless of target, and a path that
-    // isn't a standard app bundle (e.g. a script or arbitrary executable) is
-    // gated even without parameters, since it isn't a normal "open this app"
-    // button.
-    const isAppBundle = /\.app\/?$/i.test(applicationPath);
-    if (!action.applicationParameters && isAppBundle) {
+    // doesn't look like a normal installed app (e.g. a script or arbitrary
+    // executable) is gated even without parameters, since it isn't a normal
+    // "open this app" button.
+    if (!action.applicationParameters && isTrustedAppLaunch(applicationPath)) {
       return null;
     }
 
