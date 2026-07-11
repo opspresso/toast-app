@@ -26,7 +26,19 @@ const { getEnv } = require('./config/env');
 const CLIENT_ID = getEnv('CLIENT_ID', '');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET', '');
 // Set token expiration time to unlimited (set to a very long duration)
-const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', '31536000'), 10); // Default 1 year (365 days), can be overridden in environment variables
+const DEFAULT_TOKEN_EXPIRES_IN = 31536000; // 1 year (365 days), in seconds
+const TOKEN_EXPIRES_IN = parseInt(getEnv('TOKEN_EXPIRES_IN', String(DEFAULT_TOKEN_EXPIRES_IN)), 10); // Can be overridden in environment variables
+
+/**
+ * Resolve the token lifetime to persist.
+ * Priority: the server's expires_in (reflects actual JWT expiration), then
+ * the TOKEN_EXPIRES_IN env var, then the 1-year default.
+ * @param {number} [serverExpiresIn] - expires_in from the token/refresh response
+ * @returns {number} Expiration lifetime in seconds
+ */
+function resolveExpiresIn(serverExpiresIn) {
+  return serverExpiresIn || TOKEN_EXPIRES_IN || DEFAULT_TOKEN_EXPIRES_IN;
+}
 const CONFIG_SUFFIX = getEnv('CONFIG_SUFFIX', '');
 
 // Set token storage file path
@@ -274,7 +286,7 @@ async function isTokenExpired() {
  * @param {number} expiresIn - Token expiration time in seconds
  * @returns {Promise<void>}
  */
-async function storeTokens(token, refreshToken, expiresIn = 31536000) {
+async function storeTokens(token, refreshToken, expiresIn = DEFAULT_TOKEN_EXPIRES_IN) {
   try {
     // Set tokens in client
     client.setAccessToken(token);
@@ -500,8 +512,7 @@ async function exchangeCodeForToken(code) {
     const { access_token, refresh_token, expires_in } = tokenResult;
 
     // Store the access and refresh token together in one atomic write.
-    // Use server's expires_in first (reflects actual JWT expiration), then TOKEN_EXPIRES_IN env var as fallback
-    const tokenExpiresIn = expires_in || TOKEN_EXPIRES_IN || 31536000;
+    const tokenExpiresIn = resolveExpiresIn(expires_in);
     await storeTokens(access_token, refresh_token, tokenExpiresIn);
     logger.info(`Access token saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
 
@@ -639,8 +650,7 @@ async function refreshAccessToken() {
         // On success, store new tokens
         const { access_token, refresh_token, expires_in } = refreshResult;
 
-        // Use server's expires_in first (reflects actual JWT expiration), then TOKEN_EXPIRES_IN env var as fallback
-        const tokenExpiresIn = expires_in || TOKEN_EXPIRES_IN || 31536000;
+        const tokenExpiresIn = resolveExpiresIn(expires_in);
         await storeTokens(access_token, refresh_token, tokenExpiresIn);
         logger.info(`New token(s) saved successfully (expiration period: ${tokenExpiresIn / 86400} days)`);
 

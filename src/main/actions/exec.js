@@ -6,20 +6,7 @@
 
 const { exec, execFile } = require('child_process');
 const fs = require('fs');
-const os = require('os');
-const path = require('path');
-
-/**
- * Expand tilde (~) to home directory
- * @param {string} filePath - Path that may contain tilde
- * @returns {string} Expanded path
- */
-function expandTilde(filePath) {
-  if (filePath.startsWith('~/')) {
-    return path.join(os.homedir(), filePath.slice(2));
-  }
-  return filePath;
-}
+const { expandTilde } = require('../utils/expand-tilde');
 
 /**
  * Escape shell argument to prevent command injection

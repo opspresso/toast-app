@@ -228,6 +228,32 @@ function scheduleSync(changeType) {
 }
 
 /**
+ * Increment the retry counter and either schedule another upload attempt with
+ * exponential backoff, or give up once MAX_RETRY_COUNT is exceeded.
+ * @param {string} failureReasonSuffix - Appended to "Upload failed" in the retry-scheduled log (e.g. ' due to exception')
+ * @param {string} exceededMessage - Logged once the retry budget is exhausted
+ */
+function scheduleRetry(failureReasonSuffix, exceededMessage) {
+  state.retryCount++;
+
+  if (state.retryCount <= MAX_RETRY_COUNT) {
+    const delay = computeRetryDelay(state.retryCount);
+    logger.info(`Upload failed${failureReasonSuffix}, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
+
+    // Schedule retry (track timer so it can be cleaned up on shutdown)
+    state.timers.retry = setTimeout(() => {
+      state.timers.retry = null;
+      uploadSettingsWithRetry();
+    }, delay);
+  }
+  else {
+    logger.error(exceededMessage);
+    state.retryCount = 0;
+    state.pendingSync = false;
+  }
+}
+
+/**
  * Upload settings with retry logic
  */
 async function uploadSettingsWithRetry() {
@@ -278,46 +304,13 @@ async function uploadSettingsWithRetry() {
       state.lastChangeHash = null;
     }
     else {
-      state.retryCount++;
-
       logger.info(`Synchronization failed reason: ${result.error}`);
-
-      if (state.retryCount <= MAX_RETRY_COUNT) {
-        const delay = computeRetryDelay(state.retryCount);
-        logger.info(`Upload failed, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
-
-        // Schedule retry (track timer so it can be cleaned up on shutdown)
-        state.timers.retry = setTimeout(() => {
-          state.timers.retry = null;
-          uploadSettingsWithRetry();
-        }, delay);
-      }
-      else {
-        logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
-        state.retryCount = 0;
-        state.pendingSync = false;
-      }
+      scheduleRetry('', `Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload failed: ${result.error}`);
     }
   }
   catch (error) {
     logger.error('Error occurred during settings upload:', error);
-    state.retryCount++;
-
-    if (state.retryCount <= MAX_RETRY_COUNT) {
-      const delay = computeRetryDelay(state.retryCount);
-      logger.info(`Upload failed due to exception, retry ${state.retryCount}/${MAX_RETRY_COUNT} scheduled in ${Math.round(delay / 1000)} seconds`);
-
-      // Schedule retry (track timer so it can be cleaned up on shutdown)
-      state.timers.retry = setTimeout(() => {
-        state.timers.retry = null;
-        uploadSettingsWithRetry();
-      }, delay);
-    }
-    else {
-      logger.error(`Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload canceled`);
-      state.retryCount = 0;
-      state.pendingSync = false;
-    }
+    scheduleRetry(' due to exception', `Maximum retry count (${MAX_RETRY_COUNT}) exceeded, upload canceled`);
   }
   finally {
     state.isSyncing = false;
@@ -493,12 +486,10 @@ async function downloadSettings() {
     logger.info('Requesting settings from server...');
 
     // Do not suppress change detection during the network fetch (user edits in this window should still be queued normally).
-    // Only fetch the data first (configStore:null), then suppress briefly during the ConfigStore save section below.
+    // Only fetch the data first, then suppress briefly during the ConfigStore save section below.
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore: null,
-      directData: {}, // Ignored for GET requests
     });
 
     if (!result.success) {
@@ -615,8 +606,6 @@ async function syncSettings(action = 'resolve') {
       const serverResult = await apiSync.downloadSettings({
         hasValidToken: authManager.hasValidToken,
         onUnauthorized: authManager.refreshAccessToken,
-        configStore: null, // Do not save to ConfigStore
-        directData: {},
       });
 
       if (!serverResult.success) {
@@ -715,8 +704,6 @@ async function reconcileStaleUpload() {
     const serverResult = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore: null, // Do not save to ConfigStore, use only for merging
-      directData: {},
     });
 
     if (!serverResult.success) {

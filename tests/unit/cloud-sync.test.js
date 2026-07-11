@@ -449,8 +449,6 @@ describe('Cloud Sync Module', () => {
       expect(mockApiSync.downloadSettings).toHaveBeenCalledWith({
         hasValidToken: mockAuthManager.hasValidToken,
         onUnauthorized: mockAuthManager.refreshAccessToken,
-        configStore: null,
-        directData: {},
       });
     });
 

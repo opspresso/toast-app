@@ -324,7 +324,9 @@ function syncRunningState() {
  */
 function setEnabled(enabled) {
   if (configRef) {
-    configRef.set('textExpander', { enabled: !!enabled });
+    // Merge into the existing textExpander object rather than replacing it,
+    // so device-local fields like `seeded` survive toggling the feature.
+    configRef.set('textExpander', { ...configRef.get('textExpander'), enabled: !!enabled });
   }
   syncRunningState();
   return getStatus();

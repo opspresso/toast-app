@@ -305,6 +305,30 @@ describe('Authentication Manager', () => {
         expect.objectContaining({ pageGroups: 9 }),
       );
     });
+
+    test('does not mutate a shared subscription.features reference (e.g. DEFAULT_ANONYMOUS_SUBSCRIPTION)', async () => {
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      // fetchSubscription's fallback paths return DEFAULT_ANONYMOUS_SUBSCRIPTION as-is,
+      // so subscription.features can be the exact same object other callers hold.
+      const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../../src/main/constants');
+      DEFAULT_ANONYMOUS_SUBSCRIPTION.features = { page_groups: 1 };
+      const sharedFeatures = DEFAULT_ANONYMOUS_SUBSCRIPTION.features;
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: DEFAULT_ANONYMOUS_SUBSCRIPTION,
+      });
+
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(DEFAULT_ANONYMOUS_SUBSCRIPTION.features).toBe(sharedFeatures);
+      expect(sharedFeatures.cloud_sync).toBeUndefined();
+    });
   });
 
   describe('Logout Process', () => {

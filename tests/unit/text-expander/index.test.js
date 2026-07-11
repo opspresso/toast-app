@@ -170,4 +170,20 @@ describe('Text Expander (I/O layer)', () => {
 
     expect(mockUiohook.keyTap).not.toHaveBeenCalled();
   });
+
+  test('setEnabled preserves other device-local textExpander fields (e.g. seeded)', () => {
+    configStore.get.mockImplementation(key => {
+      if (key === 'textExpander') {
+        return { enabled: true, seeded: true };
+      }
+      if (key === 'snippets') {
+        return [];
+      }
+      return undefined;
+    });
+
+    textExpander.setEnabled(false);
+
+    expect(configStore.set).toHaveBeenCalledWith('textExpander', { enabled: false, seeded: true });
+  });
 });

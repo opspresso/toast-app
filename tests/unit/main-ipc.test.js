@@ -93,6 +93,7 @@ jest.mock('../../src/main/shortcuts', () => ({
   unregisterGlobalShortcuts: jest.fn(),
   registerGlobalShortcuts: jest.fn(),
   positionToastWindow: jest.fn(),
+  notifyRegistrationFailure: jest.fn(),
 }));
 
 // Mock logger
@@ -307,6 +308,15 @@ describe('Main IPC Handlers (P0)', () => {
       expect(shortcuts.registerGlobalShortcuts).toHaveBeenCalledWith(mockConfig, windows);
     });
 
+    test('should notify the user when the hotkey fails to re-register after reset-config', async () => {
+      const shortcuts = require('../../src/main/shortcuts');
+      shortcuts.registerGlobalShortcuts.mockReturnValue(false);
+
+      await ipcHandlers['reset-config']();
+
+      expect(shortcuts.notifyRegistrationFailure).toHaveBeenCalledWith('default-value');
+    });
+
     test('should handle import-config requests', async () => {
       const mockEvent = {};
       const filePath = '/path/to/config.json';
@@ -326,6 +336,17 @@ describe('Main IPC Handlers (P0)', () => {
 
       const shortcuts = require('../../src/main/shortcuts');
       expect(shortcuts.registerGlobalShortcuts).toHaveBeenCalledWith(mockConfig, windows);
+    });
+
+    test('should notify the user when the hotkey fails to re-register after import-config', async () => {
+      const shortcuts = require('../../src/main/shortcuts');
+      shortcuts.registerGlobalShortcuts.mockReturnValue(false);
+      const mockEvent = {};
+      const filePath = '/path/to/config.json';
+
+      await ipcHandlers['import-config'](mockEvent, filePath);
+
+      expect(shortcuts.notifyRegistrationFailure).toHaveBeenCalledWith('default-value');
     });
 
     test('should handle export-config requests', async () => {

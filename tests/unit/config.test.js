@@ -114,6 +114,12 @@ describe('Configuration Store', () => {
       expect(schema.snippets.default).toEqual([]);
       expect(schema.textExpander.default).toEqual({ enabled: false, seeded: false });
     });
+
+    test('defines cloudSync.enabled defaulting to true', () => {
+      const { schema } = require('../../src/main/config');
+      expect(schema.cloudSync).toEqual(expect.objectContaining({ type: 'object' }));
+      expect(schema.cloudSync.default).toEqual({ enabled: true });
+    });
   });
 
   describe('seedDefaultSnippets', () => {

@@ -19,7 +19,7 @@ loadEnv();
 
 // Import modules
 const { createConfigStore, seedDefaultSnippets } = require('./main/config');
-const { registerGlobalShortcuts, unregisterGlobalShortcuts } = require('./main/shortcuts');
+const { registerGlobalShortcuts, unregisterGlobalShortcuts, notifyRegistrationFailure } = require('./main/shortcuts');
 const { createTray, destroyTray } = require('./main/tray');
 const { createToastWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
 const { setupIpcHandlers } = require('./main/ipc');
@@ -134,7 +134,10 @@ function initialize() {
   createTray(windows);
 
   // Register global shortcuts
-  registerGlobalShortcuts(config, windows);
+  const hotkey = config.get('globalHotkey');
+  if (!registerGlobalShortcuts(config, windows) && hotkey) {
+    notifyRegistrationFailure(hotkey);
+  }
 
   // Set up IPC handlers
   setupIpcHandlers(windows);

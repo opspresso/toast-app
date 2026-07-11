@@ -51,6 +51,19 @@ const schema = {
       seeded: false,
     },
   },
+  cloudSync: {
+    type: 'object',
+    properties: {
+      enabled: {
+        type: 'boolean',
+        default: true,
+        description: 'Whether cloud sync is active on this device (CloudSyncManager is the single source of truth; read/written via cloudSync.enabled)',
+      },
+    },
+    default: {
+      enabled: true,
+    },
+  },
   appearance: {
     type: 'object',
     properties: {
