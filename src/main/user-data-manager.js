@@ -118,23 +118,22 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
     if (profileDataInput && !profileDataInput.error) {
       logger.info('Using provided profile info (avoiding duplicate API call)');
 
-      // Add authentication state
-      profileDataInput.is_authenticated = true;
-      profileDataInput.isAuthenticated = true;
+      // Add authentication state (copy rather than mutate the caller's object)
+      const profileData = { ...profileDataInput, is_authenticated: true, isAuthenticated: true };
 
       // Add log
       logger.info('Processing profile info:', {
-        name: maskName(profileDataInput.name) || 'No name',
-        email: maskEmail(profileDataInput.email) || 'No email',
-        hasSubscription: profileDataInput.subscription?.active || profileDataInput.subscription?.is_subscribed,
-        plan: profileDataInput.subscription?.plan || 'free',
+        name: maskName(profileData.name) || 'No name',
+        email: maskEmail(profileData.email) || 'No email',
+        hasSubscription: profileData.subscription?.active || profileData.subscription?.is_subscribed,
+        plan: profileData.subscription?.plan || 'free',
       });
 
       // Save to file
-      writeToFile(PROFILE_FILE_PATH, profileDataInput);
+      writeToFile(PROFILE_FILE_PATH, profileData);
       logger.info('Profile info saved to file');
 
-      return profileDataInput;
+      return profileData;
     }
 
     // 2. Check local file (if not force refresh)
@@ -182,21 +181,22 @@ async function getUserProfile(forceRefresh = false, profileDataInput = null) {
 
     // 4. On successful query, explicitly add authentication state and save to file
     if (profileData && !profileData.error) {
-      // Add authentication state (set both is_authenticated and isAuthenticated)
-      profileData.is_authenticated = true;
-      profileData.isAuthenticated = true;
+      // Add authentication state (copy rather than mutate the fetched object)
+      const profileWithAuthState = { ...profileData, is_authenticated: true, isAuthenticated: true };
 
       // Add log
       logger.info('Profile info retrieved from API:', {
-        name: maskName(profileData.name) || 'No name',
-        email: maskEmail(profileData.email) || 'No email',
-        hasSubscription: profileData.subscription?.active || profileData.subscription?.is_subscribed,
-        plan: profileData.subscription?.plan || 'free',
+        name: maskName(profileWithAuthState.name) || 'No name',
+        email: maskEmail(profileWithAuthState.email) || 'No email',
+        hasSubscription: profileWithAuthState.subscription?.active || profileWithAuthState.subscription?.is_subscribed,
+        plan: profileWithAuthState.subscription?.plan || 'free',
       });
 
       // Save to file
-      writeToFile(PROFILE_FILE_PATH, profileData);
+      writeToFile(PROFILE_FILE_PATH, profileWithAuthState);
       logger.info('Profile info saved to file');
+
+      return profileWithAuthState;
     }
 
     return profileData;

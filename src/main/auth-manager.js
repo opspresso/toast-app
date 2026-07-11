@@ -142,13 +142,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
           // Copy existing subscription info
           const updatedSubscription = { ...result.subscription };
 
-          // Create features object if it doesn't exist
-          if (!updatedSubscription.features || typeof updatedSubscription.features !== 'object') {
-            updatedSubscription.features = {};
-          }
-
-          // Set cloud_sync feature
-          updatedSubscription.features.cloud_sync = hasSyncFeature;
+          // Copy into a new features object rather than mutating in place — features
+          // may be a reference to the shared DEFAULT_ANONYMOUS_SUBSCRIPTION singleton
+          // (returned as-is by fetchSubscription's fallback paths), and writing
+          // through it would corrupt that constant for every future caller.
+          updatedSubscription.features = {
+            ...(updatedSubscription.features && typeof updatedSubscription.features === 'object' ? updatedSubscription.features : {}),
+            cloud_sync: hasSyncFeature,
+          };
 
           // Ensure expiry fields are strings (prevent schema violation)
           updatedSubscription.expiresAt = normalizeExpiryString(updatedSubscription.expiresAt);
