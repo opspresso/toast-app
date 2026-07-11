@@ -17,9 +17,14 @@ const mockScreen = {
   getDisplayNearestPoint: jest.fn(),
 };
 
+const mockDialog = {
+  showErrorBox: jest.fn(),
+};
+
 jest.mock('electron', () => ({
   globalShortcut: mockGlobalShortcut,
   screen: mockScreen,
+  dialog: mockDialog,
 }));
 
 // Mock logger
@@ -46,6 +51,7 @@ describe('Global Shortcuts', () => {
     mockGlobalShortcut.unregister.mockReset();
     mockGlobalShortcut.unregisterAll.mockReset();
     mockGlobalShortcut.isRegistered.mockReset().mockReturnValue(false);
+    mockDialog.showErrorBox.mockReset();
 
     // Setup mock config
     mockConfig = {
@@ -111,10 +117,27 @@ describe('Global Shortcuts', () => {
       mockGlobalShortcut.register.mockReturnValue(false);
 
       shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
-      
+
       // Should attempt registration but handle failure gracefully
       expect(mockGlobalShortcut.register).toHaveBeenCalled();
       expect(mockConfig.get).toHaveBeenCalled();
+    });
+
+    test('should notify the user when a hotkey conflicts with another application', () => {
+      mockGlobalShortcut.register.mockReturnValue(false);
+
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+
+      expect(mockDialog.showErrorBox).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('Ctrl+Shift+T'),
+      );
+    });
+
+    test('should not show a conflict dialog when registration succeeds', () => {
+      shortcuts.registerGlobalShortcuts(mockConfig, mockWindows);
+
+      expect(mockDialog.showErrorBox).not.toHaveBeenCalled();
     });
 
     test('should handle registration exception', () => {
