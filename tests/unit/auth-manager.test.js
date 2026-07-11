@@ -574,5 +574,23 @@ describe('Authentication Manager', () => {
         expect.any(Object)
       );
     });
+
+    test('should include snippets when building config data from the store', () => {
+      const storeValues = {
+        pages: [{ id: 'page-1' }],
+        snippets: [{ id: 'sn-1', keyword: 'hi', content: 'hello' }],
+        appearance: {},
+        advanced: {},
+        subscription: {},
+      };
+      mockConfigStore.get.mockImplementation(key => storeValues[key]);
+
+      authManager.notifySettingsSynced();
+
+      expect(mockWindows.settings.webContents.send).toHaveBeenCalledWith(
+        'config-updated',
+        expect.objectContaining({ snippets: storeValues.snippets })
+      );
+    });
   });
 });

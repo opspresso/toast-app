@@ -492,6 +492,7 @@ function notifySettingsSynced(configData = null) {
     const config = createConfigStore();
     configData = {
       pages: config.get('pages'),
+      snippets: config.get('snippets'),
       appearance: config.get('appearance'),
       advanced: config.get('advanced'),
       subscription: config.get('subscription'),
@@ -507,6 +508,7 @@ function notifySettingsSynced(configData = null) {
     // 기본값으로 fallback
     configData = {
       pages: [],
+      snippets: [],
       appearance: {},
       advanced: {},
       subscription: {},

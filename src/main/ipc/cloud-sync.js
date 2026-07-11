@@ -136,6 +136,7 @@ function setupCloudSyncHandlers(windows, config) {
           // 현재 설정 데이터 수집
           const configData = {
             pages: config.get('pages'),
+            snippets: config.get('snippets'),
             appearance: config.get('appearance'),
             advanced: config.get('advanced'),
             subscription: config.get('subscription'),
