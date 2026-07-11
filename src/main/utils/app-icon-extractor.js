@@ -10,6 +10,7 @@ const path = require('path');
 const os = require('os');
 const { execSync, execFileSync } = require('child_process');
 const { createLogger } = require('../logger');
+const { expandTilde } = require('./expand-tilde');
 
 // Create logger for this module
 const logger = createLogger('AppIconExtractor');
@@ -313,12 +314,8 @@ function resolveTildePath(tildePath) {
   if (!tildePath) {
     return tildePath;
   }
-  
-  if (tildePath.startsWith('~/')) {
-    return path.join(os.homedir(), tildePath.slice(2));
-  }
-  
-  return tildePath;
+
+  return expandTilde(tildePath);
 }
 
 module.exports = {
