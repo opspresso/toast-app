@@ -171,6 +171,7 @@ function enableButtonDrag(buttonElement, index) {
       // of leaking the document-level listeners and the floating drag-ghost.
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('before-window-hide', onWindowHide);
       if (ghost) {
         ghost.remove();
       }
