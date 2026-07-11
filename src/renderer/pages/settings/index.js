@@ -138,70 +138,77 @@ function applyConfigUpdate(newConfig) {
     return;
   }
 
-  // 설정 객체 업데이트
-  updateConfig(newConfig);
+  try {
+    // 일부 config-updated 브로드캐스트(수동 동기화, 로그인 후 동기화 등)는 snippets를
+    // 포함하지 않는 부분 스냅샷을 보낸다. 완전 치환 대신 병합해 누락된 필드가 기존 값을
+    // 지워버리지 않게 한다.
+    updateConfig({ ...config, ...newConfig });
 
-  // 스니펫은 탭 초기화 시점에 로컬 상태로 스냅샷되므로, 백그라운드 동기화로
-  // 병합된 변경사항을 여기서 반영하지 않으면 다음 편집 시 그대로 덮어써진다.
-  initializeSnippetsSettings();
+    // 스니펫은 탭 초기화 시점에 로컬 상태로 스냅샷되므로, 백그라운드 동기화로
+    // 병합된 변경사항을 여기서 반영하지 않으면 다음 편집 시 그대로 덮어써진다.
+    initializeSnippetsSettings();
 
-  // 현재 활성화된 탭만 업데이트 (전체 UI 초기화 방지)
-  const activeTab = Array.from(document.querySelectorAll('.settings-tab')).find(tab => tab.classList.contains('active'));
-  if (activeTab) {
-    const tabId = activeTab.id;
-    window.settings.log.info(`현재 활성 탭 "${tabId}"만 선택적으로 업데이트`);
+    // 현재 활성화된 탭만 업데이트 (전체 UI 초기화 방지)
+    const activeTab = Array.from(document.querySelectorAll('.settings-tab')).find(tab => tab.classList.contains('active'));
+    if (activeTab) {
+      const tabId = activeTab.id;
+      window.settings.log.info(`현재 활성 탭 "${tabId}"만 선택적으로 업데이트`);
 
-    // 선택적으로 필요한 설정만 업데이트 (통합 Settings 탭 = General/Appearance/Advanced 섹션)
-    if (tabId === 'settings') {
-      const globalHotkeyInput = document.getElementById('global-hotkey');
-      const launchAtLoginCheckbox = document.getElementById('launch-at-login');
+      // 선택적으로 필요한 설정만 업데이트 (통합 Settings 탭 = General/Appearance/Advanced 섹션)
+      if (tabId === 'settings') {
+        const globalHotkeyInput = document.getElementById('global-hotkey');
+        const launchAtLoginCheckbox = document.getElementById('launch-at-login');
 
-      if (globalHotkeyInput) {
-        globalHotkeyInput.value = config.globalHotkey || '';
-      }
-      if (launchAtLoginCheckbox) {
-        launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
-      }
+        if (globalHotkeyInput) {
+          globalHotkeyInput.value = config.globalHotkey || '';
+        }
+        if (launchAtLoginCheckbox) {
+          launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
+        }
 
-      const themeSelect = document.getElementById('theme');
-      const positionSelect = document.getElementById('position');
-      const sizeSelect = document.getElementById('size');
-      const opacityRange = document.getElementById('opacity');
-      const opacityValue = document.getElementById('opacity-value');
+        const themeSelect = document.getElementById('theme');
+        const positionSelect = document.getElementById('position');
+        const sizeSelect = document.getElementById('size');
+        const opacityRange = document.getElementById('opacity');
+        const opacityValue = document.getElementById('opacity-value');
 
-      if (themeSelect) {
-        themeSelect.value = config.appearance?.theme || 'system';
-      }
-      if (positionSelect) {
-        positionSelect.value = config.appearance?.position || 'center';
-      }
-      if (sizeSelect) {
-        sizeSelect.value = config.appearance?.size || 'medium';
-      }
-      if (opacityRange) {
-        opacityRange.value = config.appearance?.opacity || 0.95;
-        if (opacityValue) {
-          opacityValue.textContent = opacityRange.value;
+        if (themeSelect) {
+          themeSelect.value = config.appearance?.theme || 'system';
+        }
+        if (positionSelect) {
+          positionSelect.value = config.appearance?.position || 'center';
+        }
+        if (sizeSelect) {
+          sizeSelect.value = config.appearance?.size || 'medium';
+        }
+        if (opacityRange) {
+          opacityRange.value = config.appearance?.opacity || 0.95;
+          if (opacityValue) {
+            opacityValue.textContent = opacityRange.value;
+          }
+        }
+
+        const hideAfterActionCheckbox = document.getElementById('hide-after-action');
+        const hideOnBlurCheckbox = document.getElementById('hide-on-blur');
+        const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');
+        const showInTaskbarCheckbox = document.getElementById('show-in-taskbar');
+
+        if (hideAfterActionCheckbox) {
+          hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
+        }
+        if (hideOnBlurCheckbox) {
+          hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
+        }
+        if (hideOnEscapeCheckbox) {
+          hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
+        }
+        if (showInTaskbarCheckbox) {
+          showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
         }
       }
-
-      const hideAfterActionCheckbox = document.getElementById('hide-after-action');
-      const hideOnBlurCheckbox = document.getElementById('hide-on-blur');
-      const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');
-      const showInTaskbarCheckbox = document.getElementById('show-in-taskbar');
-
-      if (hideAfterActionCheckbox) {
-        hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
-      }
-      if (hideOnBlurCheckbox) {
-        hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
-      }
-      if (hideOnEscapeCheckbox) {
-        hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
-      }
-      if (showInTaskbarCheckbox) {
-        showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
-      }
     }
+  }
+  catch (error) {
+    window.settings.log.error('applyConfigUpdate 오류:', error);
   }
 }
