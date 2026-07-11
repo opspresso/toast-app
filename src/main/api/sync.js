@@ -1,14 +1,14 @@
 /**
  * Toast API - Settings Sync API Module
  *
- * Synchronizes Toast-App settings (pages, button information, etc.) with the Toast-Web server.
- * Following the single source of truth principle, it updates the ConfigStore directly.
+ * Fetches and uploads Toast-App settings (pages, button information, etc.) to/from the
+ * Toast-Web server. Returns normalized data; callers in cloud-sync.js own persisting it
+ * to the ConfigStore (via conflict resolution) and are responsible for sync-loop suppression.
  */
 
 const os = require('os');
 const { createLogger } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = require('./client');
-const { sanitizeRemotePages, recordRemoteChanges } = require('../action-approval');
 const { isCloudSyncAllowed } = require('../subscription');
 
 // Create a module-specific logger
@@ -173,10 +173,9 @@ async function uploadSettings({ hasValidToken: _hasValidToken, onUnauthorized, c
  * @param {Object} params - Download parameters
  * @param {Function} params.hasValidToken - Function to check for a valid token
  * @param {Function} params.onUnauthorized - Callback invoked on authentication failure
- * @param {Object} params.configStore - Settings store
  * @returns {Promise<Object>} Download result
  */
-async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized, configStore }) {
+async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized }) {
   // Skip if sync is already in progress
   if (state.isSyncing) {
     return { success: false, error: 'Sync already in progress' };
@@ -321,37 +320,6 @@ async function downloadSettings({ hasValidToken: _hasValidToken, onUnauthorized,
         }
 
         logger.info(`Found ${pagesData.length} pages in the sync data`);
-
-        // Save data directly to ConfigStore (only when configStore is provided)
-        if (configStore) {
-          // For remote actions, validate structure and register new risky actions for approval before saving
-          pagesData = await sanitizeRemotePages(pagesData);
-          recordRemoteChanges(configStore, pagesData);
-          configStore.set('pages', pagesData);
-          logger.info('Finished saving page data to ConfigStore');
-
-          // Save appearance settings (if present)
-          if (appearanceData) {
-            configStore.set('appearance', appearanceData);
-            logger.info('Finished saving appearance settings to ConfigStore');
-          }
-
-          // Save advanced settings (if present)
-          if (advancedData) {
-            configStore.set('advanced', advancedData);
-            logger.info('Finished saving advanced settings to ConfigStore');
-          }
-
-          // Save snippets (if present) — save after structure validation
-          if (Array.isArray(snippetsData)) {
-            const safeSnippets = snippetsData.filter(s => s && typeof s.keyword === 'string' && typeof s.content === 'string');
-            configStore.set('snippets', safeSnippets);
-            logger.info(`Finished saving ${safeSnippets.length} snippets to ConfigStore`);
-          }
-        }
-        else {
-          logger.info('ConfigStore not provided - data downloaded but not saved locally');
-        }
 
         // Update the sync status
         state.lastSyncTime = syncMetadata.lastSyncedAt;

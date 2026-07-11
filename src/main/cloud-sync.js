@@ -493,12 +493,10 @@ async function downloadSettings() {
     logger.info('Requesting settings from server...');
 
     // Do not suppress change detection during the network fetch (user edits in this window should still be queued normally).
-    // Only fetch the data first (configStore:null), then suppress briefly during the ConfigStore save section below.
+    // Only fetch the data first, then suppress briefly during the ConfigStore save section below.
     const result = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore: null,
-      directData: {}, // Ignored for GET requests
     });
 
     if (!result.success) {
@@ -615,8 +613,6 @@ async function syncSettings(action = 'resolve') {
       const serverResult = await apiSync.downloadSettings({
         hasValidToken: authManager.hasValidToken,
         onUnauthorized: authManager.refreshAccessToken,
-        configStore: null, // Do not save to ConfigStore
-        directData: {},
       });
 
       if (!serverResult.success) {
@@ -715,8 +711,6 @@ async function reconcileStaleUpload() {
     const serverResult = await apiSync.downloadSettings({
       hasValidToken: authManager.hasValidToken,
       onUnauthorized: authManager.refreshAccessToken,
-      configStore: null, // Do not save to ConfigStore, use only for merging
-      directData: {},
     });
 
     if (!serverResult.success) {
