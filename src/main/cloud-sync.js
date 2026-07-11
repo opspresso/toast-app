@@ -1028,6 +1028,7 @@ function initCloudSync(authManagerInstance, _userDataManagerInstance, configStor
           // 현재 설정 데이터 수집
           const configData = {
             pages: configStore.get('pages'),
+            snippets: configStore.get('snippets'),
             appearance: configStore.get('appearance'),
             advanced: configStore.get('advanced'),
             subscription: configStore.get('subscription'),

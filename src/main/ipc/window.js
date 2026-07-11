@@ -12,6 +12,9 @@ const logger = createLogger('IPC');
 // Track button edit modal state
 let isModalOpen = false;
 
+// Pending delayed close() scheduled by close-settings, so a reopen can cancel it
+let pendingSettingsCloseTimeout = null;
+
 /**
  * Function to check if modal is currently open
  * @returns {boolean} Modal open state
@@ -146,6 +149,13 @@ function setupWindowHandlers(windows) {
 
   // Show settings window
   ipcMain.on('show-settings', () => {
+    // Cancel any close() scheduled by a previous close-settings, otherwise it
+    // would fire shortly after this reopen and force the window shut again.
+    if (pendingSettingsCloseTimeout) {
+      clearTimeout(pendingSettingsCloseTimeout);
+      pendingSettingsCloseTimeout = null;
+    }
+
     const { showSettingsWindow } = require('../windows');
     const { createConfigStore } = require('../config');
     showSettingsWindow(createConfigStore());
@@ -153,6 +163,13 @@ function setupWindowHandlers(windows) {
 
   // Show settings window with specific tab selected
   ipcMain.on('show-settings-tab', (event, tabName) => {
+    // Cancel any close() scheduled by a previous close-settings, otherwise it
+    // would fire shortly after this reopen and force the window shut again.
+    if (pendingSettingsCloseTimeout) {
+      clearTimeout(pendingSettingsCloseTimeout);
+      pendingSettingsCloseTimeout = null;
+    }
+
     const { showSettingsWindow } = require('../windows');
     const { createConfigStore } = require('../config');
 
@@ -168,8 +185,12 @@ function setupWindowHandlers(windows) {
     if (windows.settings && !windows.settings.isDestroyed()) {
       // First hide the window then close to prevent flashing
       windows.settings.hide();
-      // Close the window after a slight delay
-      setTimeout(() => {
+      // Close the window after a slight delay, unless show-settings cancels it first
+      if (pendingSettingsCloseTimeout) {
+        clearTimeout(pendingSettingsCloseTimeout);
+      }
+      pendingSettingsCloseTimeout = setTimeout(() => {
+        pendingSettingsCloseTimeout = null;
         if (windows.settings && !windows.settings.isDestroyed()) {
           windows.settings.close();
         }

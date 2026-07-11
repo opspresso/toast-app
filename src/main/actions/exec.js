@@ -42,6 +42,15 @@ function escapeShellArg(arg) {
 }
 
 /**
+ * Quote an app name for splicing into a shell command if it contains spaces
+ * @param {string} appName - Application name
+ * @returns {string} Quoted (if needed) app name
+ */
+function quoteAppName(appName) {
+  return appName.includes(' ') ? `"${appName}"` : appName;
+}
+
+/**
  * Escape AppleScript string
  * @param {string} str - String to escape for AppleScript
  * @returns {string} Escaped string
@@ -84,7 +93,7 @@ async function executeCommand(action) {
     }
 
     // Construct the modified command - handle quotes properly with escaping
-    const quotedAppName = appName.includes(' ') && !openAppMatch[1] ? `"${appName}"` : appName;
+    const quotedAppName = quoteAppName(appName);
     const escapedWorkingDir = escapeShellArg(expandedWorkingDir);
     let modifiedCommand;
     if (remainingArgs) {
@@ -182,7 +191,7 @@ async function openInTerminal(command, workingDir) {
       // Validate working directory
       if (fs.existsSync(expandedWorkingDir) && fs.statSync(expandedWorkingDir).isDirectory()) {
         // Construct the modified command for terminal execution - handle quotes properly with escaping
-        const quotedAppName = appName.includes(' ') && !openAppMatch[1] ? `"${appName}"` : appName;
+        const quotedAppName = quoteAppName(appName);
         const escapedWorkingDir = escapeShellArg(expandedWorkingDir);
         if (remainingArgs) {
           finalCommand = `open -a ${quotedAppName} ${remainingArgs} ${escapedWorkingDir}`;

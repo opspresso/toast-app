@@ -40,6 +40,7 @@ async function executeChainedActions(action, depth = 0) {
     const stopOnError = action.stopOnError !== false; // Default to true if not specified
     const results = [];
     let hasErrors = false;
+    let stoppedEarly = false;
 
     // Execute actions in sequence
     for (let i = 0; i < action.actions.length; i++) {
@@ -52,16 +53,27 @@ async function executeChainedActions(action, depth = 0) {
         result,
       });
 
-      // If this action failed and stopOnError is true, stop execution
-      if (!result.success && stopOnError) {
+      if (!result.success) {
         hasErrors = true;
-        break;
+        // If this action failed and stopOnError is true, stop execution
+        if (stopOnError) {
+          stoppedEarly = true;
+          break;
+        }
       }
+    }
+
+    let message = 'Chain executed successfully';
+    if (stoppedEarly) {
+      message = 'Chain execution stopped due to an error';
+    }
+    else if (hasErrors) {
+      message = 'Chain completed with one or more errors';
     }
 
     return {
       success: !hasErrors,
-      message: hasErrors ? 'Chain execution stopped due to an error' : 'Chain executed successfully',
+      message,
       results,
     };
   }

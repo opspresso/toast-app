@@ -60,15 +60,15 @@ function createLogger(moduleName) {
 }
 
 /**
- * Mask sensitive query parameters (token, code) in a URL before logging it.
+ * Mask sensitive query parameters (token, code, state) in a URL before logging it.
  * @param {string} url
- * @returns {string} URL with token/code values replaced by '***'
+ * @returns {string} URL with token/code/state values replaced by '***'
  */
 function maskAuthUrl(url) {
   if (typeof url !== 'string') {
     return url;
   }
-  return url.replace(/([?&](?:token|code)=)[^&]+/g, '$1***');
+  return url.replace(/([?&](?:token|code|state)=)[^&]+/g, '$1***');
 }
 
 /**

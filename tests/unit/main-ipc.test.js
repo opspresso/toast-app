@@ -300,6 +300,13 @@ describe('Main IPC Handlers (P0)', () => {
       expect(result).toBe(true);
     });
 
+    test('should re-register the global hotkey after reset-config', async () => {
+      await ipcHandlers['reset-config']();
+
+      const shortcuts = require('../../src/main/shortcuts');
+      expect(shortcuts.registerGlobalShortcuts).toHaveBeenCalledWith(mockConfig, windows);
+    });
+
     test('should handle import-config requests', async () => {
       const mockEvent = {};
       const filePath = '/path/to/config.json';
@@ -309,6 +316,16 @@ describe('Main IPC Handlers (P0)', () => {
       const config = require('../../src/main/config');
       expect(config.importConfig).toHaveBeenCalled();
       expect(result).toBe(true);
+    });
+
+    test('should re-register the global hotkey after import-config', async () => {
+      const mockEvent = {};
+      const filePath = '/path/to/config.json';
+
+      await ipcHandlers['import-config'](mockEvent, filePath);
+
+      const shortcuts = require('../../src/main/shortcuts');
+      expect(shortcuts.registerGlobalShortcuts).toHaveBeenCalledWith(mockConfig, windows);
     });
 
     test('should handle export-config requests', async () => {

@@ -634,6 +634,43 @@ describe('Cloud Sync Module', () => {
       expect(result.success).toBe(true);
       expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ id: 1, name: 'Server Page' }]);
     });
+
+    test('should include snippets in the config data sent to the UI after login sync', async () => {
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(false);
+      configModule.getSyncMetadata.mockReturnValue({
+        lastModifiedAt: Date.now() - 10 * 60 * 1000,
+        lastModifiedDevice: 'test-device',
+        lastSyncedAt: Date.now() - 10 * 60 * 1000,
+        lastSyncedDevice: 'test-device',
+      });
+
+      mockConfigStore.get.mockImplementation(key => {
+        const mockData = {
+          pages: [{ id: 1, name: 'Server Page' }],
+          snippets: [{ id: 'sn-1', keyword: 'hi', content: 'hello' }],
+          appearance: { theme: 'dark' },
+          advanced: { autoStart: true },
+        };
+        return mockData[key] || {};
+      });
+
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: {},
+        normalized: { pages: [{ id: 1, name: 'Server Page' }] },
+        syncMetadata: { lastModifiedAt: Date.now() },
+      });
+
+      cloudSync.updateCloudSyncSettings(true);
+      const syncManager = cloudSync.getSyncManager();
+
+      await syncManager.syncAfterLogin();
+
+      expect(mockAuthManager.notifySettingsSynced).toHaveBeenCalledWith(
+        expect.objectContaining({ snippets: [{ id: 'sn-1', keyword: 'hi', content: 'hello' }] })
+      );
+    });
   });
 
   describe('Sync Settings Integration', () => {

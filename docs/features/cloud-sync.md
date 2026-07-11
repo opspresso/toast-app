@@ -83,7 +83,7 @@ async function storeTokens(token, refreshToken, expiresIn = 31536000) {
     }
 
     // 토큰과 만료 시간을 함께 저장 (readTokenFile/writeTokenFile이
-    // safeStorage 암호화 여부를 투명하게 처리)
+    // 평문 JSON 파일 읽기/쓰기와 0600 권한 설정을 처리)
     const tokenData = readTokenFile() || {};
     tokenData[TOKEN_KEY] = token;
     if (refreshToken) {
@@ -121,7 +121,7 @@ TOKEN_EXPIRES_IN=86400  # 1일
 ### 토큰 관리 모범 사례
 
 1. **무기한 토큰 사용**: 동기화 중단 방지를 위해 토큰을 무기한으로 설정
-2. **로컬 파일 저장**: 토큰을 로컬 JSON 파일(`auth-tokens.json`)에 저장. `safeStorage`(OS 키체인/자격 증명 저장소)로 암호화되며, 이용 불가한 환경(예: 시크릿 서비스가 없는 일부 Linux)에서는 평문 + 0600 권한으로 대체됩니다. 암호화 이전에 저장된 레거시 평문 파일도 읽을 때 자동으로 인식되어 다음 저장 시 암호화됩니다(별도 마이그레이션 불필요).
+2. **로컬 파일 저장**: 토큰을 로컬 JSON 파일(`auth-tokens.json`)에 평문으로 저장하고, 소유자만 읽기/쓰기 가능한 권한(`0600`)으로 보호합니다. macOS Keychain 등 OS 보안 저장소는 사용하지 않습니다(자세한 내용은 [보안](../architecture/security.md#토큰-관리) 참조). 과거 `safeStorage`로 암호화되어 저장된 레거시 파일도 읽을 때 자동으로 인식되어 평문으로 마이그레이션됩니다.
 3. **원자적 쓰기**: 액세스·리프레시 토큰을 `storeTokens()` 한 번의 쓰기로 함께 저장(임시 파일 사용). 서버가 갱신할 때마다 리프레시 토큰을 회전시키므로, 두 토큰을 따로 저장하면 그 사이 크래시 시 이미 폐기된 리프레시 토큰만 남아 강제 재로그인이 발생할 수 있습니다.
 4. **오류 처리**: 토큰 관련 오류 시 적절한 로깅 및 복구 로직
 5. **로그아웃 시 서버 폐기**: 로그아웃 시 저장된 리프레시 토큰을 서버에 revoke 요청(`/oauth/revoke`)해 로컬 파일 삭제 후에도 서버에서 재사용되지 않도록 합니다.

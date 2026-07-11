@@ -165,9 +165,24 @@ function enableButtonDrag(buttonElement, index) {
       }
     };
 
+    const onWindowHide = () => {
+      // Abandon the drag if the window hides mid-drag (blur, global hotkey,
+      // Escape); there is no mouseup in that case, so clean up here instead
+      // of leaking the document-level listeners and the floating drag-ghost.
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('before-window-hide', onWindowHide);
+      if (ghost) {
+        ghost.remove();
+      }
+      buttonElement.classList.remove('dragging');
+      clearDropTarget();
+    };
+
     const onMouseUp = event => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('before-window-hide', onWindowHide);
 
       if (!dragging) {
         // Plain click; let the click handler run
@@ -203,6 +218,7 @@ function enableButtonDrag(buttonElement, index) {
 
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('before-window-hide', onWindowHide);
   });
 }
 

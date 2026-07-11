@@ -35,10 +35,6 @@ contextBridge.exposeInMainWorld('settings', {
   importConfig: filePath => ipcRenderer.invoke('import-config', filePath),
   exportConfig: filePath => ipcRenderer.invoke('export-config', filePath),
 
-  // Actions
-  testAction: action => ipcRenderer.invoke('test-action', action),
-  validateAction: action => ipcRenderer.invoke('validate-action', action),
-
   // Window control
   showToast: () => ipcRenderer.send('show-toast'),
   closeWindow: () => ipcRenderer.send('close-settings'),

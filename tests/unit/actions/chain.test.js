@@ -240,8 +240,8 @@ describe('Chain Action', () => {
       expect(executeAction).toHaveBeenNthCalledWith(3, testActions[2], 1);
       
       expect(result).toEqual({
-        success: true, // Overall success because not all actions failed
-        message: 'Chain executed successfully',
+        success: false, // One of the actions failed, even though execution continued
+        message: 'Chain completed with one or more errors',
         results: [
           { index: 0, action: testActions[0], result: expectedResults[0] },
           { index: 1, action: testActions[1], result: expectedResults[1] },
@@ -273,8 +273,8 @@ describe('Chain Action', () => {
 
       expect(executeAction).toHaveBeenCalledTimes(3);
       expect(result).toEqual({
-        success: true, // Success because execution completed without throwing
-        message: 'Chain executed successfully',
+        success: false, // All actions failed
+        message: 'Chain completed with one or more errors',
         results: [
           { index: 0, action: testActions[0], result: expectedResults[0] },
           { index: 1, action: testActions[1], result: expectedResults[1] },
@@ -476,8 +476,8 @@ describe('Chain Action', () => {
       const result = await executeChainedActions(action);
 
       expect(executeAction).toHaveBeenCalledTimes(5);
-      expect(result.success).toBe(true); // Should be true because execution completed
-      expect(result.message).toBe('Chain executed successfully');
+      expect(result.success).toBe(false); // Should be false because some actions failed
+      expect(result.message).toBe('Chain completed with one or more errors');
       expect(result.results).toHaveLength(5);
       
       // Verify each result maintains correct structure

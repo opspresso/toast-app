@@ -276,10 +276,52 @@ describe('IPC Handlers', () => {
       const onEvents = mockIpcMain.on.mock.calls.map(call => call[0]);
 
       expect(handleEvents).toContain('set-always-on-top');
-      expect(handleEvents).toContain('get-window-position'); 
+      expect(handleEvents).toContain('get-window-position');
       expect(handleEvents).toContain('show-window');
       expect(onEvents).toContain('show-toast');
       expect(onEvents).toContain('hide-toast');
+    });
+  });
+
+  describe('settings window close/reopen race', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('should close the settings window after a delay when close-settings fires', () => {
+      setupIpcHandlers(mockWindows);
+
+      const closeHandler = mockIpcMain.on.mock.calls
+        .find(([event]) => event === 'close-settings')[1];
+
+      closeHandler();
+
+      expect(mockWindows.settings.hide).toHaveBeenCalled();
+      expect(mockWindows.settings.close).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(500);
+
+      expect(mockWindows.settings.close).toHaveBeenCalled();
+    });
+
+    test('should not force-close the settings window if show-settings reopens it before the delay elapses', () => {
+      setupIpcHandlers(mockWindows);
+
+      const closeHandler = mockIpcMain.on.mock.calls
+        .find(([event]) => event === 'close-settings')[1];
+      const showHandler = mockIpcMain.on.mock.calls
+        .find(([event]) => event === 'show-settings')[1];
+
+      closeHandler();
+      showHandler();
+
+      jest.advanceTimersByTime(500);
+
+      expect(mockWindows.settings.close).not.toHaveBeenCalled();
     });
   });
 
@@ -457,6 +499,17 @@ describe('IPC Handlers', () => {
 
       expect(mockApp.setLoginItemSettings).toHaveBeenCalledWith({ openAtLogin: false });
       expect(mockWindows.toast.setSkipTaskbar).toHaveBeenCalledWith(true);
+    });
+
+    test('should re-register the global hotkey after reset-config', async () => {
+      setupIpcHandlers(mockWindows);
+
+      const handler = mockIpcMain.handle.mock.calls
+        .find(([event]) => event === 'reset-config')[1];
+
+      await handler();
+
+      expect(mockShortcuts.registerGlobalShortcuts).toHaveBeenCalledWith(mockConfig, mockWindows);
     });
   });
 

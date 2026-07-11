@@ -369,5 +369,28 @@ describe('Auto Updater', () => {
       expect(mockTrayModule.setUpdateState).toHaveBeenCalledWith('available', '1.1.0');
       expect(mockAutoUpdater.quitAndInstall).not.toHaveBeenCalled();
     });
+
+    test('should not revert tray state when a download is already in progress', async () => {
+      jest.useFakeTimers();
+      updater.initAutoUpdater(mockWindows);
+
+      // Never resolves, simulating a download from an earlier click still running
+      mockAutoUpdater.downloadUpdate.mockReturnValue(new Promise(() => {}));
+
+      // First click starts the real download and leaves updateDownloadInProgress set
+      const firstClick = updater.downloadAndInstallUpdate('1.1.0');
+      await jest.advanceTimersByTimeAsync(500);
+      mockTrayModule.setUpdateState.mockClear();
+
+      // Second click (e.g. a double-click) must not report failure or revert the tray
+      const result = await updater.downloadAndInstallUpdate('1.1.0');
+
+      expect(result.success).toBe(false);
+      expect(result.alreadyInProgress).toBe(true);
+      expect(mockTrayModule.setUpdateState).not.toHaveBeenCalledWith('available', '1.1.0');
+
+      // Avoid an unhandled/never-settling promise lingering after the test
+      void firstClick;
+    });
   });
 });

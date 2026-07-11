@@ -297,7 +297,7 @@ export function updateProfileDisplay() {
       // Handle image load error
       img.onerror = function () {
         // Replace with initials if image load fails
-        profileAvatar.innerHTML = getInitials(userProfile.name || userProfile.display_name || 'User');
+        profileAvatar.textContent = getInitials(userProfile.name || userProfile.display_name || 'User');
       };
 
       // Apply effect when image load completes
@@ -312,7 +312,7 @@ export function updateProfileDisplay() {
     else {
       // Use initials if no image available
       const initials = getInitials(userProfile.name || userProfile.display_name || 'User');
-      profileAvatar.innerHTML = initials;
+      profileAvatar.textContent = initials;
     }
 
     // Set name and email

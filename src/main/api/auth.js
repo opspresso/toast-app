@@ -25,10 +25,12 @@ let isLoginInProgress = false;
 let loginStartTimestamp = 0;
 const LOGIN_TIMEOUT_MS = 60000; // Maximum login timeout of 1 minute
 
-// State store (for CSRF protection)
+// State store (for CSRF protection). Plain JSON, protected only by file
+// permissions — an encryptionKey here would be checked into source control
+// and give no real confidentiality, the same reasoning that led to storing
+// auth tokens as plaintext instead of a fake-encrypted file.
 const stateStore = new Store({
   name: 'auth-state',
-  encryptionKey: 'toast-app-auth-state',
   clearInvalidConfig: true,
 });
 
@@ -168,7 +170,7 @@ function initiateLogin(clientId) {
 
     // Log authentication URL
     logger.info('====== Authentication Request Info ======');
-    logger.info('Full authentication request URL:', authUrl.toString());
+    logger.info('Authentication request URL:', maskAuthUrl(authUrl.toString()));
     logger.info('========================================');
 
     // Activate login progress state
@@ -336,7 +338,12 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
     catch (tokenRequestError) {
       logger.error('Token renewal request failed:', tokenRequestError.message);
 
-      if (tokenRequestError.response?.status === 401) {
+      // The server returns 400 INVALID_GRANT when the refresh token itself is
+      // expired, already used, or otherwise invalid; 401 INVALID_CLIENT is
+      // reserved for a bad client_id/client_secret. Either way the current
+      // tokens can't be used again, so treat both as a session expiry.
+      const errorCode = tokenRequestError.response?.data?.error?.code;
+      if (errorCode === 'INVALID_GRANT' || tokenRequestError.response?.status === 401) {
         logger.info('Refresh token has expired. Re-login required');
 
         return {
