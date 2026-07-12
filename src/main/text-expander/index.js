@@ -174,11 +174,24 @@ function performReplacement(match) {
     matcher.resetBuffer(bufferState);
     logger.debug(`Expanded snippet id=${match.snippet.id}`);
 
-    // Restore the previous clipboard and re-enable event handling after the
-    // synthetic paste has been delivered.
+    // Restore the previous clipboard and re-enable event handling after the synthetic
+    // paste has been delivered — but only if the clipboard still holds what we put there.
+    // If the user copied something else in the meantime, or an external tool (e.g. a
+    // password manager's auto-clear) already changed it, restoring would clobber that
+    // copy instead, or re-expose a secret the auto-clear had just wiped.
     setTimeout(() => {
-      restoreClipboard(previousClipboard);
-      injecting = false;
+      try {
+        const currentText = clipboard.availableFormats().includes('text/plain') ? clipboard.readText() : null;
+        if (currentText === match.snippet.content) {
+          restoreClipboard(previousClipboard);
+        }
+      }
+      catch (error) {
+        logger.error('Failed to check clipboard before restore');
+      }
+      finally {
+        injecting = false;
+      }
     }, CLIPBOARD_RESTORE_DELAY_MS);
   }
   catch (error) {

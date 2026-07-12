@@ -192,5 +192,64 @@ describe('Configuration Store', () => {
       const data = { pages: [], snippets: [{ keyword: ':x', content: 'y' }], appearance: {}, advanced: {} };
       expect(generateDataHash(data)).toBe(generateDataHash({ ...data }));
     });
+
+    test('detects content changes even when array lengths are unchanged', () => {
+      // A JSON.stringify(value, arrayOfKeys) call treats the array as a property
+      // allowlist applied at every nesting level, not a sort — so nested fields
+      // like button names/shortcuts or a snippet's content would be silently
+      // stripped and two differently-edited datasets would hash identically.
+      const { generateDataHash } = require('../../src/main/config');
+      const before = {
+        pages: [{ name: 'Page 1', buttons: [{ name: 'btn1', shortcut: 'a' }] }],
+        snippets: [{ keyword: ':x', content: 'before' }],
+        appearance: { theme: 'dark' },
+        advanced: { launchAtLogin: false },
+      };
+      const after = {
+        pages: [{ name: 'Page 1', buttons: [{ name: 'btn1-renamed', shortcut: 'b' }] }],
+        snippets: [{ keyword: ':x', content: 'after' }],
+        appearance: { theme: 'light' },
+        advanced: { launchAtLogin: true },
+      };
+      expect(generateDataHash(before)).not.toBe(generateDataHash(after));
+    });
+
+    test('is independent of nested key insertion order', () => {
+      const { generateDataHash } = require('../../src/main/config');
+      const a = { pages: [], snippets: [], appearance: { theme: 'dark', accentColor: 'blue' }, advanced: {} };
+      const b = { pages: [], snippets: [], appearance: { accentColor: 'blue', theme: 'dark' }, advanced: {} };
+      expect(generateDataHash(a)).toBe(generateDataHash(b));
+    });
+  });
+
+  describe('markAsSynced', () => {
+    test('hashes the provided data override instead of the live ConfigStore contents', () => {
+      // Guards against marking an upload as synced using data that changed during the
+      // network round-trip: the hash must reflect what was actually uploaded.
+      const { createConfigStore, markAsSynced, generateDataHash } = require('../../src/main/config');
+      const config = createConfigStore();
+      const liveData = { pages: [{ name: 'live-edited' }], snippets: [], appearance: {}, advanced: {} };
+      config.get.mockImplementation(key => ({ ...liveData, _sync: {} }[key]));
+
+      const uploadedSnapshot = { pages: [{ name: 'uploaded' }], snippets: [], appearance: {}, advanced: {} };
+      markAsSynced(config, null, uploadedSnapshot);
+
+      const syncCall = config.set.mock.calls.find(call => call[0] === '_sync');
+      expect(syncCall).toBeDefined();
+      expect(syncCall[1].dataHash).toBe(generateDataHash(uploadedSnapshot));
+      expect(syncCall[1].dataHash).not.toBe(generateDataHash(liveData));
+    });
+
+    test('falls back to the live ConfigStore contents when no override is given', () => {
+      const { createConfigStore, markAsSynced, generateDataHash } = require('../../src/main/config');
+      const config = createConfigStore();
+      const liveData = { pages: [{ name: 'live' }], snippets: [], appearance: {}, advanced: {} };
+      config.get.mockImplementation(key => ({ ...liveData, _sync: {} }[key]));
+
+      markAsSynced(config);
+
+      const syncCall = config.set.mock.calls.find(call => call[0] === '_sync');
+      expect(syncCall[1].dataHash).toBe(generateDataHash(liveData));
+    });
   });
 });

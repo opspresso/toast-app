@@ -283,6 +283,16 @@ describe('Text Expander Matcher', () => {
       expect(result.errors.join(' ')).toMatch(/conflicts/);
     });
 
+    test('rejects a prefix-colliding keyword (typing the longer one fires the shorter one first)', () => {
+      // ";sig" is a prefix, not a suffix, of ";signature" — endsWith alone misses this.
+      // While typing ";signature", the buffer passes through "...;sig", which would fire
+      // ";sig" before the rest of ";signature" is ever entered.
+      const existing = [{ id: '1', keyword: ';sig' }];
+      const result = validateSnippet({ id: '2', keyword: ';signature', content: 'x' }, existing);
+      expect(result.valid).toBe(false);
+      expect(result.errors.join(' ')).toMatch(/conflicts/);
+    });
+
     test('excludes self by id when re-validating an edit', () => {
       const existing = [{ id: '1', keyword: ':email' }];
       const result = validateSnippet({ id: '1', keyword: ':email', content: 'updated' }, existing);

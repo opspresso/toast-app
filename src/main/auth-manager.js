@@ -12,7 +12,7 @@ const userDataManager = require('./user-data-manager');
 
 // Create logger for this module
 const logger = createLogger('AuthManager');
-const { createConfigStore, markAsSynced } = require('./config');
+const { createConfigStore } = require('./config');
 const client = require('./api/client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
 const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
@@ -22,6 +22,20 @@ const { broadcastToWindows } = require('./broadcast');
 let windows = null;
 // Cloud synchronization object
 let syncManager = null;
+
+// Incremented on every login/logout so a background task started by one (e.g. the
+// fire-and-forget post-login sync below) can tell whether a more recent auth event has
+// since happened and skip sending a now-stale notification.
+let authSequence = 0;
+
+// A dead session can be discovered through more than one path at once — e.g. auth.js's
+// own session-expired handler (fire-and-forget) and this module's requireRelogin checks
+// in refreshAccessToken/fetchUserProfile/fetchSubscription all call logout() for the same
+// underlying event. Sharing one in-flight promise (mirrors auth.js's refreshPromise dedup)
+// keeps logout() safe to call from all of them without revoking the token or notifying
+// both windows more than once per actual logout.
+let isLoggingOut = false;
+let logoutPromise = null;
 
 /**
  * Set up cloud synchronization manager
@@ -46,6 +60,11 @@ function initialize(windowsRef) {
     fetchUserProfile: () => auth.fetchUserProfile(),
     fetchSubscription: () => auth.fetchSubscription(),
   });
+
+  // Run the full app-level logout when auth.js detects a dead session on its own (e.g.
+  // hasValidToken's automatic refresh), not just when profile/subscription fetch or an
+  // explicit refresh call surfaces requireRelogin.
+  auth.setSessionExpiredHandler(() => logout());
 }
 
 /**
@@ -87,6 +106,8 @@ async function exchangeCodeForToken(code) {
  * @returns {Promise<Object>} Processing result
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
+  authSequence += 1;
+  const mySequence = authSequence;
   try {
     logger.info('Starting exchange of authentication code for token and update of profile/settings');
     const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
@@ -101,6 +122,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
       // profile/subscription IPC requests hit the cache instead of re-calling the API
       if (userProfile) {
         await userDataManager.getUserProfile(true, userProfile);
+      }
+
+      // A logout (or a newer login) may have completed while the network calls above were
+      // in flight. Continuing would resurrect authenticated state — the notification below,
+      // and the ConfigStore write further down — over a logout that already ran.
+      if (mySequence !== authSequence) {
+        logger.info('Newer auth event occurred during login continuation; aborting stale login flow');
+        return { success: false, error: 'Logged out during login' };
       }
 
       // Notify both windows on login success (profile cache is now warm)
@@ -209,6 +238,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
             logger.info('User settings saved successfully');
           }
 
+          // A logout (or a newer login) may have happened while the settings fetch above
+          // was in flight — notifying now would flip the UI back to "logged in" over a
+          // logout that already ran, and re-run sync against a session that no longer exists.
+          if (mySequence !== authSequence) {
+            logger.info('Newer auth event occurred during post-login sync; skipping stale notification');
+            return false;
+          }
+
           // Send authentication state change notification (including profile and settings)
           notifyAuthStateChange({
             isAuthenticated: true,
@@ -275,82 +312,83 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
  * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
-  try {
-    logger.info('Starting logout process');
-    const result = await auth.logout();
-
-    // Stop periodic synchronization and update cloud sync settings when logout is successful
-    if (result && syncManager) {
-      // Disable synchronization feature and stop periodic synchronization
-      if (typeof syncManager.updateCloudSyncSettings === 'function') {
-        syncManager.updateCloudSyncSettings(false);
-      }
-      if (typeof syncManager.stopPeriodicSync === 'function') {
-        syncManager.stopPeriodicSync();
-      }
-
-      logger.info('Cloud synchronization disabled and periodic synchronization stopped due to logout');
-    }
-
-    // Clean up user data when logout is successful
-    if (result) {
-      userDataManager.cleanupOnLogout();
-      logger.info('User data cleanup completed due to logout');
-
-      // Get current configuration
-      const config = createConfigStore();
-
-      // Reset subscription information and clear all settings
-      config.set('subscription', {
-        isAuthenticated: false,
-        isSubscribed: false,
-        expiresAt: '',
-        pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
-      });
-
-      // Trim pages down to the anonymous entitlement instead of wiping them:
-      // this may be the only copy of the user's data if it was never synced
-      // (offline edits, sync disabled, or the upload debounce hadn't fired).
-      const currentPages = config.get('pages');
-      config.set('pages', Array.isArray(currentPages) ? currentPages.slice(0, PAGE_GROUPS.ANONYMOUS) : []);
-
-      // Reset appearance to default
-      config.set('appearance', {});
-
-      // Reset advanced settings to default
-      config.set('advanced', {});
-
-      // Sync is disabled by this point (updateCloudSyncSettings(false) above), so the
-      // 'pages' write above never reached handleConfigChange's markAsModified() call —
-      // the _sync hash/timestamps are still whatever the logged-out user last synced.
-      // Left stale, the next person to log in on this device would have their sync
-      // treat this leftover local page as "unsynced changes" and upload/merge it into
-      // their own account. Mark the post-logout state as synced so it reads as current,
-      // not as changes belonging to whoever logs in next.
-      markAsSynced(config);
-
-      logger.info('All user configuration reset to defaults on logout');
-
-      // Send app authentication state change notification
-      notifyAuthStateChange({
-        isAuthenticated: false,
-        profile: DEFAULT_ANONYMOUS,
-        settings: null,
-      });
-      logger.info('Authentication state change notification sent');
-    }
-
-    // Send notification to both windows when logout is successful
-    if (result) {
-      notifyLogout();
-    }
-
-    return result;
+  // Another trigger (e.g. auth.js's session-expired handler) already has a logout in
+  // flight — share its result instead of running the whole flow (server revoke, user data
+  // cleanup, window notifications) a second time for the same underlying event.
+  if (isLoggingOut && logoutPromise) {
+    logger.info('Logout already in progress; sharing in-flight result');
+    return logoutPromise;
   }
-  catch (error) {
-    logger.error('Error logging out:', error);
-    return false;
-  }
+
+  isLoggingOut = true;
+  authSequence += 1;
+
+  logoutPromise = (async () => {
+    try {
+      logger.info('Starting logout process');
+      const result = await auth.logout();
+
+      // Stop periodic synchronization and update cloud sync settings when logout is successful
+      if (result && syncManager) {
+        // Disable synchronization feature and stop periodic synchronization
+        if (typeof syncManager.updateCloudSyncSettings === 'function') {
+          syncManager.updateCloudSyncSettings(false);
+        }
+        if (typeof syncManager.stopPeriodicSync === 'function') {
+          syncManager.stopPeriodicSync();
+        }
+
+        logger.info('Cloud synchronization disabled and periodic synchronization stopped due to logout');
+      }
+
+      // Clean up user data when logout is successful
+      if (result) {
+        userDataManager.cleanupOnLogout();
+        logger.info('User data cleanup completed due to logout');
+
+        // Get current configuration
+        const config = createConfigStore();
+
+        // Reset subscription information only. pages/appearance/advanced are left untouched —
+        // they are the user's actual content and this device may hold the only unsynced copy
+        // (offline edits, sync disabled, or the upload debounce hadn't fired). Deleting them
+        // locally on logout is unrecoverable if the copy was never uploaded.
+        config.set('subscription', {
+          isAuthenticated: false,
+          isSubscribed: false,
+          expiresAt: '',
+          pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
+        });
+
+        logger.info('Subscription reset to anonymous defaults on logout');
+
+        // Send app authentication state change notification
+        notifyAuthStateChange({
+          isAuthenticated: false,
+          profile: DEFAULT_ANONYMOUS,
+          settings: null,
+        });
+        logger.info('Authentication state change notification sent');
+      }
+
+      // Send notification to both windows when logout is successful
+      if (result) {
+        notifyLogout();
+      }
+
+      return result;
+    }
+    catch (error) {
+      logger.error('Error logging out:', error);
+      return false;
+    }
+    finally {
+      isLoggingOut = false;
+      logoutPromise = null;
+    }
+  })();
+
+  return logoutPromise;
 }
 
 /**
@@ -365,7 +403,17 @@ async function fetchUserProfile(forceRefresh = false) {
     return storedProfile;
   }
 
-  return await auth.fetchUserProfile();
+  const profileData = await auth.fetchUserProfile();
+
+  // A dead session surfaces here as an error with requireRelogin (auth.js's own
+  // refreshAccessToken only clears the local token file, it doesn't run the full
+  // app-level logout), so run it here instead of leaving the app in a stale
+  // "logged in" state.
+  if (profileData?.error?.requireRelogin) {
+    await logout();
+  }
+
+  return profileData;
 }
 
 /**
@@ -382,6 +430,11 @@ async function fetchSubscription(forceRefresh = false) {
 
   // Call API if no stored information or force refresh
   const profileData = await auth.fetchUserProfile();
+
+  // See fetchUserProfile() above for why this needs to run the full logout.
+  if (profileData?.error?.requireRelogin) {
+    await logout();
+  }
 
   if (profileData && profileData.subscription) {
     // Successfully retrieved profile data with subscription information

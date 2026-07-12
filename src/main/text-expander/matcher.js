@@ -261,9 +261,16 @@ function validateSnippet(snippet, existing = []) {
       errors.push(`Keyword "${keyword}" is already used.`);
       continue;
     }
-    // Ambiguity: if one keyword is a suffix of the other, a buffer ending in
-    // the longer one would match both.
-    if (keyword.endsWith(otherKeyword) || otherKeyword.endsWith(keyword)) {
+    // Ambiguity: if one keyword is a suffix of the other, a buffer ending in the longer
+    // one would match both. A prefix relationship is just as ambiguous even though it
+    // doesn't share a common suffix: while typing the longer keyword, the buffer passes
+    // through a state that ends with the shorter one, which fires first and pre-empts it.
+    if (
+      keyword.endsWith(otherKeyword)
+      || otherKeyword.endsWith(keyword)
+      || keyword.startsWith(otherKeyword)
+      || otherKeyword.startsWith(keyword)
+    ) {
       errors.push(`Keyword "${keyword}" conflicts with existing keyword "${otherKeyword}".`);
     }
   }

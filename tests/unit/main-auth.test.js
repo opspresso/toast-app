@@ -237,6 +237,56 @@ describe('Main Auth Module (P0)', () => {
       expect(JSON.stringify(result)).not.toContain('internal_debug_info');
     });
 
+    test('discards issued tokens when logout completes while the code exchange is still in flight', async () => {
+      // Regression: only refreshAccessToken had the isLoggingOut/logoutGeneration guards.
+      // exchangeCodeForToken's own storeTokens call was unguarded, so a logout completing
+      // while the token endpoint request was in flight got its deleted token file
+      // resurrected by the login that was already underway.
+      let resolveExchange;
+      mockApiAuth.exchangeCodeForToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveExchange = resolve;
+          }),
+      );
+
+      const exchangePromise = auth.exchangeCodeForToken('test-code');
+
+      mockFs.writeFileSync.mockClear();
+      await auth.logout();
+
+      resolveExchange({
+        success: true,
+        access_token: 'new-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      });
+      const result = await exchangePromise;
+
+      expect(result.success).toBe(false);
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    test('blocks a code exchange attempted while logout is in progress, before it ever contacts the server', async () => {
+      let resolveRevoke;
+      mockApiAuth.revokeToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveRevoke = resolve;
+          }),
+      );
+
+      const logoutPromise = auth.logout();
+
+      const result = await auth.exchangeCodeForToken('test-code');
+
+      expect(result.success).toBe(false);
+      expect(mockApiAuth.exchangeCodeForToken).not.toHaveBeenCalled();
+
+      resolveRevoke({ success: true });
+      await logoutPromise;
+    });
+
     test('should handle auth redirect URLs', async () => {
       const authUrl = 'toast-app://auth?code=test-code&state=test-state';
 
@@ -253,6 +303,82 @@ describe('Main Auth Module (P0)', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid URL');
+    });
+
+    test('reload_auth deep link returns an object result when starting login for an unauthenticated user', async () => {
+      // initiateLogin() resolves to a bare boolean, but handleAuthRedirect's callers
+      // (e.g. src/index.js) check result.success — a bare `true` would read as failure.
+      mockClient.getAccessToken.mockReturnValue(null);
+      mockFs.existsSync.mockReturnValue(false); // no stored token file either
+
+      const redirectUrl = 'toast-app://auth?action=reload_auth&token=abc123&userId=user1';
+      const result = await auth.handleAuthRedirect(redirectUrl);
+
+      expect(result).toEqual({ success: true });
+      expect(mockShell.openExternal).toHaveBeenCalled();
+    });
+
+    test('discards the subscription update (no authenticated config write) when logout completes while the post-login subscription fetch is still in flight', async () => {
+      // Regression: exchangeCodeForToken's own storeTokens call is guarded, but the
+      // subsequent fetchSubscription()+updatePageGroupSettings() write in
+      // exchangeCodeForTokenAndUpdateSubscription was not — a logout completing during
+      // that fetch got its anonymous config write overwritten back to authenticated.
+      mockApiAuth.exchangeCodeForToken.mockResolvedValue({
+        success: true,
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      });
+
+      let resolveProfile;
+      mockApiAuth.fetchUserProfile.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveProfile = resolve;
+          }),
+      );
+
+      const exchangePromise = auth.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      // Let the code exchange (its own separate await chain) complete and the
+      // subscription fetch reach the pending apiAuth.fetchUserProfile() call above,
+      // before logging out — otherwise logout could race ahead of the exchange itself.
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+
+      mockConfig.set.mockClear();
+      await auth.logout();
+
+      resolveProfile({
+        id: 'user123',
+        email: 'test@example.com',
+        subscription: { active: true, plan: 'premium' },
+      });
+      const result = await exchangePromise;
+
+      expect(result.success).toBe(false);
+      expect(mockConfig.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
+    });
+
+    test('reports failure instead of writing an authenticated config when the post-login subscription fetch itself fails', async () => {
+      // Regression: fetchSubscription() returns the error-shaped profileData as-is on
+      // failure (not a subscription object). refreshSubscriptionSettings() previously
+      // passed that straight to updatePageGroupSettings(), which unconditionally writes
+      // isAuthenticated: true — silently reporting login success on a failed profile fetch.
+      mockApiAuth.exchangeCodeForToken.mockResolvedValue({
+        success: true,
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      });
+      mockApiAuth.fetchUserProfile.mockResolvedValue({
+        error: { code: 'PROFILE_FETCH_FAILED', message: 'Network error' },
+      });
+
+      const result = await auth.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(result.success).toBe(false);
+      expect(mockConfig.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
     });
   });
 
@@ -381,6 +507,168 @@ describe('Main Auth Module (P0)', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Refresh failed');
+    });
+
+    test('does not lock out retries for the cooldown window after a failed refresh', async () => {
+      // A single transient failure (e.g. a network blip) must not block every
+      // subsequent refresh attempt for the full 5-minute cooldown window.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({
+        success: false,
+        error: 'network error',
+      });
+
+      const firstResult = await auth.refreshAccessToken();
+      expect(firstResult.success).toBe(false);
+
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({
+        success: true,
+        access_token: 'refreshed-token',
+        expires_in: 3600,
+      });
+
+      const secondResult = await auth.refreshAccessToken();
+
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(2);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.code).not.toBe('REFRESH_THROTTLED');
+    });
+
+    test('concurrent refreshAccessToken calls share the in-flight promise instead of one being throttled', async () => {
+      // The dedup check (isRefreshing && refreshPromise) must run before the throttle
+      // window check, or a second caller arriving while a refresh is already in flight
+      // gets misrouted into REFRESH_THROTTLED instead of sharing the same promise.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      let resolveRefresh;
+      // mockImplementationOnce (not mockReturnValue/mockResolvedValue): the latter would
+      // permanently pin refreshAccessToken to this one already-settled Promise instance,
+      // leaking into every later test that calls it.
+      mockApiAuth.refreshAccessToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveRefresh = resolve;
+          }),
+      );
+
+      const firstCall = auth.refreshAccessToken();
+      const secondCall = auth.refreshAccessToken();
+
+      // refreshAccessToken awaits isTokenExpired() (itself a chain of awaits) before
+      // calling apiAuth.refreshAccessToken, so let all pending microtasks flush before
+      // resolveRefresh is guaranteed to have been assigned.
+      await new Promise(resolve => setImmediate(resolve));
+
+      resolveRefresh({ success: true, access_token: 'refreshed-token', expires_in: 3600 });
+
+      const [firstResult, secondResult] = await Promise.all([firstCall, secondCall]);
+
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(firstResult.success).toBe(true);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.code).not.toBe('REFRESH_THROTTLED');
+    });
+
+    test('hasValidToken triggers the registered session-expired handler on a dead session', async () => {
+      // hasValidToken refreshes internally without going through auth-manager's own
+      // requireRelogin checks, so it must still notify the app of a dead session instead
+      // of silently leaving the UI in a stale "logged in" state.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'dead-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      mockApiAuth.refreshAccessToken.mockResolvedValue({
+        success: false,
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true,
+      });
+
+      const handler = jest.fn();
+      auth.setSessionExpiredHandler(handler);
+
+      const isValid = await auth.hasValidToken();
+      await Promise.resolve();
+
+      expect(isValid).toBe(false);
+      expect(handler).toHaveBeenCalled();
+    });
+
+    test('logout prevents an in-flight refresh from resurrecting the deleted token file', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      let resolveRefresh;
+      // mockImplementationOnce so this settled Promise instance doesn't leak into later
+      // tests the way a permanent mockReturnValue/mockResolvedValue would.
+      mockApiAuth.refreshAccessToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveRefresh = resolve;
+          }),
+      );
+
+      const refreshPromise = auth.refreshAccessToken();
+
+      // logout() runs to completion while the refresh above is still in flight.
+      mockFs.writeFileSync.mockClear();
+      await auth.logout();
+
+      // The refresh completes afterwards with a rotated token.
+      resolveRefresh({ success: true, access_token: 'new-token', refresh_token: 'new-refresh-token', expires_in: 3600 });
+      const refreshResult = await refreshPromise;
+
+      expect(refreshResult.success).toBe(false);
+      // The logout-deleted token file must not be resurrected by the late refresh response.
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    test('blocks a new refresh attempt started while logout is in progress, before it ever contacts the server', async () => {
+      // A refresh that starts mid-logout must be stopped before making a network call at
+      // all — even a result that's later discarded would still rotate the refresh token
+      // server-side, leaving an unrevoked token nobody has a record of.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      let resolveRevoke;
+      mockApiAuth.revokeToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveRevoke = resolve;
+          }),
+      );
+
+      const logoutPromise = auth.logout(); // starts, suspended awaiting revokeToken
+
+      const refreshResult = await auth.refreshAccessToken();
+
+      expect(refreshResult.success).toBe(false);
+      expect(refreshResult.code).toBe('LOGOUT_IN_PROGRESS');
+      expect(mockApiAuth.refreshAccessToken).not.toHaveBeenCalled();
+
+      resolveRevoke({ success: true });
+      await logoutPromise;
     });
   });
 

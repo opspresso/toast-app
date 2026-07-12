@@ -15,6 +15,7 @@ const mockAuth = {
   getAccessToken: jest.fn(),
   hasValidToken: jest.fn(),
   refreshAccessToken: jest.fn(),
+  setSessionExpiredHandler: jest.fn(),
 };
 
 const mockUserDataManager = {
@@ -114,10 +115,19 @@ describe('Authentication Manager', () => {
 
     test('should handle null windows gracefully', () => {
       authManager.initialize(null);
-      
+
       // Should handle null windows and maintain functionality
       expect(typeof authManager.hasValidToken).toBe('function');
       expect(typeof authManager.notifyLoginSuccess).toBe('function');
+    });
+
+    test('registers a session-expired handler with auth.js so a dead session detected outside requireRelogin checks (e.g. hasValidToken) still triggers a full logout', async () => {
+      expect(mockAuth.setSessionExpiredHandler).toHaveBeenCalledWith(expect.any(Function));
+
+      const handler = mockAuth.setSessionExpiredHandler.mock.calls[0][0];
+      await handler();
+
+      expect(mockAuth.logout).toHaveBeenCalled();
     });
   });
 
@@ -167,6 +177,40 @@ describe('Authentication Manager', () => {
       expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('auth-state-changed', expect.objectContaining({ isAuthenticated: false }));
     });
 
+    test('logs out only once when the session-expired handler and the requireRelogin check both fire for the same dead session', async () => {
+      // In auth.js, a SESSION_EXPIRED refresh failure fires the session-expired handler
+      // (fire-and-forget) before returning a result with requireRelogin: true — which this
+      // module's refreshAccessToken() also checks and logs out on. Simulate both firing for
+      // the same event, as they do in the real (unmocked) auth.js. auth.logout() itself is
+      // held pending (as it would be for the real revoke-token network call's duration) so
+      // the dedup window is actually open when the second trigger checks it.
+      const sessionExpiredHandler = mockAuth.setSessionExpiredHandler.mock.calls[0][0];
+      const mockResult = {
+        success: false,
+        error: 'Your login session has expired. Please log in again.',
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true,
+      };
+      let resolveAuthLogout;
+      mockAuth.logout.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveAuthLogout = resolve;
+        }),
+      );
+      mockAuth.refreshAccessToken.mockImplementation(async () => {
+        sessionExpiredHandler(); // fire-and-forget, as auth.js does internally
+        return mockResult;
+      });
+
+      const resultPromise = authManager.refreshAccessToken();
+      resolveAuthLogout(true);
+      const result = await resultPromise;
+
+      expect(result).toEqual(mockResult);
+      expect(mockAuth.logout).toHaveBeenCalledTimes(1);
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalledTimes(1);
+    });
+
     test('should not log out when refresh fails for a reason other than requireRelogin', async () => {
       const mockResult = { success: false, error: 'Network error', code: 'REFRESH_FAILED' };
       mockAuth.refreshAccessToken.mockResolvedValue(mockResult);
@@ -195,6 +239,19 @@ describe('Authentication Manager', () => {
 
       expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(false);
     });
+
+    test('fully logs out when the profile fetch signals a dead session (requireRelogin)', async () => {
+      // auth.js's own refreshAccessToken (used as fetchUserProfile's onUnauthorized)
+      // only clears the local token file, it doesn't stop sync or notify the windows —
+      // that must happen here instead, or the app is left looking logged in.
+      mockUserDataManager.getUserProfile.mockResolvedValue(null); // force the cache-miss path
+      mockAuth.fetchUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
+
+      await authManager.fetchUserProfile();
+
+      expect(mockAuth.logout).toHaveBeenCalled();
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalled();
+    });
   });
 
   describe('Subscription Management', () => {
@@ -214,6 +271,16 @@ describe('Authentication Manager', () => {
 
       const result = await authManager.fetchSubscription();
 
+      expect(result).toEqual({ isSubscribed: false });
+    });
+
+    test('fully logs out when the subscription fetch signals a dead session (requireRelogin)', async () => {
+      mockUserDataManager.getUserProfile.mockResolvedValue(null); // force the cache-miss path
+      mockAuth.fetchUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
+
+      const result = await authManager.fetchSubscription();
+
+      expect(mockAuth.logout).toHaveBeenCalled();
       expect(result).toEqual({ isSubscribed: false });
     });
   });
@@ -329,6 +396,79 @@ describe('Authentication Manager', () => {
       expect(DEFAULT_ANONYMOUS_SUBSCRIPTION.features).toBe(sharedFeatures);
       expect(sharedFeatures.cloud_sync).toBeUndefined();
     });
+
+    test('skips the stale post-login auth-state notification when logout runs during the background sync', async () => {
+      // exchangeCodeForTokenAndUpdateSubscription kicks off its settings sync in the
+      // background (fire-and-forget). If a logout completes before that background work
+      // finishes, its "isAuthenticated: true" notification must not overwrite the logout.
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: { active: true },
+      });
+      mockAuth.fetchUserProfile.mockResolvedValue({ email: 'test@example.com' });
+
+      let resolveUserSettings;
+      mockUserDataManager.getUserSettings.mockReturnValue(
+        new Promise(resolve => {
+          resolveUserSettings = resolve;
+        }),
+      );
+
+      const loginResult = await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+      expect(loginResult.success).toBe(true);
+
+      // The background sync is now awaiting getUserSettings. Log out while it's pending.
+      await authManager.logout();
+      mockWindows.toast.webContents.send.mockClear();
+
+      // The background sync resumes and must see a newer auth event has happened since
+      // it started, so it must not re-announce isAuthenticated: true.
+      resolveUserSettings({ pages: [] });
+      await new Promise(resolve => setImmediate(resolve));
+
+      const authStateCalls = mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed');
+      expect(authStateCalls).toHaveLength(0);
+    });
+
+    test('aborts the login continuation (skips login-success and the authenticated config write) when logout completes while the profile fetch is still in flight', async () => {
+      // The authSequence guard originally only protected the final notifyAuthStateChange
+      // inside the background sync. The state mutations earlier in the same function —
+      // notifyLoginSuccess and the ConfigStore subscription write — ran unguarded, so a
+      // logout that completed while awaiting fetchUserProfile/getUserProfile got
+      // overwritten back to "authenticated" once the login continuation resumed.
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: { active: true, plan: 'Premium' },
+      });
+
+      let resolveFetchUserProfile;
+      mockAuth.fetchUserProfile.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveFetchUserProfile = resolve;
+          }),
+      );
+
+      const loginPromise = authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      // Log out while the login continuation is still awaiting the profile fetch.
+      await authManager.logout();
+      mockConfigStore.set.mockClear();
+      mockWindows.toast.webContents.send.mockClear();
+
+      resolveFetchUserProfile({ email: 'test@example.com' });
+      const loginResult = await loginPromise;
+
+      expect(loginResult.success).toBe(false);
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
+      expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('login-success', expect.anything());
+    });
   });
 
   describe('Logout Process', () => {
@@ -350,28 +490,28 @@ describe('Authentication Manager', () => {
       expect(result).toBe(false);
     });
 
-    test('should trim local pages to the anonymous entitlement instead of wiping them', async () => {
+    test('should not modify local pages on logout, even beyond the anonymous entitlement', async () => {
+      // pages/appearance/advanced are the user's actual content, and this device may hold
+      // the only unsynced copy. Trimming/clearing them locally on logout is unrecoverable
+      // if that copy was never uploaded, so logout must leave them untouched.
       mockAuth.logout.mockResolvedValue(true);
       const premiumPages = [{ name: 'Page 1' }, { name: 'Page 2' }, { name: 'Page 3' }];
       mockConfigStore.get.mockImplementation(key => (key === 'pages' ? premiumPages : undefined));
 
       await authManager.logout();
 
-      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'Page 1' }]);
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('pages', expect.anything());
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('appearance', expect.anything());
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('advanced', expect.anything());
     });
 
-    test('should mark the post-logout state as synced so it is not mistaken for the next user\'s unsynced changes', async () => {
-      // Sync is disabled before pages are trimmed, so the 'pages' write never reaches
-      // cloud-sync's onDidChange handler and _sync metadata is left stale. Without
-      // markAsSynced() here, the next person to log in on this shared device would
-      // have hasUnsyncedChanges() report the leftover page as their own unsynced
-      // change, and conflict resolution could upload/merge it into their account.
+    test('should not touch sync metadata on logout since no synced data is modified', async () => {
       mockAuth.logout.mockResolvedValue(true);
       const { markAsSynced } = require('../../src/main/config');
 
       await authManager.logout();
 
-      expect(markAsSynced).toHaveBeenCalledWith(mockConfigStore);
+      expect(markAsSynced).not.toHaveBeenCalled();
     });
 
     test('should handle logout exceptions', async () => {
@@ -380,6 +520,40 @@ describe('Authentication Manager', () => {
       const result = await authManager.logout();
 
       expect(result).toBe(false);
+    });
+
+    test('shares a single in-flight logout when triggered concurrently by more than one caller', async () => {
+      // A dead session can be discovered through more than one path at once — e.g. auth.js's
+      // own session-expired handler (fire-and-forget) racing with an explicit requireRelogin
+      // check in refreshAccessToken/fetchUserProfile/fetchSubscription. Both call logout()
+      // for the same underlying event; only one should actually run (server revoke, user
+      // data cleanup, window notifications), and every caller should get the same result.
+      let resolveAuthLogout;
+      mockAuth.logout.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveAuthLogout = resolve;
+        }),
+      );
+
+      const firstCall = authManager.logout();
+      const secondCall = authManager.logout();
+
+      resolveAuthLogout(true);
+      const [firstResult, secondResult] = await Promise.all([firstCall, secondCall]);
+
+      expect(mockAuth.logout).toHaveBeenCalledTimes(1);
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalledTimes(1);
+      expect(firstResult).toBe(true);
+      expect(secondResult).toBe(true);
+    });
+
+    test('runs a fresh logout again after a previous one has fully completed', async () => {
+      mockAuth.logout.mockResolvedValue(true);
+
+      await authManager.logout();
+      await authManager.logout();
+
+      expect(mockAuth.logout).toHaveBeenCalledTimes(2);
     });
   });
 

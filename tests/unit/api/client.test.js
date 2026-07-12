@@ -356,6 +356,44 @@ describe('API Client', () => {
       expect(result.error.message).toContain('rate limit exceeded');
     });
 
+    test('retries the request during the refresh cooldown instead of assuming the token is still bad', async () => {
+      // A concurrent request may have already refreshed the token within the cooldown
+      // window, so a second request hitting 401 should retry with the now-current token
+      // rather than immediately falling back (e.g. to an anonymous subscription default).
+      client.setAccessToken('expired-token');
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      const firstApiCall = jest.fn().mockRejectedValueOnce({ response: { status: 401 } }).mockResolvedValueOnce({ data: 'first' });
+      await client.authenticatedRequest(firstApiCall, { onUnauthorized });
+
+      const secondApiCall = jest.fn().mockRejectedValueOnce({ response: { status: 401 } }).mockResolvedValueOnce({ data: 'second' });
+      const result = await client.authenticatedRequest(secondApiCall, { onUnauthorized });
+
+      expect(result).toEqual({ data: 'second' });
+      expect(secondApiCall).toHaveBeenCalledTimes(2);
+      // The cooldown must block a second refresh attempt, not trigger one
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    });
+
+    test('falls back to defaultValue when the cooldown retry also fails', async () => {
+      client.setAccessToken('expired-token');
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: true });
+
+      const firstApiCall = jest.fn().mockRejectedValueOnce({ response: { status: 401 } }).mockResolvedValueOnce({ data: 'first' });
+      await client.authenticatedRequest(firstApiCall, { onUnauthorized });
+
+      const secondApiCall = jest.fn().mockRejectedValue({ response: { status: 401 } });
+      const defaultValue = { anonymous: true };
+      const result = await client.authenticatedRequest(secondApiCall, {
+        onUnauthorized,
+        allowUnauthenticated: true,
+        defaultValue,
+      });
+
+      expect(result).toBe(defaultValue);
+      expect(secondApiCall).toHaveBeenCalledTimes(2);
+    });
+
     test('should handle refresh loop detection', async () => {
       client.setAccessToken('expired-token');
       const mockApiCall = jest.fn().mockRejectedValue({
@@ -493,6 +531,34 @@ describe('API Client', () => {
 
       expect(result.error).toBeDefined();
       expect(onUnauthorized).toHaveBeenCalled();
+    });
+
+    test('preserves tokens and does not require re-login on a transient refresh failure', async () => {
+      // A network error or server 500 during refresh doesn't mean the session is dead —
+      // forcing a full logout here would turn a transient blip into an unwanted sign-out.
+      client.setAccessToken('expired-token');
+      client.setRefreshToken('still-valid-refresh-token');
+      const mockApiCall = jest.fn().mockRejectedValue({ response: { status: 401 } });
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: false, code: 'REFRESH_EXCEPTION' });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.requireRelogin).toBe(false);
+      expect(client.getAccessToken()).toBe('expired-token');
+      expect(client.getRefreshToken()).toBe('still-valid-refresh-token');
+    });
+
+    test('clears tokens and requires re-login when the refresh callback reports a dead session', async () => {
+      client.setAccessToken('expired-token');
+      client.setRefreshToken('dead-refresh-token');
+      const mockApiCall = jest.fn().mockRejectedValue({ response: { status: 401 } });
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: false, code: 'SESSION_EXPIRED', requireRelogin: true });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.requireRelogin).toBe(true);
+      expect(client.getAccessToken()).toBeNull();
+      expect(client.getRefreshToken()).toBeNull();
     });
   });
 

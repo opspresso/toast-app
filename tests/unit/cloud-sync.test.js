@@ -399,6 +399,26 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toContain('failure'); // More flexible matching
     });
 
+    test('marks synced using the uploaded snapshot rather than live ConfigStore data', async () => {
+      // A change made during the upload round-trip must not be mistaken for already
+      // being synced: markAsSynced has to hash the data that was actually sent, not
+      // whatever ConfigStore holds by the time the response comes back.
+      const configModule = require('../../src/main/config');
+      mockApiSync.uploadSettings.mockResolvedValue({ success: true });
+
+      await cloudSync.uploadSettings();
+
+      expect(configModule.markAsSynced).toHaveBeenCalledWith(
+        mockConfigStore,
+        null,
+        expect.objectContaining({
+          pages: expect.any(Array),
+          appearance: expect.any(Object),
+          advanced: expect.any(Object),
+        }),
+      );
+    });
+
     test('should call API with expected data structure', async () => {
       // Reset to fresh state for this test
       delete require.cache[require.resolve('../../src/main/cloud-sync')];
@@ -532,6 +552,35 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toContain('timeout');
     });
 
+    test('refreshes dataHash via markAsSynced after applying server data with metadata', async () => {
+      // Previously only lastSyncedAt/lastModifiedAt were updated when serverMetadata was
+      // present, leaving dataHash stale so hasUnsyncedChanges() was true on every check
+      // right after a download. markAsSynced must run first to recompute it from the data
+      // that was just written, then lastModifiedAt/Device are overridden with the server's.
+      delete require.cache[require.resolve('../../src/main/cloud-sync')];
+      const freshCloudSync = require('../../src/main/cloud-sync');
+      freshCloudSync.initCloudSync(mockAuthManager, null, mockConfigStore);
+      const configModule = require('../../src/main/config');
+      configModule.markAsSynced.mockClear();
+      configModule.updateSyncMetadata.mockClear();
+
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: {},
+        normalized: { pages: [{ name: 'P1', buttons: [] }], appearance: {}, advanced: {} },
+        syncMetadata: { lastModifiedAt: 123, lastModifiedDevice: 'server-device' },
+      });
+
+      const result = await freshCloudSync.downloadSettings();
+
+      expect(result.success).toBe(true);
+      expect(configModule.markAsSynced).toHaveBeenCalledWith(mockConfigStore);
+      expect(configModule.updateSyncMetadata).toHaveBeenCalledWith(
+        mockConfigStore,
+        expect.objectContaining({ lastModifiedAt: 123, lastModifiedDevice: 'server-device' }),
+      );
+    });
+
     test('should attempt to notify auth manager on sync', async () => {
       // Reset to fresh state for this test
       delete require.cache[require.resolve('../../src/main/cloud-sync')];
@@ -567,12 +616,135 @@ describe('Cloud Sync Module', () => {
       if (changeHandlerCall) {
         const handler = changeHandlerCall[1];
         const initialTimerCount = jest.getTimerCount();
-        
+
         handler([], []);
-        
+
         // Handler should potentially schedule sync operations
         expect(jest.getTimerCount()).toBeGreaterThanOrEqual(initialTimerCount);
       }
+    });
+
+    test('records markAsModified even when sync cannot run (e.g. logged out)', async () => {
+      // Without this, an offline edit's lastModifiedAt stays stale, so a later conflict
+      // check (after re-login) can pick download_server and overwrite the edit instead
+      // of preserving it via merge.
+      const configModule = require('../../src/main/config');
+      mockAuthManager.hasValidToken.mockResolvedValue(false);
+      // canSync() delegates the actual availability decision to apiSync.isCloudSyncEnabled
+      // (which internally calls hasValidToken in production) — that module is fully mocked
+      // here, so hasValidToken alone has no effect on canSync()'s result unless this is also
+      // set, to mirror what the real isCloudSyncEnabled returns when logged out. Without it,
+      // canSync() stays true, scheduleSync() would only be skipped because the debounce
+      // timer is never advanced — not because sync was actually blocked.
+      mockApiSync.isCloudSyncEnabled.mockResolvedValue(false);
+
+      const changeHandlerCall = mockConfigStore.onDidChange.mock.calls.find(call =>
+        call[0] === 'pages' && typeof call[1] === 'function'
+      );
+      expect(changeHandlerCall).toBeDefined();
+
+      await changeHandlerCall[1]([], []);
+
+      expect(configModule.markAsModified).toHaveBeenCalledWith(mockConfigStore);
+      // No debounce timer should even be scheduled once sync is confirmed unavailable, so
+      // advancing well past SYNC_DEBOUNCE_MS still must not trigger an upload.
+      await jest.advanceTimersByTimeAsync(5000);
+      expect(mockApiSync.uploadSettings).not.toHaveBeenCalled();
+    });
+
+    test('does not drop a change that arrives while a debounced upload is still in flight', async () => {
+      // Regression: uploadSettingsWithRetry's success/skipped/409/400 branches used to
+      // unconditionally clear state.pendingSync, discarding a change that arrived after
+      // the upload's snapshot was taken but before it resolved. Only the finally block
+      // should own clearing pendingSync, after acting on it.
+      const pagesHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'pages')[1];
+      const snippetsHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'snippets')[1];
+
+      let resolveFirstUpload;
+      mockApiSync.uploadSettings.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveFirstUpload = resolve;
+          }),
+      );
+
+      await pagesHandler([], []);
+      await jest.advanceTimersByTimeAsync(5000); // debounce fires -> upload starts, now pending
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(1);
+
+      // A second, independent change arrives while the first upload is still in flight.
+      await snippetsHandler();
+
+      // Let the in-flight upload succeed.
+      resolveFirstUpload({ success: true });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // The pending change must trigger a reprocessing (1s delay) which itself debounces
+      // another 5s before actually re-uploading.
+      await jest.advanceTimersByTimeAsync(1000 + 5000);
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(2);
+    });
+
+    test('does not drop a change that arrives while reconcileStaleUpload (409 recovery) holds the sync lock', async () => {
+      // Regression: reconcileStaleUpload's finally only cleared state.isSyncing and never
+      // consulted state.pendingSync, so a change that arrived while it was downloading +
+      // merging + re-uploading was silently dropped until the next periodic sync.
+      mockConfigStore.get.mockImplementation(key => {
+        const mockData = {
+          pages: [{ id: 1, name: 'Test Page' }],
+          snippets: [],
+          appearance: { theme: 'dark' },
+          advanced: { autoStart: true },
+        };
+        return mockData[key] ?? {};
+      });
+
+      const pagesHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'pages')[1];
+      const snippetsHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'snippets')[1];
+
+      // First upload attempt is rejected as stale (409), which schedules reconcileStaleUpload.
+      mockApiSync.uploadSettings.mockImplementationOnce(() =>
+        Promise.resolve({ error: { code: 'HTTP_409', message: 'stale', statusCode: 409 } }),
+      );
+
+      await pagesHandler([], []);
+      await jest.advanceTimersByTimeAsync(5000); // debounce -> upload -> 409 -> reconcile scheduled in 5s
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(1);
+
+      // reconcile's download starts here; hold it open so a change can arrive mid-reconcile.
+      let resolveDownload;
+      mockApiSync.downloadSettings.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveDownload = resolve;
+        }),
+      );
+      mockApiSync.uploadSettings.mockResolvedValueOnce({ success: true }); // reconcile's own re-upload
+
+      await jest.advanceTimersByTimeAsync(5000); // reconcile timer fires, download now pending
+
+      // A second, independent change arrives while reconciliation holds the sync lock.
+      await snippetsHandler();
+
+      resolveDownload({
+        success: true,
+        data: {},
+        normalized: { pages: [], snippets: [], appearance: {}, advanced: {} },
+      });
+      await jest.advanceTimersByTimeAsync(0);
+
+      // reconcile's own re-upload should have completed by now.
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(2);
+
+      // The change that arrived mid-reconcile must still be reprocessed: 1s delay, then a
+      // fresh 5s debounce, then another upload.
+      mockApiSync.uploadSettings.mockResolvedValueOnce({ success: true });
+      await jest.advanceTimersByTimeAsync(1000 + 5000);
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -701,6 +873,70 @@ describe('Cloud Sync Module', () => {
       const result = await cloudSync.syncSettings();
 
       expect(result.success).toBe(true);
+    });
+
+    test('holds the cloud-sync lock during the resolve peek download so a concurrent upload defers instead of colliding with api/sync.js\'s own lock', async () => {
+      // api/sync.js shares one isSyncing flag between its own upload/download. Without
+      // cloud-sync.js holding its own lock for this peek (which doesn't touch ConfigStore),
+      // a debounced upload could start concurrently and fail with a spurious "Sync already
+      // in progress" from api/sync.js instead of being deferred here.
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(false);
+
+      let resolveDownload;
+      mockApiSync.downloadSettings.mockReturnValue(
+        new Promise(resolve => {
+          resolveDownload = resolve;
+        }),
+      );
+
+      const resolvePromise = cloudSync.syncSettings('resolve');
+
+      // While the peek download is still in flight, a concurrent upload must be deferred
+      // at the cloud-sync level, never reaching apiSync.uploadSettings.
+      const concurrentUpload = await cloudSync.uploadSettings();
+      expect(concurrentUpload.success).toBe(false);
+      expect(mockApiSync.uploadSettings).not.toHaveBeenCalled();
+
+      resolveDownload({ success: true, data: {}, syncMetadata: { lastModifiedAt: Date.now() - 10 * 60 * 1000 } });
+      await resolvePromise;
+
+      // The lock must be released afterwards so normal syncing resumes.
+      mockApiSync.uploadSettings.mockResolvedValue({ success: true });
+      const uploadAfter = await cloudSync.uploadSettings();
+      expect(uploadAfter.success).toBe(true);
+    });
+
+    test('does not drop a change that arrives while the resolve peek download holds the sync lock', async () => {
+      // Regression: the peek download's finally only cleared state.isSyncing and never
+      // consulted state.pendingSync, so a change that arrived while server settings were
+      // being fetched for conflict analysis was silently dropped until the next periodic sync.
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(false);
+
+      const pagesHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'pages')[1];
+
+      let resolveDownload;
+      mockApiSync.downloadSettings.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveDownload = resolve;
+        }),
+      );
+
+      const resolvePromise = cloudSync.syncSettings('resolve');
+
+      // A change arrives while the peek download holds the sync lock.
+      await pagesHandler([], []);
+
+      resolveDownload({ success: true, data: {}, syncMetadata: { lastModifiedAt: Date.now() - 10 * 60 * 1000 } });
+      await resolvePromise;
+
+      // The change that arrived mid-peek must still be reprocessed: 1s delay, then a
+      // fresh 5s debounce, then an upload.
+      mockApiSync.uploadSettings.mockResolvedValueOnce({ success: true });
+      await jest.advanceTimersByTimeAsync(1000 + 5000);
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(1);
     });
   });
 
