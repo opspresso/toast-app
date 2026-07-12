@@ -177,6 +177,40 @@ describe('Authentication Manager', () => {
       expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('auth-state-changed', expect.objectContaining({ isAuthenticated: false }));
     });
 
+    test('logs out only once when the session-expired handler and the requireRelogin check both fire for the same dead session', async () => {
+      // In auth.js, a SESSION_EXPIRED refresh failure fires the session-expired handler
+      // (fire-and-forget) before returning a result with requireRelogin: true — which this
+      // module's refreshAccessToken() also checks and logs out on. Simulate both firing for
+      // the same event, as they do in the real (unmocked) auth.js. auth.logout() itself is
+      // held pending (as it would be for the real revoke-token network call's duration) so
+      // the dedup window is actually open when the second trigger checks it.
+      const sessionExpiredHandler = mockAuth.setSessionExpiredHandler.mock.calls[0][0];
+      const mockResult = {
+        success: false,
+        error: 'Your login session has expired. Please log in again.',
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true,
+      };
+      let resolveAuthLogout;
+      mockAuth.logout.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveAuthLogout = resolve;
+        }),
+      );
+      mockAuth.refreshAccessToken.mockImplementation(async () => {
+        sessionExpiredHandler(); // fire-and-forget, as auth.js does internally
+        return mockResult;
+      });
+
+      const resultPromise = authManager.refreshAccessToken();
+      resolveAuthLogout(true);
+      const result = await resultPromise;
+
+      expect(result).toEqual(mockResult);
+      expect(mockAuth.logout).toHaveBeenCalledTimes(1);
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalledTimes(1);
+    });
+
     test('should not log out when refresh fails for a reason other than requireRelogin', async () => {
       const mockResult = { success: false, error: 'Network error', code: 'REFRESH_FAILED' };
       mockAuth.refreshAccessToken.mockResolvedValue(mockResult);
@@ -486,6 +520,40 @@ describe('Authentication Manager', () => {
       const result = await authManager.logout();
 
       expect(result).toBe(false);
+    });
+
+    test('shares a single in-flight logout when triggered concurrently by more than one caller', async () => {
+      // A dead session can be discovered through more than one path at once — e.g. auth.js's
+      // own session-expired handler (fire-and-forget) racing with an explicit requireRelogin
+      // check in refreshAccessToken/fetchUserProfile/fetchSubscription. Both call logout()
+      // for the same underlying event; only one should actually run (server revoke, user
+      // data cleanup, window notifications), and every caller should get the same result.
+      let resolveAuthLogout;
+      mockAuth.logout.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveAuthLogout = resolve;
+        }),
+      );
+
+      const firstCall = authManager.logout();
+      const secondCall = authManager.logout();
+
+      resolveAuthLogout(true);
+      const [firstResult, secondResult] = await Promise.all([firstCall, secondCall]);
+
+      expect(mockAuth.logout).toHaveBeenCalledTimes(1);
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalledTimes(1);
+      expect(firstResult).toBe(true);
+      expect(secondResult).toBe(true);
+    });
+
+    test('runs a fresh logout again after a previous one has fully completed', async () => {
+      mockAuth.logout.mockResolvedValue(true);
+
+      await authManager.logout();
+      await authManager.logout();
+
+      expect(mockAuth.logout).toHaveBeenCalledTimes(2);
     });
   });
 

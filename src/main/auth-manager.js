@@ -28,6 +28,15 @@ let syncManager = null;
 // since happened and skip sending a now-stale notification.
 let authSequence = 0;
 
+// A dead session can be discovered through more than one path at once — e.g. auth.js's
+// own session-expired handler (fire-and-forget) and this module's requireRelogin checks
+// in refreshAccessToken/fetchUserProfile/fetchSubscription all call logout() for the same
+// underlying event. Sharing one in-flight promise (mirrors auth.js's refreshPromise dedup)
+// keeps logout() safe to call from all of them without revoking the token or notifying
+// both windows more than once per actual logout.
+let isLoggingOut = false;
+let logoutPromise = null;
+
 /**
  * Set up cloud synchronization manager
  * @param {Object} syncMgr - Synchronization manager instance
@@ -303,65 +312,83 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
  * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
+  // Another trigger (e.g. auth.js's session-expired handler) already has a logout in
+  // flight — share its result instead of running the whole flow (server revoke, user data
+  // cleanup, window notifications) a second time for the same underlying event.
+  if (isLoggingOut && logoutPromise) {
+    logger.info('Logout already in progress; sharing in-flight result');
+    return logoutPromise;
+  }
+
+  isLoggingOut = true;
   authSequence += 1;
-  try {
-    logger.info('Starting logout process');
-    const result = await auth.logout();
 
-    // Stop periodic synchronization and update cloud sync settings when logout is successful
-    if (result && syncManager) {
-      // Disable synchronization feature and stop periodic synchronization
-      if (typeof syncManager.updateCloudSyncSettings === 'function') {
-        syncManager.updateCloudSyncSettings(false);
+  logoutPromise = (async () => {
+    try {
+      logger.info('Starting logout process');
+      const result = await auth.logout();
+
+      // Stop periodic synchronization and update cloud sync settings when logout is successful
+      if (result && syncManager) {
+        // Disable synchronization feature and stop periodic synchronization
+        if (typeof syncManager.updateCloudSyncSettings === 'function') {
+          syncManager.updateCloudSyncSettings(false);
+        }
+        if (typeof syncManager.stopPeriodicSync === 'function') {
+          syncManager.stopPeriodicSync();
+        }
+
+        logger.info('Cloud synchronization disabled and periodic synchronization stopped due to logout');
       }
-      if (typeof syncManager.stopPeriodicSync === 'function') {
-        syncManager.stopPeriodicSync();
+
+      // Clean up user data when logout is successful
+      if (result) {
+        userDataManager.cleanupOnLogout();
+        logger.info('User data cleanup completed due to logout');
+
+        // Get current configuration
+        const config = createConfigStore();
+
+        // Reset subscription information only. pages/appearance/advanced are left untouched —
+        // they are the user's actual content and this device may hold the only unsynced copy
+        // (offline edits, sync disabled, or the upload debounce hadn't fired). Deleting them
+        // locally on logout is unrecoverable if the copy was never uploaded.
+        config.set('subscription', {
+          isAuthenticated: false,
+          isSubscribed: false,
+          expiresAt: '',
+          pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
+        });
+
+        logger.info('Subscription reset to anonymous defaults on logout');
+
+        // Send app authentication state change notification
+        notifyAuthStateChange({
+          isAuthenticated: false,
+          profile: DEFAULT_ANONYMOUS,
+          settings: null,
+        });
+        logger.info('Authentication state change notification sent');
       }
 
-      logger.info('Cloud synchronization disabled and periodic synchronization stopped due to logout');
+      // Send notification to both windows when logout is successful
+      if (result) {
+        notifyLogout();
+      }
+
+      return result;
     }
-
-    // Clean up user data when logout is successful
-    if (result) {
-      userDataManager.cleanupOnLogout();
-      logger.info('User data cleanup completed due to logout');
-
-      // Get current configuration
-      const config = createConfigStore();
-
-      // Reset subscription information only. pages/appearance/advanced are left untouched —
-      // they are the user's actual content and this device may hold the only unsynced copy
-      // (offline edits, sync disabled, or the upload debounce hadn't fired). Deleting them
-      // locally on logout is unrecoverable if the copy was never uploaded.
-      config.set('subscription', {
-        isAuthenticated: false,
-        isSubscribed: false,
-        expiresAt: '',
-        pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
-      });
-
-      logger.info('Subscription reset to anonymous defaults on logout');
-
-      // Send app authentication state change notification
-      notifyAuthStateChange({
-        isAuthenticated: false,
-        profile: DEFAULT_ANONYMOUS,
-        settings: null,
-      });
-      logger.info('Authentication state change notification sent');
+    catch (error) {
+      logger.error('Error logging out:', error);
+      return false;
     }
-
-    // Send notification to both windows when logout is successful
-    if (result) {
-      notifyLogout();
+    finally {
+      isLoggingOut = false;
+      logoutPromise = null;
     }
+  })();
 
-    return result;
-  }
-  catch (error) {
-    logger.error('Error logging out:', error);
-    return false;
-  }
+  return logoutPromise;
 }
 
 /**
