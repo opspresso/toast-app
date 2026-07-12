@@ -414,7 +414,10 @@ async function handleAuthRedirect(url) {
       else {
         // If not authenticated, start login process
         logger.info('Not authenticated, initiating login process');
-        return await initiateLogin();
+        // initiateLogin() resolves to a boolean, but handleAuthRedirect's contract
+        // (and its caller's result.success check) expects an object.
+        const started = await initiateLogin();
+        return { success: started };
       }
     }
 
@@ -458,7 +461,10 @@ async function handleAuthRedirect(url) {
         else {
           // If not authenticated, start login process
           logger.info('Not authenticated, initiating login process');
-          return await initiateLogin();
+          // initiateLogin() resolves to a boolean, but handleAuthRedirect's contract
+          // (and its caller's result.success check) expects an object.
+          const started = await initiateLogin();
+          return { success: started };
         }
       }
 

@@ -254,6 +254,19 @@ describe('Main Auth Module (P0)', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid URL');
     });
+
+    test('reload_auth deep link returns an object result when starting login for an unauthenticated user', async () => {
+      // initiateLogin() resolves to a bare boolean, but handleAuthRedirect's callers
+      // (e.g. src/index.js) check result.success — a bare `true` would read as failure.
+      mockClient.getAccessToken.mockReturnValue(null);
+      mockFs.existsSync.mockReturnValue(false); // no stored token file either
+
+      const redirectUrl = 'toast-app://auth?action=reload_auth&token=abc123&userId=user1';
+      const result = await auth.handleAuthRedirect(redirectUrl);
+
+      expect(result).toEqual({ success: true });
+      expect(mockShell.openExternal).toHaveBeenCalled();
+    });
   });
 
   describe('Token Management', () => {
