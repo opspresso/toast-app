@@ -896,6 +896,38 @@ describe('Cloud Sync Module', () => {
       const uploadAfter = await cloudSync.uploadSettings();
       expect(uploadAfter.success).toBe(true);
     });
+
+    test('does not drop a change that arrives while the resolve peek download holds the sync lock', async () => {
+      // Regression: the peek download's finally only cleared state.isSyncing and never
+      // consulted state.pendingSync, so a change that arrived while server settings were
+      // being fetched for conflict analysis was silently dropped until the next periodic sync.
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(false);
+
+      const pagesHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'pages')[1];
+
+      let resolveDownload;
+      mockApiSync.downloadSettings.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveDownload = resolve;
+        }),
+      );
+
+      const resolvePromise = cloudSync.syncSettings('resolve');
+
+      // A change arrives while the peek download holds the sync lock.
+      await pagesHandler([], []);
+
+      resolveDownload({ success: true, data: {}, syncMetadata: { lastModifiedAt: Date.now() - 10 * 60 * 1000 } });
+      await resolvePromise;
+
+      // The change that arrived mid-peek must still be reprocessed: 1s delay, then a
+      // fresh 5s debounce, then an upload.
+      mockApiSync.uploadSettings.mockResolvedValueOnce({ success: true });
+      await jest.advanceTimersByTimeAsync(1000 + 5000);
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('Enable/Disable Functionality', () => {

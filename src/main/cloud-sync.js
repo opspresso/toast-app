@@ -642,6 +642,7 @@ async function syncSettings(action = 'resolve') {
       }
       finally {
         state.isSyncing = false;
+        reprocessPendingSync();
       }
 
       if (!serverResult.success) {
