@@ -192,5 +192,33 @@ describe('Configuration Store', () => {
       const data = { pages: [], snippets: [{ keyword: ':x', content: 'y' }], appearance: {}, advanced: {} };
       expect(generateDataHash(data)).toBe(generateDataHash({ ...data }));
     });
+
+    test('detects content changes even when array lengths are unchanged', () => {
+      // A JSON.stringify(value, arrayOfKeys) call treats the array as a property
+      // allowlist applied at every nesting level, not a sort — so nested fields
+      // like button names/shortcuts or a snippet's content would be silently
+      // stripped and two differently-edited datasets would hash identically.
+      const { generateDataHash } = require('../../src/main/config');
+      const before = {
+        pages: [{ name: 'Page 1', buttons: [{ name: 'btn1', shortcut: 'a' }] }],
+        snippets: [{ keyword: ':x', content: 'before' }],
+        appearance: { theme: 'dark' },
+        advanced: { launchAtLogin: false },
+      };
+      const after = {
+        pages: [{ name: 'Page 1', buttons: [{ name: 'btn1-renamed', shortcut: 'b' }] }],
+        snippets: [{ keyword: ':x', content: 'after' }],
+        appearance: { theme: 'light' },
+        advanced: { launchAtLogin: true },
+      };
+      expect(generateDataHash(before)).not.toBe(generateDataHash(after));
+    });
+
+    test('is independent of nested key insertion order', () => {
+      const { generateDataHash } = require('../../src/main/config');
+      const a = { pages: [], snippets: [], appearance: { theme: 'dark', accentColor: 'blue' }, advanced: {} };
+      const b = { pages: [], snippets: [], appearance: { accentColor: 'blue', theme: 'dark' }, advanced: {} };
+      expect(generateDataHash(a)).toBe(generateDataHash(b));
+    });
   });
 });

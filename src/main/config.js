@@ -526,6 +526,26 @@ function getDeviceId() {
 }
 
 /**
+ * Deterministically stringify a value: object keys are sorted recursively at every
+ * nesting level so semantically identical data always produces the same string,
+ * regardless of key insertion order. A plain JSON.stringify(value, arrayOfKeys) does NOT
+ * do this — when the replacer argument is an array, it is treated as a property allowlist
+ * applied at every level, so nested keys not in that array are silently stripped.
+ * @param {*} value - Value to stringify
+ * @returns {string} Deterministic JSON string
+ */
+function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    const keys = Object.keys(value).sort();
+    return `{${keys.map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
  * Generate data hash for change detection
  * @param {Object} data - Data to hash
  * @returns {string} Hash string
@@ -539,7 +559,7 @@ function generateDataHash(data) {
     appearance: data.appearance || {},
     advanced: data.advanced || {},
   };
-  const dataString = JSON.stringify(coreData, Object.keys(coreData).sort());
+  const dataString = stableStringify(coreData);
   return crypto.createHash('sha256').update(dataString).digest('hex');
 }
 
