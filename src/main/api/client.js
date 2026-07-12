@@ -151,16 +151,25 @@ async function authenticatedRequest(apiCall, options = {}) {
       const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
 
       if (timeSinceLastRefresh < tokenRefreshTracking.refreshCooldownMs) {
-        if (allowUnauthenticated && defaultValue) {
-          return defaultValue;
+        // Another concurrent request may have already refreshed the token within this
+        // cooldown window, so retry with the current token before falling back — otherwise
+        // a valid session gets treated as unauthenticated just because a sibling request
+        // happened to refresh moments earlier.
+        try {
+          return await apiCall();
         }
+        catch (retryError) {
+          if (allowUnauthenticated && defaultValue) {
+            return defaultValue;
+          }
 
-        return {
-          error: {
-            code: 'AUTH_REFRESH_RATE_LIMIT',
-            message: 'Authentication refresh rate limit exceeded. Please try again later.',
-          },
-        };
+          return {
+            error: {
+              code: 'AUTH_REFRESH_RATE_LIMIT',
+              message: 'Authentication refresh rate limit exceeded. Please try again later.',
+            },
+          };
+        }
       }
 
       if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
