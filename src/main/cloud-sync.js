@@ -253,7 +253,28 @@ function scheduleRetry(failureReasonSuffix, exceededMessage) {
   else {
     logger.error(exceededMessage);
     state.retryCount = 0;
+    // pendingSync is left untouched: only uploadSettingsWithRetry's finally block clears
+    // it, after acting on it — clearing it here would drop a change that arrived during
+    // this failed attempt without ever rescheduling it.
+  }
+}
+
+/**
+ * If a change arrived while this module was busy holding state.isSyncing (and so got
+ * marked pending instead of being scheduled directly), reschedule it now that the lock
+ * is about to be released. Must be called from every code path that can consume a
+ * pendingSync set while it was running (currently uploadSettingsWithRetry and
+ * reconcileStaleUpload), or that change is silently dropped until the next periodic sync.
+ */
+function reprocessPendingSync() {
+  if (state.pendingSync) {
+    logger.info('Processing pending sync request');
     state.pendingSync = false;
+    setTimeout(() => {
+      if (state.lastChangeType) {
+        scheduleSync(state.lastChangeType);
+      }
+    }, 1000); // Retry after 1 second
   }
 }
 
@@ -273,17 +294,20 @@ async function uploadSettingsWithRetry() {
     state.isSyncing = true;
     const result = await uploadSettings(true); // Indicate this is an internal call
 
+    // None of the branches below clear state.pendingSync — only the finally block does,
+    // after acting on it. A change that arrives mid-upload (after the snapshot in
+    // uploadSettings() was taken) sets pendingSync regardless of how this attempt
+    // resolves, and clearing it here — before finally gets to check it — would silently
+    // drop that change instead of rescheduling it.
     if (result.success) {
       logger.info(`Cloud synchronization successful for '${state.lastChangeType}' change`);
       state.retryCount = 0;
-      state.pendingSync = false;
       state.lastChangeHash = null; // Reset hash on success
     }
     else if (result.skipped) {
       // Skipped because there are no pages to upload (empty pages guard) — not a failure, so no retry
       logger.info('Upload skipped (no page data); not retrying');
       state.retryCount = 0;
-      state.pendingSync = false;
       state.lastChangeHash = null;
     }
     else if (result.statusCode === 409) {
@@ -291,7 +315,6 @@ async function uploadSettingsWithRetry() {
       // overwrite and lose local changes, so reconcile via the merge path (resolve) to preserve them
       logger.warn('Upload rejected as stale (409); scheduling conflict resolution to preserve local changes');
       state.retryCount = 0;
-      state.pendingSync = false;
       state.lastChangeHash = null;
       // Schedule the merge reconciliation to run after isSyncing is released (finally).
       // Use a reconcile slot separate from the retry slot so they don't overwrite each other.
@@ -307,7 +330,6 @@ async function uploadSettingsWithRetry() {
       // Payload validation failed — retrying would fail identically, so stop
       logger.error(`Upload rejected as invalid (400), not retrying: ${result.error}`);
       state.retryCount = 0;
-      state.pendingSync = false;
       state.lastChangeHash = null;
     }
     else {
@@ -321,17 +343,7 @@ async function uploadSettingsWithRetry() {
   }
   finally {
     state.isSyncing = false;
-
-    // Process any pending sync
-    if (state.pendingSync) {
-      logger.info('Processing pending sync request');
-      state.pendingSync = false;
-      setTimeout(() => {
-        if (state.lastChangeType) {
-          scheduleSync(state.lastChangeType);
-        }
-      }, 1000); // Retry after 1 second
-    }
+    reprocessPendingSync();
   }
 }
 
@@ -753,6 +765,7 @@ async function reconcileStaleUpload() {
   }
   finally {
     state.isSyncing = false;
+    reprocessPendingSync();
   }
 }
 

@@ -641,6 +641,101 @@ describe('Cloud Sync Module', () => {
       expect(configModule.markAsModified).toHaveBeenCalledWith(mockConfigStore);
       expect(mockApiSync.uploadSettings).not.toHaveBeenCalled();
     });
+
+    test('does not drop a change that arrives while a debounced upload is still in flight', async () => {
+      // Regression: uploadSettingsWithRetry's success/skipped/409/400 branches used to
+      // unconditionally clear state.pendingSync, discarding a change that arrived after
+      // the upload's snapshot was taken but before it resolved. Only the finally block
+      // should own clearing pendingSync, after acting on it.
+      const pagesHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'pages')[1];
+      const snippetsHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'snippets')[1];
+
+      let resolveFirstUpload;
+      mockApiSync.uploadSettings.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveFirstUpload = resolve;
+          }),
+      );
+
+      await pagesHandler([], []);
+      await jest.advanceTimersByTimeAsync(5000); // debounce fires -> upload starts, now pending
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(1);
+
+      // A second, independent change arrives while the first upload is still in flight.
+      await snippetsHandler();
+
+      // Let the in-flight upload succeed.
+      resolveFirstUpload({ success: true });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // The pending change must trigger a reprocessing (1s delay) which itself debounces
+      // another 5s before actually re-uploading.
+      await jest.advanceTimersByTimeAsync(1000 + 5000);
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(2);
+    });
+
+    test('does not drop a change that arrives while reconcileStaleUpload (409 recovery) holds the sync lock', async () => {
+      // Regression: reconcileStaleUpload's finally only cleared state.isSyncing and never
+      // consulted state.pendingSync, so a change that arrived while it was downloading +
+      // merging + re-uploading was silently dropped until the next periodic sync.
+      mockConfigStore.get.mockImplementation(key => {
+        const mockData = {
+          pages: [{ id: 1, name: 'Test Page' }],
+          snippets: [],
+          appearance: { theme: 'dark' },
+          advanced: { autoStart: true },
+        };
+        return mockData[key] ?? {};
+      });
+
+      const pagesHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'pages')[1];
+      const snippetsHandler = mockConfigStore.onDidChange.mock.calls.find(call => call[0] === 'snippets')[1];
+
+      // First upload attempt is rejected as stale (409), which schedules reconcileStaleUpload.
+      mockApiSync.uploadSettings.mockImplementationOnce(() =>
+        Promise.resolve({ error: { code: 'HTTP_409', message: 'stale', statusCode: 409 } }),
+      );
+
+      await pagesHandler([], []);
+      await jest.advanceTimersByTimeAsync(5000); // debounce -> upload -> 409 -> reconcile scheduled in 5s
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(1);
+
+      // reconcile's download starts here; hold it open so a change can arrive mid-reconcile.
+      let resolveDownload;
+      mockApiSync.downloadSettings.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveDownload = resolve;
+        }),
+      );
+      mockApiSync.uploadSettings.mockResolvedValueOnce({ success: true }); // reconcile's own re-upload
+
+      await jest.advanceTimersByTimeAsync(5000); // reconcile timer fires, download now pending
+
+      // A second, independent change arrives while reconciliation holds the sync lock.
+      await snippetsHandler();
+
+      resolveDownload({
+        success: true,
+        data: {},
+        normalized: { pages: [], snippets: [], appearance: {}, advanced: {} },
+      });
+      await jest.advanceTimersByTimeAsync(0);
+
+      // reconcile's own re-upload should have completed by now.
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(2);
+
+      // The change that arrived mid-reconcile must still be reprocessed: 1s delay, then a
+      // fresh 5s debounce, then another upload.
+      mockApiSync.uploadSettings.mockResolvedValueOnce({ success: true });
+      await jest.advanceTimersByTimeAsync(1000 + 5000);
+
+      expect(mockApiSync.uploadSettings).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('Login Sync', () => {
