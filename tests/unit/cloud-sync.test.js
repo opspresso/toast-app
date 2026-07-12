@@ -630,6 +630,13 @@ describe('Cloud Sync Module', () => {
       // of preserving it via merge.
       const configModule = require('../../src/main/config');
       mockAuthManager.hasValidToken.mockResolvedValue(false);
+      // canSync() delegates the actual availability decision to apiSync.isCloudSyncEnabled
+      // (which internally calls hasValidToken in production) — that module is fully mocked
+      // here, so hasValidToken alone has no effect on canSync()'s result unless this is also
+      // set, to mirror what the real isCloudSyncEnabled returns when logged out. Without it,
+      // canSync() stays true, scheduleSync() would only be skipped because the debounce
+      // timer is never advanced — not because sync was actually blocked.
+      mockApiSync.isCloudSyncEnabled.mockResolvedValue(false);
 
       const changeHandlerCall = mockConfigStore.onDidChange.mock.calls.find(call =>
         call[0] === 'pages' && typeof call[1] === 'function'
@@ -639,6 +646,9 @@ describe('Cloud Sync Module', () => {
       await changeHandlerCall[1]([], []);
 
       expect(configModule.markAsModified).toHaveBeenCalledWith(mockConfigStore);
+      // No debounce timer should even be scheduled once sync is confirmed unavailable, so
+      // advancing well past SYNC_DEBOUNCE_MS still must not trigger an upload.
+      await jest.advanceTimersByTimeAsync(5000);
       expect(mockApiSync.uploadSettings).not.toHaveBeenCalled();
     });
 
