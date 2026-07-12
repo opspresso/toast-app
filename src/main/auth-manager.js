@@ -347,7 +347,17 @@ async function fetchUserProfile(forceRefresh = false) {
     return storedProfile;
   }
 
-  return await auth.fetchUserProfile();
+  const profileData = await auth.fetchUserProfile();
+
+  // A dead session surfaces here as an error with requireRelogin (auth.js's own
+  // refreshAccessToken only clears the local token file, it doesn't run the full
+  // app-level logout), so run it here instead of leaving the app in a stale
+  // "logged in" state.
+  if (profileData?.error?.requireRelogin) {
+    await logout();
+  }
+
+  return profileData;
 }
 
 /**
@@ -364,6 +374,11 @@ async function fetchSubscription(forceRefresh = false) {
 
   // Call API if no stored information or force refresh
   const profileData = await auth.fetchUserProfile();
+
+  // See fetchUserProfile() above for why this needs to run the full logout.
+  if (profileData?.error?.requireRelogin) {
+    await logout();
+  }
 
   if (profileData && profileData.subscription) {
     // Successfully retrieved profile data with subscription information

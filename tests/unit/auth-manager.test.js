@@ -195,6 +195,19 @@ describe('Authentication Manager', () => {
 
       expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(false);
     });
+
+    test('fully logs out when the profile fetch signals a dead session (requireRelogin)', async () => {
+      // auth.js's own refreshAccessToken (used as fetchUserProfile's onUnauthorized)
+      // only clears the local token file, it doesn't stop sync or notify the windows —
+      // that must happen here instead, or the app is left looking logged in.
+      mockUserDataManager.getUserProfile.mockResolvedValue(null); // force the cache-miss path
+      mockAuth.fetchUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
+
+      await authManager.fetchUserProfile();
+
+      expect(mockAuth.logout).toHaveBeenCalled();
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalled();
+    });
   });
 
   describe('Subscription Management', () => {
@@ -214,6 +227,16 @@ describe('Authentication Manager', () => {
 
       const result = await authManager.fetchSubscription();
 
+      expect(result).toEqual({ isSubscribed: false });
+    });
+
+    test('fully logs out when the subscription fetch signals a dead session (requireRelogin)', async () => {
+      mockUserDataManager.getUserProfile.mockResolvedValue(null); // force the cache-miss path
+      mockAuth.fetchUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
+
+      const result = await authManager.fetchSubscription();
+
+      expect(mockAuth.logout).toHaveBeenCalled();
       expect(result).toEqual({ isSubscribed: false });
     });
   });
