@@ -426,6 +426,106 @@ describe('Main Auth Module (P0)', () => {
       expect(secondResult.success).toBe(true);
       expect(secondResult.code).not.toBe('REFRESH_THROTTLED');
     });
+
+    test('concurrent refreshAccessToken calls share the in-flight promise instead of one being throttled', async () => {
+      // The dedup check (isRefreshing && refreshPromise) must run before the throttle
+      // window check, or a second caller arriving while a refresh is already in flight
+      // gets misrouted into REFRESH_THROTTLED instead of sharing the same promise.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      let resolveRefresh;
+      // mockImplementationOnce (not mockReturnValue/mockResolvedValue): the latter would
+      // permanently pin refreshAccessToken to this one already-settled Promise instance,
+      // leaking into every later test that calls it.
+      mockApiAuth.refreshAccessToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveRefresh = resolve;
+          }),
+      );
+
+      const firstCall = auth.refreshAccessToken();
+      const secondCall = auth.refreshAccessToken();
+
+      // refreshAccessToken awaits isTokenExpired() (itself a chain of awaits) before
+      // calling apiAuth.refreshAccessToken, so let all pending microtasks flush before
+      // resolveRefresh is guaranteed to have been assigned.
+      await new Promise(resolve => setImmediate(resolve));
+
+      resolveRefresh({ success: true, access_token: 'refreshed-token', expires_in: 3600 });
+
+      const [firstResult, secondResult] = await Promise.all([firstCall, secondCall]);
+
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(firstResult.success).toBe(true);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.code).not.toBe('REFRESH_THROTTLED');
+    });
+
+    test('hasValidToken triggers the registered session-expired handler on a dead session', async () => {
+      // hasValidToken refreshes internally without going through auth-manager's own
+      // requireRelogin checks, so it must still notify the app of a dead session instead
+      // of silently leaving the UI in a stale "logged in" state.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'dead-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      mockApiAuth.refreshAccessToken.mockResolvedValue({
+        success: false,
+        code: 'SESSION_EXPIRED',
+        requireRelogin: true,
+      });
+
+      const handler = jest.fn();
+      auth.setSessionExpiredHandler(handler);
+
+      const isValid = await auth.hasValidToken();
+      await Promise.resolve();
+
+      expect(isValid).toBe(false);
+      expect(handler).toHaveBeenCalled();
+    });
+
+    test('logout prevents an in-flight refresh from resurrecting the deleted token file', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      let resolveRefresh;
+      // mockImplementationOnce so this settled Promise instance doesn't leak into later
+      // tests the way a permanent mockReturnValue/mockResolvedValue would.
+      mockApiAuth.refreshAccessToken.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveRefresh = resolve;
+          }),
+      );
+
+      const refreshPromise = auth.refreshAccessToken();
+
+      // logout() runs to completion while the refresh above is still in flight.
+      mockFs.writeFileSync.mockClear();
+      await auth.logout();
+
+      // The refresh completes afterwards with a rotated token.
+      resolveRefresh({ success: true, access_token: 'new-token', refresh_token: 'new-refresh-token', expires_in: 3600 });
+      const refreshResult = await refreshPromise;
+
+      expect(refreshResult.success).toBe(false);
+      // The logout-deleted token file must not be resurrected by the late refresh response.
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    });
   });
 
   describe('User Profile Management', () => {

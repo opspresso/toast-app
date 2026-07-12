@@ -15,6 +15,7 @@ const mockAuth = {
   getAccessToken: jest.fn(),
   hasValidToken: jest.fn(),
   refreshAccessToken: jest.fn(),
+  setSessionExpiredHandler: jest.fn(),
 };
 
 const mockUserDataManager = {
@@ -114,10 +115,19 @@ describe('Authentication Manager', () => {
 
     test('should handle null windows gracefully', () => {
       authManager.initialize(null);
-      
+
       // Should handle null windows and maintain functionality
       expect(typeof authManager.hasValidToken).toBe('function');
       expect(typeof authManager.notifyLoginSuccess).toBe('function');
+    });
+
+    test('registers a session-expired handler with auth.js so a dead session detected outside requireRelogin checks (e.g. hasValidToken) still triggers a full logout', async () => {
+      expect(mockAuth.setSessionExpiredHandler).toHaveBeenCalledWith(expect.any(Function));
+
+      const handler = mockAuth.setSessionExpiredHandler.mock.calls[0][0];
+      await handler();
+
+      expect(mockAuth.logout).toHaveBeenCalled();
     });
   });
 
@@ -351,6 +361,39 @@ describe('Authentication Manager', () => {
 
       expect(DEFAULT_ANONYMOUS_SUBSCRIPTION.features).toBe(sharedFeatures);
       expect(sharedFeatures.cloud_sync).toBeUndefined();
+    });
+
+    test('skips the stale post-login auth-state notification when logout runs during the background sync', async () => {
+      // exchangeCodeForTokenAndUpdateSubscription kicks off its settings sync in the
+      // background (fire-and-forget). If a logout completes before that background work
+      // finishes, its "isAuthenticated: true" notification must not overwrite the logout.
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: { active: true },
+      });
+      mockAuth.fetchUserProfile.mockResolvedValue({ email: 'test@example.com' });
+
+      let resolveUserSettings;
+      mockUserDataManager.getUserSettings.mockReturnValue(
+        new Promise(resolve => {
+          resolveUserSettings = resolve;
+        }),
+      );
+
+      const loginResult = await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+      expect(loginResult.success).toBe(true);
+
+      // The background sync is now awaiting getUserSettings. Log out while it's pending.
+      await authManager.logout();
+      mockWindows.toast.webContents.send.mockClear();
+
+      // The background sync resumes and must see a newer auth event has happened since
+      // it started, so it must not re-announce isAuthenticated: true.
+      resolveUserSettings({ pages: [] });
+      await new Promise(resolve => setImmediate(resolve));
+
+      const authStateCalls = mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed');
+      expect(authStateCalls).toHaveLength(0);
     });
   });
 

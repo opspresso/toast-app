@@ -551,6 +551,19 @@ let lastTokenRefresh = 0;
 let isRefreshing = false;
 let refreshPromise = null;
 
+// Invoked when a refresh discovers the session itself is dead (SESSION_EXPIRED), so callers
+// that reach refreshAccessToken outside auth-manager's own requireRelogin checks (e.g.
+// hasValidToken's automatic refresh) still trigger a full app-level logout instead of
+// silently leaving the app in a stale "logged in" state.
+let sessionExpiredHandler = null;
+function setSessionExpiredHandler(fn) {
+  sessionExpiredHandler = fn;
+}
+
+// Timestamp of the most recent logout() call, used to detect a refresh that was already
+// in flight when logout() ran (see the storeTokens guard below).
+let lastLogoutAt = 0;
+
 /**
  * Get new access token using refresh token
  * @returns {Promise<object>} Token refresh result (success: boolean, error?: string)
@@ -558,6 +571,14 @@ let refreshPromise = null;
 async function refreshAccessToken() {
   try {
     logger.info('Starting token refresh process');
+
+    // If already refreshing, return the ongoing refresh promise instead of starting a new
+    // one. Checked before the throttle window below so a second caller sharing the same
+    // in-flight refresh isn't misrouted into REFRESH_THROTTLED.
+    if (isRefreshing && refreshPromise) {
+      logger.info('Token refresh already in progress. Returning existing promise to prevent duplicate requests.');
+      return refreshPromise;
+    }
 
     // Throttling: Skip if not enough time has passed since last refresh request
     const now = Date.now();
@@ -585,15 +606,10 @@ async function refreshAccessToken() {
       }
     }
 
-    // If already refreshing, return the ongoing refresh promise instead of starting a new one
-    if (isRefreshing && refreshPromise) {
-      logger.info('Token refresh already in progress. Returning existing promise to prevent duplicate requests.');
-      return refreshPromise;
-    }
-
     // Set refresh state and create a promise that will be shared across concurrent calls
     isRefreshing = true;
     lastTokenRefresh = now;
+    const refreshStartedAt = now;
 
     // Create a new shared promise for this refresh operation
     refreshPromise = (async () => {
@@ -648,6 +664,15 @@ async function refreshAccessToken() {
             // Delete local token file
             await clearLocalTokenStorage();
             logger.info('Expired tokens reset complete');
+
+            // Notify the app-level logout handler so callers that reach this refresh
+            // directly (e.g. hasValidToken) also stop cloud sync and update the UI,
+            // instead of only clearing local token storage.
+            if (sessionExpiredHandler) {
+              Promise.resolve(sessionExpiredHandler()).catch(handlerError => {
+                logger.error('Session-expired handler failed:', handlerError);
+              });
+            }
           }
 
           // Only a successful refresh should start the cooldown — leaving it set after a
@@ -658,7 +683,20 @@ async function refreshAccessToken() {
           return refreshResult;
         }
 
-        // On success, store new tokens
+        // On success, store new tokens — unless logout() ran at or after this refresh
+        // started (>=, not >: Date.now() has only millisecond resolution, so a logout
+        // landing in the same tick as the refresh start must still win), in which case
+        // the token file was already deleted and this response's rotated token was never
+        // revoked; writing it back would silently undo the logout.
+        if (lastLogoutAt >= refreshStartedAt) {
+          logger.warn('Logout occurred during token refresh; discarding refreshed tokens');
+          return {
+            success: false,
+            error: 'Logged out during token refresh',
+            code: 'LOGGED_OUT_DURING_REFRESH',
+          };
+        }
+
         const { access_token, refresh_token, expires_in } = refreshResult;
 
         const tokenExpiresIn = resolveExpiresIn(expires_in);
@@ -706,6 +744,10 @@ async function refreshAccessToken() {
  */
 async function logout() {
   try {
+    // Recorded before anything else so a refresh already in flight can tell it started
+    // before this logout and must not resurrect the token file it's about to delete.
+    lastLogoutAt = Date.now();
+
     // Revoke the refresh token on the server before deleting it locally, so
     // it cannot be used to mint new access tokens after logout.
     const refreshToken = await getStoredRefreshToken();
@@ -979,4 +1021,5 @@ module.exports = {
   getAccessToken,
   updatePageGroupSettings,
   refreshAccessToken,
+  setSessionExpiredHandler,
 };

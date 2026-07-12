@@ -247,8 +247,10 @@ async function authenticatedRequest(apiCall, options = {}) {
             }
           }
         }
-        else {
-          // Reset tokens on refresh failure
+        else if (refreshResult && refreshResult.requireRelogin) {
+          // The refresh callback identified the session itself as dead (e.g. the refresh
+          // token was rejected as expired/invalid) — reset tokens so the app doesn't keep
+          // retrying with credentials that can never succeed again.
           clearTokens();
 
           if (isSubscriptionRequest) {
@@ -260,6 +262,26 @@ async function authenticatedRequest(apiCall, options = {}) {
               code: 'AUTH_REFRESH_FAILED',
               message: 'Failed to refresh authentication. Please log in again.',
               requireRelogin: true,
+            },
+          };
+        }
+        else {
+          // Refresh failed for a transient reason (network error, server error, missing
+          // credentials, ...) rather than a dead session — keep the existing tokens so a
+          // later attempt can still succeed, instead of forcing a full logout.
+          if (allowUnauthenticated && defaultValue) {
+            return defaultValue;
+          }
+
+          if (isSubscriptionRequest) {
+            return defaultSubscription;
+          }
+
+          return {
+            error: {
+              code: 'AUTH_REFRESH_FAILED',
+              message: 'Failed to refresh authentication. Please try again later.',
+              requireRelogin: false,
             },
           };
         }

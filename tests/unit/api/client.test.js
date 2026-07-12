@@ -532,6 +532,34 @@ describe('API Client', () => {
       expect(result.error).toBeDefined();
       expect(onUnauthorized).toHaveBeenCalled();
     });
+
+    test('preserves tokens and does not require re-login on a transient refresh failure', async () => {
+      // A network error or server 500 during refresh doesn't mean the session is dead —
+      // forcing a full logout here would turn a transient blip into an unwanted sign-out.
+      client.setAccessToken('expired-token');
+      client.setRefreshToken('still-valid-refresh-token');
+      const mockApiCall = jest.fn().mockRejectedValue({ response: { status: 401 } });
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: false, code: 'REFRESH_EXCEPTION' });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.requireRelogin).toBe(false);
+      expect(client.getAccessToken()).toBe('expired-token');
+      expect(client.getRefreshToken()).toBe('still-valid-refresh-token');
+    });
+
+    test('clears tokens and requires re-login when the refresh callback reports a dead session', async () => {
+      client.setAccessToken('expired-token');
+      client.setRefreshToken('dead-refresh-token');
+      const mockApiCall = jest.fn().mockRejectedValue({ response: { status: 401 } });
+      const onUnauthorized = jest.fn().mockResolvedValue({ success: false, code: 'SESSION_EXPIRED', requireRelogin: true });
+
+      const result = await client.authenticatedRequest(mockApiCall, { onUnauthorized });
+
+      expect(result.error.requireRelogin).toBe(true);
+      expect(client.getAccessToken()).toBeNull();
+      expect(client.getRefreshToken()).toBeNull();
+    });
   });
 
   describe('Environment Configuration', () => {

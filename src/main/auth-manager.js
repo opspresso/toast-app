@@ -23,6 +23,11 @@ let windows = null;
 // Cloud synchronization object
 let syncManager = null;
 
+// Incremented on every login/logout so a background task started by one (e.g. the
+// fire-and-forget post-login sync below) can tell whether a more recent auth event has
+// since happened and skip sending a now-stale notification.
+let authSequence = 0;
+
 /**
  * Set up cloud synchronization manager
  * @param {Object} syncMgr - Synchronization manager instance
@@ -46,6 +51,11 @@ function initialize(windowsRef) {
     fetchUserProfile: () => auth.fetchUserProfile(),
     fetchSubscription: () => auth.fetchSubscription(),
   });
+
+  // Run the full app-level logout when auth.js detects a dead session on its own (e.g.
+  // hasValidToken's automatic refresh), not just when profile/subscription fetch or an
+  // explicit refresh call surfaces requireRelogin.
+  auth.setSessionExpiredHandler(() => logout());
 }
 
 /**
@@ -87,6 +97,8 @@ async function exchangeCodeForToken(code) {
  * @returns {Promise<Object>} Processing result
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
+  authSequence += 1;
+  const mySequence = authSequence;
   try {
     logger.info('Starting exchange of authentication code for token and update of profile/settings');
     const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
@@ -209,6 +221,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
             logger.info('User settings saved successfully');
           }
 
+          // A logout (or a newer login) may have happened while the settings fetch above
+          // was in flight — notifying now would flip the UI back to "logged in" over a
+          // logout that already ran, and re-run sync against a session that no longer exists.
+          if (mySequence !== authSequence) {
+            logger.info('Newer auth event occurred during post-login sync; skipping stale notification');
+            return false;
+          }
+
           // Send authentication state change notification (including profile and settings)
           notifyAuthStateChange({
             isAuthenticated: true,
@@ -275,6 +295,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
  * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
+  authSequence += 1;
   try {
     logger.info('Starting logout process');
     const result = await auth.logout();
