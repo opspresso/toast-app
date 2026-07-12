@@ -119,6 +119,13 @@ describe('Text Expander (I/O layer)', () => {
   test('preserves a non-text clipboard (e.g. a copied image) across a snippet expansion', () => {
     clipboard.availableFormats.mockReturnValue(['image/png']);
     clipboard.readImage.mockReturnValue({ isEmpty: () => false });
+    // Writing the snippet content actually replaces clipboard contents with that text —
+    // mirror that so the restore-time "does the clipboard still hold what we wrote" check
+    // (which reads availableFormats/readText) sees it instead of the stale image mock.
+    clipboard.writeText.mockImplementation(text => {
+      clipboard.availableFormats.mockReturnValue(['text/plain']);
+      clipboard.readText.mockReturnValue(text);
+    });
 
     typeKeyword();
 
@@ -134,11 +141,50 @@ describe('Text Expander (I/O layer)', () => {
 
   test('clears the clipboard on restore when it was empty beforehand', () => {
     clipboard.availableFormats.mockReturnValue([]);
+    // See the previous test: writing the snippet content actually replaces clipboard
+    // contents, so the restore-time check must see it instead of the stale empty mock.
+    clipboard.writeText.mockImplementation(text => {
+      clipboard.availableFormats.mockReturnValue(['text/plain']);
+      clipboard.readText.mockReturnValue(text);
+    });
 
     typeKeyword();
     jest.advanceTimersByTime(300);
 
     expect(clipboard.clear).toHaveBeenCalled();
+  });
+
+  test('does not restore the previous clipboard if the user copied something else during the paste', () => {
+    typeKeyword();
+    expect(clipboard.writeText).toHaveBeenCalledWith('hello there');
+
+    // Before the restore delay elapses, the user copies something new.
+    clipboard.readText.mockReturnValue('user copied this');
+
+    jest.advanceTimersByTime(300);
+
+    // Restoring now would clobber what the user just copied.
+    expect(clipboard.write).not.toHaveBeenCalled();
+    expect(clipboard.clear).not.toHaveBeenCalled();
+  });
+
+  test('does not restore a snapshotted secret onto the clipboard after an external auto-clear', () => {
+    // Simulate having copied a password just before the snippet trigger: the pre-paste
+    // snapshot captured it.
+    clipboard.readText.mockReturnValue('super-secret-password');
+
+    typeKeyword();
+    expect(clipboard.writeText).toHaveBeenCalledWith('hello there');
+
+    // Before the restore delay elapses, an external tool (e.g. a password manager's
+    // auto-clear) wipes the clipboard.
+    clipboard.availableFormats.mockReturnValue([]);
+
+    jest.advanceTimersByTime(300);
+
+    // Restoring now would re-expose the password the auto-clear had just wiped.
+    expect(clipboard.write).not.toHaveBeenCalled();
+    expect(clipboard.clear).not.toHaveBeenCalled();
   });
 
   test('resets the match buffer when replacement throws, preventing a re-trigger loop', () => {
