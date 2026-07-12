@@ -617,13 +617,16 @@ function markAsModified(config, deviceId = null) {
  * Mark settings as synced
  * @param {Object} config - ConfigStore instance
  * @param {string} [deviceId] - Device identifier
+ * @param {Object} [dataOverride] - Data the hash should be computed from (e.g. an upload
+ *   snapshot taken before the network round-trip) instead of the current ConfigStore
+ *   contents, which may have changed while the request was in flight.
  */
-function markAsSynced(config, deviceId = null) {
+function markAsSynced(config, deviceId = null, dataOverride = null) {
   const timestamp = Date.now();
   const device = deviceId || getDeviceId();
 
-  // Generate hash based on current data
-  const currentData = {
+  // Generate hash based on the provided snapshot, or the current data if none was given
+  const currentData = dataOverride || {
     pages: config.get('pages'),
     snippets: config.get('snippets'),
     appearance: config.get('appearance'),

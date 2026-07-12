@@ -399,6 +399,26 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toContain('failure'); // More flexible matching
     });
 
+    test('marks synced using the uploaded snapshot rather than live ConfigStore data', async () => {
+      // A change made during the upload round-trip must not be mistaken for already
+      // being synced: markAsSynced has to hash the data that was actually sent, not
+      // whatever ConfigStore holds by the time the response comes back.
+      const configModule = require('../../src/main/config');
+      mockApiSync.uploadSettings.mockResolvedValue({ success: true });
+
+      await cloudSync.uploadSettings();
+
+      expect(configModule.markAsSynced).toHaveBeenCalledWith(
+        mockConfigStore,
+        null,
+        expect.objectContaining({
+          pages: expect.any(Array),
+          appearance: expect.any(Object),
+          advanced: expect.any(Object),
+        }),
+      );
+    });
+
     test('should call API with expected data structure', async () => {
       // Reset to fresh state for this test
       delete require.cache[require.resolve('../../src/main/cloud-sync')];
@@ -532,6 +552,35 @@ describe('Cloud Sync Module', () => {
       expect(result.error).toContain('timeout');
     });
 
+    test('refreshes dataHash via markAsSynced after applying server data with metadata', async () => {
+      // Previously only lastSyncedAt/lastModifiedAt were updated when serverMetadata was
+      // present, leaving dataHash stale so hasUnsyncedChanges() was true on every check
+      // right after a download. markAsSynced must run first to recompute it from the data
+      // that was just written, then lastModifiedAt/Device are overridden with the server's.
+      delete require.cache[require.resolve('../../src/main/cloud-sync')];
+      const freshCloudSync = require('../../src/main/cloud-sync');
+      freshCloudSync.initCloudSync(mockAuthManager, null, mockConfigStore);
+      const configModule = require('../../src/main/config');
+      configModule.markAsSynced.mockClear();
+      configModule.updateSyncMetadata.mockClear();
+
+      mockApiSync.downloadSettings.mockResolvedValue({
+        success: true,
+        data: {},
+        normalized: { pages: [{ name: 'P1', buttons: [] }], appearance: {}, advanced: {} },
+        syncMetadata: { lastModifiedAt: 123, lastModifiedDevice: 'server-device' },
+      });
+
+      const result = await freshCloudSync.downloadSettings();
+
+      expect(result.success).toBe(true);
+      expect(configModule.markAsSynced).toHaveBeenCalledWith(mockConfigStore);
+      expect(configModule.updateSyncMetadata).toHaveBeenCalledWith(
+        mockConfigStore,
+        expect.objectContaining({ lastModifiedAt: 123, lastModifiedDevice: 'server-device' }),
+      );
+    });
+
     test('should attempt to notify auth manager on sync', async () => {
       // Reset to fresh state for this test
       delete require.cache[require.resolve('../../src/main/cloud-sync')];
@@ -567,12 +616,30 @@ describe('Cloud Sync Module', () => {
       if (changeHandlerCall) {
         const handler = changeHandlerCall[1];
         const initialTimerCount = jest.getTimerCount();
-        
+
         handler([], []);
-        
+
         // Handler should potentially schedule sync operations
         expect(jest.getTimerCount()).toBeGreaterThanOrEqual(initialTimerCount);
       }
+    });
+
+    test('records markAsModified even when sync cannot run (e.g. logged out)', async () => {
+      // Without this, an offline edit's lastModifiedAt stays stale, so a later conflict
+      // check (after re-login) can pick download_server and overwrite the edit instead
+      // of preserving it via merge.
+      const configModule = require('../../src/main/config');
+      mockAuthManager.hasValidToken.mockResolvedValue(false);
+
+      const changeHandlerCall = mockConfigStore.onDidChange.mock.calls.find(call =>
+        call[0] === 'pages' && typeof call[1] === 'function'
+      );
+      expect(changeHandlerCall).toBeDefined();
+
+      await changeHandlerCall[1]([], []);
+
+      expect(configModule.markAsModified).toHaveBeenCalledWith(mockConfigStore);
+      expect(mockApiSync.uploadSettings).not.toHaveBeenCalled();
     });
   });
 
@@ -701,6 +768,38 @@ describe('Cloud Sync Module', () => {
       const result = await cloudSync.syncSettings();
 
       expect(result.success).toBe(true);
+    });
+
+    test('holds the cloud-sync lock during the resolve peek download so a concurrent upload defers instead of colliding with api/sync.js\'s own lock', async () => {
+      // api/sync.js shares one isSyncing flag between its own upload/download. Without
+      // cloud-sync.js holding its own lock for this peek (which doesn't touch ConfigStore),
+      // a debounced upload could start concurrently and fail with a spurious "Sync already
+      // in progress" from api/sync.js instead of being deferred here.
+      const configModule = require('../../src/main/config');
+      configModule.hasUnsyncedChanges.mockReturnValue(false);
+
+      let resolveDownload;
+      mockApiSync.downloadSettings.mockReturnValue(
+        new Promise(resolve => {
+          resolveDownload = resolve;
+        }),
+      );
+
+      const resolvePromise = cloudSync.syncSettings('resolve');
+
+      // While the peek download is still in flight, a concurrent upload must be deferred
+      // at the cloud-sync level, never reaching apiSync.uploadSettings.
+      const concurrentUpload = await cloudSync.uploadSettings();
+      expect(concurrentUpload.success).toBe(false);
+      expect(mockApiSync.uploadSettings).not.toHaveBeenCalled();
+
+      resolveDownload({ success: true, data: {}, syncMetadata: { lastModifiedAt: Date.now() - 10 * 60 * 1000 } });
+      await resolvePromise;
+
+      // The lock must be released afterwards so normal syncing resumes.
+      mockApiSync.uploadSettings.mockResolvedValue({ success: true });
+      const uploadAfter = await cloudSync.uploadSettings();
+      expect(uploadAfter.success).toBe(true);
     });
   });
 

@@ -221,4 +221,35 @@ describe('Configuration Store', () => {
       expect(generateDataHash(a)).toBe(generateDataHash(b));
     });
   });
+
+  describe('markAsSynced', () => {
+    test('hashes the provided data override instead of the live ConfigStore contents', () => {
+      // Guards against marking an upload as synced using data that changed during the
+      // network round-trip: the hash must reflect what was actually uploaded.
+      const { createConfigStore, markAsSynced, generateDataHash } = require('../../src/main/config');
+      const config = createConfigStore();
+      const liveData = { pages: [{ name: 'live-edited' }], snippets: [], appearance: {}, advanced: {} };
+      config.get.mockImplementation(key => ({ ...liveData, _sync: {} }[key]));
+
+      const uploadedSnapshot = { pages: [{ name: 'uploaded' }], snippets: [], appearance: {}, advanced: {} };
+      markAsSynced(config, null, uploadedSnapshot);
+
+      const syncCall = config.set.mock.calls.find(call => call[0] === '_sync');
+      expect(syncCall).toBeDefined();
+      expect(syncCall[1].dataHash).toBe(generateDataHash(uploadedSnapshot));
+      expect(syncCall[1].dataHash).not.toBe(generateDataHash(liveData));
+    });
+
+    test('falls back to the live ConfigStore contents when no override is given', () => {
+      const { createConfigStore, markAsSynced, generateDataHash } = require('../../src/main/config');
+      const config = createConfigStore();
+      const liveData = { pages: [{ name: 'live' }], snippets: [], appearance: {}, advanced: {} };
+      config.get.mockImplementation(key => ({ ...liveData, _sync: {} }[key]));
+
+      markAsSynced(config);
+
+      const syncCall = config.set.mock.calls.find(call => call[0] === '_sync');
+      expect(syncCall[1].dataHash).toBe(generateDataHash(liveData));
+    });
+  });
 });
