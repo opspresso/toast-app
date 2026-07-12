@@ -1020,6 +1020,14 @@ async function refreshSubscriptionSettings() {
     return { success: false, error: 'Logged out during authentication' };
   }
 
+  // fetchSubscription() returns the error-shaped profileData as-is on failure (see its
+  // own else-if branch below), not a subscription object — writing it through as if it
+  // were one would mark the config authenticated despite the fetch having failed.
+  if (!subscription || subscription.error) {
+    logger.error('Failed to retrieve subscription information:', subscription?.error);
+    return { success: false, error: subscription?.error?.message || 'Failed to retrieve subscription information' };
+  }
+
   await updatePageGroupSettings(subscription);
   return { success: true, subscription };
 }

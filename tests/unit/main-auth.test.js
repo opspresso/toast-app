@@ -359,6 +359,27 @@ describe('Main Auth Module (P0)', () => {
       expect(result.success).toBe(false);
       expect(mockConfig.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
     });
+
+    test('reports failure instead of writing an authenticated config when the post-login subscription fetch itself fails', async () => {
+      // Regression: fetchSubscription() returns the error-shaped profileData as-is on
+      // failure (not a subscription object). refreshSubscriptionSettings() previously
+      // passed that straight to updatePageGroupSettings(), which unconditionally writes
+      // isAuthenticated: true — silently reporting login success on a failed profile fetch.
+      mockApiAuth.exchangeCodeForToken.mockResolvedValue({
+        success: true,
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      });
+      mockApiAuth.fetchUserProfile.mockResolvedValue({
+        error: { code: 'PROFILE_FETCH_FAILED', message: 'Network error' },
+      });
+
+      const result = await auth.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      expect(result.success).toBe(false);
+      expect(mockConfig.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
+    });
   });
 
   describe('Token Management', () => {
