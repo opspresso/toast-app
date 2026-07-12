@@ -168,6 +168,27 @@ describe('Text Expander (I/O layer)', () => {
     expect(clipboard.clear).not.toHaveBeenCalled();
   });
 
+  test('does not crash and still resets injecting when the post-paste clipboard check throws', () => {
+    // clipboard.availableFormats()/readText() here were unguarded by a catch (unlike
+    // snapshotClipboard/restoreClipboard, which both have their own). An exception from
+    // either would propagate out of the setTimeout callback as an uncaught exception.
+    clipboard.availableFormats.mockImplementation(() => {
+      throw new Error('clipboard unavailable');
+    });
+
+    typeKeyword();
+
+    expect(() => jest.advanceTimersByTime(300)).not.toThrow();
+    expect(clipboard.write).not.toHaveBeenCalled();
+
+    // injecting must still be reset so subsequent keystrokes aren't ignored forever.
+    clipboard.availableFormats.mockReturnValue(['text/plain']);
+    const onKeydown = getRegisteredHandler('keydown');
+    onKeydown(keyEvent(H_KEYCODE));
+    onKeydown(keyEvent(I_KEYCODE));
+    expect(clipboard.writeText).toHaveBeenCalledTimes(2); // once per typeKeyword() trigger
+  });
+
   test('does not restore a snapshotted secret onto the clipboard after an external auto-clear', () => {
     // Simulate having copied a password just before the snippet trigger: the pre-paste
     // snapshot captured it.

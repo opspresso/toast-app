@@ -186,6 +186,9 @@ function performReplacement(match) {
           restoreClipboard(previousClipboard);
         }
       }
+      catch (error) {
+        logger.error('Failed to check clipboard before restore');
+      }
       finally {
         injecting = false;
       }
