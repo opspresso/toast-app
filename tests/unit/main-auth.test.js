@@ -382,6 +382,37 @@ describe('Main Auth Module (P0)', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Refresh failed');
     });
+
+    test('does not lock out retries for the cooldown window after a failed refresh', async () => {
+      // A single transient failure (e.g. a network blip) must not block every
+      // subsequent refresh attempt for the full 5-minute cooldown window.
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        'auth-token': 'expired-token',
+        'refresh-token': 'test-refresh-token',
+        'token-expires-at': Date.now() - 3600000,
+      }));
+
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({
+        success: false,
+        error: 'network error',
+      });
+
+      const firstResult = await auth.refreshAccessToken();
+      expect(firstResult.success).toBe(false);
+
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({
+        success: true,
+        access_token: 'refreshed-token',
+        expires_in: 3600,
+      });
+
+      const secondResult = await auth.refreshAccessToken();
+
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(2);
+      expect(secondResult.success).toBe(true);
+      expect(secondResult.code).not.toBe('REFRESH_THROTTLED');
+    });
   });
 
   describe('User Profile Management', () => {

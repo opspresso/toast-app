@@ -644,6 +644,11 @@ async function refreshAccessToken() {
             logger.info('Expired tokens reset complete');
           }
 
+          // Only a successful refresh should start the cooldown — leaving it set after a
+          // failure (e.g. a transient network error) would lock out retries for the full
+          // cooldown window even though the very next attempt might succeed.
+          lastTokenRefresh = 0;
+
           return refreshResult;
         }
 
@@ -658,6 +663,7 @@ async function refreshAccessToken() {
       }
       catch (error) {
         logger.error('Exception in token refresh:', error);
+        lastTokenRefresh = 0;
         return {
           success: false,
           error: error.message || 'Unknown error in token refresh',
