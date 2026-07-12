@@ -402,13 +402,11 @@ async function handleAuthRedirect(url) {
       if (hasToken) {
         // If already authenticated, just refresh subscription information
         logger.info('Already authenticated, refreshing subscription info');
-        const subscription = await fetchSubscription();
-        await updatePageGroupSettings(subscription);
+        const refreshResult = await refreshSubscriptionSettings();
 
         return {
-          success: true,
-          message: 'Authentication refreshed',
-          subscription,
+          ...refreshResult,
+          message: refreshResult.success ? 'Authentication refreshed' : undefined,
         };
       }
       else {
@@ -449,13 +447,11 @@ async function handleAuthRedirect(url) {
         if (hasToken) {
           // If already authenticated, just refresh subscription information
           logger.info('Already authenticated, refreshing subscription info');
-          const subscription = await fetchSubscription();
-          await updatePageGroupSettings(subscription);
+          const refreshResult = await refreshSubscriptionSettings();
 
           return {
-            success: true,
-            message: 'Authentication refreshed',
-            subscription,
+            ...refreshResult,
+            message: refreshResult.success ? 'Authentication refreshed' : undefined,
           };
         }
         else {
@@ -492,6 +488,11 @@ async function handleAuthRedirect(url) {
  */
 async function exchangeCodeForToken(code) {
   try {
+    if (isLoggingOut) {
+      logger.info('Logout in progress; aborting code exchange');
+      return { success: false, error: 'Logout in progress' };
+    }
+
     // Verify OAuth credentials are configured
     if (!CLIENT_ID || !CLIENT_SECRET) {
       logger.error('OAuth credentials are not configured. Please set CLIENT_ID and CLIENT_SECRET in environment variables or .env file.');
@@ -503,6 +504,8 @@ async function exchangeCodeForToken(code) {
 
     logger.info('Starting exchange of authentication code for token:', code.substring(0, 8) + '...');
 
+    const exchangeStartGeneration = logoutGeneration;
+
     // Exchange code for token through common module
     const tokenResult = await apiAuth.exchangeCodeForToken({
       code,
@@ -512,6 +515,14 @@ async function exchangeCodeForToken(code) {
 
     if (!tokenResult.success) {
       return tokenResult;
+    }
+
+    // A logout may have completed while the exchange above was in flight — storing these
+    // tokens now would resurrect a session the user just ended (and this refresh token,
+    // issued after logout's revoke call, was never revoked on the server).
+    if (logoutGeneration !== exchangeStartGeneration) {
+      logger.warn('Logout occurred during code exchange; discarding issued tokens');
+      return { success: false, error: 'Logged out during authentication' };
     }
 
     // Store tokens
@@ -560,9 +571,16 @@ function setSessionExpiredHandler(fn) {
   sessionExpiredHandler = fn;
 }
 
-// Timestamp of the most recent logout() call, used to detect a refresh that was already
-// in flight when logout() ran (see the storeTokens guard below).
-let lastLogoutAt = 0;
+// True for the duration of logout() (from the moment it's called until it fully
+// completes), so a refresh that would otherwise start mid-logout is stopped before it
+// ever contacts the server — see the early guard below.
+let isLoggingOut = false;
+
+// Incremented when logout() actually deletes the local token file, so a refresh that was
+// already in flight *before* logout began (and therefore passed the isLoggingOut guard
+// above) can still detect — right before it would persist new tokens — that a logout has
+// since completed, and avoid resurrecting the file logout just deleted.
+let logoutGeneration = 0;
 
 /**
  * Get new access token using refresh token
@@ -571,6 +589,11 @@ let lastLogoutAt = 0;
 async function refreshAccessToken() {
   try {
     logger.info('Starting token refresh process');
+
+    if (isLoggingOut) {
+      logger.info('Logout in progress; skipping token refresh');
+      return { success: false, error: 'Logout in progress', code: 'LOGOUT_IN_PROGRESS' };
+    }
 
     // If already refreshing, return the ongoing refresh promise instead of starting a new
     // one. Checked before the throttle window below so a second caller sharing the same
@@ -609,7 +632,7 @@ async function refreshAccessToken() {
     // Set refresh state and create a promise that will be shared across concurrent calls
     isRefreshing = true;
     lastTokenRefresh = now;
-    const refreshStartedAt = now;
+    const refreshStartGeneration = logoutGeneration;
 
     // Create a new shared promise for this refresh operation
     refreshPromise = (async () => {
@@ -683,12 +706,14 @@ async function refreshAccessToken() {
           return refreshResult;
         }
 
-        // On success, store new tokens — unless logout() ran at or after this refresh
-        // started (>=, not >: Date.now() has only millisecond resolution, so a logout
-        // landing in the same tick as the refresh start must still win), in which case
-        // the token file was already deleted and this response's rotated token was never
-        // revoked; writing it back would silently undo the logout.
-        if (lastLogoutAt >= refreshStartedAt) {
+        // On success, store new tokens — unless a logout completed while this refresh was
+        // in flight, in which case the token file was already deleted and this response's
+        // rotated token was never revoked; writing it back would silently undo the logout.
+        // Comparing generations (bumped only when logout actually deletes the file) rather
+        // than timestamps correctly catches this regardless of which of the two started
+        // first — a start-time comparison would miss a logout that began before this
+        // refresh but finished after it.
+        if (logoutGeneration !== refreshStartGeneration) {
           logger.warn('Logout occurred during token refresh; discarding refreshed tokens');
           return {
             success: false,
@@ -743,11 +768,10 @@ async function refreshAccessToken() {
  * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
+  // Set synchronously, before any await, so a refreshAccessToken() call made anywhere
+  // in this logout's duration is stopped by the early guard instead of racing it.
+  isLoggingOut = true;
   try {
-    // Recorded before anything else so a refresh already in flight can tell it started
-    // before this logout and must not resurrect the token file it's about to delete.
-    lastLogoutAt = Date.now();
-
     // Revoke the refresh token on the server before deleting it locally, so
     // it cannot be used to mint new access tokens after logout.
     const refreshToken = await getStoredRefreshToken();
@@ -768,6 +792,11 @@ async function logout() {
       logger.info('Local token file deleted successfully');
     }
 
+    // Local token state is now finalized as logged-out; bump the generation so a refresh
+    // that was already in flight before this logout began (and so passed the early guard)
+    // discards its result instead of resurrecting the file just deleted above.
+    logoutGeneration += 1;
+
     // Reset page group settings
     const config = createConfigStore();
     config.set('subscription', {
@@ -784,6 +813,9 @@ async function logout() {
   catch (error) {
     logger.error('Logout error:', error);
     return false;
+  }
+  finally {
+    isLoggingOut = false;
   }
 }
 
@@ -821,15 +853,15 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
 
     // Get subscription information
     try {
-      const subscription = await fetchSubscription();
+      const result = await refreshSubscriptionSettings();
+      if (!result.success) {
+        return result;
+      }
       logger.info('Successfully retrieved subscription information');
-
-      // Save subscription information to config
-      await updatePageGroupSettings(subscription);
 
       return {
         success: true,
-        subscription,
+        subscription: result.subscription,
       };
     }
     catch (subError) {
@@ -971,6 +1003,25 @@ async function updatePageGroupSettings(subscription) {
     logger.error('Error updating page group settings:', error);
     throw error;
   }
+}
+
+/**
+ * Fetch the latest subscription and persist it as an authenticated ConfigStore write —
+ * unless a logout completed while the fetch was in flight, in which case the write is
+ * skipped so it can't resurrect config state the logout just reset to anonymous.
+ * @returns {Promise<{success: boolean, subscription?: object, error?: string}>}
+ */
+async function refreshSubscriptionSettings() {
+  const startGeneration = logoutGeneration;
+  const subscription = await fetchSubscription();
+
+  if (logoutGeneration !== startGeneration) {
+    logger.warn('Logout occurred during subscription fetch; discarding subscription update');
+    return { success: false, error: 'Logged out during authentication' };
+  }
+
+  await updatePageGroupSettings(subscription);
+  return { success: true, subscription };
 }
 
 // Initialization: Load stored tokens into memory

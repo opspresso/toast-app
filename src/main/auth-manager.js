@@ -115,6 +115,14 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         await userDataManager.getUserProfile(true, userProfile);
       }
 
+      // A logout (or a newer login) may have completed while the network calls above were
+      // in flight. Continuing would resurrect authenticated state — the notification below,
+      // and the ConfigStore write further down — over a logout that already ran.
+      if (mySequence !== authSequence) {
+        logger.info('Newer auth event occurred during login continuation; aborting stale login flow');
+        return { success: false, error: 'Logged out during login' };
+      }
+
       // Notify both windows on login success (profile cache is now warm)
       notifyLoginSuccess(result.subscription);
 

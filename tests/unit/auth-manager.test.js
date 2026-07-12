@@ -395,6 +395,46 @@ describe('Authentication Manager', () => {
       const authStateCalls = mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed');
       expect(authStateCalls).toHaveLength(0);
     });
+
+    test('aborts the login continuation (skips login-success and the authenticated config write) when logout completes while the profile fetch is still in flight', async () => {
+      // The authSequence guard originally only protected the final notifyAuthStateChange
+      // inside the background sync. The state mutations earlier in the same function —
+      // notifyLoginSuccess and the ConfigStore subscription write — ran unguarded, so a
+      // logout that completed while awaiting fetchUserProfile/getUserProfile got
+      // overwritten back to "authenticated" once the login continuation resumed.
+      const mockSyncManager = {
+        updateCloudSyncSettings: jest.fn(),
+        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
+      };
+      authManager.setSyncManager(mockSyncManager);
+
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
+        success: true,
+        subscription: { active: true, plan: 'Premium' },
+      });
+
+      let resolveFetchUserProfile;
+      mockAuth.fetchUserProfile.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveFetchUserProfile = resolve;
+          }),
+      );
+
+      const loginPromise = authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+
+      // Log out while the login continuation is still awaiting the profile fetch.
+      await authManager.logout();
+      mockConfigStore.set.mockClear();
+      mockWindows.toast.webContents.send.mockClear();
+
+      resolveFetchUserProfile({ email: 'test@example.com' });
+      const loginResult = await loginPromise;
+
+      expect(loginResult.success).toBe(false);
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
+      expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('login-success', expect.anything());
+    });
   });
 
   describe('Logout Process', () => {
