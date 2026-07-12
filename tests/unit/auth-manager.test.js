@@ -350,28 +350,28 @@ describe('Authentication Manager', () => {
       expect(result).toBe(false);
     });
 
-    test('should trim local pages to the anonymous entitlement instead of wiping them', async () => {
+    test('should not modify local pages on logout, even beyond the anonymous entitlement', async () => {
+      // pages/appearance/advanced are the user's actual content, and this device may hold
+      // the only unsynced copy. Trimming/clearing them locally on logout is unrecoverable
+      // if that copy was never uploaded, so logout must leave them untouched.
       mockAuth.logout.mockResolvedValue(true);
       const premiumPages = [{ name: 'Page 1' }, { name: 'Page 2' }, { name: 'Page 3' }];
       mockConfigStore.get.mockImplementation(key => (key === 'pages' ? premiumPages : undefined));
 
       await authManager.logout();
 
-      expect(mockConfigStore.set).toHaveBeenCalledWith('pages', [{ name: 'Page 1' }]);
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('pages', expect.anything());
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('appearance', expect.anything());
+      expect(mockConfigStore.set).not.toHaveBeenCalledWith('advanced', expect.anything());
     });
 
-    test('should mark the post-logout state as synced so it is not mistaken for the next user\'s unsynced changes', async () => {
-      // Sync is disabled before pages are trimmed, so the 'pages' write never reaches
-      // cloud-sync's onDidChange handler and _sync metadata is left stale. Without
-      // markAsSynced() here, the next person to log in on this shared device would
-      // have hasUnsyncedChanges() report the leftover page as their own unsynced
-      // change, and conflict resolution could upload/merge it into their account.
+    test('should not touch sync metadata on logout since no synced data is modified', async () => {
       mockAuth.logout.mockResolvedValue(true);
       const { markAsSynced } = require('../../src/main/config');
 
       await authManager.logout();
 
-      expect(markAsSynced).toHaveBeenCalledWith(mockConfigStore);
+      expect(markAsSynced).not.toHaveBeenCalled();
     });
 
     test('should handle logout exceptions', async () => {

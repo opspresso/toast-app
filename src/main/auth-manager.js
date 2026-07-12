@@ -12,7 +12,7 @@ const userDataManager = require('./user-data-manager');
 
 // Create logger for this module
 const logger = createLogger('AuthManager');
-const { createConfigStore, markAsSynced } = require('./config');
+const { createConfigStore } = require('./config');
 const client = require('./api/client');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
 const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
@@ -300,7 +300,10 @@ async function logout() {
       // Get current configuration
       const config = createConfigStore();
 
-      // Reset subscription information and clear all settings
+      // Reset subscription information only. pages/appearance/advanced are left untouched —
+      // they are the user's actual content and this device may hold the only unsynced copy
+      // (offline edits, sync disabled, or the upload debounce hadn't fired). Deleting them
+      // locally on logout is unrecoverable if the copy was never uploaded.
       config.set('subscription', {
         isAuthenticated: false,
         isSubscribed: false,
@@ -308,28 +311,7 @@ async function logout() {
         pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
       });
 
-      // Trim pages down to the anonymous entitlement instead of wiping them:
-      // this may be the only copy of the user's data if it was never synced
-      // (offline edits, sync disabled, or the upload debounce hadn't fired).
-      const currentPages = config.get('pages');
-      config.set('pages', Array.isArray(currentPages) ? currentPages.slice(0, PAGE_GROUPS.ANONYMOUS) : []);
-
-      // Reset appearance to default
-      config.set('appearance', {});
-
-      // Reset advanced settings to default
-      config.set('advanced', {});
-
-      // Sync is disabled by this point (updateCloudSyncSettings(false) above), so the
-      // 'pages' write above never reached handleConfigChange's markAsModified() call —
-      // the _sync hash/timestamps are still whatever the logged-out user last synced.
-      // Left stale, the next person to log in on this device would have their sync
-      // treat this leftover local page as "unsynced changes" and upload/merge it into
-      // their own account. Mark the post-logout state as synced so it reads as current,
-      // not as changes belonging to whoever logs in next.
-      markAsSynced(config);
-
-      logger.info('All user configuration reset to defaults on logout');
+      logger.info('Subscription reset to anonymous defaults on logout');
 
       // Send app authentication state change notification
       notifyAuthStateChange({
