@@ -424,10 +424,8 @@ async function handleAuthRedirect({ url, onCodeExchange }) {
       };
     }
 
-    // Validate state value (CSRF prevention)
-    const storedState = retrieveStoredState();
-    if (!storedState || state !== storedState) {
-      logger.error('State mismatch. Possible CSRF attack');
+    // Validate state value (CSRF prevention) and consume it so it cannot be replayed
+    if (!validateStateParam(state)) {
       setLoginInProgress(false); // Reset login state
       return {
         success: false,
