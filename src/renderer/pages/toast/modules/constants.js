@@ -52,11 +52,11 @@ export const defaultButtons = [
     scriptType: 'special',
   },
   {
-    name: 'iTerm',
+    name: 'Terminal',
     shortcut: 'T',
     icon: '⌨️',
     action: 'exec',
-    command: window.toast?.platform === 'darwin' ? 'open -a "iTerm"' : 'start cmd',
+    command: window.toast?.platform === 'darwin' ? 'open -a "Terminal"' : 'start cmd',
   },
   // asdfg row
   {
