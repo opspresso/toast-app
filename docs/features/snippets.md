@@ -34,7 +34,7 @@ Snippets are stored in the top-level `snippets` array of the configuration and a
 }
 ```
 
-Keyword rules: no whitespace, at least 2 characters, printable ASCII only, no duplicates, and not a suffix of another keyword (to prevent ambiguous matching). Replacement content allows arbitrary Unicode.
+Keyword rules: no whitespace, at least 2 characters, printable ASCII only, no duplicates, and not a prefix or suffix of another keyword (to prevent ambiguous matching). Replacement content allows arbitrary Unicode.
 
 ## Limitations
 

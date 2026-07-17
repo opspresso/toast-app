@@ -201,7 +201,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     // Conversion 1) Convert to iconset with iconutil and pick the largest PNG
     const tempIconsetPath = path.join(outputDir, `${safeAppName}_temp.iconset`);
     try {
-      execSync(`iconutil -c iconset "${icnsPath}" -o "${tempIconsetPath}"`, { stdio: 'pipe' });
+      execFileSync('iconutil', ['-c', 'iconset', icnsPath, '-o', tempIconsetPath], { stdio: 'pipe' });
       const iconFiles = fs
         .readdirSync(tempIconsetPath)
         .filter(file => file.endsWith('.png'))
@@ -221,7 +221,7 @@ async function extractAppIcon(appName, outputDir = null, forceRefresh = false) {
     }
 
     // Conversion 2) sips fallback (max 512px)
-    execSync(`sips -s format png -Z 512 "${icnsPath}" --out "${outputPath}"`, { stdio: 'pipe' });
+    execFileSync('sips', ['-s', 'format', 'png', '-Z', '512', icnsPath, '--out', outputPath], { stdio: 'pipe' });
 
     return fs.existsSync(outputPath) ? outputPath : null;
   } catch (err) {

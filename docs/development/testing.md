@@ -5,7 +5,7 @@ This document describes the Toast app's testing strategy, including the testing 
 > **Current status**: The test infrastructure is set up, and unit tests are implemented for the main features.
 > - ✅ Jest configured
 > - ✅ Test directory structure created
-> - ✅ 34 test suites, 966 unit test cases implemented
+> - ✅ 38 test suites, 1107 unit test cases implemented
 > - ❌ Integration tests and E2E tests not yet implemented
 
 ## Table of Contents

@@ -7,6 +7,7 @@
 const { shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { expandTilde } = require('../utils/expand-tilde');
 
 /**
  * Open a URL, file, or folder
@@ -89,7 +90,7 @@ async function openUrl(url) {
 async function openPath(itemPath, application) {
   try {
     // Resolve path to absolute
-    const resolvedPath = path.resolve(itemPath);
+    const resolvedPath = path.resolve(expandTilde(itemPath));
 
     // Check if path exists
     if (!fs.existsSync(resolvedPath)) {

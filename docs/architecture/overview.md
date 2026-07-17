@@ -422,7 +422,7 @@ The cloud sync system manages synchronization of user settings and configuration
 - **Single source of truth**: uses ConfigStore as the central data source
 - **Change detection**: real-time monitoring of configuration changes with debouncing
 - **Automatic sync**: automatic synchronization on login, periodically, and on settings changes
-- **Conflict resolution**: timestamp-based last-write-wins strategy
+- **Conflict resolution**: timestamp-based decision (upload/download/merge) followed by per-section merge policies when both sides changed
 
 ### Core Components
 

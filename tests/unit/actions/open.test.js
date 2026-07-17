@@ -18,6 +18,11 @@ jest.mock('fs', () => ({
 
 jest.mock('path', () => ({
   resolve: jest.fn(),
+  join: jest.fn(),
+}));
+
+jest.mock('os', () => ({
+  homedir: jest.fn(),
 }));
 
 jest.mock('child_process', () => ({
@@ -28,6 +33,7 @@ const { openItem } = require('../../../src/main/actions/open');
 const { shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execFile } = require('child_process');
 
 describe('Open Action', () => {
@@ -45,6 +51,8 @@ describe('Open Action', () => {
     shell.openPath.mockResolvedValue();
     fs.existsSync.mockReturnValue(true);
     path.resolve.mockImplementation((p) => `/resolved${p}`);
+    path.join.mockImplementation((...parts) => parts.join('/'));
+    os.homedir.mockReturnValue('/mock/home');
     execFile.mockImplementation((file, args, callback) => {
       if (callback) callback(null);
     });
@@ -109,10 +117,20 @@ describe('Open Action', () => {
       });
     });
 
+    test('should expand tilde in path', async () => {
+      const action = { path: '~/documents/file.txt' };
+
+      const result = await openItem(action);
+
+      expect(path.join).toHaveBeenCalledWith('/mock/home', 'documents/file.txt');
+      expect(path.resolve).toHaveBeenCalledWith('/mock/home/documents/file.txt');
+      expect(result.success).toBe(true);
+    });
+
     test('should handle unexpected errors gracefully', async () => {
       const action = { url: 'https://example.com' };
       const error = new Error('Unexpected error');
-      
+
       shell.openExternal.mockRejectedValue(error);
 
       const result = await openItem(action);

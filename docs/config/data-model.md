@@ -27,6 +27,7 @@ User configuration
 │   ├── advanced
 │   ├── snippets (text expansion snippets)
 │   ├── textExpander (device-local enabled state)
+│   ├── cloudSync
 │   ├── subscription
 │   ├── security (exec/script action approval state)
 │   └── firstLaunchCompleted

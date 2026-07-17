@@ -155,7 +155,7 @@ The window can be hidden by the following explicit calls:
 
 ### When a Modal Window Is Open
 
-When a modal window is open, the toast window is not hidden. This is implemented in `ipc.js` by tracking the modal state:
+When a modal window is open, the toast window is not hidden. This is implemented in `ipc/window.js` by tracking the modal state:
 
 ```javascript
 let isModalOpen = false;
@@ -208,7 +208,7 @@ if (loginInProgress) {
 }
 ```
 
-The login state is managed in `auth.js` and `auth-manager.js` and is maintained until the authentication token exchange process completes.
+The login state is managed in `api/auth.js` and is maintained until the authentication token exchange process completes.
 
 ### Exceptions Based on Settings
 

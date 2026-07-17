@@ -216,12 +216,13 @@ User data management is handled through the `src/main/user-data-manager.js` modu
 
 ```javascript
 const userDataManager = require('./main/user-data-manager');
+const configStore = require('./main/config');
 
 // Get the user profile
 const profile = await userDataManager.getUserProfile();
 
 // Update sync metadata (synchronous function)
-userDataManager.updateSyncMetadata({
+configStore.updateSyncMetadata(config, {
   lastSyncedAt: Date.now(),
   lastSyncedDevice: 'device-123'
 });

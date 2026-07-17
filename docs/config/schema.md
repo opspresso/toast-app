@@ -106,12 +106,14 @@ The configuration file is stored in JSON format and can be modified through the 
 | Option | Type | Default | Description |
 |------|------|--------|------|
 | `appearance.theme` | string | `"system"` | UI theme (`"light"`, `"dark"`, `"system"`) |
-| `appearance.accentColor` | string | `"blue"` | Accent color theme (`"blue"`, `"red"`, `"orange"`, `"green"`, `"purple"`, `"mono"`). Synced to the cloud |
+| `appearance.accentColor` | string | `"blue"` | Accent color theme (`"blue"`, `"red"`, `"orange"`, `"green"`, `"purple"`, `"mono"`) |
 | `appearance.position` | string | `"center"` | Toast popup position (`"center"`, `"top"`, `"bottom"`, `"cursor"`) |
 | `appearance.monitorPositions` | object | `{}` | Saved window position for each monitor |
 | `appearance.size` | string | `"medium"` | Toast popup size (`"small"`, `"medium"`, `"large"`) |
 | `appearance.opacity` | number | `0.95` | Toast popup opacity (0.1 - 1.0) |
 | `appearance.buttonLayout` | string | `"grid"` | Button layout (`"grid"`, `"list"`) |
+
+> The entire `appearance` object is synced to the cloud as a single unit.
 
 **Example**:
 ```json

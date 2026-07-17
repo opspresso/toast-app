@@ -54,21 +54,9 @@ The Toast app appropriately handles various network errors and API response erro
 ```json
 {
   "success": false,
-  "error": "error_code",
-  "message": "Human readable error message",
-  "details": { ... }
+  "error": "Human readable error message"
 }
 ```
-
-### Error Codes and Handling
-
-| Error Code | Description | Handling |
-|-----------|------|-----------|
-| `TOKEN_EXPIRED` | Access token expired | Refresh with the refresh token |
-| `REFRESH_TOKEN_EXPIRED` | Refresh token expired | Request re-login |
-| `NETWORK_ERROR` | Network connection error | Use local data, sync on reconnect |
-| `API_ERROR` | API server error | Retry after some time |
-| `PERMISSION_DENIED` | No permission to access the resource | Show subscription-required message |
 
 ### Handling Empty Files
 

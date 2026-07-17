@@ -160,7 +160,7 @@ macOS-specific installation considerations:
 On Windows, the Toast app integrates into the system tray:
 
 - Uses the standard ICO format for the tray icon
-- Supports light/dark mode along with the Windows system theme
+- Uses a fixed icon regardless of the Windows light/dark theme (unlike macOS, which uses a theme-adaptive template image)
 - Both left-click and right-click open the context menu (no separate click handler; Windows default behavior)
 
 **Implementation**:

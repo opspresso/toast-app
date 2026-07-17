@@ -328,7 +328,7 @@ Premium subscribers benefit from automatic cloud sync:
 
 - **Real-time Sync**: Changes are synced within a few seconds
 - **Cross-device Consistency**: Use the same settings on all devices
-- **Conflict Resolution**: When changes are made on different devices, the most recent change is applied
+- **Conflict Resolution**: When changes are made on multiple devices, they are merged automatically — your local changes are kept, and items added elsewhere are included as well
 - **Automatic Backup**: Settings are automatically backed up to the cloud
 
 ## Advanced Usage
