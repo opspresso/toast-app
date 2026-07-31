@@ -23,7 +23,7 @@ Create a `.env` or `.env.local` file in the `src/main/config/` directory to set 
 # .env file example
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
-TOAST_URL=https://app.toast.sh
+TOAST_URL=https://toastapp.dev
 TOKEN_EXPIRES_IN=31536000
 NODE_ENV=production
 ```
@@ -112,7 +112,7 @@ These are the environment variables used for the application's basic settings.
 
 | Variable | Default | Description | Example |
 |--------|--------|------|------|
-| `TOAST_URL` | `https://app.toast.sh` | Toast web service URL | `https://app.toast.sh` |
+| `TOAST_URL` | `https://toastapp.dev` | Toast web service URL | `https://toastapp.dev` |
 | `NODE_ENV` | - | Runtime environment mode (development/production) | `development` |
 | `AUTO_INSTALL_UPDATES` | - | If `true`, installs updates automatically once the download completes | `true` |
 
@@ -142,7 +142,7 @@ npm start
 
 ```bash
 # Production environment
-TOAST_URL=https://app.toast.sh
+TOAST_URL=https://toastapp.dev
 
 # Development environment (when using a local server)
 NODE_ENV=development
@@ -157,7 +157,7 @@ TOAST_URL=http://localhost:3000
 # Default production environment settings
 CLIENT_ID=production_client_id
 CLIENT_SECRET=production_client_secret
-TOAST_URL=https://app.toast.sh
+TOAST_URL=https://toastapp.dev
 TOKEN_EXPIRES_IN=31536000
 NODE_ENV=production
 ```

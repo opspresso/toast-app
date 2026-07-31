@@ -1,7 +1,7 @@
 # Toast App
 
 <p align="center">
-  <img src="https://app.toast.sh/logo192.png" alt="Toast App logo" width="192" height="192">
+  <img src="https://toastapp.dev/logo192.png" alt="Toast App logo" width="192" height="192">
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://app.toast.sh/images/screenshot-light.png" alt="Toast App screenshot" width="500">
+  <img src="https://toastapp.dev/images/screenshot-light.png" alt="Toast App screenshot" width="500">
 </p>
 
 ## ✨ Key Features

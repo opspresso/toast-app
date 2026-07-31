@@ -13,7 +13,7 @@ describe('Constants', () => {
         name: 'Toast',
         version: 'v0.0.0',
         description: expect.stringContaining('customizable shortcut launcher'),
-        homepage: 'https://app.toast.sh',
+        homepage: 'https://toastapp.dev',
         license: 'MIT',
         repository: 'https://github.com/opspresso/toast-app',
         author: expect.stringContaining('nalbam')
@@ -127,7 +127,7 @@ describe('Constants', () => {
       const anonymous = constants.DEFAULT_ANONYMOUS;
 
       expect(anonymous.image).toBeDefined();
-      expect(anonymous.image).toContain('app.toast.sh');
+      expect(anonymous.image).toContain('toastapp.dev');
       expect(anonymous.image).toMatch(/^https?:\/\//);
     });
 
@@ -205,7 +205,7 @@ describe('Constants', () => {
       const info = constants.APP_DEFAULT_INFO;
       const fullUrl = `${info.homepage}/about`;
 
-      expect(fullUrl).toBe('https://app.toast.sh/about');
+      expect(fullUrl).toBe('https://toastapp.dev/about');
     });
 
     test('should handle feature checking', () => {

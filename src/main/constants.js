@@ -7,7 +7,7 @@
 // Default app info (used when package.json info cannot be read)
 const APP_DEFAULT_INFO = {
   author: 'nalbam <me@nalbam.com>',
-  homepage: 'https://app.toast.sh',
+  homepage: 'https://toastapp.dev',
   description: 'A customizable shortcut launcher for macOS and Windows',
   license: 'MIT',
   version: 'v0.0.0', // Default when the version cannot be retrieved
@@ -46,7 +46,7 @@ const DEFAULT_ANONYMOUS = {
   id: 'anonymous',
   email: 'anonymous@user.com',
   name: 'Guest User',
-  image: 'https://app.toast.sh/logo192.png',
+  image: 'https://toastapp.dev/logo192.png',
   slug: 'guest',
   is_authenticated: false,
   created_at: new Date().toISOString(),

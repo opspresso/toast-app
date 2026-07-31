@@ -62,7 +62,7 @@ To set up local environment variables in your development environment:
 # .env example
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
-TOAST_URL=https://app.toast.sh
+TOAST_URL=https://toastapp.dev
 TOKEN_EXPIRES_IN=31536000
 ```
 

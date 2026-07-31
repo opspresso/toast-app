@@ -147,7 +147,7 @@ The sync API is provided by the server (Toast Web), and the client exchanges set
 
 ```http
 GET /api/users/settings HTTP/1.1
-Host: app.toast.sh
+Host: toastapp.dev
 Authorization: Bearer {access_token}
 ```
 
@@ -182,7 +182,7 @@ Authorization: Bearer {access_token}
 
 ```http
 PUT /api/users/settings HTTP/1.1
-Host: app.toast.sh
+Host: toastapp.dev
 Authorization: Bearer {access_token}
 Content-Type: application/json
 

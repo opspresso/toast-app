@@ -3,7 +3,7 @@
  */
 
 // Toast URL configuration
-export const TOAST_URL = window.toast?.apiBaseUrl || 'https://app.toast.sh';
+export const TOAST_URL = window.toast?.apiBaseUrl || 'https://toastapp.dev';
 export const SUBSCRIPTION_URL = `${TOAST_URL}/subscription`;
 export const DASHBOARD_URL = `${TOAST_URL}/dashboard`;
 
@@ -25,23 +25,23 @@ export const defaultButtons = [
   {
     name: 'Toast',
     shortcut: 'Q',
-    icon: 'https://app.toast.sh/favicon.ico',
+    icon: 'https://toastapp.dev/favicon.ico',
     action: 'open',
-    url: 'https://app.toast.sh',
+    url: 'https://toastapp.dev',
   },
   {
     name: 'How to Use',
     shortcut: 'W',
     icon: 'FlatColorIcons.questions',
     action: 'open',
-    url: 'https://app.toast.sh/how-to-use',
+    url: 'https://toastapp.dev/how-to-use',
   },
   {
     name: 'Subscribe',
     shortcut: 'E',
     icon: 'FlatColorIcons.synchronize',
     action: 'open',
-    url: 'https://app.toast.sh/subscription',
+    url: 'https://toastapp.dev/subscription',
   },
   {
     name: 'Confetti',

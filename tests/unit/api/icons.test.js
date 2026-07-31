@@ -28,7 +28,7 @@ const mockClient = {
   getAccessToken: jest.fn(() => 'test-token'),
   authenticatedRequest: jest.fn(),
   ENDPOINTS: {
-    USER_ICONS: 'https://app.toast.sh/api/users/icons',
+    USER_ICONS: 'https://toastapp.dev/api/users/icons',
   },
 };
 

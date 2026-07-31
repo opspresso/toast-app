@@ -40,11 +40,11 @@ const mockStore = {
 
 const mockClientModule = {
   ENDPOINTS: {
-    OAUTH_AUTHORIZE: 'https://app.toast.sh/api/oauth/authorize',
-    OAUTH_TOKEN: 'https://app.toast.sh/api/oauth/token',
-    OAUTH_REVOKE: 'https://app.toast.sh/api/oauth/revoke',
-    USER_PROFILE: 'https://app.toast.sh/api/users/profile',
-    SETTINGS: 'https://app.toast.sh/api/users/settings'
+    OAUTH_AUTHORIZE: 'https://toastapp.dev/api/oauth/authorize',
+    OAUTH_TOKEN: 'https://toastapp.dev/api/oauth/token',
+    OAUTH_REVOKE: 'https://toastapp.dev/api/oauth/revoke',
+    USER_PROFILE: 'https://toastapp.dev/api/users/profile',
+    SETTINGS: 'https://toastapp.dev/api/users/settings'
   },
   createApiClient: jest.fn(() => mockClient),
   getAuthHeaders: jest.fn(() => ({ Authorization: 'Bearer mock-token' })),
@@ -169,7 +169,7 @@ describe('API Auth Module (P0)', () => {
         refresh_token: 'new-refresh-token',
         expires_in: 3600
       });
-      expect(mockClient.post).toHaveBeenCalledWith('https://app.toast.sh/api/oauth/token', expect.any(URLSearchParams), expect.objectContaining({
+      expect(mockClient.post).toHaveBeenCalledWith('https://toastapp.dev/api/oauth/token', expect.any(URLSearchParams), expect.objectContaining({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -264,7 +264,7 @@ describe('API Auth Module (P0)', () => {
       const result = await authApi.revokeToken(params);
 
       expect(result).toEqual({ success: true });
-      expect(mockClient.post).toHaveBeenCalledWith('https://app.toast.sh/api/oauth/revoke', expect.any(URLSearchParams), expect.objectContaining({
+      expect(mockClient.post).toHaveBeenCalledWith('https://toastapp.dev/api/oauth/revoke', expect.any(URLSearchParams), expect.objectContaining({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }

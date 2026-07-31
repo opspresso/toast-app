@@ -162,7 +162,7 @@ describe('API Client', () => {
       const axiosInstance = client.createApiClient();
 
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://app.toast.sh/api',
+        baseURL: 'https://toastapp.dev/api',
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ describe('API Client', () => {
       client.createApiClient(customOptions);
 
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://app.toast.sh/api',
+        baseURL: 'https://toastapp.dev/api',
         timeout: 5000,
         headers: {
           'Custom-Header': 'custom-value',
@@ -214,7 +214,7 @@ describe('API Client', () => {
       client.createApiClient({});
 
       expect(mockAxios.create).toHaveBeenCalledWith({
-        baseURL: 'https://app.toast.sh/api',
+        baseURL: 'https://toastapp.dev/api',
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -570,7 +570,7 @@ describe('API Client', () => {
 
       expect(mockAxios.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: 'https://app.toast.sh/api'
+          baseURL: 'https://toastapp.dev/api'
         })
       );
     });
@@ -596,7 +596,7 @@ describe('API Client', () => {
       client.createApiClient(undefined);
 
       expect(mockAxios.create).toHaveBeenCalledWith(expect.objectContaining({
-        baseURL: 'https://app.toast.sh/api',
+        baseURL: 'https://toastapp.dev/api',
         timeout: 10000,
       }));
     });

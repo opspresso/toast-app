@@ -106,7 +106,7 @@ Tokens are managed as follows:
 
 ### Data-in-Transit Protection
 
-- Server API communication uses HTTPS (`TOAST_URL` defaults to `https://app.toast.sh`).
+- Server API communication uses HTTPS (`TOAST_URL` defaults to `https://toastapp.dev`).
 - TLS verification follows the default behavior of Node.js / Electron (using the system root CAs).
 - Certificate pinning is not applied.
 

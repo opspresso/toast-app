@@ -427,7 +427,7 @@ export function setupAboutEventListeners() {
   // About tab buttons
   if (homepageButton) {
     homepageButton.addEventListener('click', () => {
-      window.settings.openUrl('https://app.toast.sh');
+      window.settings.openUrl('https://toastapp.dev');
     });
   }
 

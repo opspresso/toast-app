@@ -993,7 +993,7 @@ async function authenticatedRequest(apiCall, options)
 
 ### API Endpoints
 
-The `ENDPOINTS` values are absolute URLs built from `API_BASE_URL`. `API_BASE_URL = ${TOAST_URL}/api`, and the default value of `TOAST_URL` is `https://app.toast.sh`.
+The `ENDPOINTS` values are absolute URLs built from `API_BASE_URL`. `API_BASE_URL = ${TOAST_URL}/api`, and the default value of `TOAST_URL` is `https://toastapp.dev`.
 
 ```javascript
 const ENDPOINTS = {

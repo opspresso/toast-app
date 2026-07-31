@@ -55,7 +55,7 @@ describe('Logger', () => {
 
     // Clear require cache to get fresh module
     delete require.cache[require.resolve('../../src/main/logger')];
-    
+
     // Re-require the module
     logger = require('../../src/main/logger');
   });
@@ -82,25 +82,25 @@ describe('Logger', () => {
     test('should handle app path error', () => {
       const originalEnv = process.env;
       process.env.HOME = '/mock/home';
-      
+
       mockApp.getPath.mockImplementation(() => {
         throw new Error('App not ready');
       });
 
       // Clear cache and re-require
       delete require.cache[require.resolve('../../src/main/logger')];
-      
+
       const logger = require('../../src/main/logger');
-      
+
       // Should load logger module successfully
       expect(typeof logger.createLogger).toBe('function');
-      
+
       process.env = originalEnv;
     });
 
     test('should handle environment variables for path resolution', () => {
       expect(mockElectronLog.transports.file.resolvePathFn).toBeInstanceOf(Function);
-      
+
       const logPath = mockElectronLog.transports.file.resolvePathFn();
       expect(typeof logPath).toBe('string');
       expect(logPath).toContain('toast-app.log');
@@ -234,7 +234,7 @@ describe('Logger', () => {
 
     test('should handle IPC logging with additional arguments', () => {
       const error = new Error('Renderer error');
-      
+
       logger.handleIpcLogging('error', 'renderer error', error);
 
       expect(mockElectronLog.error).toHaveBeenCalledWith(
@@ -256,7 +256,7 @@ describe('Logger', () => {
     test('should handle invalid log level via IPC', () => {
       // This would normally throw if electron-log doesn't have the method
       mockElectronLog.invalidLevel = jest.fn();
-      
+
       logger.handleIpcLogging('invalidLevel', 'test message');
 
       expect(mockElectronLog.invalidLevel).toHaveBeenCalledWith('[Renderer] test message');
@@ -267,7 +267,7 @@ describe('Logger', () => {
     test('should resolve log file path correctly', () => {
       const path = require('path');
       const resolvePathFn = mockElectronLog.transports.file.resolvePathFn;
-      
+
       const logPath = resolvePathFn();
 
       expect(path.join).toHaveBeenCalledWith('/mock/user/data', 'logs/toast-app.log');
@@ -306,10 +306,10 @@ describe('Logger', () => {
 
     test('maskAuthUrl masks token, code, and state query params', () => {
       expect(logger.maskAuthUrl('toast-app://auth?code=abc123&state=xyz789')).toBe('toast-app://auth?code=***&state=***');
-      expect(logger.maskAuthUrl('https://app.toast.sh/oauth/authorize?client_id=1&state=xyz789')).toBe(
-        'https://app.toast.sh/oauth/authorize?client_id=1&state=***',
+      expect(logger.maskAuthUrl('https://toastapp.dev/oauth/authorize?client_id=1&state=xyz789')).toBe(
+        'https://toastapp.dev/oauth/authorize?client_id=1&state=***',
       );
-      expect(logger.maskAuthUrl('https://app.toast.sh/callback?token=secret')).toBe('https://app.toast.sh/callback?token=***');
+      expect(logger.maskAuthUrl('https://toastapp.dev/callback?token=secret')).toBe('https://toastapp.dev/callback?token=***');
     });
 
     test('maskAuthUrl returns non-string values unchanged', () => {

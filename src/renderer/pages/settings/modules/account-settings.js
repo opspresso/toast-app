@@ -271,7 +271,7 @@ export function handleLogout() {
  */
 export function handleManageSubscription() {
   window.settings.log.info('Opening subscription management page');
-  window.settings.openUrl('https://app.toast.sh/subscription');
+  window.settings.openUrl('https://toastapp.dev/subscription');
 }
 
 /**
