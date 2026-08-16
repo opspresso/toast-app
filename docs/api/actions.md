@@ -321,7 +321,7 @@ Every action module implements the following error handling:
 1. **Script execution environment**: JavaScript scripts run in a `vm` context, but `require` (all built-in modules) and `Buffer` are exposed, so this is not a system-level sandbox. Environment variables are limited to a non-sensitive allowlist (`HOME`, `PATH`, etc.). Only run trusted scripts.
 2. **Path validation**: File and application paths are validated before execution. Application launches from the `open` action use an argument-array (`execFile`) approach that does not go through a shell, blocking injection.
 3. **Command escaping**: The `command` of an `exec` action runs as the user-defined shell command as-is; only `workingDir` and AppleScript arguments are escaped.
-4. **Remote action approval**: `exec`/`script` actions newly downloaded via cloud sync, and `application` actions that carry execution arguments (`applicationParameters`), go through a user confirmation dialog before their first run on this device (`src/main/action-approval.js`). Simple app launches without arguments are not subject to approval.
+4. **Remote action approval**: `exec`/`script` actions newly downloaded via cloud sync go through a user confirmation dialog before their first run on this device (`src/main/action-approval.js`).
 
 ## Performance Optimization
 

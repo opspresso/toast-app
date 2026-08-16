@@ -848,11 +848,11 @@ function mergeAdvanced(localAdvanced, serverAdvanced)
 
 ## Action Approval Module (`src/main/action-approval.js`)
 
-Protects `exec`/`script` actions downloaded via cloud sync, and `application` actions that carry execution arguments (`applicationParameters`), so they run only after a one-time user approval per device. Actions created or edited locally are trusted, and only dangerous actions that first appear in remote data are placed in the approval queue. The fingerprints in the trust list and pending list are stored under the config `security` key and are **device-local only** (not uploaded to the cloud).
+Protects `exec`/`script` actions downloaded via cloud sync so they run only after a one-time user approval per device. Actions created or edited locally are trusted, and only dangerous actions that first appear in remote data are placed in the approval queue. The fingerprints in the trust list and pending list are stored under the config `security` key and are **device-local only** (not uploaded to the cloud).
 
 ```javascript
 /**
- * Compute a stable fingerprint for a dangerous action (exec/script, or application with arguments), hashing only fields that affect execution
+ * Compute a stable fingerprint for a dangerous exec/script action, hashing only fields that affect execution
  * @returns {string|null} sha256 hex, or null for a non-dangerous action
  */
 function computeFingerprint(action)

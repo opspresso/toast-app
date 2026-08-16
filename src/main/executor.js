@@ -38,9 +38,7 @@ async function executeAction(action, depth = 0) {
     }
 
     // Risky actions downloaded from cloud sync need one-time user approval.
-    // application actions only carry risk when they pass launch parameters;
-    // ensureApproved/computeFingerprint returns allow for a plain app launch.
-    if (action.action === 'exec' || action.action === 'script' || action.action === 'application') {
+    if (action.action === 'exec' || action.action === 'script') {
       const { approved, reason } = await ensureApproved(action);
       if (!approved) {
         return { success: false, message: reason };

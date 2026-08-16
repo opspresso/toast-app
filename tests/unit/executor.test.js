@@ -73,13 +73,14 @@ describe('Executor', () => {
     });
 
     test('should execute application action', async () => {
-      const action = { action: 'application', applicationPath: '/test/app' };
+      const action = { action: 'application', applicationPath: '/test/app', applicationParameters: '~/workspace/project' };
       const expectedResult = { success: true, message: 'Application executed' };
       
       executeApplication.mockResolvedValue(expectedResult);
       
       const result = await executeAction(action);
       
+      expect(ensureApproved).not.toHaveBeenCalled();
       expect(executeApplication).toHaveBeenCalledWith(action);
       expect(result).toEqual(expectedResult);
     });
