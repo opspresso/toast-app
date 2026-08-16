@@ -5,6 +5,7 @@
  */
 
 const axios = require('axios');
+const { version: APP_VERSION } = require('../../../package.json');
 const { getEnv } = require('../config/env');
 const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
@@ -103,7 +104,14 @@ function createApiClient(options = {}) {
     },
   };
 
-  const clientOptions = { ...defaultOptions, ...options };
+  const clientOptions = {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...(options.headers || defaultOptions.headers),
+      'X-Toast-App-Version': APP_VERSION,
+    },
+  };
   return axios.create(clientOptions);
 }
 

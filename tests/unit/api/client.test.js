@@ -35,6 +35,8 @@ jest.mock('../../../src/main/constants', () => ({
   },
 }));
 
+const { version: appVersion } = require('../../../package.json');
+
 describe('API Client', () => {
   let client;
   const { getEnv } = require('../../../src/main/config/env');
@@ -166,6 +168,7 @@ describe('API Client', () => {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
+          'X-Toast-App-Version': appVersion,
         },
       });
 
@@ -187,6 +190,7 @@ describe('API Client', () => {
         timeout: 5000,
         headers: {
           'Custom-Header': 'custom-value',
+          'X-Toast-App-Version': appVersion,
         },
       });
     });
@@ -206,6 +210,7 @@ describe('API Client', () => {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/xml',
+          'X-Toast-App-Version': appVersion,
         },
       });
     });
@@ -218,8 +223,52 @@ describe('API Client', () => {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
+          'X-Toast-App-Version': appVersion,
         },
       });
+    });
+
+    test('should include the app version header by default', () => {
+      client.createApiClient();
+
+      expect(mockAxios.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-Toast-App-Version': expect.any(String),
+          }),
+        }),
+      );
+    });
+
+    test('should use the package version for the app version header', () => {
+      client.createApiClient();
+
+      expect(mockAxios.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-Toast-App-Version': appVersion,
+          }),
+        }),
+      );
+    });
+
+    test('should preserve the app version header with custom options', () => {
+      client.createApiClient({
+        timeout: 5000,
+        headers: {
+          'Custom-Header': 'custom-value',
+        },
+      });
+
+      expect(mockAxios.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeout: 5000,
+          headers: {
+            'Custom-Header': 'custom-value',
+            'X-Toast-App-Version': appVersion,
+          },
+        }),
+      );
     });
   });
 
