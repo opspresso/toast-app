@@ -332,7 +332,7 @@ function resetToDefaults(config) {
 }
 
 // Fallback content for the seeded default snippet when the user is not logged in.
-const DEFAULT_SNIPPET_EMAIL = 'email@toast.sh';
+const DEFAULT_SNIPPET_EMAIL = 'email@toastapp.dev';
 
 /**
  * Seed a default example snippet on first run so the feature is discoverable.

@@ -147,7 +147,7 @@ describe('Configuration Store', () => {
 
       seedDefaultSnippets(config);
 
-      expect(config.set).toHaveBeenCalledWith('snippets', [expect.objectContaining({ keyword: '!email', content: 'email@toast.sh' })]);
+      expect(config.set).toHaveBeenCalledWith('snippets', [expect.objectContaining({ keyword: '!email', content: 'email@toastapp.dev' })]);
     });
 
     test('does nothing when already seeded', () => {

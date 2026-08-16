@@ -57,7 +57,7 @@ The configuration file is stored in JSON format and contains the following main 
     // More pages...
   ],
   "snippets": [
-    { "id": "default-email", "keyword": "!email", "content": "email@toast.sh", "enabled": true, "label": "Email" }
+    { "id": "default-email", "keyword": "!email", "content": "email@toastapp.dev", "enabled": true, "label": "Email" }
   ],
   "textExpander": { "enabled": false, "seeded": true },
   "appearance": {

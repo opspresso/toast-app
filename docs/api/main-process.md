@@ -24,7 +24,7 @@ function resetToDefaults(config)
 /**
  * Seed the default !email snippet on first run (once per device, preserving existing snippets)
  * @param {Store} config - Configuration store instance
- * @param {string} [loginEmail] - Login email (defaults to email@toast.sh if absent)
+ * @param {string} [loginEmail] - Login email (defaults to email@toastapp.dev if absent)
  */
 function seedDefaultSnippets(config, loginEmail)
 

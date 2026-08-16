@@ -1,8 +1,8 @@
 # Snippets (Text Expansion)
 
-An inline text expansion feature that automatically replaces a keyword you type in other apps with predefined text. For example, in any app such as Slack, Notes, or a browser, typing `!email` turns it into `email@toast.sh`.
+An inline text expansion feature that automatically replaces a keyword you type in other apps with predefined text. For example, in any app such as Slack, Notes, or a browser, typing `!email` turns it into `email@toastapp.dev`.
 
-On first launch, one example snippet, `!email`, is seeded. Its replacement content is the logged-in user's email, or `email@toast.sh` if not logged in. This seeding is performed only once per device, and if snippets already exist (e.g., downloaded via cloud sync), it is left untouched.
+On first launch, one example snippet, `!email`, is seeded. Its replacement content is the logged-in user's email, or `email@toastapp.dev` if not logged in. This seeding is performed only once per device, and if snippets already exist (e.g., downloaded via cloud sync), it is left untouched.
 
 ## How It Works
 
@@ -28,7 +28,7 @@ Snippets are stored in the top-level `snippets` array of the configuration and a
 ```json
 {
   "snippets": [
-    { "id": "default-email", "keyword": "!email", "content": "email@toast.sh", "enabled": true, "label": "Email" }
+    { "id": "default-email", "keyword": "!email", "content": "email@toastapp.dev", "enabled": true, "label": "Email" }
   ],
   "textExpander": { "enabled": false }
 }

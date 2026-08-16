@@ -260,7 +260,7 @@ The `snippets` key is an array of inline text expansion snippets. Like pages, it
 ```json
 {
   "snippets": [
-    { "id": "default-email", "keyword": "!email", "content": "email@toast.sh", "enabled": true, "label": "Email" }
+    { "id": "default-email", "keyword": "!email", "content": "email@toastapp.dev", "enabled": true, "label": "Email" }
   ],
   "textExpander": { "enabled": false }
 }

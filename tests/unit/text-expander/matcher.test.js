@@ -189,7 +189,7 @@ describe('Text Expander Matcher', () => {
 
   describe('findMatch', () => {
     const snippets = [
-      { id: '1', keyword: ':email', content: 'email@toast.sh', enabled: true },
+      { id: '1', keyword: ':email', content: 'email@toastapp.dev', enabled: true },
       { id: '2', keyword: ':addr', content: 'Seoul', enabled: true },
       { id: '3', keyword: ':off', content: 'nope', enabled: false },
     ];
