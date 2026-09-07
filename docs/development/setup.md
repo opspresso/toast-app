@@ -18,7 +18,7 @@ This document describes the Toast app's development environment setup, project s
 
 ### Prerequisites
 
-- **Node.js**: v20.18 or later (based on `engines.node` in `package.json`)
+- **Node.js**: v24 for development and builds (specified in `.nvmrc`); minimum supported version is v22.12 (based on `engines.node` in `package.json`)
 - **npm**: v10 or later
 - **Git**
 - Basic knowledge of Electron, JavaScript, and desktop application development
@@ -31,10 +31,16 @@ git clone https://github.com/opspresso/toast-app.git
 cd toast-app
 ```
 
-2. Install dependencies:
+2. Select the development Node.js version with nvm and install dependencies:
 ```bash
+nvm install
+nvm use
 npm install
 ```
+
+If you do not use nvm, install Node.js 24 with your preferred version manager.
+
+Test CI runs lint and unit tests on Node.js 22 and 24. Release builds read the Node.js version from `.nvmrc`. The app runs on Electron's bundled Node.js, independently of the development/build version. Keep application code compatible with Electron's bundled Node.js 22 APIs. Jest mocks Electron, so its results do not replace actual Electron and native module verification.
 
 3. Start the development server:
 ```bash
