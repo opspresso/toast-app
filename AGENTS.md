@@ -6,7 +6,7 @@ Toast is an Electron desktop application. `src/index.js` is the entry point. Mai
 
 ## Build, Test, and Development Commands
 
-- `npm install`: install dependencies (Node.js 20.18+, npm 10+).
+- `npm install`: install dependencies (Node.js 24 via `.nvmrc`, npm 10+; minimum supported Node.js 22.12).
 - `npm run dev`: start Electron with `NODE_ENV=development` on macOS/Linux; use `npm run dev:win` on Windows.
 - `npm start`: launch the application normally.
 - `npm test`: run Jest tests and generate coverage reports in `coverage/`.
