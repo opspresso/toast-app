@@ -48,7 +48,7 @@
     "yaml": "^2.8.3"
   },
   "devDependencies": {
-    "electron": "^39.8.5",
+    "electron": "^41.10.6",
     "electron-builder": "^26.6.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
