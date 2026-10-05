@@ -14,7 +14,7 @@ const userDataManager = require('./user-data-manager');
 const logger = createLogger('AuthManager');
 const { createConfigStore } = require('./config');
 const client = require('./api/client');
-const { DEFAULT_ANONYMOUS_SUBSCRIPTION, DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
+const { DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
 const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
 const { broadcastToWindows } = require('./broadcast');
 
@@ -58,7 +58,6 @@ function initialize(windowsRef) {
     getAccessToken,
     hasValidToken,
     fetchUserProfile: () => auth.fetchUserProfile(),
-    fetchSubscription: () => auth.fetchSubscription(),
   });
 
   // Run the full app-level logout when auth.js detects a dead session on its own (e.g.
@@ -122,16 +121,10 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
     if (result.success) {
       // 1. Get profile information only once after successful login
       logger.info('Getting user profile information after successful login');
-      const userProfile = await auth.fetchUserProfile();
+      const userProfile = await fetchUserProfile(true);
 
       if (mySequence !== authSequence) {
         return { success: false, error: 'The account changed during login' };
-      }
-
-      // Persist the profile to the local cache before notifying renderers so their
-      // profile/subscription IPC requests hit the cache instead of re-calling the API
-      if (userProfile) {
-        await userDataManager.getUserProfile(true, userProfile);
       }
 
       // A logout (or a newer login) may have completed while the network calls above were
@@ -374,52 +367,23 @@ async function logout() {
  * @returns {Promise<Object>} User profile information
  */
 async function fetchUserProfile(forceRefresh = false) {
-  // First try from stored file, then API call if not available
-  const storedProfile = await userDataManager.getUserProfile(forceRefresh);
-  if (storedProfile && !forceRefresh) {
-    return storedProfile;
+  const sequence = authSequence;
+  const profile = await userDataManager.getUserProfile(forceRefresh);
+  if (sequence !== authSequence) {
+    return { error: { code: 'AUTH_SESSION_CHANGED', message: 'The account changed during this request.' } };
   }
-
-  const profileData = await auth.fetchUserProfile();
-
-  // A dead session surfaces here as an error with requireRelogin (auth.js's own
-  // refreshAccessToken only clears the local token file, it doesn't run the full
-  // app-level logout), so run it here instead of leaving the app in a stale
-  // "logged in" state.
-  if (profileData?.error?.requireRelogin) {
+  if (profile?.error?.requireRelogin) {
     await logout();
   }
-
-  return profileData;
+  return profile;
 }
 
-/**
- * Get subscription information (provided as part of profile)
- * @param {boolean} forceRefresh - Whether to force a refresh from API (default: false)
- * @returns {Promise<Object>} Subscription information
- */
+/** Return the subscription from the same profile request, preserving failures. */
 async function fetchSubscription(forceRefresh = false) {
-  // Try to extract subscription information from stored profile
-  const storedProfile = await userDataManager.getUserProfile(forceRefresh);
-  if (storedProfile && storedProfile.subscription && !forceRefresh) {
-    return storedProfile.subscription;
-  }
-
-  // Call API if no stored information or force refresh
-  const profileData = await auth.fetchUserProfile();
-
-  // See fetchUserProfile() above for why this needs to run the full logout.
-  if (profileData?.error?.requireRelogin) {
-    await logout();
-  }
-
-  if (profileData && profileData.subscription) {
-    // Successfully retrieved profile data with subscription information
-    return profileData.subscription;
-  }
-  else {
-    return DEFAULT_ANONYMOUS_SUBSCRIPTION;
-  }
+  const profile = await fetchUserProfile(forceRefresh);
+  return profile?.error ? profile : profile?.subscription || {
+    error: { code: 'INVALID_PROFILE', message: 'The server returned no subscription information.' },
+  };
 }
 
 /**
@@ -628,15 +592,6 @@ function notifyAuthStateChange(authState) {
   logger.info('Auth state change notification sent to both windows');
 }
 
-/**
- * Get user settings information
- * @param {boolean} forceRefresh - Whether to force a refresh from API (default: false)
- * @returns {Promise<Object>} User settings information
- */
-async function getUserSettings(forceRefresh = false) {
-  return await userDataManager.getUserSettings(forceRefresh);
-}
-
 module.exports = {
   initialize,
   initiateLogin,
@@ -645,7 +600,6 @@ module.exports = {
   logout,
   fetchUserProfile,
   fetchSubscription,
-  getUserSettings,
   getAccessToken,
   hasValidToken,
   refreshAccessToken,

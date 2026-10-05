@@ -21,7 +21,6 @@ const mockAuth = {
 const mockUserDataManager = {
   initialize: jest.fn(),
   getUserProfile: jest.fn(),
-  getUserSettings: jest.fn(),
   cleanupOnLogout: jest.fn(),
 };
 
@@ -96,7 +95,7 @@ describe('Authentication Manager', () => {
     // Setup default mock responses
     mockAuth.hasValidToken.mockResolvedValue(false);
     mockAuth.getAccessToken.mockResolvedValue(null);
-    mockAuth.fetchUserProfile.mockResolvedValue({ success: false });
+    mockUserDataManager.getUserProfile.mockResolvedValue({ success: false });
     mockAuth.fetchSubscription.mockResolvedValue({ success: false });
     mockAuth.initiateLogin.mockResolvedValue(true);
     mockAuth.logout.mockResolvedValue(true);
@@ -225,7 +224,7 @@ describe('Authentication Manager', () => {
   describe('User Profile Management', () => {
     test('should fetch user profile successfully', async () => {
       const mockProfile = { id: 1, email: 'test@example.com' };
-      mockAuth.fetchUserProfile.mockResolvedValue(mockProfile);
+      mockUserDataManager.getUserProfile.mockResolvedValue(mockProfile);
 
       const result = await authManager.fetchUserProfile();
 
@@ -239,14 +238,22 @@ describe('Authentication Manager', () => {
       const result = await authManager.fetchUserProfile(false);
 
       expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(false);
+      expect(mockAuth.fetchUserProfile).not.toHaveBeenCalled();
+    });
+
+    test('force refresh uses the cache service once without another API request', async () => {
+      mockUserDataManager.getUserProfile.mockResolvedValue({ email: 'test@example.test' });
+      await authManager.fetchUserProfile(true);
+      expect(mockUserDataManager.getUserProfile).toHaveBeenCalledTimes(1);
+      expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(true);
+      expect(mockAuth.fetchUserProfile).not.toHaveBeenCalled();
     });
 
     test('fully logs out when the profile fetch signals a dead session (requireRelogin)', async () => {
       // auth.js's own refreshAccessToken (used as fetchUserProfile's onUnauthorized)
       // only clears the local token file, it doesn't stop sync or notify the windows —
       // that must happen here instead, or the app is left looking logged in.
-      mockUserDataManager.getUserProfile.mockResolvedValue(null); // force the cache-miss path
-      mockAuth.fetchUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
+      mockUserDataManager.getUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
 
       await authManager.fetchUserProfile();
 
@@ -260,29 +267,28 @@ describe('Authentication Manager', () => {
       const mockProfile = {
         subscription: { plan: 'premium', active: true }
       };
-      mockAuth.fetchUserProfile.mockResolvedValue(mockProfile);
+      mockUserDataManager.getUserProfile.mockResolvedValue(mockProfile);
 
       const result = await authManager.fetchSubscription();
 
       expect(result).toEqual(mockProfile.subscription);
     });
 
-    test('should return default subscription when no data', async () => {
-      mockAuth.fetchUserProfile.mockResolvedValue(null);
+    test('reports missing subscription instead of returning anonymous success', async () => {
+      mockUserDataManager.getUserProfile.mockResolvedValue(null);
 
       const result = await authManager.fetchSubscription();
 
-      expect(result).toEqual({ isSubscribed: false });
+      expect(result).toHaveProperty('error');
     });
 
     test('fully logs out when the subscription fetch signals a dead session (requireRelogin)', async () => {
-      mockUserDataManager.getUserProfile.mockResolvedValue(null); // force the cache-miss path
-      mockAuth.fetchUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
+      mockUserDataManager.getUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
 
       const result = await authManager.fetchSubscription();
 
       expect(mockAuth.logout).toHaveBeenCalled();
-      expect(result).toEqual({ isSubscribed: false });
+      expect(result).toHaveProperty('error');
     });
   });
 
@@ -290,7 +296,7 @@ describe('Authentication Manager', () => {
     test('refreshes editor account context even when cloud sync is unavailable', async () => {
       authManager.setSyncManager(null);
       mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValueOnce({ success: true, subscription: { active: false } });
-      mockAuth.fetchUserProfile.mockResolvedValueOnce({ email: 'new@example.test' });
+      mockUserDataManager.getUserProfile.mockResolvedValueOnce({ email: 'new@example.test' });
       await authManager.exchangeCodeForTokenAndUpdateSubscription('new-code');
       expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('config-updated', expect.objectContaining({ authSessionVersion: 0 }));
     });
@@ -426,7 +432,7 @@ describe('Authentication Manager', () => {
       mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
         success: true, subscription: { active: true, plan: 'Premium' },
       });
-      mockAuth.fetchUserProfile.mockResolvedValue({ email: 'test@example.com' });
+      mockUserDataManager.getUserProfile.mockResolvedValue({ email: 'test@example.com' });
       await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
       expect(manager.syncAfterLogin).toHaveBeenCalledWith('test@example.com');
       expect(manager.updateCloudSyncSettings).not.toHaveBeenCalled();
@@ -436,7 +442,6 @@ describe('Authentication Manager', () => {
       resolveSync({ success: true });
       await new Promise(resolve => setImmediate(resolve));
       expect(mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed')).toHaveLength(0);
-      expect(mockUserDataManager.getUserSettings).not.toHaveBeenCalled();
     });
 
     test('aborts the login continuation (skips login-success and the authenticated config write) when logout completes while the profile fetch is still in flight', async () => {
@@ -457,7 +462,7 @@ describe('Authentication Manager', () => {
       });
 
       let resolveFetchUserProfile;
-      mockAuth.fetchUserProfile.mockImplementationOnce(
+      mockUserDataManager.getUserProfile.mockImplementationOnce(
         () =>
           new Promise(resolve => {
             resolveFetchUserProfile = resolve;
@@ -466,7 +471,7 @@ describe('Authentication Manager', () => {
 
       const loginPromise = authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
       await new Promise(resolve => setImmediate(resolve));
-      expect(mockAuth.fetchUserProfile).toHaveBeenCalled();
+      expect(mockUserDataManager.getUserProfile).toHaveBeenCalled();
 
       // Log out while the login continuation is still awaiting the profile fetch.
       await authManager.logout();
@@ -668,28 +673,6 @@ describe('Authentication Manager', () => {
       expect(mockWindows.toast.isDestroyed).toHaveBeenCalled();
       // Should not attempt to send to destroyed window
       expect(mockWindows.toast.webContents.send).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('User Settings', () => {
-    test('should get user settings', async () => {
-      const mockSettings = { theme: 'dark', language: 'en' };
-      mockUserDataManager.getUserSettings.mockResolvedValue(mockSettings);
-
-      const result = await authManager.getUserSettings();
-
-      expect(result).toEqual(mockSettings);
-      expect(mockUserDataManager.getUserSettings).toHaveBeenCalledWith(false);
-    });
-
-    test('should force refresh user settings', async () => {
-      const mockSettings = { theme: 'light', language: 'ko' };
-      mockUserDataManager.getUserSettings.mockResolvedValue(mockSettings);
-
-      const result = await authManager.getUserSettings(true);
-
-      expect(result).toEqual(mockSettings);
-      expect(mockUserDataManager.getUserSettings).toHaveBeenCalledWith(true);
     });
   });
 

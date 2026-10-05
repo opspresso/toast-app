@@ -29,7 +29,6 @@ contextBridge.exposeInMainWorld('toast', {
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
   fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
   fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
-  getUserSettings: () => ipcRenderer.invoke('get-user-settings'),
   logout: () => ipcRenderer.invoke('logout'),
 
   // Modal state

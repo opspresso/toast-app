@@ -90,15 +90,15 @@ Tokens are managed as follows:
 
 1. **Configuration data** (`config.json`):
    - Stored in JSON format via electron-store.
-   - Contains no sensitive information (shortcuts, button configuration, appearance settings, etc.).
+   - Contains buttons, snippets, preferences, and sync snapshots. Their content can be sensitive.
    - Protected only by file system permissions.
 
 2. **Authentication tokens** (`auth-tokens.json`):
    - See the [Token Management](#token-management) section above. Stored in plaintext.
 
-3. **User profile data** (`user-profile.json`):
-   - Stores only minimal information such as email, name, and subscription status.
-   - Stored as plaintext JSON.
+3. **User profile cache**:
+   - Kept in main-process memory for five minutes and tied to the credential session.
+   - Cleared on logout. Legacy profile files are never used as an authentication fallback.
 
 4. **Script data**:
    - Custom scripts are stored in plaintext inside the configuration file.

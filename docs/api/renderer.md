@@ -42,7 +42,6 @@ window.toast.initiateLogin()      // Start the login process
 window.toast.logout()             // Log out
 window.toast.fetchUserProfile()   // Fetch the user profile
 window.toast.fetchSubscription()  // Fetch subscription information
-window.toast.getUserSettings()    // Get user settings
 ```
 
 ### Utilities

@@ -1,293 +1,125 @@
-/**
- * Toast - User Data Manager Tests
- *
- * Tests for user data management module (P1 Priority)
- */
-
-// Mock electron
-const mockApp = {
-  getPath: jest.fn((path) => {
-    if (path === 'userData') return '/mock/user/data';
-    return '/mock/path';
-  }),
-};
-
-jest.mock('electron', () => ({
-  app: mockApp,
-}));
-
-// Mock fs
-const mockFs = {
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  unlinkSync: jest.fn(),
-  mkdirSync: jest.fn(),
-  renameSync: jest.fn(),
-};
-
+const mockFs = { existsSync: jest.fn(), unlinkSync: jest.fn(), readFileSync: jest.fn() };
 jest.mock('fs', () => mockFs);
+jest.mock('electron', () => ({ app: { getPath: () => '/test/user-data' } }));
+jest.mock('../../src/main/logger', () => ({ createLogger: () => ({ warn: jest.fn() }) }));
+jest.mock('../../src/main/config/env', () => ({ getEnv: (_key, fallback) => fallback }));
 
-// Mock path
-jest.mock('path', () => ({
-  join: jest.fn((...args) => args.join('/')),
-  dirname: jest.fn((filePath) => filePath.split('/').slice(0, -1).join('/')),
-}));
+const deferred = () => {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+};
+const profile = email => ({ email, subscription: { active: true, features: { cloud_sync: true } } });
 
-// Mock logger
-jest.mock('../../src/main/logger', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  })),
-  maskEmail: jest.fn(email => email),
-  maskName: jest.fn(name => name),
-}));
-
-// Mock constants
-jest.mock('../../src/main/constants', () => ({
-  DEFAULT_ANONYMOUS: {
-    id: 'anonymous',
-    name: 'Anonymous User',
-    subscription: {
-      active: false,
-      plan: 'free',
-    },
-  },
-}));
-
-describe('User Data Manager (P1)', () => {
-  let userDataManager;
-  let mockWindows;
-
-  // Mock auth manager
-  const mockAuthManager = {
-    hasValidToken: jest.fn(),
-    fetchUserProfile: jest.fn(),
-    getUserSettings: jest.fn(),
-  };
-
+describe('Session-bound profile cache', () => {
+  let manager;
+  let client;
+  let auth;
   beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
     jest.resetModules();
-
-    // Setup mock windows
-    mockWindows = {
-      toast: {
-        webContents: { send: jest.fn() },
-        isDestroyed: jest.fn(() => false),
-      },
-      settings: {
-        webContents: { send: jest.fn() },
-        isDestroyed: jest.fn(() => false),
-      },
-    };
-
-    // Setup default mock responses
+    jest.clearAllMocks();
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-05T00:00:00Z'));
     mockFs.existsSync.mockReturnValue(false);
-    mockFs.readFileSync.mockReturnValue(JSON.stringify({}));
-    mockAuthManager.hasValidToken.mockResolvedValue(false);
+    mockFs.unlinkSync.mockReset();
+    client = { getSessionVersion: jest.fn(() => 1), getAccessToken: jest.fn(() => 'token-a') };
+    auth = { hasValidToken: jest.fn().mockResolvedValue(true), fetchUserProfile: jest.fn().mockResolvedValue(profile('a@example.test')) };
+    manager = require('../../src/main/user-data-manager');
+    manager.initialize(client, auth);
+  });
+  afterEach(() => jest.useRealTimers());
 
-    // Get user data manager module
-    userDataManager = require('../../src/main/user-data-manager');
-    
-    // Initialize with mock API client and auth manager
-    userDataManager.initialize(null, mockAuthManager); // apiClient can be null for these tests
+  test('shares concurrent profile/subscription loads and returns independent copies', async () => {
+    const results = await Promise.all([manager.getUserProfile(), manager.getUserProfile(true), manager.getUserProfile()]);
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(1);
+    results[0].subscription.active = false;
+    expect(results[1].subscription.active).toBe(true);
+    expect((await manager.getUserProfile()).subscription.active).toBe(true);
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(1);
   });
 
-  describe('Module Initialization', () => {
-    test('should initialize with windows reference', () => {
-      // Should initialize successfully without throwing
-      expect(() => {
-        userDataManager.initialize(mockWindows);
-      }).not.toThrow();
-    });
-
-    test('should handle null windows parameter', () => {
-      // Should handle null windows gracefully without throwing
-      expect(() => {
-        userDataManager.initialize(null);
-      }).not.toThrow();
-    });
-
+  test('expires after five minutes and force refresh makes exactly one request', async () => {
+    await manager.getUserProfile();
+    jest.advanceTimersByTime(299999);
+    await manager.getUserProfile();
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(1);
+    jest.advanceTimersByTime(1);
+    await manager.getUserProfile();
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(2);
+    await manager.getUserProfile(true);
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(3);
   });
 
-  describe('Authentication-Based Operations', () => {
-    test('should return DEFAULT_ANONYMOUS when no valid token', async () => {
-      // Mock no valid token
-      mockAuthManager.hasValidToken.mockResolvedValue(false);
-
-      // Since we can't directly inject the mock auth manager,
-      // we'll test the behavior when authentication fails
-      const profile = await userDataManager.getUserProfile();
-
-      // When no auth manager is set or no valid token, should return DEFAULT_ANONYMOUS or null
-      expect(profile).toEqual({
-        id: 'anonymous',
-        name: 'Anonymous User',
-        subscription: {
-          active: false,
-          plan: 'free',
-        },
-      });
-    });
-
-    test('should handle getUserProfile without auth manager initialization', async () => {
-      // Test the case where auth manager is not initialized
-      const profile = await userDataManager.getUserProfile();
-
-      // Should return DEFAULT_ANONYMOUS when no auth manager is initialized
-      expect(profile).toEqual({
-        id: 'anonymous',
-        name: 'Anonymous User',
-        subscription: {
-          active: false,
-          plan: 'free'
-        }
-      });
-    });
-
-    test('should handle getUserSettings without auth manager initialization', async () => {
-      // Test the case where auth manager is not initialized  
-      const settings = await userDataManager.getUserSettings();
-
-      // Should return {isAuthenticated: false} when no auth manager is initialized
-      expect(settings).toEqual({
-        isAuthenticated: false
-      });
-    });
-
-    test('should handle force refresh parameter', async () => {
-      // Test with forceRefresh = true
-      const profile = await userDataManager.getUserProfile(true);
-      expect(profile).toEqual({
-        id: 'anonymous',
-        name: 'Anonymous User',
-        subscription: {
-          active: false,
-          plan: 'free'
-        }
-      });
-
-      // Test with forceRefresh = false (default)
-      const profileCached = await userDataManager.getUserProfile(false);
-      expect(profileCached).toEqual({
-        id: 'anonymous',
-        name: 'Anonymous User',
-        subscription: {
-          active: false,
-          plan: 'free'
-        }
-      });
-    });
-
-    test('should handle profile data input parameter', async () => {
-      const mockProfileInput = {
-        id: 'user123',
-        name: 'Test User',
-        email: 'test@example.com',
-      };
-
-      // Test with profile data input to avoid duplicate API calls
-      const profile = await userDataManager.getUserProfile(false, mockProfileInput);
-      
-      // Should return DEFAULT_ANONYMOUS without auth manager, even with profile input
-      expect(profile).toEqual({
-        id: 'anonymous',
-        name: 'Anonymous User',
-        subscription: {
-          active: false,
-          plan: 'free'
-        }
-      });
-    });
+  test('never reads a previous installation/account profile from disk', async () => {
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.readFileSync.mockReturnValue(JSON.stringify(profile('old@example.test')));
+    expect(await manager.getUserProfile()).toMatchObject({ email: 'a@example.test', authSessionVersion: 1 });
+    expect(mockFs.readFileSync).not.toHaveBeenCalled();
   });
 
-  describe('Cleanup on Logout', () => {
-    test('should cleanup data on logout successfully', () => {
-      // First call returns true (file exists), second call returns false (file deleted)
-      mockFs.existsSync
-        .mockReturnValueOnce(true)  // profileExists check
-        .mockReturnValueOnce(false) // settingsExists check
-        .mockReturnValueOnce(false); // profileStillExists check after deletion
-      
-      mockFs.unlinkSync.mockImplementation(() => {});
-
-      const result = userDataManager.cleanupOnLogout();
-
-      expect(mockFs.unlinkSync).toHaveBeenCalled();
-      expect(result).toBe(true);
-    });
-
-    test('should handle cleanup when files do not exist', () => {
-      mockFs.existsSync.mockReturnValue(false);
-
-      const result = userDataManager.cleanupOnLogout();
-
-      expect(mockFs.unlinkSync).not.toHaveBeenCalled();
-      expect(result).toBe(true); // Still considered successful
-    });
-
-    test('should handle cleanup errors', () => {
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.unlinkSync.mockImplementation(() => {
-        throw new Error('File delete error');
-      });
-
-      const result = userDataManager.cleanupOnLogout();
-
-      expect(result).toBe(false);
-    });
+  test('invalidates cached identity on a new credential session', async () => {
+    await manager.getUserProfile();
+    client.getSessionVersion.mockReturnValue(2);
+    auth.fetchUserProfile.mockResolvedValue(profile('b@example.test'));
+    expect(await manager.getUserProfile()).toMatchObject({ email: 'b@example.test', authSessionVersion: 2 });
   });
 
-  describe('Error Handling', () => {
-    test('should handle JSON parsing errors gracefully', async () => {
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue('{ invalid json }');
-
-      const profile = await userDataManager.getUserProfile();
-      const settings = await userDataManager.getUserSettings();
-
-      // Should return DEFAULT_ANONYMOUS when JSON parsing fails for profile
-      expect(profile).toEqual({
-        id: 'anonymous',
-        name: 'Anonymous User',
-        subscription: {
-          active: false,
-          plan: 'free'
-        }
-      });
-      // Should return {isAuthenticated: false} when JSON parsing fails for settings
-      expect(settings).toEqual({
-        isAuthenticated: false
-      });
-    });
+  test('a late account A response cannot replace account B or its pending request', async () => {
+    const old = deferred();
+    auth.fetchUserProfile.mockReturnValueOnce(old.promise);
+    const first = manager.getUserProfile();
+    await Promise.resolve();
+    client.getSessionVersion.mockReturnValue(2);
+    auth.fetchUserProfile.mockResolvedValue(profile('b@example.test'));
+    await manager.getUserProfile();
+    old.resolve(profile('a@example.test'));
+    expect(await first).toMatchObject({ error: { code: 'AUTH_SESSION_CHANGED' } });
+    expect(await manager.getUserProfile()).toMatchObject({ email: 'b@example.test' });
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(2);
   });
 
-  describe('Edge Cases', () => {
-    test('should handle async operations gracefully', async () => {
-      // Should complete without throwing errors
-      await expect(userDataManager.getUserProfile()).resolves.toBeDefined();
-      await expect(userDataManager.getUserSettings()).resolves.toBeDefined();
-    });
+  test('logout invalidates a pending response even before tokens finish clearing', async () => {
+    const old = deferred();
+    auth.fetchUserProfile.mockReturnValueOnce(old.promise);
+    const first = manager.getUserProfile();
+    await Promise.resolve();
+    manager.cleanupOnLogout();
+    old.resolve(profile('a@example.test'));
+    expect(await first).toMatchObject({ error: { code: 'AUTH_SESSION_CHANGED' } });
+  });
 
-    test('should handle concurrent async calls', async () => {
-      // Test multiple concurrent calls
-      const promises = [
-        userDataManager.getUserProfile(),
-        userDataManager.getUserSettings(),
-        userDataManager.getUserProfile(true),
-      ];
+  test.each([
+    { error: { code: 'HTTP_503', message: 'Service unavailable' } },
+    { error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } },
+  ])('preserves API failure instead of substituting cached identity: %j', async error => {
+    await manager.getUserProfile();
+    auth.fetchUserProfile.mockResolvedValue(error);
+    expect(await manager.getUserProfile(true)).toEqual(error);
+    expect(await manager.getUserProfile()).toEqual(error);
+    expect(auth.fetchUserProfile).toHaveBeenCalledTimes(3);
+  });
 
-      const results = await Promise.all(promises);
-      
-      // All should resolve without errors
-      results.forEach(result => {
-        expect(result !== undefined).toBe(true);
-      });
-    });
+  test('does not turn refresh outages into a guest profile', async () => {
+    auth.hasValidToken.mockResolvedValue(false);
+    expect(await manager.getUserProfile()).toMatchObject({ error: { code: 'AUTH_UNAVAILABLE' } });
+    client.getAccessToken.mockReturnValue(null);
+    expect(await manager.getUserProfile()).toMatchObject({ isAuthenticated: false });
+  });
+
+  test.each([null, {}, { email: 'a@example.test' }])('rejects malformed profile %j', async value => {
+    auth.fetchUserProfile.mockResolvedValue(value);
+    expect(await manager.getUserProfile()).toMatchObject({ error: { code: 'INVALID_PROFILE' } });
+  });
+
+  test('reports a thrown transport error and can retry', async () => {
+    auth.fetchUserProfile.mockRejectedValueOnce(new Error('Offline'));
+    expect(await manager.getUserProfile()).toMatchObject({ error: { message: 'Offline' } });
+    expect(await manager.getUserProfile()).toMatchObject({ email: 'a@example.test' });
+  });
+
+  test('cleanup attempts both legacy caches and reports removal failure', () => {
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.unlinkSync.mockImplementationOnce(() => { throw new Error('Read only'); });
+    expect(manager.cleanupOnLogout()).toBe(false);
+    expect(mockFs.unlinkSync).toHaveBeenCalledTimes(2);
   });
 });

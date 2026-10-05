@@ -519,7 +519,6 @@ function setupIpcHandlers(windows)
 | `exchange-code-for-token` | handle | Exchange an authorization code for a token |
 | `logout` | handle | Log out |
 | `fetch-user-profile` | handle | Fetch user profile information |
-| `get-user-settings` | handle | Get user settings information |
 | `fetch-subscription` | handle | Fetch subscription information |
 | `get-auth-token` | handle | Return the current authentication token |
 
@@ -607,7 +606,6 @@ initiateLogin()                 // Start the login process
 exchangeCodeForToken(code)      // Exchange an authorization code for a token
 logout()                        // Log out
 fetchUserProfile(forceRefresh)  // Fetch the user profile
-getUserSettings(forceRefresh)   // Get user settings
 fetchSubscription(forceRefresh) // Fetch subscription information
 getAccessToken()                // Return the access token
 syncSettings(action)            // Sync settings (upload/download/resolve)

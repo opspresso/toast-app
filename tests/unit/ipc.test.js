@@ -35,7 +35,6 @@ const mockAuthManager = {
   exchangeCodeForToken: jest.fn(),
   logout: jest.fn(),
   fetchUserProfile: jest.fn(),
-  getUserSettings: jest.fn(),
   fetchSubscription: jest.fn(),
   getAccessToken: jest.fn(),
   hasValidToken: jest.fn(),

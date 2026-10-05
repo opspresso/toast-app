@@ -23,9 +23,6 @@ function setupAuthHandlers() {
   // Get user profile information
   ipcMain.handle('fetch-user-profile', async () => await authManager.fetchUserProfile());
 
-  // Get user settings information
-  ipcMain.handle('get-user-settings', async () => await authManager.getUserSettings());
-
   // Get subscription information
   ipcMain.handle('fetch-subscription', async () => await authManager.fetchSubscription());
 

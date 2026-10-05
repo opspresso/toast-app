@@ -99,46 +99,15 @@ For detailed configuration options, see [Configuration Schema](./schema.md).
 - **Windows**: `%APPDATA%\Toast\`
 - **Linux**: `~/.config/Toast/`
 
-**Structure**:
-User data is stored directly in the application data directory:
+The main settings and `_sync` revision snapshots live in `config.json`. Authentication
+credentials live in `auth-tokens.json`. `CONFIG_SUFFIX` selects separate config and
+token files for an isolated environment.
 
-```
-Toast/
-  ├── config.json            # Main configuration file (electron-store)
-  ├── user-profile.json      # User profile information
-  ├── user-settings.json     # User settings and sync metadata
-  └── auth-tokens.json       # Authentication tokens
-```
-
-**user-profile.json structure**:
-```json
-{
-  "name": "User Name",
-  "email": "user@example.com",
-  "is_authenticated": true,
-  "isAuthenticated": true,
-  "subscription": {
-    "plan": "free",
-    "active": false,
-    "is_subscribed": false,
-    "features": {
-      "page_groups": 1,
-      "advanced_actions": false,
-      "cloud_sync": false
-    }
-  }
-}
-```
-
-**user-settings.json structure**:
-```json
-{
-  "lastSyncedAt": 1682932769000,
-  "lastModifiedAt": 1682932768123,
-  "lastSyncedDevice": "device-id-1",
-  "lastModifiedDevice": "device-id-1"
-}
-```
+Profiles are cached in main-process memory for five minutes, scoped to the current
+credential session. Concurrent requests share one API call. Force refresh bypasses
+the cached result. Restarting the app requires a fresh profile request; network or
+authentication failures are returned as errors. Legacy `user-profile.json` and
+`user-settings.json` are no longer read and are removed on logout from that environment.
 
 ### Authentication Tokens
 
