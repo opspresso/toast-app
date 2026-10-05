@@ -117,7 +117,16 @@
         "AppImage",
         "deb"
       ]
-    }
+    },
+    "protocols": [
+      {
+        "name": "Toast authentication",
+        "schemes": [
+          "toast-app"
+        ],
+        "role": "Viewer"
+      }
+    ]
   },
   "publish": [
     {

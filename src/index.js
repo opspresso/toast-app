@@ -28,6 +28,11 @@ const auth = require('./main/auth');
 const cloudSync = require('./main/cloud-sync');
 const userDataManager = require('./main/user-data-manager');
 const { initializeApprovals } = require('./main/action-approval');
+const { createProtocolDispatcher } = require('./main/protocol-dispatcher');
+const protocolDispatcher = createProtocolDispatcher();
+
+// Windows and Linux pass a cold-start deep link on the command line.
+process.argv.forEach(protocolDispatcher.receive);
 
 // Hide Dock icon on macOS
 if (process.platform === 'darwin' && app.dock) {
@@ -169,7 +174,7 @@ function initialize() {
   auth.registerProtocolHandler();
 
   // Set up URL protocol request handling function
-  global.handleProtocolRequest = url => {
+  protocolDispatcher.setHandler(url => {
     logger.info('Processing protocol request:', maskAuthUrl(url));
 
     // Directly extract authentication code from URL
@@ -252,7 +257,7 @@ function initialize() {
         windows.settings.webContents.send('protocol-data', url);
       }
     }
-  };
+  });
 
   // Set quitting flag on app
   app.isQuitting = false;
@@ -264,7 +269,7 @@ app.whenReady().then(() => {
   initialize();
 
   // Show the settings window on first launch if this is a new installation
-  const isFirstLaunch = !config.has('firstLaunchCompleted');
+  const isFirstLaunch = config.get('firstLaunchCompleted') !== true;
   if (isFirstLaunch) {
     // Set first launch flag
     config.set('firstLaunchCompleted', true);
@@ -289,18 +294,14 @@ app.on('second-instance', (_, commandLine) => {
   if (process.platform === 'win32' || process.platform === 'linux') {
     // Deep link handling in Windows and Linux
     const url = commandLine.find(arg => arg.startsWith('toast-app://'));
-    if (url && global.handleProtocolRequest) {
-      global.handleProtocolRequest(url);
-    }
+    protocolDispatcher.receive(url);
   }
 });
 
 // Protocol URL handling on macOS
 app.on('open-url', (event, url) => {
   event.preventDefault();
-  if (url.startsWith('toast-app://') && global.handleProtocolRequest) {
-    global.handleProtocolRequest(url);
-  }
+  protocolDispatcher.receive(url);
 });
 
 // Quit when all windows are closed, except on macOS
@@ -373,8 +374,7 @@ app.on('before-quit', () => {
     logger.error('Error closing windows:', error);
   }
 
-  // Clear global protocol handler
-  global.handleProtocolRequest = null;
+  protocolDispatcher.clear();
 
   logger.info('Application cleanup completed');
 });

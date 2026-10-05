@@ -19,6 +19,11 @@ The synced sections are `pages` (buttons), `snippets`, `appearance`, and `advanc
 Global shortcuts, text-expander permissions/enabled state, authentication tokens, and action
 approvals remain on the device. Remote `exec` and `script` actions still require local approval.
 
+OAuth returns through `toast-app://auth`. The build declares that scheme for installed apps.
+Cold-start callbacks are queued until initialization completes; Windows/Linux command-line URLs
+and macOS `open-url` events use the same dispatcher. Unpackaged development builds do not take
+over the installed app's protocol registration.
+
 ## Conflict and deletion rules
 
 The app stores the last acknowledged cloud data in `_sync.baseSnapshot` and its server version
