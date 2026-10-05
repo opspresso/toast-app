@@ -5,7 +5,7 @@
  * communication between the main process and renderer processes.
  */
 
-const config = require('./config').createConfigStore();
+const { createConfigStore } = require('./config');
 const updater = require('./updater');
 const { setupWindowHandlers, isModalOpened } = require('./ipc/window');
 const { setupConfigHandlers } = require('./ipc/config');
@@ -21,6 +21,7 @@ const { setupSnippetsHandlers } = require('./ipc/snippets');
  * @param {Object} windows - Object containing application windows
  */
 function setupIpcHandlers(windows) {
+  const config = createConfigStore();
   // Initialize auto updater (pass window references)
   // Note: authManager/userDataManager initialization and the protocol request
   // handler are owned by src/index.js — the single initialization entry point.

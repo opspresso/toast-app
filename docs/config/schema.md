@@ -155,7 +155,7 @@ The configuration file is stored in JSON format and can be modified through the 
 | `subscription.isSubscribed` | boolean | `false` | Whether the user has a premium subscription |
 | `subscription.isAuthenticated` | boolean | `false` | User authentication status |
 | `subscription.expiresAt` | string | `""` | Subscription expiration date (ISO string) |
-| `subscription.pageGroups` | number | `1` | Maximum number of page groups the user can create |
+| `subscription.pageGroups` | integer (1–9) | `1` | Maximum number of page groups the user can create |
 
 `auth-manager.js` normalizes verified server profiles through `subscription.js` and stores these additional fields:
 

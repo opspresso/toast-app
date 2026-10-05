@@ -4,7 +4,9 @@ This document provides API documentation for the main process modules of the Toa
 
 ## Config Module (`src/main/config.js`)
 
-The config module handles configuration management using electron-store.
+The config module owns one shared, schema-validated `electron-store`. It converts supported legacy
+subscription representations in memory and writes them only after complete-file validation succeeds.
+Read or validation failure raises `CONFIG_READ_FAILED`; it never returns a store with validation disabled.
 
 ### Functions
 
@@ -43,13 +45,6 @@ function importConfig(config, filePath)
  * @returns {boolean} Success status
  */
 function exportConfig(config, filePath)
-
-/**
- * Sanitize subscription data (remove unnecessary fields)
- * @param {Object} subscription - Subscription data
- * @returns {Object} Sanitized subscription data
- */
-function sanitizeSubscription(subscription)
 
 /**
  * Get the device ID (generate one if absent)

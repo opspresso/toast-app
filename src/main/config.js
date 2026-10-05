@@ -5,6 +5,7 @@
  */
 
 const Store = require('electron-store');
+const { isDeepStrictEqual } = require('util');
 const { createLogger } = require('./logger');
 const { getEnv } = require('./config/env');
 
@@ -161,7 +162,9 @@ const schema = {
         default: '',
       },
       pageGroups: {
-        type: 'number',
+        type: 'integer',
+        minimum: 1,
+        maximum: 9,
         default: 1,
         description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
       },
@@ -262,52 +265,45 @@ function createConfigStore() {
     return sharedStore;
   }
 
+  let migrated = false;
   try {
-    // First load the configuration without schema validation to migrate it
-    const migrationStore = new Store({
+    const store = new Store({
       name: CONFIG_STORE_NAME,
-      schema: null, // Disable schema validation
+      schema,
       clearInvalidConfig: false,
+      configFileMode: 0o600,
+      deserialize: text => {
+        const data = JSON.parse(text);
+        if (data && typeof data === 'object' && !Array.isArray(data) && data.subscription) {
+          const subscription = migrateLegacySubscription(data.subscription);
+          if (!isDeepStrictEqual(data.subscription, subscription)) {
+            data.subscription = subscription;
+            migrated = true;
+          }
+        }
+        return data;
+      },
     });
-
-    // Attempt subscription data migration
-    try {
-      const subscription = migrationStore.get('subscription');
-      if (subscription) {
-        // Clean up subscription data types
-        const sanitizedSubscription = sanitizeSubscription(subscription);
-
-        // Save the changed data (before schema validation)
-        migrationStore.set('subscription', sanitizedSubscription);
-
-        logger.info('Legacy subscription data migrated successfully');
-      }
+    // Deserialization transforms only in memory. Both the constructor and this
+    // write validate the complete configuration before any migration is saved.
+    if (migrated) {
+      const migratedData = store.store;
+      store.store = migratedData;
     }
-    catch (migrationError) {
-      logger.error('Error during subscription data migration:', migrationError);
-      // Reset subscription data when a migration error occurs
-      try {
-        migrationStore.set('subscription', schema.subscription.default);
-        logger.info('Reset subscription data to defaults due to migration error');
-      }
-      catch (resetError) {
-        logger.error('Failed to reset subscription data:', resetError);
-      }
-    }
-
-    // Now create the Store object with normal schema validation
-    sharedStore = new Store({ name: CONFIG_STORE_NAME, schema });
+    sharedStore = store;
     return sharedStore;
   }
   catch (error) {
-    // As a last resort, disable schema validation and create the Store object
-    logger.error('Error creating config store with schema, falling back to schema-less store:', error);
-    sharedStore = new Store({
-      name: CONFIG_STORE_NAME,
-      schema: null,
-      clearInvalidConfig: false,
-    });
-    return sharedStore;
+    // JSON parser messages may include snippets or other private configuration.
+    logger.error('Could not load the configuration:', error.name);
+    const filePath = require('path').join(require('electron').app.getPath('userData'), `${CONFIG_STORE_NAME}.json`);
+    const failure = new Error(`Toast could not read or validate its settings.
+
+File: ${filePath}
+
+Back up this file, then correct its JSON and setting values or restore a known-good copy. Restart Toast afterward. Your existing settings file was not cleared.`);
+    failure.code = 'CONFIG_READ_FAILED';
+    throw failure;
   }
 }
 
@@ -446,62 +442,35 @@ function exportConfig(config, filePath) {
   }
 }
 
-/**
- * Ensure subscription object has correct types according to schema
- * @param {Object} subscription - Subscription object to validate/fix
- * @returns {Object} - Subscription object with correct types
- */
-function sanitizeSubscription(subscription) {
-  // Return the default when missing or not an object
-  if (!subscription || typeof subscription !== 'object') {
-    return schema.subscription.default;
+/** Convert supported legacy subscription representations before strict validation. */
+function migrateLegacySubscription(subscription) {
+  if (!subscription || typeof subscription !== 'object' || Array.isArray(subscription)) {
+    return subscription;
   }
-
   const result = { ...subscription };
-
-  // Clean up boolean-type fields
-  result.isSubscribed = Boolean(result.isSubscribed);
-  result.isAuthenticated = Boolean(result.isAuthenticated);
-
-  // The expiresAt field must be a string
-  if (result.expiresAt !== undefined) {
-    if (typeof result.expiresAt === 'string') {
-      // Already a string, use it as-is
+  for (const key of ['isSubscribed', 'isAuthenticated']) {
+    if (result[key] === 'true' || result[key] === '1' || result[key] === 1) {
+      result[key] = true;
     }
-    else if (result.expiresAt instanceof Date) {
-      // Convert a Date object to an ISO string
-      result.expiresAt = result.expiresAt.toISOString();
-    }
-    else if (typeof result.expiresAt === 'number') {
-      // Convert a number (timestamp) to an ISO string
-      result.expiresAt = new Date(result.expiresAt).toISOString();
-    }
-    else {
-      // Set any other type to an empty string
-      result.expiresAt = '';
+    else if (result[key] === 'false' || result[key] === '0' || result[key] === 0) {
+      result[key] = false;
     }
   }
-  else {
-    // Set to an empty string when undefined
-    result.expiresAt = '';
-  }
-
-  // For backward compatibility, move subscribedUntil to expiresAt if it exists
-  if (result.subscribedUntil !== undefined) {
-    if (!result.expiresAt && result.subscribedUntil) {
+  if (Object.hasOwn(result, 'subscribedUntil')) {
+    if (result.expiresAt === undefined || result.expiresAt === null || result.expiresAt === '') {
       result.expiresAt = result.subscribedUntil;
     }
     delete result.subscribedUntil;
   }
-
-  // The pageGroups field must be a number
-  if (result.pageGroups !== undefined) {
-    result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
+  if (result.expiresAt === null) {
+    result.expiresAt = '';
   }
-  else {
-    result.pageGroups = schema.subscription.properties.pageGroups.default;
+  else if (typeof result.expiresAt === 'number' && Number.isFinite(new Date(result.expiresAt).getTime())) {
+    result.expiresAt = new Date(result.expiresAt).toISOString();
   }
-
+  if (typeof result.pageGroups === 'string' && result.pageGroups.trim() !== '' && Number.isInteger(Number(result.pageGroups))) {
+    result.pageGroups = Number(result.pageGroups);
+  }
   return result;
 }
 
@@ -594,7 +563,6 @@ module.exports = {
   seedDefaultSnippets,
   importConfig,
   exportConfig,
-  sanitizeSubscription,
   // Sync metadata management functions
   getDeviceId,
   generateDataHash,

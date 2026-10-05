@@ -223,55 +223,25 @@ describe('Main Config Module (P0)', () => {
       }
     });
 
-    test('should create multiple store instances', () => {
+    test('reuses one store instance so change listeners observe every write', () => {
       const store1 = config.createConfigStore();
       const store2 = config.createConfigStore();
 
-      // Both calls should return store-like objects
+      // Both callers share the store that owns validation and change listeners.
       expect(store1).toBeDefined();
       expect(store2).toBeDefined();
       expect(store1).toBe(mockStore);
       expect(store2).toBe(mockStore);
+      expect(require('electron-store')).toHaveBeenCalledTimes(1);
     });
 
-    test('should handle store creation errors', () => {
-      // Clear the Store mock and re-mock it for this specific test
-      jest.clearAllMocks();
+    test('reports store creation errors without retrying with validation disabled', () => {
       const Store = require('electron-store');
-      
-      let callCount = 0;
-      Store.mockImplementation((options) => {
-        callCount++;
-        // First call is migration store (without schema)
-        // Second call is the real store (with schema) - make this one fail
-        if (callCount === 2 && options && options.schema) {
-          throw new Error('Store creation failed');
-        }
-        // All other calls return mockStore
-        return mockStore;
-      });
-
-      // The function should handle errors gracefully and create a schema-less store
-      const store = config.createConfigStore();
-      expect(store).toBeDefined();
-      expect(store).toBe(mockStore);
-      
-      // Verify the call sequence:
-      // 1. Migration store (no schema)
-      // 2. Real store with schema (fails) 
-      // 3. Fallback store (no schema)
-      expect(Store).toHaveBeenCalledTimes(3);
-      expect(Store).toHaveBeenNthCalledWith(1, expect.objectContaining({ 
-        schema: null,
-        clearInvalidConfig: false
-      }));
-      expect(Store).toHaveBeenNthCalledWith(2, expect.objectContaining({ 
-        schema: config.schema 
-      }));
-      expect(Store).toHaveBeenNthCalledWith(3, expect.objectContaining({ 
-        schema: null,
-        clearInvalidConfig: false
-      }));
+      Store.mockClear();
+      Store.mockImplementationOnce(() => { throw new Error('Store creation failed'); });
+      expect(() => config.createConfigStore()).toThrow('could not read or validate');
+      expect(Store).toHaveBeenCalledTimes(1);
+      expect(Store).toHaveBeenCalledWith(expect.objectContaining({ schema: config.schema, clearInvalidConfig: false }));
     });
   });
 
@@ -330,7 +300,7 @@ describe('Main Config Module (P0)', () => {
       expect(store.set).not.toHaveBeenCalled();
     });
 
-    test('should sanitize subscription data', () => {
+    test('converts supported legacy representations before validating the full file', () => {
       const subscription = {
         id: 'sub_123',
         active: true,
@@ -340,7 +310,8 @@ describe('Main Config Module (P0)', () => {
         extraneous: 'should be preserved',
       };
 
-      const sanitized = config.sanitizeSubscription(subscription);
+      const { deserialize } = require('electron-store').mock.calls.at(-1)[0];
+      const sanitized = deserialize(JSON.stringify({ subscription })).subscription;
 
       expect(sanitized).toBeDefined();
       expect(sanitized.id).toBe('sub_123');

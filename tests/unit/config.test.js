@@ -1,4 +1,4 @@
-const { app } = require('electron');
+jest.mock('../../src/main/logger', () => ({ createLogger: () => ({ info: jest.fn(), error: jest.fn(), debug: jest.fn() }) }));
 
 // Mock electron-store
 jest.mock('electron-store', () => {

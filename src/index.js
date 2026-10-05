@@ -5,10 +5,8 @@
  * It initializes the Electron app, creates windows, and sets up event listeners.
  */
 
-const { app, session } = require('electron');
+const { app, session, dialog } = require('electron');
 const { loadEnv } = require('./main/config/env');
-const path = require('path');
-const fs = require('fs');
 const { createLogger, maskAuthUrl } = require('./main/logger');
 
 // Create module-specific logger
@@ -45,8 +43,8 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-// Create configuration store
-const config = createConfigStore();
+// Load configuration after Electron is ready so startup failures can be shown safely.
+let config = null;
 
 /**
  * Load environment configuration files and apply to app
@@ -69,14 +67,6 @@ async function loadEnvironmentConfig() {
  * Initialize the application
  */
 function initialize() {
-  // Create necessary directories
-  const appDataPath = app.getPath('userData');
-  const configPath = path.join(appDataPath, 'config');
-
-  if (!fs.existsSync(configPath)) {
-    fs.mkdirSync(configPath, { recursive: true });
-  }
-
   // Allow remote button icons (e.g. site favicons) in the file:// based UI.
   // Windows are loaded via loadFile, so every https image is cross-origin and
   // Chromium blocks responses that carry Cross-Origin-Resource-Policy headers
@@ -223,6 +213,15 @@ function initialize() {
 // When Electron has finished initialization
 // (auto-update is owned solely by src/main/updater.js — initialized in ipc.js's initAutoUpdater)
 app.whenReady().then(() => {
+  try {
+    config = createConfigStore();
+  }
+  catch (error) {
+    logger.error('Settings initialization failed:', error.code || error.name);
+    dialog.showErrorBox('Toast could not load its settings', error.message);
+    app.quit();
+    return;
+  }
   initialize();
 
   // Show the settings window on first launch if this is a new installation
@@ -270,6 +269,9 @@ app.on('window-all-closed', () => {
 
 // On macOS, re-create the window when the dock icon is clicked or show it if already created
 app.on('activate', () => {
+  if (!config) {
+    return;
+  }
   if (!windows.toast || windows.toast.isDestroyed()) {
     createToastWindow(config);
   }
