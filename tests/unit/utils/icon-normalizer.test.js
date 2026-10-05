@@ -76,6 +76,11 @@ describe('normalizeLocalIcons', () => {
     });
   });
 
+  test('decodes percent-encoded file URL paths before uploading', async () => {
+    await normalizeLocalIcons(makePages(['file:///Users/test/Library/Application%20Support/Toast/icons/App.png']), { uploadIcon, platform: 'darwin' });
+    expect(uploadIcon).toHaveBeenCalledWith({ filePath: '/Users/test/Library/Application Support/Toast/icons/App.png', onUnauthorized: null });
+  });
+
   test('leaves non-file icons untouched', async () => {
     const icons = ['https://example.com/x.png', 'FlatColorIcons.home', '🚀', ''];
     const pages = makePages(icons);

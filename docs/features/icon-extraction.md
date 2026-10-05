@@ -501,8 +501,14 @@ Logged-in cloud sync users can upload locally extracted icons to the server (S3)
 Behavior:
 
 1. **Upload on extraction**: after extracting an icon, the `extract-app-icon` IPC handler (`src/main/ipc/system.js`) uploads it to the server via `apiIcons.uploadIcon` if authenticated, and on success includes a `remoteUrl` (https URL) in the response. The renderer (`local-icon-utils.js`) uses `remoteUrl` as the button icon value if present, otherwise the existing `file://` path.
-2. **Upload API**: `uploadIcon` in `src/main/api/icons.js` performs a multipart upload to the `USER_ICONS` (`/users/icons`) endpoint. It handles token refresh on 401, a within-session duplicate upload cache, and a 6-hour backoff when the server does not support it (404/405/503).
+2. **Upload API**: `uploadIcon` in `src/main/api/icons.js` performs a multipart upload to the `USER_ICONS` (`/users/icons`) endpoint. It handles token refresh on 401 and shares concurrent uploads of the same file. A bounded URL cache belongs to the current login session and is cleared when that session changes. Endpoint errors stop the current batch but do not prevent a later attempt after the server recovers.
 3. **Migrating existing icons**: just before the cloud sync upload, `normalizeLocalIcons` in `src/main/utils/icon-normalizer.js` performs a one-time upload of the remaining `file://` icons on a page and replaces them with `https://` URLs (inside `uploadSettings` in `src/main/cloud-sync.js`). Icons whose files do not exist on this device are left untouched.
+
+Automatic uploads accept only PNG files within this installation's `userData/icons` cache, up to
+2,000,000 bytes. Resolved symlinks must remain inside that directory. This prevents a cloud-provided
+`file://` icon from uploading arbitrary local files. Re-extract the app icon or use an HTTPS image URL
+if an old icon reference points outside the managed cache. Invalid or failed uploads remain explicit
+errors; a cached URL from another account is never reused.
 
 > Server icon URLs are hard to guess since they are based on a user hash plus a content hash, but they allow unauthenticated access, so they are intended only for non-sensitive images such as app icons.
 

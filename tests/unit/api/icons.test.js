@@ -1,158 +1,116 @@
-/**
- * Toast API - Icons Module Tests
- *
- * Tests for the button icon upload API module.
- */
-
-// Mock logger
-jest.mock('../../../src/main/logger', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  })),
-}));
-
-// Mock fs
-jest.mock('fs', () => ({
-  promises: {
-    stat: jest.fn(),
-    readFile: jest.fn(),
-  },
-}));
-
-// Mock API client
+jest.mock('../../../src/main/logger', () => ({ createLogger: () => ({ warn: jest.fn() }) }));
+jest.mock('electron', () => ({ app: { getPath: () => '/mock/user-data' } }));
+jest.mock('fs', () => ({ promises: { stat: jest.fn(), readFile: jest.fn(), realpath: jest.fn() } }));
+let mockSession = 0;
 const mockClient = {
-  createApiClient: jest.fn(),
-  getAccessToken: jest.fn(() => 'test-token'),
-  authenticatedRequest: jest.fn(),
-  ENDPOINTS: {
-    USER_ICONS: 'https://toastapp.dev/api/users/icons',
-  },
+  createApiClient: jest.fn(), getAccessToken: jest.fn(() => 'test-token'), getSessionVersion: () => mockSession,
+  authenticatedRequest: jest.fn(), ENDPOINTS: { USER_ICONS: 'https://toastapp.dev/api/users/icons' },
 };
-
 jest.mock('../../../src/main/api/client', () => mockClient);
-
 const fs = require('fs');
-const icons = require('../../../src/main/api/icons');
+const { uploadIcon } = require('../../../src/main/api/icons');
+const filePath = '/mock/user-data/icons/App.png';
+const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);
+let post;
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockSession++;
+  mockClient.getAccessToken.mockReturnValue('test-token');
+  fs.promises.realpath.mockImplementation(async value => value);
+  fs.promises.stat.mockResolvedValue({ mtimeMs: 1000, size: png.length, isFile: () => true });
+  fs.promises.readFile.mockResolvedValue(png);
+  post = jest.fn(async () => ({ data: { success: true, data: { url: `https://icons.example.test/account-${mockSession}/icon.png` } } }));
+  mockClient.createApiClient.mockReturnValue({ post });
+  mockClient.authenticatedRequest.mockImplementation(async fn => fn());
+});
 
-describe('API Icons Module', () => {
-  let mockPost;
+it('uploads extracted PNG data with authenticated multipart headers', async () => {
+  expect((await uploadIcon({ filePath })).success).toBe(true);
+  expect(mockClient.createApiClient).toHaveBeenCalledWith({ timeout: 15000, headers: {} });
+  const [url, body, config] = post.mock.calls[0];
+  expect(url).toBe(mockClient.ENDPOINTS.USER_ICONS);
+  expect(body).toBeInstanceOf(FormData);
+  expect(config.headers).toEqual({ Authorization: 'Bearer test-token' });
+});
+it('shares simultaneous uploads and caches their URL within the current account', async () => {
+  const [first, second] = await Promise.all([uploadIcon({ filePath }), uploadIcon({ filePath })]);
+  expect(first.url).toBe(second.url);
+  expect(post).toHaveBeenCalledTimes(1);
+  expect(fs.promises.readFile).toHaveBeenCalledTimes(1);
+  expect(await uploadIcon({ filePath })).toMatchObject({ cached: true, url: first.url });
+});
+it('uploads again after file changes or account changes', async () => {
+  const first = await uploadIcon({ filePath });
+  fs.promises.stat.mockResolvedValue({ mtimeMs: 2000, size: png.length, isFile: () => true });
+  await uploadIcon({ filePath });
+  mockSession++;
+  expect((await uploadIcon({ filePath })).url).not.toBe(first.url);
+  expect(post).toHaveBeenCalledTimes(3);
+});
+it.each([404, 405, 503])('does not retain a %i outage after the server recovers', async statusCode => {
+  mockClient.authenticatedRequest.mockResolvedValueOnce({ error: { statusCode, message: 'Unavailable' } });
+  expect(await uploadIcon({ filePath })).toMatchObject({ success: false, unavailable: true });
+  expect((await uploadIcon({ filePath })).success).toBe(true);
+  expect(post).toHaveBeenCalledTimes(1);
+});
+it('does not use an old account response to populate the new account cache', async () => {
+  let finish;
+  post.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+  const old = uploadIcon({ filePath });
+  await new Promise(resolve => setImmediate(resolve));
+  mockSession++;
+  const current = await uploadIcon({ filePath });
+  finish({ data: { success: true, data: { url: 'https://icons.example.test/old.png' } } });
+  expect(await old).toMatchObject({ success: false, canceled: true });
+  expect((await uploadIcon({ filePath })).url).toBe(current.url);
+});
+it('does not upload under a new account when the account changes during file reading', async () => {
+  fs.promises.readFile.mockImplementationOnce(async () => { mockSession++; return png; });
+  expect(await uploadIcon({ filePath })).toMatchObject({ canceled: true });
+  expect(post).not.toHaveBeenCalled();
+});
+it('rejects paths outside the extraction cache before reading their contents', async () => {
+  expect((await uploadIcon({ filePath: '/mock/user-data/auth-tokens.json' })).success).toBe(false);
+  expect(fs.promises.readFile).not.toHaveBeenCalled();
+  expect(post).not.toHaveBeenCalled();
+});
+it('rejects symlinks that leave the extraction cache', async () => {
+  fs.promises.realpath.mockImplementation(async value => value === filePath ? '/private/data.png' : value);
+  expect((await uploadIcon({ filePath })).success).toBe(false);
+  expect(fs.promises.readFile).not.toHaveBeenCalled();
+  expect(post).not.toHaveBeenCalled();
+});
+it('rejects oversized files before reading them and rejects non-PNG content before sending', async () => {
+  fs.promises.stat.mockResolvedValueOnce({ size: 2_000_001, isFile: () => true });
+  expect((await uploadIcon({ filePath })).success).toBe(false);
+  expect(fs.promises.readFile).not.toHaveBeenCalled();
+  fs.promises.readFile.mockResolvedValueOnce(Buffer.from('not an image'));
+  expect((await uploadIcon({ filePath })).success).toBe(false);
+  expect(post).not.toHaveBeenCalled();
+});
+it('passes the token refresh callback to the shared client', async () => {
+  const onUnauthorized = jest.fn();
+  await uploadIcon({ filePath, onUnauthorized });
+  expect(mockClient.authenticatedRequest).toHaveBeenCalledWith(expect.any(Function), { onUnauthorized });
+});
+it('rejects cached uploads after logout and reports file read failures', async () => {
+  await uploadIcon({ filePath });
+  mockSession++;
+  mockClient.getAccessToken.mockReturnValue(null);
+  expect((await uploadIcon({ filePath })).success).toBe(false);
+  mockClient.getAccessToken.mockReturnValue('test-token');
+  fs.promises.stat.mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+  expect(await uploadIcon({ filePath })).toMatchObject({ success: false, error: expect.stringContaining('ENOENT') });
+});
+it.each([{}, { url: 'file:///private/data' }, { url: 123 }])('rejects an invalid response URL: %j', async data => {
+  post.mockResolvedValueOnce({ data: { success: true, data } });
+  expect(await uploadIcon({ filePath })).toMatchObject({ success: false, error: 'Invalid icon upload response' });
+});
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    icons.resetUploadState();
-
-    fs.promises.stat.mockResolvedValue({ mtimeMs: 1000 });
-    fs.promises.readFile.mockResolvedValue(Buffer.from('png-bytes'));
-
-    mockPost = jest.fn().mockResolvedValue({
-      data: { success: true, data: { url: 'https://icons.example.com/icons/abc/def.png' } },
-    });
-    mockClient.createApiClient.mockReturnValue({ post: mockPost });
-
-    // Pass through to the API call by default (success path)
-    mockClient.authenticatedRequest.mockImplementation(async apiCall => await apiCall());
-  });
-
-  describe('uploadIcon', () => {
-    test('uploads the file and returns the server URL', async () => {
-      const result = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      expect(result).toEqual({ success: true, url: 'https://icons.example.com/icons/abc/def.png' });
-      expect(fs.promises.readFile).toHaveBeenCalledWith('/mock/icons/App.png');
-
-      // multipart request: created without default JSON headers, only Authorization specified
-      expect(mockClient.createApiClient).toHaveBeenCalledWith({ timeout: 15000, headers: {} });
-      const [url, body, config] = mockPost.mock.calls[0];
-      expect(url).toBe(mockClient.ENDPOINTS.USER_ICONS);
-      expect(body).toBeInstanceOf(FormData);
-      expect(config.headers).toEqual({ Authorization: 'Bearer test-token' });
-      expect(config.headers['Content-Type']).toBeUndefined();
-    });
-
-    test('returns a cached URL without re-uploading the same file', async () => {
-      await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-      const result = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      expect(result).toEqual({ success: true, url: 'https://icons.example.com/icons/abc/def.png', cached: true });
-      expect(mockPost).toHaveBeenCalledTimes(1);
-    });
-
-    test('re-uploads when the file has been modified (different mtime)', async () => {
-      await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      fs.promises.stat.mockResolvedValue({ mtimeMs: 2000 });
-      await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      expect(mockPost).toHaveBeenCalledTimes(2);
-    });
-
-    test('marks the endpoint unavailable on 404 and short-circuits later calls', async () => {
-      mockClient.authenticatedRequest.mockResolvedValue({
-        error: { code: 'HTTP_404', message: 'Not Found', statusCode: 404 },
-      });
-
-      const first = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-      expect(first.success).toBe(false);
-      expect(first.unavailable).toBe(true);
-      expect(icons.isUploadUnavailable()).toBe(true);
-
-      const second = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-      expect(second.success).toBe(false);
-      expect(second.unavailable).toBe(true);
-      // The second call should short-circuit without even reading the file
-      expect(fs.promises.readFile).toHaveBeenCalledTimes(1);
-    });
-
-    test('marks the endpoint unavailable on 503 (server feature disabled)', async () => {
-      mockClient.authenticatedRequest.mockResolvedValue({
-        error: { code: 'HTTP_503', message: 'Service Unavailable', statusCode: 503 },
-      });
-
-      const result = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      expect(result.unavailable).toBe(true);
-      expect(icons.isUploadUnavailable()).toBe(true);
-    });
-
-    test('does not mark unavailable on transient errors (500)', async () => {
-      mockClient.authenticatedRequest.mockResolvedValue({
-        error: { code: 'HTTP_500', message: 'Server Error', statusCode: 500 },
-      });
-
-      const result = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      expect(result.success).toBe(false);
-      expect(result.unavailable).toBeUndefined();
-      expect(icons.isUploadUnavailable()).toBe(false);
-    });
-
-    test('passes onUnauthorized through to authenticatedRequest for 401 refresh', async () => {
-      const onUnauthorized = jest.fn();
-      await icons.uploadIcon({ filePath: '/mock/icons/App.png', onUnauthorized });
-
-      expect(mockClient.authenticatedRequest).toHaveBeenCalledWith(expect.any(Function), { onUnauthorized });
-    });
-
-    test('returns an error when the file cannot be read', async () => {
-      fs.promises.stat.mockRejectedValue(new Error('ENOENT'));
-
-      const result = await icons.uploadIcon({ filePath: '/missing.png' });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to read icon file');
-      expect(mockPost).not.toHaveBeenCalled();
-    });
-
-    test('returns an error on an unexpected response shape', async () => {
-      mockPost.mockResolvedValue({ data: { success: true, data: {} } });
-
-      const result = await icons.uploadIcon({ filePath: '/mock/icons/App.png' });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid icon upload response');
-    });
-  });
+it('evicts old entries instead of retaining an unbounded upload cache', async () => {
+  for (let index = 0; index < 300; index++) {
+    await uploadIcon({ filePath: `/mock/user-data/icons/App${index}.png` });
+  }
+  expect((await uploadIcon({ filePath: '/mock/user-data/icons/App0.png' })).cached).not.toBe(true);
+  expect(post).toHaveBeenCalledTimes(301);
 });
