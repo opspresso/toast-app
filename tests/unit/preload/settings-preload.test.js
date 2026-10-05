@@ -417,4 +417,11 @@ describe('Settings Preload Script', () => {
       });
     });
   });
+  test('forwards sync progress and failure status to the renderer', () => {
+    const listener = mockIpcRenderer.on.mock.calls.find(([name]) => name === 'cloud-sync-status')[1];
+    const status = { enabled: true, error: 'Conflict', isConflicted: true };
+    listener({}, status);
+    expect(mockWindow.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'cloud-sync-status', detail: status }));
+  });
+
 });

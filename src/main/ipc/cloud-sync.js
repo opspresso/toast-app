@@ -8,7 +8,6 @@ const { ipcMain } = require('electron');
 const authManager = require('../auth-manager');
 const userDataManager = require('../user-data-manager');
 const { createLogger } = require('../logger');
-const { broadcastToWindows } = require('../broadcast');
 const { getDeviceId } = require('../config');
 
 const logger = createLogger('IPC');
@@ -18,15 +17,10 @@ const logger = createLogger('IPC');
  * @param {Object} windows - Object containing application windows
  * @param {Object} config - Shared config store
  */
-function setupCloudSyncHandlers(windows, config) {
+function setupCloudSyncHandlers(_windows, config) {
   // Cloud synchronization related handlers
   // The manager is initialized once by src/index.js via initCloudSync; here we only read it
   const getCloudSyncManager = () => require('../cloud-sync').getSyncManager();
-
-  // Forward the Settings Synced event handler
-  ipcMain.on('settings-synced', (event, data) => {
-    broadcastToWindows(windows, 'settings-synced', data);
-  });
 
   // Get sync status
   ipcMain.handle('get-sync-status', async () => {
@@ -80,6 +74,9 @@ function setupCloudSyncHandlers(windows, config) {
   // Set cloud sync enabled/disabled
   ipcMain.handle('set-cloud-sync-enabled', async (event, enabled) => {
     try {
+      if (typeof enabled !== 'boolean') {
+        return { success: false, error: 'enabled must be a boolean' };
+      }
       // Log the sync setting change
       logger.info(`Setting cloud sync to ${enabled ? 'enabled' : 'disabled'}`);
 
@@ -129,24 +126,7 @@ function setupCloudSyncHandlers(windows, config) {
       if (cloudSyncManager) {
         // Perform manual sync
         logger.info(`Performing manual sync action: ${action}`);
-        const result = await cloudSyncManager.manualSync(action);
-
-        // If the sync result is successful, send a UI update message
-        if (result.success) {
-          // Collect current configuration data
-          const configData = {
-            pages: config.get('pages'),
-            snippets: config.get('snippets'),
-            appearance: config.get('appearance'),
-            advanced: config.get('advanced'),
-            subscription: config.get('subscription'),
-          };
-
-          // Sync completion notification (includes configuration data)
-          broadcastToWindows(windows, 'config-updated', configData);
-        }
-
-        return result;
+        return await cloudSyncManager.manualSync(action);
       }
       else {
         // When the manager is not initialized

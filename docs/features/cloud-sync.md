@@ -28,7 +28,7 @@ Device clocks do not decide which settings win.
 - A change made on only one side is retained, including deletion and empty arrays.
 - Independent field and item changes are merged. Item identity uses `id`, then `shortcut`, then `keyword`.
 - Conflicting values, delete-versus-edit, incompatible reorders, or ambiguous lists require a user choice.
-- **Resolve Conflicts** attempts the same safe merge as automatic synchronization.
+- **Sync Now** attempts the same safe merge as automatic synchronization.
 - **Upload to Server** chooses the local settings. **Download from Server** chooses cloud settings.
 - Changes made during a network request remain pending until acknowledged by another sync.
 
@@ -47,7 +47,7 @@ manually editing that file. Standard Export exports the currently active setting
 The app sends `baseRevision` in each PUT. Toast Web conditionally stores the update only when that
 revision still matches, increments it, and returns the acknowledged settings.
 
-- `409`: read the new revision and merge again, up to three attempts. A content conflict needs a choice.
+- `409`: read the new revision and merge again, up to three attempts. A content conflict needs a choice; Settings displays its cause.
 - `400`, `401`, `403`, `428`: correct the data, login/access, or client/server version before retrying.
 - Network errors, `429`, and server errors: retain local changes and retry with bounded backoff.
 - Invalid cloud data: report failure and retain the complete local settings; do not silently drop buttons.

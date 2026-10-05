@@ -202,6 +202,10 @@ ipcRenderer.on('auth-state-changed', (event, data) => {
   );
 });
 
+ipcRenderer.on('cloud-sync-status', (_event, status) => {
+  window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: status }));
+});
+
 // Settings synchronization event handler
 ipcRenderer.on('settings-synced', (event, data) => {
   window.dispatchEvent(

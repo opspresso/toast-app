@@ -44,7 +44,7 @@ let managers;
 const envelope = () => ({ success: true, data: clone(remote), normalized: Object.fromEntries(['pages', 'snippets', 'appearance', 'advanced'].filter(key => Object.hasOwn(remote, key)).map(key => [key, clone(remote[key])])), syncMetadata: { revision: remote.revision } });
 function setup(data) {
   const config = store(data);
-  const auth = { hasValidToken: jest.fn(async () => true), refreshAccessToken: jest.fn(), fetchUserProfile: jest.fn(async () => ({ email: 'one@example.test' })), notifySettingsSynced: jest.fn() };
+  const auth = { hasValidToken: jest.fn(async () => true), refreshAccessToken: jest.fn(), fetchUserProfile: jest.fn(async () => ({ email: 'one@example.test' })), notifySettingsSynced: jest.fn(), notifyConfigUpdated: jest.fn(), notifySyncStatus: jest.fn() };
   const manager = createSyncManager(auth, config);
   managers.push(manager);
   return { config, auth, manager };
@@ -332,4 +332,16 @@ it('treats omitted schema defaults as equal and avoids download-upload loops', a
   expect(config.get('appearance')).toMatchObject({ theme: 'dark', monitorPositions: {}, opacity: 0.95 });
   await jest.advanceTimersByTimeAsync(15000);
   expect(mockApi.uploadSettings).not.toHaveBeenCalled();
+});
+
+it('publishes progress and failures without announcing a successful sync', async () => {
+  const { manager, auth, config } = setup();
+  await manager.syncAfterLogin();
+  auth.notifySettingsSynced.mockClear();
+  config.set('snippets', []);
+  mockApi.uploadSettings.mockResolvedValueOnce({ success: false, statusCode: 500, error: 'Server unavailable' });
+  await manager.manualSync();
+  expect(auth.notifySyncStatus).toHaveBeenCalledWith(expect.objectContaining({ isSyncing: true }));
+  expect(auth.notifySyncStatus).toHaveBeenLastCalledWith(expect.objectContaining({ isSyncing: false, error: 'Server unavailable' }));
+  expect(auth.notifySettingsSynced).not.toHaveBeenCalled();
 });

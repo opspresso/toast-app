@@ -5,6 +5,7 @@ const { sync: apiSync } = require('./api');
 const { createConfigStore, schema, getDeviceId, generateDataHash, hasUnsyncedChanges } = require('./config');
 const { sanitizeRemotePages, recordRemoteChanges } = require('./action-approval');
 const { normalizeLocalIcons } = require('./utils/icon-normalizer');
+const { isCloudSyncAllowed } = require('./subscription');
 const { mergeSettings, SyncConflict } = require('./cloud-sync/merge');
 
 const logger = createLogger('CloudSync');
@@ -58,8 +59,16 @@ function createSyncManager(auth, config) {
   const isCurrent = epoch => enabled && !suspended && epoch === generation;
   const canceled = () => ({ success: false, canceled: true, error: 'Synchronization stopped or account changed' });
 
-  function notify() {
-    auth?.notifySettingsSynced?.({ ...readSettings(), subscription: config.get('subscription') });
+  const getCurrentStatus = () => ({
+    enabled, deviceId, lastChangeType, lastSyncTime, isSyncing: !!inFlight,
+    error: lastError, isConflicted: !!metadata().isConflicted,
+    hasPermission: isCloudSyncAllowed(config.get('subscription') || {}, { isDevelopment: process.env.NODE_ENV === 'development' }),
+  });
+  const publishStatus = () => auth?.notifySyncStatus?.(getCurrentStatus());
+
+  function notify(synced = false) {
+    const method = synced ? 'notifySettingsSynced' : 'notifyConfigUpdated';
+    auth?.[method]?.({ ...readSettings(), subscription: config.get('subscription') });
   }
 
   function persist(settings, syncMetadata, replaceMetadata = false) {
@@ -100,6 +109,7 @@ function createSyncManager(auth, config) {
     clearTimeout(retryTimer);
     periodicTimer = debounceTimer = retryTimer = null;
     pending = false;
+    publishStatus();
   }
 
   function startPeriodicSync() {
@@ -251,7 +261,7 @@ function createSyncManager(auth, config) {
       if (!equal(readSettings(), snapshotMetadata.baseSnapshot)) {
         pending = true;
       }
-      notify();
+      notify(true);
       return { success: true, revision: snapshotMetadata.baseRevision };
     }
     return { success: false, statusCode: 409, error: 'Cloud settings kept changing; try syncing again' };
@@ -285,11 +295,15 @@ function createSyncManager(auth, config) {
       return result;
     }).finally(() => {
       inFlight = null;
+      if (isCurrent(epoch)) {
+        publishStatus();
+      }
       if (pending && isCurrent(epoch)) {
         pending = false;
         schedule();
       }
     });
+    publishStatus();
     return inFlight;
   }
 
@@ -363,7 +377,7 @@ function createSyncManager(auth, config) {
       accountId = null;
     },
     getLastSyncStatus: () => ({ success: lastSyncTime > 0 && !lastError, timestamp: lastSyncTime, error: lastError }),
-    getCurrentStatus: () => ({ enabled, deviceId, lastChangeType, lastSyncTime, isSyncing: !!inFlight, error: lastError, isConflicted: !!metadata().isConflicted }),
+    getCurrentStatus,
     unsubscribe: () => {
       stopPeriodicSync();
       for (const unsubscribe of listeners) {

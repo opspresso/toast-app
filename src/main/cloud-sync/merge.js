@@ -3,7 +3,7 @@ const { isDeepStrictEqual: equal } = require('util');
 
 class SyncConflict extends Error {
   constructor(path) {
-    super(`Both devices changed ${path}. Choose upload or download to resolve the conflict.`);
+    super("Local and cloud changes could not be merged. Upload to keep this device's settings, or download to use the cloud settings.");
     this.name = 'SyncConflict';
     this.path = path;
   }

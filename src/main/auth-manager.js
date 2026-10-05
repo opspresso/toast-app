@@ -536,6 +536,14 @@ function notifySettingsSynced(configData = null) {
   logger.info('Settings synchronization notification sent');
 }
 
+function notifyConfigUpdated(configData) {
+  broadcastToWindows(windows, 'config-updated', configData);
+}
+
+function notifySyncStatus(status) {
+  broadcastToWindows(windows, 'cloud-sync-status', status);
+}
+
 /**
  * Process manual synchronization request
  * @param {string} action - Synchronization action ('upload', 'download', 'resolve')
@@ -627,6 +635,8 @@ module.exports = {
   notifyLogout,
   notifyAuthStateChange,
   notifySettingsSynced,
+  notifyConfigUpdated,
+  notifySyncStatus,
   syncSettings,
   updateSyncSettings,
   setSyncManager, // Export newly added function
