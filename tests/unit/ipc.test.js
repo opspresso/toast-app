@@ -67,6 +67,7 @@ const mockWindows = {
     setSize: jest.fn(),
     setSkipTaskbar: jest.fn(),
     getPosition: jest.fn(() => [100, 100]),
+    getBounds: jest.fn(() => ({ width: 700, height: 500 })),
     setPosition: jest.fn(),
     show: jest.fn(),
     hide: jest.fn(),
@@ -175,7 +176,8 @@ jest.mock('../../src/main/cloud-sync', () => ({
 }));
 
 // Import the module after mocks are set up
-const { setupIpcHandlers, isModalOpened } = require('../../src/main/ipc');
+let setupIpcHandlers;
+let isModalOpened;
 
 describe('IPC Handlers', () => {
   let mockCloudSyncManager;
@@ -183,6 +185,8 @@ describe('IPC Handlers', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    jest.resetModules();
+    ({ setupIpcHandlers, isModalOpened } = require('../../src/main/ipc'));
     
     // Setup default returns
     mockExecutor.executeAction.mockResolvedValue({ success: true, message: 'Action executed' });

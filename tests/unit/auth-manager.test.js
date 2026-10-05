@@ -78,6 +78,11 @@ describe('Authentication Manager', () => {
     // Setup mock windows
     mockWindows = {
       toast: {
+        setOpacity: jest.fn(),
+        setSize: jest.fn(),
+        setSkipTaskbar: jest.fn(),
+        setPosition: jest.fn(),
+        getBounds: jest.fn(() => ({ width: 700, height: 500 })),
         webContents: {
           send: jest.fn(),
         },

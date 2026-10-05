@@ -8,6 +8,7 @@ const { BrowserWindow, app } = require('electron');
 const path = require('path');
 const { createLogger } = require('./logger');
 const { positionToastWindow } = require('./shortcuts');
+const { applyNativePreferences, getToastSize } = require('./native-preferences');
 const { isModalOpened } = require('./ipc');
 const { isLoginProcessActive } = require('./api/auth'); // Import function to check login status
 
@@ -32,27 +33,10 @@ function createToastWindow(config) {
   }
 
   // Get appearance settings
-  const opacity = config.get('appearance.opacity') || 0.95;
   const showInTaskbar = config.get('advanced.showInTaskbar') || false;
   const size = config.get('appearance.size') || 'medium';
 
-  // Determine window size based on configuration
-  let width, height;
-  switch (size) {
-    case 'small':
-      width = 500;
-      height = 350;
-      break;
-    case 'large':
-      width = 800;
-      height = 550;
-      break;
-    case 'medium':
-    default:
-      width = 700;
-      height = 500;
-      break;
-  }
+  const [width, height] = getToastSize(size);
 
   // Create the browser window
   windows.toast = new BrowserWindow({
@@ -85,11 +69,7 @@ function createToastWindow(config) {
   // Load the toast UI
   windows.toast.loadFile(path.join(__dirname, '../renderer/pages/toast/index.html'));
 
-  // Set window opacity
-  windows.toast.setOpacity(opacity);
-
-  // Position the window
-  positionToastWindow(windows.toast, config);
+  applyNativePreferences(config, windows);
 
   // Handle window events
   setupToastWindowEvents(windows.toast, config);

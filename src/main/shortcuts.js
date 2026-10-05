@@ -189,7 +189,7 @@ function toggleToastWindow(toastWindow, config) {
  * @param {BrowserWindow} toastWindow - Toast window
  * @param {Object} [config] - Configuration store (optional)
  */
-function positionToastWindow(toastWindow, config) {
+function positionToastWindow(toastWindow, config, { useSavedPosition = true } = {}) {
   if (!toastWindow) {
     return;
   }
@@ -225,7 +225,7 @@ function positionToastWindow(toastWindow, config) {
   const savedPosition = monitorPositions[displayId];
 
   // If we have a saved position for this display, use it
-  if (savedPosition) {
+  if (useSavedPosition && savedPosition) {
     // Get the current display work area to ensure position is within bounds
     const displayWorkArea = currentDisplay.workArea;
 

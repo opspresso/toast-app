@@ -4,7 +4,8 @@
  * Handlers for reading, writing, importing, exporting, and resetting config.
  */
 
-const { app, ipcMain } = require('electron');
+const { ipcMain } = require('electron');
+const { applyNativePreferences } = require('../native-preferences');
 const { getSessionVersion } = require('../api/client');
 const { validatePages } = require('../action-validation');
 const { mergeSettings, SyncConflict } = require('../cloud-sync/merge');
@@ -12,31 +13,6 @@ const { broadcastToWindows } = require('../broadcast');
 const { createLogger } = require('../logger');
 
 const logger = createLogger('IPC');
-
-/**
- * Update toast window size
- */
-function updateToastWindowSize(window, size) {
-  let width, height;
-
-  switch (size) {
-    case 'small':
-      width = 500;
-      height = 350;
-      break;
-    case 'large':
-      width = 800;
-      height = 550;
-      break;
-    case 'medium':
-    default:
-      width = 700;
-      height = 500;
-      break;
-  }
-
-  window.setSize(width, height);
-}
 
 /**
  * Set up configuration IPC handlers
@@ -70,9 +46,6 @@ function setupConfigHandlers(windows, config) {
       }
       logger.info('=== set-config called ===');
       logger.info('Key:', key);
-      if (key === 'pages') {
-        logger.info('Pages being updated. Length:', Array.isArray(value) ? value.length : 'Not array');
-      }
       if (key === null && typeof value === 'object') {
         // Set entire config
         config.set(value);
@@ -82,56 +55,8 @@ function setupConfigHandlers(windows, config) {
         config.set(key, value);
       }
 
-      // Actions saved locally by the user are trusted on this device
-      if (key === null || key === 'pages') {
-        const { trustCurrentConfig } = require('../action-approval');
-        trustCurrentConfig(config);
-      }
-
-      // Apply OS-level settings immediately instead of waiting for the next launch
-      if (key === null || key === 'advanced' || key === 'advanced.launchAtLogin') {
-        app.setLoginItemSettings({ openAtLogin: config.get('advanced.launchAtLogin') || false });
-      }
-      if (
-        (key === null || key === 'advanced' || key === 'advanced.showInTaskbar')
-        && windows.toast
-        && !windows.toast.isDestroyed()
-      ) {
-        windows.toast.setSkipTaskbar(!(config.get('advanced.showInTaskbar') || false));
-      }
-
-      // Immediately notify toast window when settings change
-      if (windows.toast && !windows.toast.isDestroyed()) {
-        // If entire settings or specific section is updated
-        if (key === null || key === 'appearance' || key === 'advanced' || key === 'pages' || (typeof key === 'string' && key.startsWith('appearance.'))) {
-          // Sanitize the subscription object using the sanitizeSubscription function
-          const { sanitizeSubscription } = require('../config');
-          const subscription = sanitizeSubscription(config.get('subscription'));
-
-          windows.toast.webContents.send('config-updated', {
-            authSessionVersion: getSessionVersion(),
-            pages: config.get('pages'),
-            appearance: config.get('appearance'),
-            subscription,
-          });
-        }
-
-        // Update window properties if window settings are affected
-        if (key === 'appearance' || key === 'appearance.opacity' || key === 'appearance.size') {
-          const opacity = config.get('appearance.opacity') || 0.95;
-          windows.toast.setOpacity(opacity);
-
-          // Change window size (if needed)
-          const size = config.get('appearance.size') || 'medium';
-          updateToastWindowSize(windows.toast, size);
-        }
-
-        // Update position if window position settings are affected
-        if (key === 'appearance' || key === 'appearance.position') {
-          const { positionToastWindow } = require('../shortcuts');
-          positionToastWindow(windows.toast, config);
-        }
-      }
+      applyNativePreferences(config, windows);
+      broadcastToWindows(windows, 'config-updated', { ...config.store, authSessionVersion: getSessionVersion() });
 
       return true;
     }
@@ -187,25 +112,8 @@ function setupConfigHandlers(windows, config) {
         notifyRegistrationFailure(hotkey);
       }
 
-      // Apply OS-level settings immediately, matching set-config's behavior
-      app.setLoginItemSettings({ openAtLogin: config.get('advanced.launchAtLogin') || false });
-      if (windows.toast && !windows.toast.isDestroyed()) {
-        windows.toast.setSkipTaskbar(!(config.get('advanced.showInTaskbar') || false));
-      }
-
-      // Send change notification to toast window after settings reset
-      if (windows.toast && !windows.toast.isDestroyed()) {
-        // Sanitize the subscription object using the sanitizeSubscription function
-        const { sanitizeSubscription } = require('../config');
-        const subscription = sanitizeSubscription(config.get('subscription'));
-
-        windows.toast.webContents.send('config-updated', {
-          authSessionVersion: getSessionVersion(),
-          pages: config.get('pages'),
-          appearance: config.get('appearance'),
-          subscription,
-        });
-      }
+      applyNativePreferences(config, windows);
+      broadcastToWindows(windows, 'config-updated', { ...config.store, authSessionVersion: getSessionVersion() });
 
       return true;
     }
@@ -232,6 +140,8 @@ function setupConfigHandlers(windows, config) {
         if (!registerGlobalShortcuts(config, windows) && hotkey) {
           notifyRegistrationFailure(hotkey);
         }
+        applyNativePreferences(config, windows);
+        broadcastToWindows(windows, 'config-updated', { ...config.store, authSessionVersion: getSessionVersion() });
       }
 
       return result;

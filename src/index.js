@@ -77,11 +77,6 @@ function initialize() {
     fs.mkdirSync(configPath, { recursive: true });
   }
 
-  // Set up auto launch
-  app.setLoginItemSettings({
-    openAtLogin: config.get('advanced.launchAtLogin') || false,
-  });
-
   // Allow remote button icons (e.g. site favicons) in the file:// based UI.
   // Windows are loaded via loadFile, so every https image is cross-origin and
   // Chromium blocks responses that carry Cross-Origin-Resource-Policy headers

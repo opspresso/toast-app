@@ -18,6 +18,7 @@ const { DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
 const { normalizeSubscription } = require('./subscription');
 const { isDeepStrictEqual: equal } = require('util');
 const { broadcastToWindows } = require('./broadcast');
+const { applyNativePreferences } = require('./native-preferences');
 
 // Store window references
 let windows = null;
@@ -408,13 +409,16 @@ function notifySettingsSynced(configData = null) {
   logger.info('Settings to be synced to UI:', Object.keys(configData || {}).join(', '));
 
   // Send settings update notification + UI refresh notification with full config data
+  notifyConfigUpdated(configData);
   broadcastToWindows(windows, 'settings-synced', syncData);
-  broadcastToWindows(windows, 'config-updated', { ...configData, authSessionVersion: client.getSessionVersion() });
 
   logger.info('Settings synchronization notification sent');
 }
 
 function notifyConfigUpdated(configData) {
+  if (windows && (configData?.appearance || configData?.advanced)) {
+    applyNativePreferences(createConfigStore(), windows);
+  }
   broadcastToWindows(windows, 'config-updated', { ...configData, authSessionVersion: client.getSessionVersion() });
 }
 

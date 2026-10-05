@@ -17,7 +17,9 @@ The enabled preference belongs to this device. Login and logout do not change th
 
 The synced sections are `pages` (buttons), `snippets`, `appearance`, and `advanced`.
 Global shortcuts, text-expander permissions/enabled state, authentication tokens, and action
-approvals remain on the device. Remote `exec` and `script` actions still require local approval.
+approvals remain on the device. Downloaded appearance and advanced settings also update the
+native window and launch-at-login setting; an application error is reported rather than announcing sync success.
+Remote `exec` and `script` actions still require local approval.
 
 OAuth returns through `toast-app://auth`. The build declares that scheme for installed apps.
 Cold-start callbacks are queued until initialization completes; Windows/Linux command-line URLs

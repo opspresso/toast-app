@@ -12,7 +12,10 @@ change settings through preload IPC methods. The current schema is in `src/main/
 | Snippets | Text expansion permission, enable switch, and snippet editing |
 | About | Version, update checks, downloads, installation, and website links |
 
-General and appearance controls save immediately. Snippet forms save through **Add Snippet**
+General and appearance controls save immediately. Startup, local saves, reset, import, and cloud
+updates use the same native preference application path for window size, opacity, position,
+taskbar visibility, and launch at login. Unchanged values are not reapplied. Selecting a position
+preset overrides the current monitor's saved drag position. Snippet forms save through **Add Snippet**
 or **Save Changes**. Text expansion is off by default and requires macOS permissions.
 See [Snippets](snippets.md) for its input rules and conflict handling.
 
