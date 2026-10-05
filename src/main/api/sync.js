@@ -1,6 +1,7 @@
 /** Cloud settings transport. The sync manager owns serialization and persistence. */
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = require('./client');
 const { isCloudSyncAllowed } = require('../subscription');
+const { validateSnippets } = require('../snippets');
 
 let lastSyncStatus = { success: false, timestamp: 0, error: null };
 
@@ -29,10 +30,9 @@ function normalizeSettings(response) {
       }
     }
     else if (key === 'snippets') {
-      if (!Array.isArray(value) || !value.every(snippet => snippet && typeof snippet.keyword === 'string' &&
-        snippet.keyword.length > 0 && typeof snippet.content === 'string' &&
-        (snippet.enabled === undefined || typeof snippet.enabled === 'boolean'))) {
-        throw new Error('Invalid cloud snippets');
+      const validation = validateSnippets(value);
+      if (!validation.valid) {
+        throw new Error(`Invalid cloud snippets: ${validation.error}`);
       }
     }
     else if (!value || typeof value !== 'object' || Array.isArray(value)) {

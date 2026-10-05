@@ -451,58 +451,6 @@
       </div>
     </div>
 
-    <!-- Mock window.settings object for browser testing -->
-    <script>
-      // Mock window.settings for browser testing
-      if (!window.settings) {
-        window.settings = {
-          log: {
-            info: (...args) => console.log('[INFO]', ...args),
-            error: (...args) => console.error('[ERROR]', ...args),
-            warn: (...args) => console.warn('[WARN]', ...args),
-            debug: (...args) => console.debug('[DEBUG]', ...args),
-          },
-          getConfig: () =>
-            Promise.resolve({
-              globalHotkey: 'Alt+Space',
-              appearance: {
-                theme: 'system',
-                position: 'center',
-                size: 'medium',
-                opacity: 0.95,
-              },
-              advanced: {
-                launchAtLogin: false,
-                hideAfterAction: true,
-                hideOnBlur: true,
-                hideOnEscape: true,
-                showInTaskbar: false,
-              },
-            }),
-          setConfig: (key, value) => {
-            console.log('Setting config:', key, value);
-            return Promise.resolve();
-          },
-          closeWindow: () => console.log('Close window'),
-          getVersion: () => Promise.resolve('1.0.0'),
-          getAuthToken: () => Promise.resolve(null),
-          fetchUserProfile: () => Promise.resolve(null),
-          fetchSubscription: () => Promise.resolve(null),
-          getSyncStatus: () => Promise.resolve({ enabled: false }),
-          checkForUpdates: () => Promise.resolve({ hasUpdate: false }),
-          openUrl: url => window.open(url, '_blank'),
-          textExpander: {
-            getStatus: () => Promise.resolve({ supported: false, enabled: false, running: false, permissions: { accessibility: false } }),
-            requestPermission: () => Promise.resolve(false),
-            openPrivacySettings: () => Promise.resolve(true),
-            setEnabled: () => Promise.resolve({ supported: false, enabled: false, running: false, permissions: { accessibility: false } }),
-            saveSnippets: () => Promise.resolve({ success: true }),
-            validateSnippet: () => Promise.resolve({ valid: true, errors: [] }),
-          },
-        };
-      }
-    </script>
-
     <script type="module" src="index.js"></script>
   </body>
 </html>

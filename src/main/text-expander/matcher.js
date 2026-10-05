@@ -58,6 +58,8 @@ const KEYCODE_TO_CHAR = {
   // symbols
   12: ['-', '_'],
   13: ['=', '+'],
+  26: ['[', '{'],
+  27: [']', '}'],
   39: [';', ':'],
   40: ["'", '"'],
   41: ['`', '~'],
@@ -232,8 +234,10 @@ const ASCII_PRINTABLE = /^[\x21-\x7e]+$/;
  */
 function validateSnippet(snippet, existing = []) {
   const errors = [];
-  const keyword = (snippet && snippet.keyword) || '';
-  const content = (snippet && snippet.content) || '';
+  if (!snippet || typeof snippet.keyword !== 'string' || typeof snippet.content !== 'string') {
+    return { valid: false, errors: ['Keyword and content must be strings.'] };
+  }
+  const { keyword, content } = snippet;
 
   if (keyword.length < MIN_KEYWORD_LENGTH) {
     errors.push(`Keyword must be at least ${MIN_KEYWORD_LENGTH} characters.`);
@@ -251,7 +255,7 @@ function validateSnippet(snippet, existing = []) {
   }
 
   // Compare against other snippets (exclude self by id).
-  const others = existing.filter(s => s && s.id !== snippet.id);
+  const others = existing.filter(s => s && !(snippet.id && s.id === snippet.id));
   for (const other of others) {
     const otherKeyword = other.keyword || '';
     if (!otherKeyword) {

@@ -300,3 +300,21 @@ describe('Text Expander Matcher', () => {
     });
   });
 });
+
+describe('snippet input boundary', () => {
+  test.each([null, {}, { keyword: 10, content: 'text' }, { keyword: ':one', content: 12 }])('rejects invalid snippet %j', value => {
+    expect(validateSnippet(value).valid).toBe(false);
+  });
+  test('does not exclude every ID-less snippet as self', () => {
+    expect(validateSnippet({ keyword: ':one', content: 'draft' }, [{ keyword: ':one', content: 'cloud' }]).valid).toBe(false);
+  });
+});
+
+test('maps bracket characters allowed in snippet keywords', () => {
+  expect(keycodeToChar(26, false)).toBe('[');
+  expect(keycodeToChar(26, true)).toBe('{');
+  expect(keycodeToChar(27, false)).toBe(']');
+  expect(keycodeToChar(27, true)).toBe('}');
+  const typed = [26, 45, 27].map(code => keycodeToChar(code, false)).join('');
+  expect(findMatch(typed, [{ keyword: '[x]', content: 'expanded' }]).snippet.content).toBe('expanded');
+});

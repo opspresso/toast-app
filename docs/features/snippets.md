@@ -34,7 +34,17 @@ Snippets are stored in the top-level `snippets` array of the configuration and a
 }
 ```
 
-Keyword rules: no whitespace, at least 2 characters, printable ASCII only, no duplicates, and not a prefix or suffix of another keyword (to prevent ambiguous matching). Replacement content allows arbitrary Unicode.
+Keyword rules: no whitespace, 2–32 characters, printable ASCII only, no duplicates, and not a prefix or suffix of another keyword (to prevent ambiguous matching). Replacement content must be non-empty and allows arbitrary Unicode. Each account can sync at most 500 snippets, with a combined JSON payload of 40,000 bytes. These rules apply in both the app and web editor.
+
+## Editing synced snippets
+
+The main process applies one addition, edit, or deletion against the current list. Editing or deleting
+an item changed by cloud sync returns a conflict and preserves the form draft. Reopen the current item
+before applying that draft. Changes to other snippets are retained. Legacy snippets without `id` remain
+editable and deletable; an edit assigns a stable ID.
+
+A failed save leaves the form and stored list unchanged. The running matcher refreshes from the shared
+configuration store after a successful change or cloud download.
 
 ## Limitations
 

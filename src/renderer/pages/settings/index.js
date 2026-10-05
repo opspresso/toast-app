@@ -61,6 +61,13 @@ export function initializeUI() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  if (!window.settings) {
+    const error = document.createElement('p');
+    error.setAttribute('role', 'alert');
+    error.textContent = 'Toast could not load its settings connection. Restart the app to try again.';
+    document.body.replaceChildren(error);
+    return;
+  }
   window.settings.log.info('DOMContentLoaded event fired - starting initialization');
 
   // Load configuration from main process

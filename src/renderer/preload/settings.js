@@ -83,8 +83,7 @@ contextBridge.exposeInMainWorld('settings', {
     requestPermission: () => ipcRenderer.invoke('text-expander:request-permission'),
     openPrivacySettings: section => ipcRenderer.invoke('text-expander:open-privacy-settings', section),
     setEnabled: enabled => ipcRenderer.invoke('text-expander:set-enabled', enabled),
-    saveSnippets: snippets => ipcRenderer.invoke('text-expander:save-snippets', snippets),
-    validateSnippet: (snippet, existing) => ipcRenderer.invoke('text-expander:validate-snippet', snippet, existing),
+    changeSnippet: change => ipcRenderer.invoke('text-expander:change-snippet', change),
   },
 });
 
