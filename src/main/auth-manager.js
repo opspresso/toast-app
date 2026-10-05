@@ -216,64 +216,33 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         }
 
         logger.info('Cloud synchronization feature status set:', hasSyncFeature);
-        // Update cloud sync settings through syncManager
-        if (syncManager && typeof syncManager.updateCloudSyncSettings === 'function') {
-          syncManager.updateCloudSyncSettings(hasSyncFeature);
-        }
-        else {
-          logger.warn('syncManager not properly initialized or missing updateCloudSyncSettings method');
-        }
+        // The stored cloudSync.enabled value is the user's device preference.
+        // Subscription eligibility is checked by the manager before each sync.
       }
 
       // 3. Integrated synchronization processing - handle profile and settings information at once
       const performSync = async () => {
         try {
-          // Profile was already persisted to the local cache above, before notifying renderers
-
-          // Get user settings information
-          logger.info('Getting user settings after successful login');
-          const userSettings = await getUserSettings(true);
-
-          if (userSettings) {
-            logger.info('User settings saved successfully');
+          if (syncManager && hasSyncFeature) {
+            const syncResult = await syncManager.syncAfterLogin(userProfile?.email);
+            if (!syncResult.success) {
+              logger.warn('Synchronization failed after login:', syncResult.error);
+            }
           }
-
-          // A logout (or a newer login) may have happened while the settings fetch above
-          // was in flight — notifying now would flip the UI back to "logged in" over a
-          // logout that already ran, and re-run sync against a session that no longer exists.
           if (mySequence !== authSequence) {
-            logger.info('Newer auth event occurred during post-login sync; skipping stale notification');
             return false;
           }
-
-          // Send authentication state change notification (including profile and settings)
+          const config = createConfigStore();
           notifyAuthStateChange({
             isAuthenticated: true,
             profile: userProfile || null,
-            settings: userSettings || null,
+            settings: {
+              pages: config.get('pages'),
+              snippets: config.get('snippets'),
+              appearance: config.get('appearance'),
+              advanced: config.get('advanced'),
+            },
           });
-          logger.info('Authentication state change notification sent');
-
-          // Execute cloud synchronization
-          if (syncManager && hasSyncFeature) {
-            logger.info('Cloud synchronization feature is enabled. Getting settings from server...');
-
-            // Execute synchronization and process results
-            const syncResult = await syncManager.syncAfterLogin();
-            logger.info('Cloud synchronization result after login:', syncResult);
-
-            if (syncResult && syncResult.success) {
-              // Notification on successful synchronization
-              notifySettingsSynced();
-            }
-            else {
-              logger.warn('Synchronization failed after login:', syncResult?.error || 'Unknown error');
-            }
-          }
-          else {
-            logger.info('Cloud synchronization feature is disabled. Please check your subscription status.');
-          }
-
           return true;
         }
         catch (err) {
@@ -322,24 +291,13 @@ async function logout() {
 
   isLoggingOut = true;
   authSequence += 1;
+  // Invalidate in-flight responses before token revocation performs network I/O.
+  syncManager?.stopPeriodicSync?.();
 
   logoutPromise = (async () => {
     try {
       logger.info('Starting logout process');
       const result = await auth.logout();
-
-      // Stop periodic synchronization and update cloud sync settings when logout is successful
-      if (result && syncManager) {
-        // Disable synchronization feature and stop periodic synchronization
-        if (typeof syncManager.updateCloudSyncSettings === 'function') {
-          syncManager.updateCloudSyncSettings(false);
-        }
-        if (typeof syncManager.stopPeriodicSync === 'function') {
-          syncManager.stopPeriodicSync();
-        }
-
-        logger.info('Cloud synchronization disabled and periodic synchronization stopped due to logout');
-      }
 
       // Clean up user data when logout is successful
       if (result) {

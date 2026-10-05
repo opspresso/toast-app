@@ -58,23 +58,22 @@ async function loadEnvironmentConfig() {
       const userProfile = await authManager.fetchUserProfile();
       logger.info('User profile loading complete:', userProfile ? 'Success' : 'Failed');
 
-      // 3. Load user settings
-      const userSettings = await authManager.getUserSettings();
-      logger.info('User settings loading complete:', userSettings ? 'Success' : 'Failed');
-
-      // Authentication state notification
-      if (userProfile) {
-        authManager.notifyAuthStateChange({
-          isAuthenticated: true,
-          profile: userProfile,
-          settings: userSettings,
-        });
-        logger.info('Authentication state update notification sent');
+      if (userProfile?.email) {
+        // Seed before downloading so an intentionally empty cloud snippet list
+        // stays empty on a newly installed device.
+        seedDefaultSnippets(config, userProfile.email);
+        const result = await cloudSync.getSyncManager().syncAfterLogin(userProfile.email);
+        if (!result.success) {
+          logger.warn('Startup cloud synchronization:', result.error);
+        }
+        if (await auth.hasValidToken()) {
+          authManager.notifyAuthStateChange({
+            isAuthenticated: true,
+            profile: userProfile,
+            settings: { pages: config.get('pages'), snippets: config.get('snippets') },
+          });
+        }
       }
-
-      // Seed the default snippet with the logged-in email (once, after
-      // any cloud-synced snippets have been applied)
-      seedDefaultSnippets(config, userProfile && userProfile.email);
     }
     else {
       logger.info('No valid token, initializing authentication state');

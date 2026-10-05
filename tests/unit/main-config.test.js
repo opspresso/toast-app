@@ -405,37 +405,8 @@ describe('Main Config Module (P0)', () => {
       expect(hash1).not.toBe(hash2);
     });
 
-    test('should update sync metadata', () => {
-      const metadata = {
-        lastModifiedAt: Date.now(),
-        dataHash: 'new-hash',
-        isConflicted: false,
-      };
 
-      config.updateSyncMetadata(store, metadata);
 
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining(metadata));
-    });
-
-    test('should mark as modified', () => {
-      config.markAsModified(store, 'device-123');
-
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
-        lastModifiedDevice: 'device-123',
-        isConflicted: false,
-      }));
-    });
-
-    test('should mark as synced', () => {
-      config.markAsSynced(store, 'device-123');
-
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
-        lastSyncedDevice: 'device-123',
-        isConflicted: false,
-        dataHash: expect.any(String),
-        lastSyncedAt: expect.any(Number),
-      }));
-    });
 
     test('should check for unsynced changes when hash differs', () => {
       // Mock different hashes to simulate changes
@@ -475,20 +446,7 @@ describe('Main Config Module (P0)', () => {
       expect(hasChanges).toBe(true);
     });
 
-    test('should mark as conflicted', () => {
-      config.markAsConflicted(store);
 
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
-        isConflicted: true,
-      }));
-    });
-
-    test('should get sync metadata', () => {
-      const metadata = config.getSyncMetadata(store);
-
-      expect(store.get).toHaveBeenCalledWith('_sync');
-      expect(metadata).toBeDefined();
-    });
   });
 
   describe('Error Handling', () => {
@@ -525,29 +483,6 @@ describe('Main Config Module (P0)', () => {
   });
 
   describe('Integration Tests', () => {
-    test('should handle complete config lifecycle', () => {
-      const store = config.createConfigStore();
-      
-      // Export initial config (requires filePath parameter)
-      const exported = config.exportConfig(store, '/test/export.json');
-      expect(exported).toBe(true);
-      
-      // Modify and mark as modified
-      config.markAsModified(store);
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.any(Object));
-      
-      // Check for unsynced changes
-      const hasChanges = config.hasUnsyncedChanges(store);
-      expect(typeof hasChanges).toBe('boolean');
-      
-      // Mark as synced
-      config.markAsSynced(store);
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.any(Object));
-      
-      // Get final metadata
-      const metadata = config.getSyncMetadata(store);
-      expect(metadata).toBeDefined();
-    });
 
     test('should handle schema validation through store creation', () => {
       // Test that createConfigStore returns a valid store object

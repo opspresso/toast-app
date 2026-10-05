@@ -180,6 +180,11 @@ const schema = {
   _sync: {
     type: 'object',
     properties: {
+      accountBackups: { type: 'object', description: 'Per-account local settings and sync baselines retained when switching accounts' },
+      accountId: { type: 'string', description: 'Owner of the acknowledged cloud snapshot' },
+      baseRevision: { type: 'integer', minimum: 0 },
+      baseSnapshot: { type: 'object', description: 'Last acknowledged cloud settings for three-way merge' },
+      bootstrapBackup: { type: 'object', description: 'Local settings preserved before first download' },
       lastModifiedAt: {
         type: 'number',
         default: 0,
@@ -564,86 +569,6 @@ function generateDataHash(data) {
 }
 
 /**
- * Update sync metadata in ConfigStore
- * @param {Object} config - ConfigStore instance
- * @param {Object} metadata - Metadata to update
- */
-function updateSyncMetadata(config, metadata) {
-  const currentSync = config.get('_sync') || schema._sync.default;
-  const updatedSync = {
-    ...currentSync,
-    ...metadata,
-  };
-  config.set('_sync', updatedSync);
-}
-
-/**
- * Mark settings as modified
- * @param {Object} config - ConfigStore instance
- * @param {string} [deviceId] - Device identifier
- */
-function markAsModified(config, deviceId = null) {
-  const timestamp = Date.now();
-  const device = deviceId || getDeviceId();
-
-  // Generate new hash based on current data
-  const currentData = {
-    pages: config.get('pages'),
-    snippets: config.get('snippets'),
-    appearance: config.get('appearance'),
-    advanced: config.get('advanced'),
-  };
-  const dataHash = generateDataHash(currentData);
-
-  // Debug logging
-  const { createLogger } = require('./logger');
-  const logger = createLogger('ConfigDebug');
-  logger.debug('=== markAsModified Debug ===');
-  logger.debug('New hash:', dataHash);
-  logger.debug('Timestamp:', new Date(timestamp).toISOString());
-  logger.debug('Device:', device);
-
-  updateSyncMetadata(config, {
-    lastModifiedAt: timestamp,
-    lastModifiedDevice: device,
-    dataHash,
-    isConflicted: false, // Reset conflict flag when locally modified
-  });
-
-  logger.debug('Sync metadata updated successfully');
-}
-
-/**
- * Mark settings as synced
- * @param {Object} config - ConfigStore instance
- * @param {string} [deviceId] - Device identifier
- * @param {Object} [dataOverride] - Data the hash should be computed from (e.g. an upload
- *   snapshot taken before the network round-trip) instead of the current ConfigStore
- *   contents, which may have changed while the request was in flight.
- */
-function markAsSynced(config, deviceId = null, dataOverride = null) {
-  const timestamp = Date.now();
-  const device = deviceId || getDeviceId();
-
-  // Generate hash based on the provided snapshot, or the current data if none was given
-  const currentData = dataOverride || {
-    pages: config.get('pages'),
-    snippets: config.get('snippets'),
-    appearance: config.get('appearance'),
-    advanced: config.get('advanced'),
-  };
-  const dataHash = generateDataHash(currentData);
-
-  updateSyncMetadata(config, {
-    lastSyncedAt: timestamp,
-    lastSyncedDevice: device,
-    // Do not update lastModifiedAt - preserve the actual modification time
-    dataHash,
-    isConflicted: false,
-  });
-}
-
-/**
  * Check if settings have changes that need sync
  * @param {Object} config - ConfigStore instance
  * @returns {boolean} Whether settings have unsaved changes
@@ -678,25 +603,6 @@ function hasUnsyncedChanges(config) {
   return result;
 }
 
-/**
- * Mark settings as conflicted
- * @param {Object} config - ConfigStore instance
- */
-function markAsConflicted(config) {
-  updateSyncMetadata(config, {
-    isConflicted: true,
-  });
-}
-
-/**
- * Get sync metadata
- * @param {Object} config - ConfigStore instance
- * @returns {Object} Sync metadata
- */
-function getSyncMetadata(config) {
-  return config.get('_sync') || schema._sync.default;
-}
-
 module.exports = {
   schema,
   createConfigStore,
@@ -708,10 +614,5 @@ module.exports = {
   // Sync metadata management functions
   getDeviceId,
   generateDataHash,
-  updateSyncMetadata,
-  markAsModified,
-  markAsSynced,
   hasUnsyncedChanges,
-  markAsConflicted,
-  getSyncMetadata,
 };

@@ -397,37 +397,28 @@ describe('Authentication Manager', () => {
       expect(sharedFeatures.cloud_sync).toBeUndefined();
     });
 
-    test('skips the stale post-login auth-state notification when logout runs during the background sync', async () => {
-      // exchangeCodeForTokenAndUpdateSubscription kicks off its settings sync in the
-      // background (fire-and-forget). If a logout completes before that background work
-      // finishes, its "isAuthenticated: true" notification must not overwrite the logout.
+    test('ignores a post-login sync response after logout without changing the sync preference', async () => {
+      let resolveSync;
+      const manager = {
+        syncAfterLogin: jest.fn(() => new Promise(resolve => { resolveSync = resolve; })),
+        stopPeriodicSync: jest.fn(),
+        updateCloudSyncSettings: jest.fn(),
+      };
+      authManager.setSyncManager(manager);
       mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
-        success: true,
-        subscription: { active: true },
+        success: true, subscription: { active: true, plan: 'Premium' },
       });
       mockAuth.fetchUserProfile.mockResolvedValue({ email: 'test@example.com' });
-
-      let resolveUserSettings;
-      mockUserDataManager.getUserSettings.mockReturnValue(
-        new Promise(resolve => {
-          resolveUserSettings = resolve;
-        }),
-      );
-
-      const loginResult = await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-      expect(loginResult.success).toBe(true);
-
-      // The background sync is now awaiting getUserSettings. Log out while it's pending.
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+      expect(manager.syncAfterLogin).toHaveBeenCalledWith('test@example.com');
+      expect(manager.updateCloudSyncSettings).not.toHaveBeenCalled();
       await authManager.logout();
+      expect(manager.stopPeriodicSync).toHaveBeenCalled();
       mockWindows.toast.webContents.send.mockClear();
-
-      // The background sync resumes and must see a newer auth event has happened since
-      // it started, so it must not re-announce isAuthenticated: true.
-      resolveUserSettings({ pages: [] });
+      resolveSync({ success: true });
       await new Promise(resolve => setImmediate(resolve));
-
-      const authStateCalls = mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed');
-      expect(authStateCalls).toHaveLength(0);
+      expect(mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed')).toHaveLength(0);
+      expect(mockUserDataManager.getUserSettings).not.toHaveBeenCalled();
     });
 
     test('aborts the login continuation (skips login-success and the authenticated config write) when logout completes while the profile fetch is still in flight', async () => {
