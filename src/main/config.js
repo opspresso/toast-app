@@ -316,24 +316,12 @@ function createConfigStore() {
  * @param {Store} config - Configuration store instance
  */
 function resetToDefaults(config) {
-  // Preserve current pages and snippets settings
-  const currentPages = config.get('pages');
-  const currentSnippets = config.get('snippets');
-
-  // Clear all existing settings
-  config.clear();
-
-  // Set default values for each key
-  config.set('globalHotkey', schema.globalHotkey.default);
-
-  // Preserve pages/snippets if they exist, otherwise use the default (empty array)
-  config.set('pages', currentPages || schema.pages.default);
-  config.set('snippets', currentSnippets || schema.snippets.default);
-
-  config.set('appearance', schema.appearance.default);
-  config.set('advanced', schema.advanced.default);
-  config.set('textExpander', schema.textExpander.default);
-  config.set('firstLaunchCompleted', false);
+  config.set({
+    globalHotkey: schema.globalHotkey.default,
+    appearance: schema.appearance.default,
+    advanced: schema.advanced.default,
+    textExpander: { ...schema.textExpander.default, ...config.get('textExpander'), enabled: false },
+  });
 }
 
 // Fallback content for the seeded default snippet when the user is not logged in.
@@ -376,62 +364,58 @@ function seedDefaultSnippets(config, loginEmail) {
 function importConfig(config, filePath) {
   try {
     const fs = require('fs');
-    const importedConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-    // Validate imported configuration
-    if (!importedConfig || typeof importedConfig !== 'object') {
-      throw new Error('Invalid configuration format');
+    const imported = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
+      return false;
     }
-
-    // Clear existing configuration
-    config.clear();
-
-    // Import each section with validation
-    if (importedConfig.globalHotkey && typeof importedConfig.globalHotkey === 'string') {
-      config.set('globalHotkey', importedConfig.globalHotkey);
+    const updates = {};
+    if (Object.hasOwn(imported, 'globalHotkey')) {
+      if (typeof imported.globalHotkey !== 'string') {
+        return false;
+      }
+      updates.globalHotkey = imported.globalHotkey;
     }
-    else {
-      config.set('globalHotkey', schema.globalHotkey.default);
+    if (Object.hasOwn(imported, 'pages')) {
+      const { validatePages } = require('./action-validation');
+      if (!validatePages(imported.pages).valid) {
+        return false;
+      }
+      updates.pages = imported.pages;
     }
-
-    if (Array.isArray(importedConfig.pages)) {
-      config.set('pages', importedConfig.pages);
+    if (Object.hasOwn(imported, 'snippets')) {
+      const { validateSnippets } = require('./snippets');
+      if (!validateSnippets(imported.snippets).valid) {
+        return false;
+      }
+      updates.snippets = imported.snippets;
     }
-    else {
-      config.set('pages', schema.pages.default);
+    for (const key of ['appearance', 'advanced']) {
+      if (!Object.hasOwn(imported, key)) {
+        continue;
+      }
+      const value = imported[key];
+      if (!value || typeof value !== 'object' || Array.isArray(value) ||
+        Object.keys(value).some(field => !Object.hasOwn(schema[key].properties, field))) {
+        return false;
+      }
+      updates[key] = { ...schema[key].default, ...value };
     }
-
-    if (Array.isArray(importedConfig.snippets)) {
-      config.set('snippets', importedConfig.snippets);
+    if (!Object.keys(updates).length || Buffer.byteLength(JSON.stringify({ appearance: updates.appearance, advanced: updates.advanced }), 'utf8') > 10000) {
+      return false;
     }
-    else {
-      config.set('snippets', schema.snippets.default);
+    const positions = updates.appearance?.monitorPositions;
+    if (positions !== undefined && (!positions || typeof positions !== 'object' || Array.isArray(positions) ||
+      Object.values(positions).some(position => !position || !Number.isFinite(position.x) || !Number.isFinite(position.y)))) {
+      return false;
     }
-
-    if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
-      config.set('appearance', {
-        ...schema.appearance.default,
-        ...importedConfig.appearance,
-      });
-    }
-    else {
-      config.set('appearance', schema.appearance.default);
-    }
-
-    if (importedConfig.advanced && typeof importedConfig.advanced === 'object') {
-      config.set('advanced', {
-        ...schema.advanced.default,
-        ...importedConfig.advanced,
-      });
-    }
-    else {
-      config.set('advanced', schema.advanced.default);
-    }
-
+    // Validate and persist all requested sections together. Account bindings,
+    // approvals, sync baselines, recovery copies, and omitted data stay intact.
+    config.set(updates);
     return true;
   }
   catch (error) {
-    logger.error('Error importing configuration:', error);
+    // Parser/schema errors may contain configuration values; never log that data.
+    logger.error('Configuration import failed:', error.name);
     return false;
   }
 }

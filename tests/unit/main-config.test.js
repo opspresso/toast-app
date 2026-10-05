@@ -285,7 +285,7 @@ describe('Main Config Module (P0)', () => {
     test('should reset to defaults', () => {
       config.resetToDefaults(store);
 
-      expect(store.clear).toHaveBeenCalled();
+      expect(store.clear).not.toHaveBeenCalled();
     });
 
     test('should export configuration', () => {
@@ -303,7 +303,7 @@ describe('Main Config Module (P0)', () => {
       const filePath = '/test/path/config.json';
       const configToImport = {
         globalHotkey: 'Ctrl+Space',
-        pages: [{ id: '1', buttons: [] }],
+        pages: [{ id: '1', name: 'Imported', buttons: [] }],
         appearance: { theme: 'dark', position: 'top' },
         advanced: { launchAtLogin: true },
       };
@@ -313,9 +313,8 @@ describe('Main Config Module (P0)', () => {
 
       const result = config.importConfig(store, filePath);
 
-      expect(store.clear).toHaveBeenCalled();
-      expect(store.set).toHaveBeenCalledWith('globalHotkey', configToImport.globalHotkey);
-      expect(store.set).toHaveBeenCalledWith('pages', configToImport.pages);
+      expect(store.clear).not.toHaveBeenCalled();
+      expect(store.set).toHaveBeenCalledWith(expect.objectContaining({ globalHotkey: configToImport.globalHotkey, pages: configToImport.pages }));
       expect(result).toBe(true);
     });
 
@@ -325,10 +324,10 @@ describe('Main Config Module (P0)', () => {
         appearance: null,
       };
 
-      config.importConfig(store, invalidConfig);
-      
-      // Should handle invalid config gracefully by sanitizing data
-      expect(store.set).toHaveBeenCalled();
+      mockFs.readFileSync.mockReturnValue(JSON.stringify(invalidConfig));
+      store.set.mockClear();
+      expect(config.importConfig(store, '/test/invalid.json')).toBe(false);
+      expect(store.set).not.toHaveBeenCalled();
     });
 
     test('should sanitize subscription data', () => {

@@ -12,6 +12,7 @@
 
 const crypto = require('crypto');
 const { createLogger } = require('./logger');
+const { validateAction, MAX_CHAIN_DEPTH } = require('./action-validation');
 
 const logger = createLogger('ActionApproval');
 
@@ -60,11 +61,6 @@ function computeFingerprint(action) {
 
   return crypto.createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }
-
-// Upper bound on chain nesting depth when walking actions, matching
-// executor.js's validateAction. Guards local (not-yet-sanitized) config data
-// against a pathologically/self nested chain exhausting the call stack.
-const MAX_CHAIN_DEPTH = 10;
 
 /**
  * Collect fingerprints of all risky actions in the given pages,
@@ -287,18 +283,8 @@ async function promptUser(entry, fingerprint) {
   }
 }
 
-/**
- * Empty page slots are stored as application buttons without a path. They
- * cannot execute anything, so they are preserved instead of being dropped.
- * @param {Object} button - Button from remote page data
- * @returns {boolean} Whether the button is an inert empty slot
- */
 function isBuiltinButton(button) {
   return button?.action === 'script' && button.scriptType === 'special' && button.script === 'confetti';
-}
-
-function isEmptySlotButton(button) {
-  return Boolean(button) && button.action === 'application' && !button.applicationPath;
 }
 
 /**
@@ -313,9 +299,6 @@ async function sanitizeRemotePages(pages) {
     return [];
   }
 
-  // Lazy require to avoid a load-time cycle (executor also requires this module)
-  const { validateAction } = require('./executor');
-
   const sanitized = [];
   for (const page of pages) {
     if (!page || typeof page !== 'object') {
@@ -329,11 +312,7 @@ async function sanitizeRemotePages(pages) {
 
     const buttons = [];
     for (const button of page.buttons) {
-      if (isEmptySlotButton(button) || isBuiltinButton(button)) {
-        buttons.push(button);
-        continue;
-      }
-      const validation = await validateAction(button);
+      const validation = validateAction(button, 0, { allowInert: true });
       if (validation.valid) {
         buttons.push(button);
       }

@@ -96,15 +96,15 @@ describe('Configuration Store', () => {
     // Reset to defaults
     resetToDefaults(config);
 
-    // Verify clear was called
-    expect(config.clear).toHaveBeenCalled();
-
-    // Verify default values were set
-    expect(config.set).toHaveBeenCalledWith('globalHotkey', 'Alt+Space');
-    expect(config.set).toHaveBeenCalledWith('pages', []);
-    // Snippets are preserved and text expander reset to default
-    expect(config.set).toHaveBeenCalledWith('snippets', []);
-    expect(config.set).toHaveBeenCalledWith('textExpander', { enabled: false, seeded: false });
+    expect(config.clear).not.toHaveBeenCalled();
+    expect(config.set).toHaveBeenCalledWith(expect.objectContaining({
+      globalHotkey: 'Alt+Space',
+      textExpander: { enabled: false, seeded: false },
+    }));
+    const updated = config.set.mock.calls[0][0];
+    expect(updated).not.toHaveProperty('pages');
+    expect(updated).not.toHaveProperty('snippets');
+    expect(updated).not.toHaveProperty('_sync');
   });
 
   describe('schema', () => {

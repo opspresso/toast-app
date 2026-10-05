@@ -2,6 +2,7 @@
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = require('./client');
 const { isCloudSyncAllowed } = require('../subscription');
 const { validateSnippets } = require('../snippets');
+const { validatePages } = require('../action-validation');
 
 let lastSyncStatus = { success: false, timestamp: 0, error: null };
 
@@ -24,9 +25,9 @@ function normalizeSettings(response) {
     }
     const value = data[key];
     if (key === 'pages') {
-      if (!Array.isArray(value) || !value.every(page => page && typeof page.name === 'string' &&
-        Array.isArray(page.buttons) && page.buttons.every(button => button && typeof button.name === 'string' && typeof button.action === 'string'))) {
-        throw new Error('Invalid cloud pages');
+      const validation = validatePages(value);
+      if (!validation.valid) {
+        throw new Error(`Invalid cloud pages: ${validation.message}`);
       }
     }
     else if (key === 'snippets') {
