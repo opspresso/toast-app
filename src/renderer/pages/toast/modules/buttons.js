@@ -4,7 +4,7 @@
 
 import { buttonsContainer, buttonTemplate } from './dom-elements.js';
 import { getFaviconFromUrl, isURL, createNoResultsElement, showStatus } from './utils.js';
-import { getCurrentPageButtons, updateCurrentPageButtons } from './pages.js';
+import { getCurrentPageButtons, updateCurrentPageButtons, getPageEditState, getPageContextKey } from './pages.js';
 
 // State variables
 export let filteredButtons = [];
@@ -49,6 +49,7 @@ export function renderButtons(buttons) {
   // Clear container
   buttonsContainer.innerHTML = '';
 
+  const pageContext = getPageContextKey();
   // Create and add buttons
   filteredButtons.forEach((button, index) => {
     const buttonElement = createButtonElement(button);
@@ -57,6 +58,9 @@ export function renderButtons(buttons) {
     buttonElement.addEventListener('click', () => {
       if (suppressNextClick) {
         suppressNextClick = false;
+        return;
+      }
+      if (pageContext !== getPageContextKey()) {
         return;
       }
       executeButton(button);
@@ -125,6 +129,8 @@ function enableButtonDrag(buttonElement, index) {
       return;
     }
 
+    const editState = getPageEditState();
+    const pageContext = getPageContextKey();
     const DRAG_THRESHOLD = 5;
     let dragging = false;
     let ghost = null;
@@ -208,12 +214,15 @@ function enableButtonDrag(buttonElement, index) {
       }
 
       const isSwap = event.metaKey || event.ctrlKey;
-      const currentButtons = getCurrentPageButtons();
+      if (pageContext !== getPageContextKey()) {
+        showStatus('The page changed during the drag. Please try again.', 'error');
+        return;
+      }
+      const currentButtons = editState.viewPages[editState.index].buttons;
       const reordered = isSwap ? swapButtons(currentButtons, index, targetIndex) : moveButton(currentButtons, index, targetIndex);
 
       // Reassign shortcuts by position and persist, then re-render
-      updateCurrentPageButtons(reordered);
-      showCurrentPageButtons();
+      void updateCurrentPageButtons(reordered, editState);
     };
 
     document.addEventListener('mousemove', onMouseMove);

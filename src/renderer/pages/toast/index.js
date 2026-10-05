@@ -2,7 +2,6 @@
  * Toast - Main Entry Point
  */
 
-import { defaultButtons } from './modules/constants.js';
 import { closeButton, settingsModeToggle, settingsButton, addPageButton, removePageButton, userButton } from './modules/dom-elements.js';
 import { applyAppearanceSettings } from './modules/utils.js';
 import { initClock } from './modules/clock.js';
@@ -103,7 +102,7 @@ function setupEventListeners() {
       // Handle cases where config.pages is undefined, null, or empty array
       if ('pages' in config) {
         const configPages = config.pages || [];
-        initializePages(configPages);
+        initializePages(configPages, config.authSessionVersion);
 
         if (configPages.length === 0) {
           // Display guidance message when no pages exist
@@ -149,25 +148,8 @@ function initializeApp() {
 
       // Page settings
       if (config.pages) {
-        initializePages(config.pages);
+        initializePages(config.pages, config.authSessionVersion);
       }
-      else {
-        // Create default page if no pages exist
-        const newPage = {
-          name: 'Page 1',
-          shortcut: '1',
-          buttons: [...defaultButtons],
-        };
-
-        const newPages = [newPage];
-        initializePages(newPages);
-
-        // Save the default configuration
-        if (window.toast.saveConfig) {
-          window.toast.saveConfig({ pages: newPages });
-        }
-      }
-
       // Check subscription status
       if (config.subscription) {
         import('./modules/auth.js')

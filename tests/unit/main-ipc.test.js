@@ -172,7 +172,7 @@ describe('Main IPC Handlers (P0)', () => {
         'validate-action',
         'get-config',
         'set-config',
-        'save-config',
+        'save-pages',
         'initiate-login',
         'logout',
         'fetch-user-profile',
@@ -276,20 +276,12 @@ describe('Main IPC Handlers (P0)', () => {
       expect(result).toBe(true);
     });
 
-    test('should handle save-config requests', async () => {
-      const mockEvent = {};
-      const changes = {
-        globalHotkey: 'Ctrl+Space',
-        pages: [{ id: '1', buttons: [] }],
-      };
-
-      // Mock config.get for subscription data used in the handler
-      mockConfig.get.mockReturnValue({});
-
-      const result = await ipcHandlers['save-config'](mockEvent, changes);
-
-      expect(mockConfig.set).toHaveBeenCalledWith('globalHotkey', 'Ctrl+Space');
-      expect(mockConfig.set).toHaveBeenCalledWith('pages', changes.pages);
+    test('saves a batch of preferences in one store update', async () => {
+      const changes = { globalHotkey: 'Ctrl+Space', appearance: { theme: 'light' } };
+      mockConfig.get.mockImplementation(key => key === 'pages' ? [] : key === 'subscription' ? {} : undefined);
+      const result = await ipcHandlers['set-config']({}, null, changes);
+      expect(mockConfig.set).toHaveBeenCalledWith(changes);
+      expect(mockConfig.set).toHaveBeenCalledTimes(1);
       expect(result).toBe(true);
     });
 

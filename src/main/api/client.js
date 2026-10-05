@@ -207,6 +207,7 @@ module.exports = {
   setAccessToken,
   setRefreshToken,
   getAccessToken,
+  getSessionVersion: () => sessionVersion,
   getRefreshToken,
   clearTokens,
   getAuthHeaders,

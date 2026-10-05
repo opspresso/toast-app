@@ -415,7 +415,7 @@ describe('IPC Handlers', () => {
 
       const result = handler({});
 
-      expect(result).toEqual(mockConfig.store);
+      expect(result).toEqual({ ...mockConfig.store, authSessionVersion: 0 });
     });
 
     test('should handle set-config', () => {
@@ -424,9 +424,9 @@ describe('IPC Handlers', () => {
       const handler = mockIpcMain.handle.mock.calls
         .find(([event]) => event === 'set-config')[1];
 
-      const result = handler({}, 'test.key', 'test value');
+      const result = handler({}, 'globalHotkey', 'Ctrl+Space');
 
-      expect(mockConfig.set).toHaveBeenCalledWith('test.key', 'test value');
+      expect(mockConfig.set).toHaveBeenCalledWith('globalHotkey', 'Ctrl+Space');
       expect(result).toBe(true);
     });
 
@@ -470,7 +470,7 @@ describe('IPC Handlers', () => {
 
       expect(handleEvents).toContain('get-config');
       expect(handleEvents).toContain('set-config');
-      expect(handleEvents).toContain('save-config');
+      expect(handleEvents).toContain('save-pages');
       expect(handleEvents).toContain('reset-config');
       expect(handleEvents).toContain('import-config');
       expect(handleEvents).toContain('export-config');

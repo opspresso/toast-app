@@ -39,6 +39,7 @@ const mockConfigStore = {
 };
 
 const mockClient = {
+  getSessionVersion: jest.fn(() => 0),
   get: jest.fn(),
   post: jest.fn(),
 };
@@ -286,6 +287,14 @@ describe('Authentication Manager', () => {
   });
 
   describe('Login Process', () => {
+    test('refreshes editor account context even when cloud sync is unavailable', async () => {
+      authManager.setSyncManager(null);
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValueOnce({ success: true, subscription: { active: false } });
+      mockAuth.fetchUserProfile.mockResolvedValueOnce({ email: 'new@example.test' });
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('new-code');
+      expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('config-updated', expect.objectContaining({ authSessionVersion: 0 }));
+    });
+
     test('stops old-account synchronization before exchanging credentials', async () => {
       const manager = { stopPeriodicSync: jest.fn() };
       authManager.setSyncManager(manager);

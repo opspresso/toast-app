@@ -46,6 +46,14 @@ to that account restores its pending edits before merging with the cloud. Anothe
 the previous account's settings. These recovery copies stay in the device's `config.json`; quit Toast before
 manually editing that file. Standard Export exports the currently active settings, not recovery metadata.
 
+## Editing buttons while sync runs
+
+The desktop editor sends `save-pages` with its original page snapshot and login-session version.
+The main process merges unrelated changes and saves once. A conflicting edit, changed account, or
+failed write leaves the form draft open with an error. A reply cannot replace a newer UI snapshot.
+New pages and edited buttons keep stable IDs; padding the display grid does not alter the edit baseline.
+Page deletion remains bound to the page selected before the confirmation dialog opens.
+
 ## API and errors
 
 `GET /api/users/settings` returns `{ success: true, data: { revision, ...settings } }`.

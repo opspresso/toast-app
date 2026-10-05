@@ -233,8 +233,10 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
       // 3. Integrated synchronization processing - handle profile and settings information at once
       const performSync = async () => {
         try {
+          let synchronized = false;
           if (syncManager && hasSyncFeature) {
             const syncResult = await syncManager.syncAfterLogin(userProfile?.email);
+            synchronized = syncResult.success === true;
             if (!syncResult.success) {
               logger.warn('Synchronization failed after login:', syncResult.error);
             }
@@ -243,6 +245,12 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
             return false;
           }
           const config = createConfigStore();
+          if (!synchronized) {
+            notifyConfigUpdated({
+              pages: config.get('pages'), snippets: config.get('snippets'),
+              appearance: config.get('appearance'), advanced: config.get('advanced'), subscription: config.get('subscription'),
+            });
+          }
           notifyAuthStateChange({
             isAuthenticated: true,
             profile: userProfile || null,
@@ -328,6 +336,7 @@ async function logout() {
           pageGroups: PAGE_GROUPS.ANONYMOUS, // Reset to anonymous user default
         });
 
+        notifyConfigUpdated({ pages: config.get('pages'), snippets: config.get('snippets'), subscription: config.get('subscription') });
         logger.info('Subscription reset to anonymous defaults on logout');
 
         // Send app authentication state change notification
@@ -541,13 +550,13 @@ function notifySettingsSynced(configData = null) {
 
   // Send settings update notification + UI refresh notification with full config data
   broadcastToWindows(windows, 'settings-synced', syncData);
-  broadcastToWindows(windows, 'config-updated', configData);
+  broadcastToWindows(windows, 'config-updated', { ...configData, authSessionVersion: client.getSessionVersion() });
 
   logger.info('Settings synchronization notification sent');
 }
 
 function notifyConfigUpdated(configData) {
-  broadcastToWindows(windows, 'config-updated', configData);
+  broadcastToWindows(windows, 'config-updated', { ...configData, authSessionVersion: client.getSessionVersion() });
 }
 
 function notifySyncStatus(status) {

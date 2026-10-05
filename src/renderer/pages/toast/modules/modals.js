@@ -11,6 +11,7 @@ import {
   editButtonNameInput,
   editButtonIconInput,
   editButtonActionSelect,
+  editButtonScriptTypeSelect,
   editButtonCommandInput,
   editButtonUrlInput,
   editButtonPathInput,
@@ -150,6 +151,10 @@ export function setupModalEventListeners() {
     showActionFields(editButtonActionSelect.value);
     // Update the preview when the action type changes
     updateIconPreview();
+  });
+
+  editButtonScriptTypeSelect.addEventListener('change', () => {
+    showActionFields(editButtonActionSelect.value);
   });
 
   // Browse button for application selection

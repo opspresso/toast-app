@@ -126,32 +126,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    window.testIconChange = async () => {
-      try {
-        console.log('Testing icon change detection...');
-        const pages = await window.settings.getConfig('pages');
-        if (pages && pages.length > 0 && pages[0].buttons && pages[0].buttons.length > 0) {
-          // Temporarily change the icon of the first button
-          const modifiedPages = JSON.parse(JSON.stringify(pages));
-          const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
-          modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
 
-          console.log('Setting modified pages...');
-          await window.settings.setConfig('pages', modifiedPages);
-          console.log('Icon change test completed. Check logs for sync activity.');
-
-          return { success: true, message: 'Icon change triggered' };
-        }
-        else {
-          console.log('No buttons found to test icon change');
-          return { success: false, message: 'No buttons found' };
-        }
-      }
-      catch (error) {
-        console.error('Error testing icon change:', error);
-        return { success: false, error: error.message };
-      }
-    };
   }
 });
 
