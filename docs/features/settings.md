@@ -15,7 +15,8 @@ change settings through preload IPC methods. The current schema is in `src/main/
 General and appearance controls save immediately. Startup, local saves, reset, import, and cloud
 updates use the same native preference application path for window size, opacity, position,
 taskbar visibility, and launch at login. Unchanged values are not reapplied. Selecting a position
-preset overrides the current monitor's saved drag position. Snippet forms save through **Add Snippet**
+preset overrides the current monitor's saved drag position. Background updates refresh hidden
+controls and the active theme without interrupting hotkey recording. Snippet forms save through **Add Snippet**
 or **Save Changes**. Text expansion is off by default and requires macOS permissions.
 See [Snippets](snippets.md) for its input rules and conflict handling.
 

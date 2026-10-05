@@ -140,82 +140,27 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param {Object} newConfig - Updated settings object
  */
 function applyConfigUpdate(newConfig) {
-  // Compare the previous and new settings and update only the necessary elements
   if (!newConfig) {
     return;
   }
+  const previous = config;
+  updateConfig({ ...config, ...newConfig });
+  const changed = key => Object.hasOwn(newConfig, key) && JSON.stringify(previous[key]) !== JSON.stringify(config[key]);
 
-  try {
-    // Some config-updated broadcasts (manual sync, post-login sync, etc.) send a partial
-    // snapshot that does not include snippets. Merge instead of fully replacing so that
-    // missing fields do not wipe out existing values.
-    updateConfig({ ...config, ...newConfig });
-
-    // Snippets are snapshotted into local state at tab initialization time, so if changes
-    // merged by background sync are not reflected here, they get overwritten on the next edit.
-    initializeSnippetsSettings();
-
-    // Update only the currently active tab (prevents full UI initialization)
-    const activeTab = Array.from(document.querySelectorAll('.settings-tab')).find(tab => tab.classList.contains('active'));
-    if (activeTab) {
-      const tabId = activeTab.id;
-      window.settings.log.info(`Selectively updating only the currently active tab "${tabId}"`);
-
-      // Selectively update only the necessary settings (unified Settings tab = General/Appearance/Advanced sections)
-      if (tabId === 'settings') {
-        const globalHotkeyInput = document.getElementById('global-hotkey');
-        const launchAtLoginCheckbox = document.getElementById('launch-at-login');
-
-        if (globalHotkeyInput) {
-          globalHotkeyInput.value = config.globalHotkey || '';
-        }
-        if (launchAtLoginCheckbox) {
-          launchAtLoginCheckbox.checked = config.advanced?.launchAtLogin || false;
-        }
-
-        const themeSelect = document.getElementById('theme');
-        const positionSelect = document.getElementById('position');
-        const sizeSelect = document.getElementById('size');
-        const opacityRange = document.getElementById('opacity');
-        const opacityValue = document.getElementById('opacity-value');
-
-        if (themeSelect) {
-          themeSelect.value = config.appearance?.theme || 'system';
-        }
-        if (positionSelect) {
-          positionSelect.value = config.appearance?.position || 'center';
-        }
-        if (sizeSelect) {
-          sizeSelect.value = config.appearance?.size || 'medium';
-        }
-        if (opacityRange) {
-          opacityRange.value = config.appearance?.opacity || 0.95;
-          if (opacityValue) {
-            opacityValue.textContent = opacityRange.value;
-          }
-        }
-
-        const hideAfterActionCheckbox = document.getElementById('hide-after-action');
-        const hideOnBlurCheckbox = document.getElementById('hide-on-blur');
-        const hideOnEscapeCheckbox = document.getElementById('hide-on-escape');
-        const showInTaskbarCheckbox = document.getElementById('show-in-taskbar');
-
-        if (hideAfterActionCheckbox) {
-          hideAfterActionCheckbox.checked = config.advanced?.hideAfterAction !== false;
-        }
-        if (hideOnBlurCheckbox) {
-          hideOnBlurCheckbox.checked = config.advanced?.hideOnBlur !== false;
-        }
-        if (hideOnEscapeCheckbox) {
-          hideOnEscapeCheckbox.checked = config.advanced?.hideOnEscape !== false;
-        }
-        if (showInTaskbarCheckbox) {
-          showInTaskbarCheckbox.checked = config.advanced?.showInTaskbar || false;
-        }
-      }
-    }
+  // Apply background changes to hidden tabs too, so reopening a tab cannot show
+  // stale controls. Reuse the same render functions as initial loading.
+  if (changed('appearance')) {
+    applyTheme(config.appearance?.theme || 'system');
+    applyAccentColor(config.appearance?.accentColor);
+    initializeAppearanceSettings();
   }
-  catch (error) {
-    window.settings.log.error('applyConfigUpdate error:', error);
+  if (changed('globalHotkey') || changed('advanced')) {
+    initializeGeneralSettings();
+  }
+  if (changed('advanced')) {
+    initializeAdvancedSettings();
+  }
+  if (changed('snippets') || changed('textExpander')) {
+    initializeSnippetsSettings();
   }
 }

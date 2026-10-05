@@ -2,7 +2,7 @@
  * Settings - General Settings Management
  */
 
-import { globalHotkeyInput, recordHotkeyButton, clearHotkeyButton, launchAtLoginCheckbox } from './dom-elements.js';
+import { globalHotkeyInput, recordHotkeyButton, launchAtLoginCheckbox } from './dom-elements.js';
 import { config, isRecordingHotkey, setRecordingHotkey, markUnsavedChanges } from './state.js';
 
 /**
@@ -13,7 +13,7 @@ export function initializeGeneralSettings() {
 
   try {
     // Global hotkey setting
-    if (globalHotkeyInput) {
+    if (globalHotkeyInput && !isRecordingHotkey) {
       globalHotkeyInput.value = config.globalHotkey || '';
     }
 
