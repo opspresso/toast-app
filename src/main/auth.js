@@ -1,16 +1,15 @@
 /**
  * Toast - Authentication Module
  *
- * This module is for OAuth 2.0 authentication and subscription management.
- * Handles token storage, retrieval, validation, and high-level authentication flow.
+ * Stores, loads, validates, and refreshes OAuth credentials.
+ * The auth manager owns account state, subscription updates, and window notifications.
  * Uses the API authentication module for direct API communications.
  */
 
 const { app, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { createLogger, maskAuthUrl } = require('./logger');
-const { createConfigStore } = require('./config');
+const { createLogger } = require('./logger');
 
 // Create logger for this module
 const logger = createLogger('Auth');
@@ -52,10 +51,6 @@ const TOKEN_FILE_PATH = path.join(USER_DATA_PATH, TOKEN_FILENAME);
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 const TOKEN_EXPIRES_KEY = 'token-expires-at';
-
-// Import common constants
-const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
-const { normalizeSubscription } = require('./subscription');
 
 // Set tokens in memory
 async function initializeTokensFromStorage() {
@@ -389,111 +384,6 @@ async function initiateLogin() {
 }
 
 /**
- * Process redirection received from authentication URL
- * @param {string} url - Redirection URL
- * @returns {Promise<Object>} Processing result
- */
-async function handleAuthRedirect(url) {
-  try {
-    logger.info('Processing auth redirect:', maskAuthUrl(url));
-
-    // Extract parameters directly from the URL
-    const urlObj = new URL(url);
-    const code = urlObj.searchParams.get('code');
-    const token = urlObj.searchParams.get('token');
-    const userId = urlObj.searchParams.get('userId');
-    const action = urlObj.searchParams.get('action');
-
-    // Handle deep link from the Connect page (using token, userId, action parameters)
-    if (action === 'reload_auth' && token && userId) {
-      logger.info('Auth reload action detected with token from connect page');
-
-      // Check current authentication status
-      const hasToken = await hasValidToken();
-
-      if (hasToken) {
-        // If already authenticated, just refresh subscription information
-        logger.info('Already authenticated, refreshing subscription info');
-        const refreshResult = await refreshSubscriptionSettings();
-
-        return {
-          ...refreshResult,
-          message: refreshResult.success ? 'Authentication refreshed' : undefined,
-        };
-      }
-      else {
-        // If not authenticated, start login process
-        logger.info('Not authenticated, initiating login process');
-        // initiateLogin() resolves to a boolean, but handleAuthRedirect's contract
-        // (and its caller's result.success check) expects an object.
-        const started = await initiateLogin();
-        return { success: started };
-      }
-    }
-
-    // Existing OAuth code handling logic
-    if (code) {
-      const redirectResult = await apiAuth.handleAuthRedirect({
-        url,
-        onCodeExchange: async code =>
-          // Exchange code for token and update subscription information
-          await exchangeCodeForTokenAndUpdateSubscription(code),
-      });
-
-      // Process 'reload_auth' action
-      if (redirectResult.success && redirectResult.action === 'reload_auth') {
-        logger.info('Auth reload action detected from OAuth flow');
-
-        // Check if token exists
-        if (!redirectResult.token) {
-          logger.error('No token provided for auth reload');
-          return {
-            success: false,
-            error: 'Missing token for auth reload',
-          };
-        }
-
-        // Check current authentication status
-        const hasToken = await hasValidToken();
-
-        if (hasToken) {
-          // If already authenticated, just refresh subscription information
-          logger.info('Already authenticated, refreshing subscription info');
-          const refreshResult = await refreshSubscriptionSettings();
-
-          return {
-            ...refreshResult,
-            message: refreshResult.success ? 'Authentication refreshed' : undefined,
-          };
-        }
-        else {
-          // If not authenticated, start login process
-          logger.info('Not authenticated, initiating login process');
-          // initiateLogin() resolves to a boolean, but handleAuthRedirect's contract
-          // (and its caller's result.success check) expects an object.
-          const started = await initiateLogin();
-          return { success: started };
-        }
-      }
-
-      return redirectResult;
-    }
-
-    return {
-      success: false,
-      error: 'Invalid URL parameters',
-    };
-  }
-  catch (error) {
-    logger.error('Failed to handle auth redirect:', error);
-    return {
-      success: false,
-      error: error.message || 'Unknown error',
-    };
-  }
-}
-
-/**
  * Exchange authentication code for token
  * @param {string} code - OAuth authentication code
  * @returns {Promise<Object>} Token exchange result
@@ -648,7 +538,7 @@ function refreshAccessToken({ force = false } = {}) {
 }
 
 /**
- * Handle logout (delete tokens and reset page group settings)
+ * Revoke and delete credentials; auth-manager owns profile and subscription state.
  * @returns {Promise<boolean>} Whether logout was successful
  */
 async function logout() {
@@ -677,16 +567,7 @@ async function logout() {
       logger.info('Local token file deleted successfully');
     }
 
-    // Reset page group settings
-    const config = createConfigStore();
-    config.set('subscription', {
-      isAuthenticated: false,
-      isSubscribed: false,
-      expiresAt: '',
-      pageGroups: PAGE_GROUPS.ANONYMOUS,
-    });
-
-    logger.info('Logged out and reset page group settings to defaults');
+    logger.info('Local credentials cleared');
 
     return true;
   }
@@ -714,53 +595,6 @@ async function fetchUserProfile() {
         code: 'PROFILE_ERROR',
         message: error.message || 'Unable to retrieve profile information.',
       },
-    };
-  }
-}
-
-/**
- * Exchange authentication code for token and update profile information
- * @param {string} code - OAuth authentication code
- * @returns {Promise<Object>} Processing result
- */
-async function exchangeCodeForTokenAndUpdateSubscription(code) {
-  try {
-    // Exchange token
-    const tokenResult = await exchangeCodeForToken(code);
-    if (!tokenResult.success) {
-      return tokenResult;
-    }
-
-    // Get subscription information
-    try {
-      const result = await refreshSubscriptionSettings();
-      if (!result.success) {
-        return result;
-      }
-      logger.info('Successfully retrieved subscription information');
-
-      return {
-        success: true,
-        subscription: result.subscription,
-      };
-    }
-    catch (subError) {
-      logger.error('Failed to retrieve subscription information:', subError);
-
-      // Token exchange was successful, so treat as success with warning
-      return {
-        success: true,
-        warning: 'Login was successful, but failed to retrieve subscription information.',
-        error_details: subError.message,
-      };
-    }
-  }
-  catch (error) {
-    // Stack trace goes to the log only; callers only need a human-readable message.
-    logger.error('Error during authentication code exchange and subscription update:', error);
-    return {
-      success: false,
-      error: error.message || 'An error occurred during authentication processing.',
     };
   }
 }
@@ -836,89 +670,20 @@ async function getAccessToken() {
   return client.getAccessToken() || (await getStoredToken());
 }
 
-/**
- * Update page group settings based on subscription information
- * @param {Object} subscription - Subscription information
- * @returns {Promise<void>}
- */
-async function updatePageGroupSettings(subscription) {
-  createConfigStore().set('subscription', normalizeSubscription(subscription));
-}
-
-/**
- * Fetch the latest subscription and persist it as an authenticated ConfigStore write —
- * unless a logout completed while the fetch was in flight, in which case the write is
- * skipped so it can't resurrect config state the logout just reset to anonymous.
- * @returns {Promise<{success: boolean, subscription?: object, error?: string}>}
- */
-async function refreshSubscriptionSettings() {
-  const startGeneration = authGeneration;
-  const subscription = await fetchSubscription();
-
-  if (authGeneration !== startGeneration) {
-    logger.warn('Logout occurred during subscription fetch; discarding subscription update');
-    return { success: false, error: 'Session changed during authentication' };
-  }
-
-  // fetchSubscription() returns the error-shaped profileData as-is on failure (see its
-  // own else-if branch below), not a subscription object — writing it through as if it
-  // were one would mark the config authenticated despite the fetch having failed.
-  if (!subscription || subscription.error) {
-    logger.error('Failed to retrieve subscription information:', subscription?.error);
-    return { success: false, error: subscription?.error?.message || 'Failed to retrieve subscription information' };
-  }
-
-  await updatePageGroupSettings(subscription);
-  return { success: true, subscription };
-}
-
 // Initialization: Load stored tokens into memory
 initializeTokensFromStorage().then(() => {
   logger.info('Token state initialization complete');
 });
 
-/**
- * Get subscription information
- * @returns {Promise<Object>} Subscription information
- */
-async function fetchSubscription() {
-  try {
-    // Call through profile API and extract subscription information
-    const profileData = await fetchUserProfile();
-
-    if (profileData && profileData.subscription) {
-      // Successfully retrieved profile data with subscription information
-      return profileData.subscription;
-    }
-    else if (profileData.error) {
-      // Error case
-      return profileData;
-    }
-    else {
-      // Profile exists but no subscription information, return default
-      return DEFAULT_ANONYMOUS_SUBSCRIPTION;
-    }
-  }
-  catch (error) {
-    logger.error('Failed to retrieve subscription information:', error);
-    // Handle as anonymous user if error occurs
-    return DEFAULT_ANONYMOUS_SUBSCRIPTION;
-  }
-}
-
 module.exports = {
   initiateLogin,
   exchangeCodeForToken,
-  exchangeCodeForTokenAndUpdateSubscription,
   logout,
   fetchUserProfile,
-  fetchSubscription,
   registerProtocolHandler,
-  handleAuthRedirect,
   validateStateParam: apiAuth.validateStateParam,
   hasValidToken,
   getAccessToken,
-  updatePageGroupSettings,
   refreshAccessToken,
   setSessionExpiredHandler,
 };

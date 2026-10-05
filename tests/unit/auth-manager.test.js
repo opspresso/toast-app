@@ -10,7 +10,6 @@ const mockAuth = {
   exchangeCodeForToken: jest.fn(),
   logout: jest.fn(),
   fetchUserProfile: jest.fn(),
-  fetchSubscription: jest.fn(),
   getAccessToken: jest.fn(),
   hasValidToken: jest.fn(),
   refreshAccessToken: jest.fn(),
@@ -97,7 +96,6 @@ describe('Authentication Manager', () => {
     mockAuth.getAccessToken.mockResolvedValue(null);
     mockUserDataManager.getUserProfile.mockReset().mockResolvedValue({ email: 'test@example.com', isAuthenticated: true, subscription: { active: false } });
     mockAuth.exchangeCodeForToken.mockReset();
-    mockAuth.fetchSubscription.mockResolvedValue({ success: false });
     mockAuth.initiateLogin.mockResolvedValue(true);
     mockAuth.logout.mockResolvedValue(true);
 
@@ -345,6 +343,22 @@ describe('Authentication Manager', () => {
       resolveSync({ success: true });
       await new Promise(resolve => setImmediate(resolve));
       expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('auth-state-changed', expect.anything());
+    });
+  });
+
+  describe('Account reload', () => {
+    test('starts the browser login flow when no valid credentials exist', async () => {
+      mockAuth.hasValidToken.mockResolvedValue(false);
+      expect(await authManager.reloadAccount()).toEqual({ success: true });
+      expect(mockAuth.initiateLogin).toHaveBeenCalledTimes(1);
+    });
+    test('refreshes the verified profile and syncs a signed-in account', async () => {
+      mockAuth.hasValidToken.mockResolvedValue(true);
+      const manager = { syncAfterLogin: jest.fn().mockResolvedValue({ success: true }) };
+      authManager.setSyncManager(manager);
+      expect(await authManager.reloadAccount()).toEqual({ success: true });
+      expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(true);
+      expect(manager.syncAfterLogin).toHaveBeenCalledTimes(1);
     });
   });
 

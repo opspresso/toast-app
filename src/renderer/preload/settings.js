@@ -21,7 +21,6 @@ contextBridge.exposeInMainWorld('settings', {
 
   // Authentication and subscription
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
-  exchangeCodeForToken: code => ipcRenderer.invoke('exchange-code-for-token', code),
   logout: () => ipcRenderer.invoke('logout'),
   fetchUserProfile: (forceRefresh = false) => ipcRenderer.invoke('fetch-user-profile', forceRefresh === true),
   fetchSubscription: (forceRefresh = false) => ipcRenderer.invoke('fetch-subscription', forceRefresh === true),

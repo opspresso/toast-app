@@ -82,25 +82,6 @@ async function initiateLogin() {
 }
 
 /**
- * Exchange authentication code for token
- * @param {string} code - OAuth authentication code
- * @returns {Promise<Object>} Token exchange result
- */
-async function exchangeCodeForToken(code) {
-  try {
-    const result = await auth.exchangeCodeForToken(code);
-    return result;
-  }
-  catch (error) {
-    logger.error('Error exchanging code for token:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to exchange code for token',
-    };
-  }
-}
-
-/**
  * Exchange authentication code for token and update profile/settings/subscription information
  * @param {string} code - OAuth authentication code
  * @returns {Promise<Object>} Processing result
@@ -511,7 +492,6 @@ module.exports = {
   restoreSession,
   reloadAccount,
   initiateLogin,
-  exchangeCodeForToken,
   exchangeCodeForTokenAndUpdateSubscription,
   logout,
   fetchUserProfile,

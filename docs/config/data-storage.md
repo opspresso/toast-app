@@ -101,7 +101,7 @@ For detailed configuration options, see [Configuration Schema](./schema.md).
 
 The main settings and `_sync` revision snapshots live in `config.json`. Authentication
 credentials live in `auth-tokens.json`. `CONFIG_SUFFIX` selects separate config and
-token files for an isolated environment.
+token files for an isolated environment; OAuth callback state uses the same suffix.
 
 Profiles are cached in main-process memory for five minutes, scoped to the current
 credential session. Concurrent requests share one API call. Force refresh bypasses

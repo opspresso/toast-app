@@ -233,6 +233,7 @@ describe('IPC Handlers', () => {
       expect(mockIpcMain.on).toHaveBeenCalledWith('modal-state-changed', expect.any(Function));
       expect(mockIpcMain.handle).toHaveBeenCalledWith('is-modal-open', expect.any(Function));
       expect(mockIpcMain.handle).toHaveBeenCalledWith('execute-action', expect.any(Function));
+      expect(mockIpcMain.handle).not.toHaveBeenCalledWith('exchange-code-for-token', expect.any(Function));
     });
   });
 

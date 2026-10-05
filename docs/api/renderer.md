@@ -194,7 +194,6 @@ window.settings.restoreShortcuts() // Restore global shortcuts
 
 ```javascript
 window.settings.initiateLogin()       // Start the login process
-window.settings.exchangeCodeForToken(code) // Exchange an authorization code for a token
 window.settings.logout()              // Log out
 window.settings.fetchUserProfile()    // Fetch the user profile
 window.settings.fetchSubscription()   // Fetch subscription information

@@ -7,7 +7,6 @@
 const axios = require('axios');
 const { version: APP_VERSION } = require('../../../package.json');
 const { getEnv } = require('../config/env');
-const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // Base URL and endpoint configuration
 const TOAST_URL = getEnv('TOAST_URL', 'https://toastapp.dev');
@@ -122,24 +121,15 @@ function createApiClient(options = {}) {
 
 /** Retry one unauthorized request after a shared refresh, within the same session. */
 async function authenticatedRequest(apiCall, options = {}) {
-  const { allowUnauthenticated = false, defaultValue = null, isSubscriptionRequest = false, onUnauthorized } = options;
+  const { onUnauthorized } = options;
   const version = sessionVersion;
   const token = currentToken;
   const changedSession = () => ({ error: { code: 'AUTH_SESSION_CHANGED', statusCode: 401, message: 'The account changed during this request.' } });
   const failure = (error, extra = {}) => {
-    if (allowUnauthenticated && defaultValue) {
-      return defaultValue;
-    }
-    if (isSubscriptionRequest) {
-      return DEFAULT_ANONYMOUS_SUBSCRIPTION;
-    }
     const statusCode = error?.response?.status;
     return { error: { code: statusCode ? `HTTP_${statusCode}` : 'API_ERROR', message: error?.message || 'API request failed', statusCode, ...extra } };
   };
   if (!token) {
-    if (allowUnauthenticated && defaultValue) {
-      return defaultValue;
-    }
     return { error: { code: 'NO_TOKEN', message: 'Authentication required. Please log in.' } };
   }
 

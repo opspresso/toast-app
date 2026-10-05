@@ -78,6 +78,22 @@ describe('API Auth Module (P0)', () => {
     authApi = require('../../../src/main/api/auth');
   });
 
+  test('isolates OAuth callback state with the selected config suffix', () => {
+    const previous = process.env.CONFIG_SUFFIX;
+    process.env.CONFIG_SUFFIX = 'test-instance';
+    try {
+      jest.resetModules();
+      const scopedStore = require('electron-store');
+      scopedStore.mockImplementation(() => mockStore);
+      require('../../../src/main/api/auth');
+      expect(scopedStore).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'auth-state-test-instance' }));
+    }
+    finally {
+      if (previous === undefined) delete process.env.CONFIG_SUFFIX;
+      else process.env.CONFIG_SUFFIX = previous;
+    }
+  });
+
   describe('Login Process Management', () => {
     test('should check login process status', () => {
       const result = authApi.isLoginProcessActive();
@@ -296,54 +312,6 @@ describe('API Auth Module (P0)', () => {
     });
   });
 
-  describe('Auth Redirect Handling', () => {
-    test('should handle valid auth redirects', async () => {
-      const params = {
-        url: 'toast-app://auth?code=auth-code-123&state=mock-uuid-12345',
-        onCodeExchange: jest.fn().mockResolvedValue({
-          success: true,
-          tokens: { accessToken: 'token-123' }
-        })
-      };
-
-      // Clear any previous mock calls
-      mockStore.get.mockClear();
-
-      // Set up specific mock calls for state validation
-      const currentTime = Date.now();
-      mockStore.get
-        .mockReturnValueOnce('mock-uuid-12345')     // First call for 'oauth-state'
-        .mockReturnValueOnce(currentTime - 10000); // Second call for 'state-created-at'
-
-      const result = await authApi.handleAuthRedirect(params);
-
-      // Verify the mock was called correctly
-      expect(mockStore.get).toHaveBeenCalledTimes(2);
-      expect(mockStore.get).toHaveBeenNthCalledWith(1, 'oauth-state');
-      expect(mockStore.get).toHaveBeenNthCalledWith(2, 'state-created-at');
-
-      expect(result).toEqual({
-        success: true,
-        tokens: { accessToken: 'token-123' }
-      });
-    });
-
-    test('should reject invalid URLs', async () => {
-      const params = {
-        url: 'invalid-url',
-        onCodeExchange: jest.fn()
-      };
-
-      const result = await authApi.handleAuthRedirect(params);
-
-      expect(result).toEqual({
-        success: false,
-        error: expect.any(String)
-      });
-      expect(params.onCodeExchange).not.toHaveBeenCalled();
-    });
-  });
-
   describe('validateStateParam (CSRF)', () => {
     beforeEach(() => {
       mockStore.get.mockReset();
@@ -408,33 +376,6 @@ describe('API Auth Module (P0)', () => {
 
       try {
         const result = await authApi.fetchUserProfile();
-        expect(result).toBeDefined();
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
-    });
-  });
-
-  describe('Subscription', () => {
-    test('should fetch subscription', async () => {
-      mockClientModule.authenticatedRequest.mockResolvedValue({
-        data: {
-          plan: 'premium',
-          active: true,
-          features: ['feature1', 'feature2']
-        }
-      });
-
-      const result = await authApi.fetchSubscription();
-
-      expect(result).toBeDefined();
-    });
-
-    test('should handle subscription fetch errors', async () => {
-      mockClientModule.authenticatedRequest.mockRejectedValue(new Error('Network error'));
-
-      try {
-        const result = await authApi.fetchSubscription();
         expect(result).toBeDefined();
       } catch (error) {
         expect(error).toBeDefined();

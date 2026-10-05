@@ -14,9 +14,6 @@ function setupAuthHandlers() {
   // Start login process
   ipcMain.handle('initiate-login', async () => await authManager.initiateLogin());
 
-  // Exchange authentication code for token
-  ipcMain.handle('exchange-code-for-token', async (event, code) => await authManager.exchangeCodeForToken(code));
-
   // Logout
   ipcMain.handle('logout', async () => await authManager.logout());
 

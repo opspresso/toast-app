@@ -84,6 +84,7 @@ describe('Settings Preload Script', () => {
 
     test('should expose authentication methods', () => {
       expect(settingsAPI.initiateLogin).toBeDefined();
+      expect(settingsAPI.exchangeCodeForToken).toBeUndefined();
       expect(settingsAPI.logout).toBeDefined();
       expect(settingsAPI.fetchUserProfile).toBeDefined();
       expect(settingsAPI.fetchSubscription).toBeDefined();

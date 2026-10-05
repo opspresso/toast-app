@@ -516,7 +516,6 @@ function setupIpcHandlers(windows)
 | Channel | Type | Description |
 |---------|------|-------------|
 | `initiate-login` | handle | Start the login process |
-| `exchange-code-for-token` | handle | Exchange an authorization code for a token |
 | `logout` | handle | Log out |
 | `fetch-user-profile` | handle | Fetch user profile information |
 | `fetch-subscription` | handle | Fetch subscription information |
@@ -603,7 +602,9 @@ The auth manager module is the entry point for runtime authentication handling. 
 
 ```javascript
 initiateLogin()                 // Start the login process
-exchangeCodeForToken(code)      // Exchange an authorization code for a token
+exchangeCodeForTokenAndUpdateSubscription(code) // Internal: called only after protocol state validation
+restoreSession()                 // Restore credentials/profile and start initial sync
+reloadAccount()                  // Refresh an existing session or start browser login
 logout()                        // Log out
 fetchUserProfile(forceRefresh)  // Fetch and persist a verified profile; errors remain explicit
 fetchSubscription(forceRefresh) // Reuse the same profile request and return its normalized subscription
@@ -624,108 +625,28 @@ notifyAuthStateChange(authState) // Notify of authentication state changes
 notifySettingsSynced(configData) // Notify that settings sync is complete
 ```
 
-Caching of user profile, settings, and subscription information is handled by `src/main/user-data-manager.js`.
+`user-data-manager.js` caches verified profiles for five minutes in main-process memory. Settings and revision baselines belong to the sync manager.
 
 ## Auth Module (`src/main/auth.js`)
 
-The auth module is the low-level layer for OAuth 2.0-based user authentication, handling token issuance, storage, and refresh. The runtime entry point is `auth-manager.js`, and this module is generally used through `auth-manager.js` rather than called directly.
-
-### Functions
-
-```javascript
-/**
- * Start the login process (OAuth authentication in the external browser)
- * @returns {Promise<boolean>} true on success
- */
-async function initiateLogin()
-
-/**
- * Exchange an authorization code for a token
- * @param {string} code - Authorization code
- * @returns {Promise<Object>} Token information
- */
-async function exchangeCodeForToken(code)
-
-/**
- * Exchange an authorization code for a token and update subscription information
- * @param {string} code - Authorization code
- * @returns {Promise<Object>} Token and subscription information
- */
-async function exchangeCodeForTokenAndUpdateSubscription(code)
-
-/**
- * Fetch user profile information
- * @returns {Promise<Object>} User profile
- */
-async function fetchUserProfile()
-
-/**
- * Fetch subscription information
- * @returns {Promise<Object>} Subscription information
- */
-async function fetchSubscription()
-
-/**
- * Log out
- * @returns {Promise<boolean>} true on success, false on failure
- */
-async function logout()
-
-/**
- * Check whether a valid token exists
- * @returns {Promise<boolean>} Whether the token is valid
- */
-async function hasValidToken()
-
-/**
- * Get the access token (auto-refresh if needed)
- * @returns {Promise<string|null>} Access token
- */
-async function getAccessToken()
-
-/**
- * Force-refresh the access token
- * @returns {Promise<string|null>} New access token
- */
-async function refreshAccessToken()
-
-/**
- * Update page group settings based on subscription status
- * @param {Object} subscription - Subscription information
- * @returns {Promise<void>}
- */
-async function updatePageGroupSettings(subscription)
-
-/**
- * Register the protocol handler (`toast-app://` scheme)
- */
-function registerProtocolHandler()
-
-/**
- * Handle a protocol redirect (e.g., `toast-app://auth?code=...`)
- * @param {string} url - Received protocol URL
- * @returns {Promise<Object>} Processing result
- */
-async function handleAuthRedirect(url)
-```
-
-### Usage Example
+This internal layer owns credential storage and refresh. Runtime callers use `auth-manager.js`
+for login, profile, subscription, and logout notifications.
 
 ```javascript
-const auth = require('./main/auth');
-
-// Start login
-await auth.initiateLogin();
-
-// Check token validity
-if (await auth.hasValidToken()) {
-  const profile = await auth.fetchUserProfile();
-  console.log('User:', profile.name);
-}
-
-// Log out
-await auth.logout();
+initiateLogin()                     // Open the OAuth page; resolves to boolean
+exchangeCodeForToken(code)          // Exchange code and durably save credentials
+fetchUserProfile()                 // Raw profile request; no local profile fallback
+hasValidToken()                     // Load credentials and refresh near expiry
+getAccessToken()                    // Return the memory/stored access token
+refreshAccessToken({ force: true }) // Force refresh after a server 401; returns { success, ... }
+logout()                           // Revoke and delete credentials; resolves to boolean
+registerProtocolHandler()          // Register toast-app only in packaged builds
+validateStateParam(state)          // Consume the matching unexpired OAuth callback state
 ```
+
+`src/index.js` receives the protocol callback, validates its state, and delegates the complete
+login lifecycle to `auth-manager.js`. The renderer cannot directly exchange an authorization code.
+`CONFIG_SUFFIX` isolates token, config, and OAuth state files for separate environments.
 
 ## Cloud Sync Module (`src/main/cloud-sync.js`)
 
@@ -983,8 +904,8 @@ function getAuthHeaders()
 /**
  * Execute an authenticated request
  * @param {Function} apiCall - Callback that performs the actual API call (invoked with no arguments, e.g., `() => client.get(url)`)
- * @param {Object} [options] - Options (allowUnauthenticated, defaultValue, isSubscriptionRequest, onUnauthorized)
- * @returns {Promise<Object>} Response data
+ * @param {Object} [options] - Options (onUnauthorized)
+ * @returns {Promise<Object>} Response data or an explicit error object
  */
 async function authenticatedRequest(apiCall, options)
 ```
