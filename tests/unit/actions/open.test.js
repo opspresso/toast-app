@@ -48,7 +48,7 @@ describe('Open Action', () => {
     
     // Setup default mock implementations
     shell.openExternal.mockResolvedValue();
-    shell.openPath.mockResolvedValue();
+    shell.openPath.mockResolvedValue('');
     fs.existsSync.mockReturnValue(true);
     path.resolve.mockImplementation((p) => `/resolved${p}`);
     path.join.mockImplementation((...parts) => parts.join('/'));
@@ -192,10 +192,10 @@ describe('Open Action', () => {
       }
     });
 
-    test('should add http:// to protocols without :// format', async () => {
+    test('should preserve mail and telephone URI schemes', async () => {
       const testCases = [
-        { input: 'mailto:test@example.com', expected: 'http://mailto:test@example.com' },
-        { input: 'tel:+1234567890', expected: 'http://tel:+1234567890' },
+        { input: 'mailto:test@example.com', expected: 'mailto:test@example.com' },
+        { input: 'tel:+1234567890', expected: 'tel:+1234567890' },
       ];
 
       for (const testCase of testCases) {
@@ -250,6 +250,13 @@ describe('Open Action', () => {
       expect(result).toEqual({
         success: false,
         message: 'Path does not exist: /resolved/nonexistent/file.txt',
+      });
+    });
+
+    test('reports Electron openPath error strings as failures', async () => {
+      shell.openPath.mockResolvedValueOnce('No application can open this file');
+      expect(await openItem({ path: '/test/file.unknown' })).toEqual({
+        success: false, message: 'Error opening path: No application can open this file',
       });
     });
 

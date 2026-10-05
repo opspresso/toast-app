@@ -48,9 +48,12 @@ async function openItem(action) {
  */
 async function openUrl(url) {
   try {
-    // Validate URL format - check if URL already has any protocol
-    if (!url.match(/^[a-zA-Z0-9.+-]+:\/\//i)) {
-      // Add http:// prefix only if no protocol is present
+    url = url.trim();
+    // URI schemes such as mailto: and tel: do not use //. A numeric port
+    // after a host is still a web address, not a custom protocol.
+    const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(url);
+    const hostWithPort = /^[^/?#:]+:\d+(?:[/?#]|$)/.test(url);
+    if (!hasScheme || hostWithPort) {
       url = 'http://' + url;
     }
 
@@ -106,7 +109,10 @@ async function openPath(itemPath, application) {
     }
 
     // Open with default application
-    await shell.openPath(resolvedPath);
+    const errorMessage = await shell.openPath(resolvedPath);
+    if (errorMessage) {
+      return { success: false, message: `Error opening path: ${errorMessage}` };
+    }
 
     return {
       success: true,
