@@ -33,7 +33,7 @@ const state = {
  * @returns {string|null} sha256 hex fingerprint, or null for non-risky actions
  */
 function computeFingerprint(action) {
-  if (!action || typeof action !== 'object') {
+  if (!action || typeof action !== 'object' || isBuiltinButton(action)) {
     return null;
   }
 
@@ -91,7 +91,7 @@ function collectRiskyFingerprints(pages) {
   if (Array.isArray(pages)) {
     for (const page of pages) {
       if (page && Array.isArray(page.buttons)) {
-        page.buttons.forEach(visit);
+        page.buttons.forEach(button => visit(button));
       }
     }
   }
@@ -293,6 +293,10 @@ async function promptUser(entry, fingerprint) {
  * @param {Object} button - Button from remote page data
  * @returns {boolean} Whether the button is an inert empty slot
  */
+function isBuiltinButton(button) {
+  return button?.action === 'script' && button.scriptType === 'special' && button.script === 'confetti';
+}
+
 function isEmptySlotButton(button) {
   return Boolean(button) && button.action === 'application' && !button.applicationPath;
 }
@@ -325,7 +329,7 @@ async function sanitizeRemotePages(pages) {
 
     const buttons = [];
     for (const button of page.buttons) {
-      if (isEmptySlotButton(button)) {
+      if (isEmptySlotButton(button) || isBuiltinButton(button)) {
         buttons.push(button);
         continue;
       }

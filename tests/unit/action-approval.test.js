@@ -338,3 +338,16 @@ describe('Action Approval', () => {
     });
   });
 });
+
+describe('complete cloud button contract', () => {
+  test('retains the built-in Confetti button without executable-script approval', async () => {
+    const button = { name: 'Confetti', action: 'script', scriptType: 'special', script: 'confetti' };
+    expect(await sanitizeRemotePages(pagesWith(button))).toEqual(pagesWith(button));
+    expect(computeFingerprint(button)).toBeNull();
+  });
+
+  test('collects risky actions in every grid slot, including slot 15', () => {
+    const buttons = Array.from({ length: 15 }, (_, i) => execAction(`echo slot-${i}`));
+    expect(collectRiskyFingerprints(pagesWith(...buttons)).size).toBe(15);
+  });
+});
