@@ -42,7 +42,7 @@ function storeStateParam(state) {
   try {
     stateStore.set('oauth-state', state);
     stateStore.set('state-created-at', Date.now());
-    logger.info('Auth state stored:', state);
+    logger.info('Auth state stored');
     return true;
   }
   catch (error) {
@@ -205,7 +205,7 @@ function initiateLogin(clientId) {
  */
 async function exchangeCodeForToken({ code, clientId, clientSecret }) {
   try {
-    logger.info('Starting exchange of authorization code for token:', code.substring(0, 8) + '...');
+    logger.info('Starting exchange of authorization code for token');
 
     const apiClient = createApiClient();
 
@@ -220,7 +220,6 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
     logger.info('Token request URL:', ENDPOINTS.OAUTH_TOKEN);
     logger.info('Request data:', {
       grant_type: 'authorization_code',
-      code: code.substring(0, 8) + '...',
       client_id: clientId,
       redirect_uri: REDIRECT_URI,
     });
@@ -255,8 +254,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
     };
   }
   catch (error) {
-    logger.error('Error exchanging token:', error);
-    logger.error('Detailed error information:', error.response?.data || 'No detailed information');
+    logger.error('Error exchanging token:', error.message, { status: error.response?.status });
 
     // Reset login state if error occurs
     setLoginInProgress(false);

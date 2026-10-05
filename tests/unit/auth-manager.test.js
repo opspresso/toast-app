@@ -286,6 +286,15 @@ describe('Authentication Manager', () => {
   });
 
   describe('Login Process', () => {
+    test('stops old-account synchronization before exchanging credentials', async () => {
+      const manager = { stopPeriodicSync: jest.fn() };
+      authManager.setSyncManager(manager);
+      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValueOnce({ success: false, error: 'Unavailable' });
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+      expect(manager.stopPeriodicSync.mock.invocationCallOrder[0]).toBeLessThan(mockAuth.exchangeCodeForTokenAndUpdateSubscription.mock.invocationCallOrder[0]);
+      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalled();
+    });
+
     test('should initiate login successfully', async () => {
       mockAuth.initiateLogin.mockResolvedValue(true);
 
@@ -447,6 +456,8 @@ describe('Authentication Manager', () => {
       );
 
       const loginPromise = authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
+      await new Promise(resolve => setImmediate(resolve));
+      expect(mockAuth.fetchUserProfile).toHaveBeenCalled();
 
       // Log out while the login continuation is still awaiting the profile fetch.
       await authManager.logout();

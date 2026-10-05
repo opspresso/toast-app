@@ -383,6 +383,21 @@ describe('Main Auth Module (P0)', () => {
   });
 
   describe('Token Management', () => {
+    test('refreshes a server-rejected token even before local expiry', async () => {
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({ success: true, access_token: 'replacement', expires_in: 3600 });
+      expect((await auth.refreshAccessToken({ force: true })).success).toBe(true);
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(mockClient.setAccessToken).toHaveBeenCalledWith('replacement', { refresh: true });
+    });
+
+    test('does not switch the in-memory account if persisting login credentials fails', async () => {
+      await new Promise(resolve => setImmediate(resolve));
+      mockClient.setAccessToken.mockClear();
+      mockFs.writeFileSync.mockImplementationOnce(() => { throw new Error('Disk full'); });
+      expect((await auth.exchangeCodeForToken('test-code')).success).toBe(false);
+      expect(mockClient.setAccessToken).not.toHaveBeenCalled();
+    });
+
     test('should check for valid token', async () => {
       mockFs.existsSync.mockReturnValue(true);
 
@@ -607,6 +622,23 @@ describe('Main Auth Module (P0)', () => {
       expect(handler).toHaveBeenCalled();
     });
 
+    test('does not delete a new login while finishing an expired-session refresh', async () => {
+      let finishCleanup;
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({ success: false, code: 'SESSION_EXPIRED', requireRelogin: true });
+      mockApiAuth.logout.mockImplementationOnce(() => new Promise(resolve => { finishCleanup = resolve; }));
+      const expiredHandler = jest.fn();
+      auth.setSessionExpiredHandler(expiredHandler);
+      const oldRefresh = auth.refreshAccessToken({ force: true });
+      await new Promise(resolve => setImmediate(resolve));
+      expect(mockApiAuth.logout).toHaveBeenCalled();
+      expect((await auth.exchangeCodeForToken('new-login-code')).success).toBe(true);
+      mockFs.unlinkSync.mockClear();
+      finishCleanup({ success: true });
+      expect((await oldRefresh).success).toBe(false);
+      expect(mockFs.unlinkSync).not.toHaveBeenCalled();
+      expect(expiredHandler).not.toHaveBeenCalled();
+    });
+
     test('logout prevents an in-flight refresh from resurrecting the deleted token file', async () => {
       mockFs.existsSync.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue(JSON.stringify({
@@ -626,6 +658,8 @@ describe('Main Auth Module (P0)', () => {
       );
 
       const refreshPromise = auth.refreshAccessToken();
+      await new Promise(resolve => setImmediate(resolve));
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(1);
 
       // logout() runs to completion while the refresh above is still in flight.
       mockFs.writeFileSync.mockClear();
@@ -885,6 +919,21 @@ describe('Main Auth Module (P0)', () => {
       // Should handle corrupted token file gracefully and return false
       expect(result).toBe(false);
       expect(mockFs.readFileSync).toHaveBeenCalled();
+    });
+
+    test('does not retain the previous account refresh token when a new login omits it', async () => {
+      mockApiAuth.exchangeCodeForToken.mockResolvedValueOnce({ success: true, access_token: 'new-account', expires_in: 3600 });
+      expect((await auth.exchangeCodeForToken('test-code')).success).toBe(true);
+      const saved = JSON.parse(mockFs.writeFileSync.mock.calls[0][1]);
+      expect(saved['refresh-token']).toBeUndefined();
+      expect(mockClient.setRefreshToken).toHaveBeenLastCalledWith(null);
+    });
+
+    test('honors zero seconds from the server as expired instead of unlimited', async () => {
+      mockApiAuth.exchangeCodeForToken.mockResolvedValueOnce({ success: true, access_token: 'zero-life', expires_in: 0 });
+      expect((await auth.exchangeCodeForToken('test-code')).success).toBe(true);
+      const saved = JSON.parse(mockFs.writeFileSync.mock.calls[0][1]);
+      expect(saved['token-expires-at']).toBeLessThanOrEqual(Date.now());
     });
 
     test('should write token file successfully', async () => {

@@ -108,15 +108,25 @@ async function exchangeCodeForToken(code) {
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
   authSequence += 1;
   const mySequence = authSequence;
+  syncManager?.stopPeriodicSync?.();
   try {
     logger.info('Starting exchange of authentication code for token and update of profile/settings');
     const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
+    if (mySequence !== authSequence) {
+      return { success: false, error: 'The account changed during login' };
+    }
+    // Cached identity belongs to the credentials used before this exchange.
+    userDataManager.cleanupOnLogout();
 
     // Notify both windows on login success
     if (result.success) {
       // 1. Get profile information only once after successful login
       logger.info('Getting user profile information after successful login');
       const userProfile = await auth.fetchUserProfile();
+
+      if (mySequence !== authSequence) {
+        return { success: false, error: 'The account changed during login' };
+      }
 
       // Persist the profile to the local cache before notifying renderers so their
       // profile/subscription IPC requests hit the cache instead of re-calling the API
@@ -257,7 +267,7 @@ async function exchangeCodeForTokenAndUpdateSubscription(code) {
         logger.info('Login synchronization process completed:', success ? 'successfully' : 'with errors');
       });
     }
-    else {
+    else if (mySequence === authSequence) {
       notifyLoginError(result.error || 'Unknown error');
     }
 
@@ -407,8 +417,8 @@ async function fetchSubscription(forceRefresh = false) {
  * Refresh token
  * @returns {Promise<Object>} Refresh result
  */
-async function refreshAccessToken() {
-  const result = await auth.refreshAccessToken();
+async function refreshAccessToken(options) {
+  const result = await auth.refreshAccessToken(options);
 
   // A dead refresh token means the user is effectively logged out; run the
   // full logout flow so cloud sync stops and both windows are notified,

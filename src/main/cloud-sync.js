@@ -103,6 +103,7 @@ function createSyncManager(auth, config) {
 
   function stopPeriodicSync() {
     suspended = true;
+    accountId = null;
     generation++;
     clearInterval(periodicTimer);
     clearTimeout(debounceTimer);

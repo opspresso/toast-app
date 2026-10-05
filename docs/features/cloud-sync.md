@@ -52,6 +52,11 @@ revision still matches, increments it, and returns the acknowledged settings.
 - Network errors, `429`, and server errors: retain local changes and retry with bounded backoff.
 - Invalid cloud data: report failure and retain the complete local settings; do not silently drop buttons.
 
+A `401` forces one token refresh even if the local expiry has not elapsed. Concurrent requests share
+the refresh operation; retries stay bound to the original login session. A `500` after refresh remains
+a server error and does not discard the session. Credentials are published in memory only after the
+token file is saved.
+
 Both repositories must be updated together. Old apps without `baseRevision` receive `428` on upload.
 New apps require a server response with `revision`; an older server is reported as incompatible.
 A missing settings item is distinct from a failed read: only a successful empty-account read permits initial upload.

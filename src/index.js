@@ -200,7 +200,7 @@ function initialize() {
           }
 
           // Existing OAuth code handling logic
-          logger.info('Starting authentication code exchange:', code.substring(0, 6) + '...');
+          logger.info('Starting authentication code exchange');
           authManager
             .exchangeCodeForTokenAndUpdateSubscription(code)
             .then(result => {
@@ -213,7 +213,7 @@ function initialize() {
         }
         else if (action === 'reload_auth' && token && userId) {
           // Handle deep link coming from the connect page
-          logger.info('Processing auth reload request with token:', token.substring(0, 8) + '...');
+          logger.info('Processing auth reload request');
           auth
             .handleAuthRedirect(url)
             .then(result => {
