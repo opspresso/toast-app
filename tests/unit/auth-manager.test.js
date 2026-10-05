@@ -8,7 +8,6 @@
 const mockAuth = {
   initiateLogin: jest.fn(),
   exchangeCodeForToken: jest.fn(),
-  exchangeCodeForTokenAndUpdateSubscription: jest.fn(),
   logout: jest.fn(),
   fetchUserProfile: jest.fn(),
   fetchSubscription: jest.fn(),
@@ -50,6 +49,7 @@ jest.mock('../../src/main/cloud-sync', () => mockCloudSync);
 jest.mock('../../src/main/config', () => ({
   createConfigStore: jest.fn(() => mockConfigStore),
   markAsSynced: jest.fn(),
+  seedDefaultSnippets: jest.fn(),
 }));
 jest.mock('../../src/main/api/client', () => mockClient);
 jest.mock('../../src/main/constants', () => ({
@@ -95,7 +95,8 @@ describe('Authentication Manager', () => {
     // Setup default mock responses
     mockAuth.hasValidToken.mockResolvedValue(false);
     mockAuth.getAccessToken.mockResolvedValue(null);
-    mockUserDataManager.getUserProfile.mockResolvedValue({ success: false });
+    mockUserDataManager.getUserProfile.mockReset().mockResolvedValue({ email: 'test@example.com', isAuthenticated: true, subscription: { active: false } });
+    mockAuth.exchangeCodeForToken.mockReset();
     mockAuth.fetchSubscription.mockResolvedValue({ success: false });
     mockAuth.initiateLogin.mockResolvedValue(true);
     mockAuth.logout.mockResolvedValue(true);
@@ -221,269 +222,129 @@ describe('Authentication Manager', () => {
     });
   });
 
-  describe('User Profile Management', () => {
-    test('should fetch user profile successfully', async () => {
-      const mockProfile = { id: 1, email: 'test@example.com' };
-      mockUserDataManager.getUserProfile.mockResolvedValue(mockProfile);
-
-      const result = await authManager.fetchUserProfile();
-
-      expect(result).toEqual(mockProfile);
+  describe('Profile and login ownership', () => {
+    const profile = (subscription = { active: true, plan: 'Premium', features: { cloud_sync: true } }) => ({
+      email: 'test@example.com', isAuthenticated: true, authSessionVersion: 0, subscription,
     });
+    const login = subscription => {
+      mockAuth.exchangeCodeForToken.mockResolvedValue({ success: true });
+      mockUserDataManager.getUserProfile.mockResolvedValue(profile(subscription));
+    };
 
-    test('should fetch user profile from cache', async () => {
-      const mockProfile = { id: 1, email: 'test@example.com' };
-      mockUserDataManager.getUserProfile.mockResolvedValue(mockProfile);
-
-      const result = await authManager.fetchUserProfile(false);
-
-      expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(false);
+    test('normalizes and persists the same profile used for subscription reads', async () => {
+      login({ active: true, plan: 'Premium', features: { cloud_sync: false, page_groups: 9 } });
+      const result = await authManager.fetchUserProfile();
+      expect(result.subscription).toMatchObject({ pageGroups: 9, isSubscribed: true, additionalFeatures: { cloudSync: false } });
+      expect(mockConfigStore.set).toHaveBeenCalledWith('subscription', result.subscription);
       expect(mockAuth.fetchUserProfile).not.toHaveBeenCalled();
     });
 
-    test('force refresh uses the cache service once without another API request', async () => {
-      mockUserDataManager.getUserProfile.mockResolvedValue({ email: 'test@example.test' });
-      await authManager.fetchUserProfile(true);
+    test('force refresh makes one profile-service call', async () => {
+      login();
+      await authManager.fetchSubscription(true);
       expect(mockUserDataManager.getUserProfile).toHaveBeenCalledTimes(1);
       expect(mockUserDataManager.getUserProfile).toHaveBeenCalledWith(true);
       expect(mockAuth.fetchUserProfile).not.toHaveBeenCalled();
     });
 
-    test('fully logs out when the profile fetch signals a dead session (requireRelogin)', async () => {
-      // auth.js's own refreshAccessToken (used as fetchUserProfile's onUnauthorized)
-      // only clears the local token file, it doesn't stop sync or notify the windows —
-      // that must happen here instead, or the app is left looking logged in.
-      mockUserDataManager.getUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
-
-      await authManager.fetchUserProfile();
-
-      expect(mockAuth.logout).toHaveBeenCalled();
-      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalled();
-    });
-  });
-
-  describe('Subscription Management', () => {
-    test('should fetch subscription successfully', async () => {
-      const mockProfile = {
-        subscription: { plan: 'premium', active: true }
-      };
-      mockUserDataManager.getUserProfile.mockResolvedValue(mockProfile);
-
-      const result = await authManager.fetchSubscription();
-
-      expect(result).toEqual(mockProfile.subscription);
+    test('preserves profile failures and does not overwrite the verified subscription', async () => {
+      const error = { error: { code: 'HTTP_503', message: 'Unavailable' } };
+      mockUserDataManager.getUserProfile.mockResolvedValue(error);
+      expect(await authManager.fetchSubscription()).toEqual(error);
+      expect(mockConfigStore.set).not.toHaveBeenCalled();
+      expect(mockAuth.logout).not.toHaveBeenCalled();
     });
 
-    test('reports missing subscription instead of returning anonymous success', async () => {
-      mockUserDataManager.getUserProfile.mockResolvedValue(null);
-
-      const result = await authManager.fetchSubscription();
-
-      expect(result).toHaveProperty('error');
+    test('fully logs out when a profile request requires relogin', async () => {
+      mockUserDataManager.getUserProfile.mockResolvedValue({ error: { requireRelogin: true } });
+      expect(await authManager.fetchSubscription()).toHaveProperty('error');
+      expect(mockAuth.logout).toHaveBeenCalledTimes(1);
     });
 
-    test('fully logs out when the subscription fetch signals a dead session (requireRelogin)', async () => {
-      mockUserDataManager.getUserProfile.mockResolvedValue({ error: { code: 'AUTH_REFRESH_FAILED', requireRelogin: true } });
-
-      const result = await authManager.fetchSubscription();
-
-      expect(mockAuth.logout).toHaveBeenCalled();
-      expect(result).toHaveProperty('error');
+    test('rejects invalid expiry instead of granting an unlimited subscription', async () => {
+      login({ active: true, expiresAt: 'broken' });
+      expect(await authManager.fetchUserProfile()).toMatchObject({ error: { code: 'INVALID_PROFILE' } });
+      expect(mockConfigStore.set).not.toHaveBeenCalled();
     });
-  });
 
-  describe('Login Process', () => {
-    test('refreshes editor account context even when cloud sync is unavailable', async () => {
+    test('stops previous synchronization before exchanging credentials', async () => {
+      const manager = { stopPeriodicSync: jest.fn(), startPeriodicSync: jest.fn() };
+      authManager.setSyncManager(manager);
+      mockAuth.exchangeCodeForToken.mockResolvedValue({ success: false, error: 'Unavailable' });
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('code');
+      expect(manager.stopPeriodicSync.mock.invocationCallOrder[0]).toBeLessThan(mockAuth.exchangeCodeForToken.mock.invocationCallOrder[0]);
+      expect(manager.startPeriodicSync).toHaveBeenCalledTimes(1);
+    });
+
+    test('login fetches one profile, persists full entitlement, and updates editor context without a sync manager', async () => {
       authManager.setSyncManager(null);
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValueOnce({ success: true, subscription: { active: false } });
-      mockUserDataManager.getUserProfile.mockResolvedValueOnce({ email: 'new@example.test' });
-      await authManager.exchangeCodeForTokenAndUpdateSubscription('new-code');
+      login({ active: true, plan: 'Premium', features: { cloud_sync: true, page_groups: 9 } });
+      expect(await authManager.exchangeCodeForTokenAndUpdateSubscription('code')).toMatchObject({ success: true });
+      expect(mockUserDataManager.getUserProfile).toHaveBeenCalledTimes(1);
+      expect(mockConfigStore.set).toHaveBeenCalledWith('subscription', expect.objectContaining({ pageGroups: 9, isAuthenticated: true }));
       expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('config-updated', expect.objectContaining({ authSessionVersion: 0 }));
     });
 
-    test('stops old-account synchronization before exchanging credentials', async () => {
-      const manager = { stopPeriodicSync: jest.fn() };
+    test('keeps the scheduler available after a temporary post-login profile failure', async () => {
+      const manager = { stopPeriodicSync: jest.fn(), startPeriodicSync: jest.fn(), syncAfterLogin: jest.fn() };
       authManager.setSyncManager(manager);
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValueOnce({ success: false, error: 'Unavailable' });
-      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-      expect(manager.stopPeriodicSync.mock.invocationCallOrder[0]).toBeLessThan(mockAuth.exchangeCodeForTokenAndUpdateSubscription.mock.invocationCallOrder[0]);
-      expect(mockUserDataManager.cleanupOnLogout).toHaveBeenCalled();
+      login();
+      mockUserDataManager.getUserProfile.mockResolvedValue({ error: { message: 'Offline' } });
+      expect(await authManager.exchangeCodeForTokenAndUpdateSubscription('code')).toMatchObject({ success: false, authenticated: true, error: 'Offline' });
+      expect(manager.startPeriodicSync).toHaveBeenCalled();
+      expect(manager.syncAfterLogin).not.toHaveBeenCalled();
+      expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('login-success', expect.anything());
     });
 
-    test('should initiate login successfully', async () => {
-      mockAuth.initiateLogin.mockResolvedValue(true);
-
-      const result = await authManager.initiateLogin();
-
-      expect(result).toBe(true);
-      expect(mockAuth.initiateLogin).toHaveBeenCalled();
+    test('does not mutate shared server feature objects', async () => {
+      const subscription = { active: false, features: { page_groups: 3, cloud_sync: false } };
+      login(subscription);
+      await authManager.fetchUserProfile();
+      expect(subscription).toEqual({ active: false, features: { page_groups: 3, cloud_sync: false } });
     });
 
-    test('should handle login initiation failure', async () => {
-      mockAuth.initiateLogin.mockResolvedValue(false);
-
-      const result = await authManager.initiateLogin();
-
-      expect(result).toBe(false);
-    });
-
-    test('should exchange code for token successfully', async () => {
-      const mockResult = { success: true, accessToken: 'new-token' };
-      mockAuth.exchangeCodeForToken.mockResolvedValue(mockResult);
-
-      const result = await authManager.exchangeCodeForToken('test-code');
-
-      expect(result.success).toBe(true);
-      expect(mockAuth.exchangeCodeForToken).toHaveBeenCalledWith('test-code');
-    });
-
-    test('should handle code exchange failure', async () => {
-      mockAuth.exchangeCodeForToken.mockRejectedValue(new Error('Invalid code'));
-
-      const result = await authManager.exchangeCodeForToken('invalid-code');
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid code');
-    });
-
-    test('should persist a complete subscription shape (pageGroups, additionalFeatures) after login', async () => {
-      const mockSyncManager = {
-        updateCloudSyncSettings: jest.fn(),
-        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
-      };
-      authManager.setSyncManager(mockSyncManager);
-
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
-        success: true,
-        subscription: {
-          plan: 'Premium',
-          active: true,
-          userId: 'user-1',
-          features: { page_groups: 9, cloud_sync: true },
-        },
-      });
-
-      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-
-      expect(mockConfigStore.set).toHaveBeenCalledWith(
-        'subscription',
-        expect.objectContaining({
-          isAuthenticated: true,
-          isSubscribed: true,
-          active: true,
-          pageGroups: 9,
-          additionalFeatures: { advancedActions: false, cloudSync: true },
-        }),
-      );
-    });
-
-    test('should compute pageGroups from plan when the server omits features.page_groups', async () => {
-      const mockSyncManager = {
-        updateCloudSyncSettings: jest.fn(),
-        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
-      };
-      authManager.setSyncManager(mockSyncManager);
-
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
-        success: true,
-        subscription: { plan: 'Premium', active: true, userId: 'user-1' },
-      });
-
-      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-
-      expect(mockConfigStore.set).toHaveBeenCalledWith(
-        'subscription',
-        expect.objectContaining({ pageGroups: 9 }),
-      );
-    });
-
-    test('does not mutate a shared subscription.features reference (e.g. DEFAULT_ANONYMOUS_SUBSCRIPTION)', async () => {
-      const mockSyncManager = {
-        updateCloudSyncSettings: jest.fn(),
-        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
-      };
-      authManager.setSyncManager(mockSyncManager);
-
-      // fetchSubscription's fallback paths return DEFAULT_ANONYMOUS_SUBSCRIPTION as-is,
-      // so subscription.features can be the exact same object other callers hold.
-      const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../../src/main/constants');
-      DEFAULT_ANONYMOUS_SUBSCRIPTION.features = { page_groups: 1 };
-      const sharedFeatures = DEFAULT_ANONYMOUS_SUBSCRIPTION.features;
-
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
-        success: true,
-        subscription: DEFAULT_ANONYMOUS_SUBSCRIPTION,
-      });
-
-      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-
-      expect(DEFAULT_ANONYMOUS_SUBSCRIPTION.features).toBe(sharedFeatures);
-      expect(sharedFeatures.cloud_sync).toBeUndefined();
-    });
-
-    test('ignores a post-login sync response after logout without changing the sync preference', async () => {
-      let resolveSync;
-      const manager = {
-        syncAfterLogin: jest.fn(() => new Promise(resolve => { resolveSync = resolve; })),
-        stopPeriodicSync: jest.fn(),
-        updateCloudSyncSettings: jest.fn(),
-      };
-      authManager.setSyncManager(manager);
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
-        success: true, subscription: { active: true, plan: 'Premium' },
-      });
-      mockUserDataManager.getUserProfile.mockResolvedValue({ email: 'test@example.com' });
-      await authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-      expect(manager.syncAfterLogin).toHaveBeenCalledWith('test@example.com');
-      expect(manager.updateCloudSyncSettings).not.toHaveBeenCalled();
-      await authManager.logout();
-      expect(manager.stopPeriodicSync).toHaveBeenCalled();
-      mockWindows.toast.webContents.send.mockClear();
-      resolveSync({ success: true });
+    test('discards a login profile that arrives after logout', async () => {
+      login();
+      let resolveProfile;
+      mockUserDataManager.getUserProfile.mockReturnValueOnce(new Promise(resolve => { resolveProfile = resolve; }));
+      const request = authManager.exchangeCodeForTokenAndUpdateSubscription('code');
       await new Promise(resolve => setImmediate(resolve));
-      expect(mockWindows.toast.webContents.send.mock.calls.filter(call => call[0] === 'auth-state-changed')).toHaveLength(0);
-    });
-
-    test('aborts the login continuation (skips login-success and the authenticated config write) when logout completes while the profile fetch is still in flight', async () => {
-      // The authSequence guard originally only protected the final notifyAuthStateChange
-      // inside the background sync. The state mutations earlier in the same function —
-      // notifyLoginSuccess and the ConfigStore subscription write — ran unguarded, so a
-      // logout that completed while awaiting fetchUserProfile/getUserProfile got
-      // overwritten back to "authenticated" once the login continuation resumed.
-      const mockSyncManager = {
-        updateCloudSyncSettings: jest.fn(),
-        syncAfterLogin: jest.fn().mockResolvedValue({ success: true }),
-      };
-      authManager.setSyncManager(mockSyncManager);
-
-      mockAuth.exchangeCodeForTokenAndUpdateSubscription.mockResolvedValue({
-        success: true,
-        subscription: { active: true, plan: 'Premium' },
-      });
-
-      let resolveFetchUserProfile;
-      mockUserDataManager.getUserProfile.mockImplementationOnce(
-        () =>
-          new Promise(resolve => {
-            resolveFetchUserProfile = resolve;
-          }),
-      );
-
-      const loginPromise = authManager.exchangeCodeForTokenAndUpdateSubscription('test-code');
-      await new Promise(resolve => setImmediate(resolve));
-      expect(mockUserDataManager.getUserProfile).toHaveBeenCalled();
-
-      // Log out while the login continuation is still awaiting the profile fetch.
       await authManager.logout();
       mockConfigStore.set.mockClear();
       mockWindows.toast.webContents.send.mockClear();
-
-      resolveFetchUserProfile({ email: 'test@example.com' });
-      const loginResult = await loginPromise;
-
-      expect(loginResult.success).toBe(false);
-      expect(mockConfigStore.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
+      resolveProfile(profile());
+      expect((await request).success).toBe(false);
+      expect(mockConfigStore.set).not.toHaveBeenCalled();
       expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('login-success', expect.anything());
+    });
+
+    test('discards a startup profile after a newer login begins', async () => {
+      let resolveProfile;
+      mockUserDataManager.getUserProfile.mockReturnValueOnce(new Promise(resolve => { resolveProfile = resolve; }));
+      const startup = authManager.restoreSession();
+      mockAuth.exchangeCodeForToken.mockResolvedValue({ success: false, error: 'Offline' });
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('code');
+      mockWindows.toast.webContents.send.mockClear();
+      resolveProfile(profile());
+      expect((await startup).success).toBe(false);
+      expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('auth-state-changed', expect.anything());
+    });
+
+    test('ignores background login sync after logout', async () => {
+      let resolveSync;
+      const manager = {
+        stopPeriodicSync: jest.fn(), startPeriodicSync: jest.fn(),
+        syncAfterLogin: jest.fn(() => new Promise(resolve => { resolveSync = resolve; })),
+      };
+      authManager.setSyncManager(manager);
+      login();
+      await authManager.exchangeCodeForTokenAndUpdateSubscription('code');
+      expect(manager.syncAfterLogin).toHaveBeenCalledWith();
+      await authManager.logout();
+      mockWindows.toast.webContents.send.mockClear();
+      resolveSync({ success: true });
+      await new Promise(resolve => setImmediate(resolve));
+      expect(mockWindows.toast.webContents.send).not.toHaveBeenCalledWith('auth-state-changed', expect.anything());
     });
   });
 

@@ -1,16 +1,9 @@
 /** Cloud settings transport. The sync manager owns serialization and persistence. */
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest } = require('./client');
-const { isCloudSyncAllowed } = require('../subscription');
 const { validateSnippets } = require('../snippets');
 const { validatePages } = require('../action-validation');
 
 let lastSyncStatus = { success: false, timestamp: 0, error: null };
-
-async function isCloudSyncEnabled({ hasValidToken, configStore }) {
-  return (await hasValidToken()) && isCloudSyncAllowed(configStore.get('subscription') || {}, {
-    isDevelopment: process.env.NODE_ENV === 'development',
-  });
-}
 
 function normalizeSettings(response) {
   const data = response && response.data;
@@ -85,4 +78,4 @@ function getLastSyncStatus() {
   return { ...lastSyncStatus };
 }
 
-module.exports = { isCloudSyncEnabled, uploadSettings, downloadSettings, getLastSyncStatus };
+module.exports = { uploadSettings, downloadSettings, getLastSyncStatus };

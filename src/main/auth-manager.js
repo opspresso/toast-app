@@ -6,16 +6,17 @@
  * It is implemented using the common API module.
  */
 
-const { createLogger, maskEmail, maskName } = require('./logger');
+const { createLogger } = require('./logger');
 const auth = require('./auth');
 const userDataManager = require('./user-data-manager');
 
 // Create logger for this module
 const logger = createLogger('AuthManager');
-const { createConfigStore } = require('./config');
+const { createConfigStore, seedDefaultSnippets } = require('./config');
 const client = require('./api/client');
 const { DEFAULT_ANONYMOUS, PAGE_GROUPS } = require('./constants');
-const { determineCloudSyncFeature, normalizeExpiryString, calculatePageGroups, isSubscriptionActive } = require('./subscription');
+const { normalizeSubscription } = require('./subscription');
+const { isDeepStrictEqual: equal } = require('util');
 const { broadcastToWindows } = require('./broadcast');
 
 // Store window references
@@ -105,186 +106,83 @@ async function exchangeCodeForToken(code) {
  * @returns {Promise<Object>} Processing result
  */
 async function exchangeCodeForTokenAndUpdateSubscription(code) {
-  authSequence += 1;
-  const mySequence = authSequence;
+  const sequence = ++authSequence;
   syncManager?.stopPeriodicSync?.();
   try {
-    logger.info('Starting exchange of authentication code for token and update of profile/settings');
-    const result = await auth.exchangeCodeForTokenAndUpdateSubscription(code);
-    if (mySequence !== authSequence) {
+    const result = await auth.exchangeCodeForToken(code);
+    if (sequence !== authSequence) {
       return { success: false, error: 'The account changed during login' };
     }
-    // Cached identity belongs to the credentials used before this exchange.
+    if (!result.success) {
+      notifyLoginError(result.error || 'Login failed');
+      return result;
+    }
     userDataManager.cleanupOnLogout();
-
-    // Notify both windows on login success
-    if (result.success) {
-      // 1. Get profile information only once after successful login
-      logger.info('Getting user profile information after successful login');
-      const userProfile = await fetchUserProfile(true);
-
-      if (mySequence !== authSequence) {
-        return { success: false, error: 'The account changed during login' };
-      }
-
-      // A logout (or a newer login) may have completed while the network calls above were
-      // in flight. Continuing would resurrect authenticated state — the notification below,
-      // and the ConfigStore write further down — over a logout that already ran.
-      if (mySequence !== authSequence) {
-        logger.info('Newer auth event occurred during login continuation; aborting stale login flow');
-        return { success: false, error: 'Logged out during login' };
-      }
-
-      // Notify both windows on login success (profile cache is now warm)
-      notifyLoginSuccess(result.subscription);
-
-      // Log subscription information
-      if (userProfile) {
-        const userEmail = userProfile.email || result.subscription?.userId || 'unknown';
-        const userName = userProfile.name || result.subscription?.name || 'unknown user';
-        const userPlan = result.subscription?.plan || 'free';
-        const isVip = result.subscription?.isVip || false;
-
-        logger.info('====== Account Info ======');
-        logger.info('User email:', maskEmail(userEmail));
-        logger.info('User name:', maskName(userName));
-        logger.info('Subscription plan:', userPlan);
-        logger.info('VIP status:', isVip ? 'VIP user' : 'Regular user');
-        logger.info('=========================');
-      }
-
-      // 2. Set up cloud synchronization feature
-      let hasSyncFeature = false;
-      if (syncManager) {
-        logger.info('Starting cloud synchronization after successful login');
-
-        // Add debugging information
-        logger.info(
-          'Subscription summary:',
-          JSON.stringify({ plan: result.subscription?.plan, active: result.subscription?.active, isVip: result.subscription?.isVip }),
-        );
-
-        hasSyncFeature = determineCloudSyncFeature(result.subscription, {
-          isDevelopment: process.env.NODE_ENV === 'development',
-        });
-        logger.info('Cloud_sync feature determined from subscription:', hasSyncFeature);
-
-        // Force add cloud_sync feature to subscription info (for debugging)
-        if (result.subscription && typeof result.subscription === 'object') {
-          // Copy existing subscription info
-          const updatedSubscription = { ...result.subscription };
-
-          // Copy into a new features object rather than mutating in place — features
-          // may be a reference to the shared DEFAULT_ANONYMOUS_SUBSCRIPTION singleton
-          // (returned as-is by fetchSubscription's fallback paths), and writing
-          // through it would corrupt that constant for every future caller.
-          updatedSubscription.features = {
-            ...(updatedSubscription.features && typeof updatedSubscription.features === 'object' ? updatedSubscription.features : {}),
-            cloud_sync: hasSyncFeature,
-          };
-
-          // Ensure expiry fields are strings (prevent schema violation)
-          updatedSubscription.expiresAt = normalizeExpiryString(updatedSubscription.expiresAt);
-          if (updatedSubscription.subscribed_until !== undefined) {
-            updatedSubscription.subscribed_until = normalizeExpiryString(updatedSubscription.subscribed_until);
-          }
-
-          // This write replaces the whole 'subscription' config key, so it must
-          // include every field the schema/rest of the app relies on (pageGroups,
-          // isAuthenticated, isSubscribed, additionalFeatures) — auth.js's own
-          // updatePageGroupSettings() writes these too, but whichever write lands
-          // last otherwise wins with a partial shape, and electron-store's schema
-          // defaults (e.g. pageGroups: 1) silently fill in the gaps.
-          const isActive = isSubscriptionActive(updatedSubscription);
-          updatedSubscription.isAuthenticated = true;
-          updatedSubscription.isSubscribed = isActive;
-          updatedSubscription.active = isActive;
-          updatedSubscription.pageGroups = updatedSubscription.features.page_groups || calculatePageGroups(updatedSubscription);
-          updatedSubscription.additionalFeatures = {
-            advancedActions: updatedSubscription.features.advanced_actions || false,
-            cloudSync: hasSyncFeature,
-          };
-
-          // Save updated subscription info to settings store
-          const config = createConfigStore();
-          config.set('subscription', updatedSubscription);
-          logger.info(
-            'Updated subscription information saved:',
-            JSON.stringify({
-              plan: updatedSubscription.plan,
-              active: updatedSubscription.active,
-              cloud_sync: updatedSubscription.features?.cloud_sync,
-            }),
-          );
-        }
-
-        logger.info('Cloud synchronization feature status set:', hasSyncFeature);
-        // The stored cloudSync.enabled value is the user's device preference.
-        // Subscription eligibility is checked by the manager before each sync.
-      }
-
-      // 3. Integrated synchronization processing - handle profile and settings information at once
-      const performSync = async () => {
-        try {
-          let synchronized = false;
-          if (syncManager && hasSyncFeature) {
-            const syncResult = await syncManager.syncAfterLogin(userProfile?.email);
-            synchronized = syncResult.success === true;
-            if (!syncResult.success) {
-              logger.warn('Synchronization failed after login:', syncResult.error);
-            }
-          }
-          if (mySequence !== authSequence) {
-            return false;
-          }
-          const config = createConfigStore();
-          if (!synchronized) {
-            notifyConfigUpdated({
-              pages: config.get('pages'), snippets: config.get('snippets'),
-              appearance: config.get('appearance'), advanced: config.get('advanced'), subscription: config.get('subscription'),
-            });
-          }
-          notifyAuthStateChange({
-            isAuthenticated: true,
-            profile: userProfile || null,
-            settings: {
-              pages: config.get('pages'),
-              snippets: config.get('snippets'),
-              appearance: config.get('appearance'),
-              advanced: config.get('advanced'),
-            },
-          });
-          return true;
-        }
-        catch (err) {
-          logger.error('Error during synchronization:', err);
-          return false;
-        }
-      };
-      const syncPromise = performSync();
-
-      // Synchronization processing in background
-      syncPromise.then(success => {
-        logger.info('Login synchronization process completed:', success ? 'successfully' : 'with errors');
-      });
+    const profile = await fetchUserProfile(true);
+    if (sequence !== authSequence) {
+      return { success: false, error: 'The account changed during login' };
     }
-    else if (mySequence === authSequence) {
-      notifyLoginError(result.error || 'Unknown error');
+    if (profile?.error || !profile?.isAuthenticated) {
+      const error = profile?.error?.message || 'Could not verify the account profile';
+      notifyLoginError(error);
+      return { success: false, authenticated: true, error };
     }
-
-    return result;
+    notifyLoginSuccess(profile.subscription);
+    // Report credentials and profile immediately. The sync manager separately
+    // reports whether the cloud download succeeds, fails, or is disabled.
+    notifyConfigUpdated(createConfigStore().store);
+    void synchronizeProfile(profile, sequence).catch(error => logger.warn('Login synchronization failed:', error.message));
+    return { success: true, subscription: profile.subscription };
   }
   catch (error) {
-    logger.error('Error in exchangeCodeForTokenAndUpdateSubscription:', error);
-
-    // Send error notification to both windows
-    notifyLoginError(error.message || 'Unknown error');
-
-    return {
-      success: false,
-      error: error.message || 'Unknown error',
-    };
+    if (sequence === authSequence) {
+      notifyLoginError(error.message || 'Login failed');
+    }
+    return { success: false, error: error.message || 'Login failed' };
   }
+  finally {
+    // A temporary profile error must not leave the scheduler permanently suspended.
+    if (sequence === authSequence) {
+      syncManager?.startPeriodicSync?.();
+    }
+  }
+}
+
+async function synchronizeProfile(profile, sequence) {
+  const config = createConfigStore();
+  // Seed before downloading: an intentionally empty cloud list remains empty.
+  seedDefaultSnippets(config, profile.email);
+  const result = syncManager ? await syncManager.syncAfterLogin() : { success: false, error: 'Sync is not initialized' };
+  if (sequence !== authSequence) {
+    return { success: false, canceled: true };
+  }
+  if (!result.success) {
+    logger.warn('Cloud synchronization:', result.error);
+  }
+  notifyAuthStateChange({ isAuthenticated: true, profile, settings: { pages: config.get('pages'), snippets: config.get('snippets') } });
+  return result;
+}
+
+async function reloadAccount() {
+  if (!await auth.hasValidToken()) {
+    return { success: await initiateLogin() };
+  }
+  return restoreSession();
+}
+
+/** Restore a stored session without allowing a late startup response to replace a newer login. */
+async function restoreSession() {
+  const sequence = authSequence;
+  const profile = await fetchUserProfile(true);
+  if (sequence !== authSequence || profile?.error) {
+    return { success: false, error: profile?.error?.message || 'The account changed' };
+  }
+  if (!profile?.isAuthenticated) {
+    seedDefaultSnippets(createConfigStore());
+    notifyAuthStateChange({ isAuthenticated: false });
+    return { success: true };
+  }
+  return synchronizeProfile(profile, sequence);
 }
 
 /**
@@ -375,7 +273,23 @@ async function fetchUserProfile(forceRefresh = false) {
   if (profile?.error?.requireRelogin) {
     await logout();
   }
-  return profile;
+  if (profile?.error) {
+    return profile;
+  }
+  try {
+    const subscription = normalizeSubscription(profile?.subscription, profile?.isAuthenticated === true);
+    const verified = { ...profile, subscription };
+    const config = createConfigStore();
+    if (!equal(config.get('subscription'), subscription)) {
+      config.set('subscription', subscription);
+      notifyConfigUpdated({ subscription });
+      notifyAuthStateChange({ isAuthenticated: profile.isAuthenticated === true, profile: verified });
+    }
+    return verified;
+  }
+  catch (error) {
+    return { error: { code: 'INVALID_PROFILE', message: error.message } };
+  }
 }
 
 /** Return the subscription from the same profile request, preserving failures. */
@@ -594,6 +508,8 @@ function notifyAuthStateChange(authState) {
 
 module.exports = {
   initialize,
+  restoreSession,
+  reloadAccount,
   initiateLogin,
   exchangeCodeForToken,
   exchangeCodeForTokenAndUpdateSubscription,

@@ -18,7 +18,7 @@ const logger = createLogger('Main');
 loadEnv();
 
 // Import modules
-const { createConfigStore, seedDefaultSnippets } = require('./main/config');
+const { createConfigStore } = require('./main/config');
 const { registerGlobalShortcuts, unregisterGlobalShortcuts, notifyRegistrationFailure } = require('./main/shortcuts');
 const { createTray, destroyTray } = require('./main/tray');
 const { createToastWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
@@ -54,40 +54,9 @@ const config = createConfigStore();
 async function loadEnvironmentConfig() {
   logger.info('Starting to load environment configuration files...');
   try {
-    // 1. Load authentication token
-    const hasToken = await auth.hasValidToken();
-    logger.info('Authentication token check result:', hasToken ? 'Token exists' : 'No token');
-
-    // 2. Load user profile
-    if (hasToken) {
-      const userProfile = await authManager.fetchUserProfile();
-      logger.info('User profile loading complete:', userProfile ? 'Success' : 'Failed');
-
-      if (userProfile?.email) {
-        // Seed before downloading so an intentionally empty cloud snippet list
-        // stays empty on a newly installed device.
-        seedDefaultSnippets(config, userProfile.email);
-        const result = await cloudSync.getSyncManager().syncAfterLogin(userProfile.email);
-        if (!result.success) {
-          logger.warn('Startup cloud synchronization:', result.error);
-        }
-        if (await auth.hasValidToken()) {
-          authManager.notifyAuthStateChange({
-            isAuthenticated: true,
-            profile: userProfile,
-            settings: { pages: config.get('pages'), snippets: config.get('snippets') },
-          });
-        }
-      }
-    }
-    else {
-      logger.info('No valid token, initializing authentication state');
-      authManager.notifyAuthStateChange({
-        isAuthenticated: false,
-      });
-
-      // Seed the default snippet with the fallback email when not logged in
-      seedDefaultSnippets(config);
+    const result = await authManager.restoreSession();
+    if (!result.success) {
+      logger.warn('Startup account restoration:', result.error);
     }
   }
   catch (error) {
@@ -219,18 +188,11 @@ function initialize() {
         else if (action === 'reload_auth' && token && userId) {
           // Handle deep link coming from the connect page
           logger.info('Processing auth reload request');
-          auth
-            .handleAuthRedirect(url)
+          authManager
+            .reloadAccount()
             .then(result => {
               logger.info('Auth reload result:', result.success ? 'Success' : 'Failed');
-              if (result.success) {
-                authManager.notifyAuthStateChange({
-                  type: 'auth-reload',
-                  subscription: result.subscription,
-                  message: 'Authentication information has been refreshed.',
-                });
-              }
-              else {
+              if (!result.success) {
                 authManager.notifyLoginError(result.error || 'Auth reload failed');
               }
             })

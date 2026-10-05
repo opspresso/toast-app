@@ -24,6 +24,23 @@ Cold-start callbacks are queued until initialization completes; Windows/Linux co
 and macOS `open-url` events use the same dispatcher. Unpackaged development builds do not take
 over the installed app's protocol registration.
 
+## Account and subscription refresh
+
+The main process owns verified account and subscription state. Login makes one profile
+request, then shares its result with the windows and initial sync. Profiles are cached
+in memory for five minutes within the credential session. Every sync cycle checks that
+profile before checking access, so a renewed subscription can recover from stale local
+expiry data. The 15-minute poll cannot reuse a profile older than five minutes.
+
+Explicit server feature flags are authoritative. Premium/VIP names do not override
+`cloud_sync: false`; development uses the same access rules. Invalid expiry values are
+reported as errors. Existing buttons and snippets remain stored if access expires.
+
+**Refresh Status** in Account forces a profile request. A failed request displays an error
+and leaves the displayed account intact; it does not grant access from old profile data.
+A temporary profile failure after login leaves the periodic scheduler available to retry.
+Logout and account changes invalidate pending profile and UI responses.
+
 ## Conflict and deletion rules
 
 The app stores the last acknowledged cloud data in `_sync.baseSnapshot` and its server version

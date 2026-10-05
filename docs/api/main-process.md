@@ -605,8 +605,8 @@ The auth manager module is the entry point for runtime authentication handling. 
 initiateLogin()                 // Start the login process
 exchangeCodeForToken(code)      // Exchange an authorization code for a token
 logout()                        // Log out
-fetchUserProfile(forceRefresh)  // Fetch the user profile
-fetchSubscription(forceRefresh) // Fetch subscription information
+fetchUserProfile(forceRefresh)  // Fetch and persist a verified profile; errors remain explicit
+fetchSubscription(forceRefresh) // Reuse the same profile request and return its normalized subscription
 getAccessToken()                // Return the access token
 syncSettings(action)            // Sync settings (upload/download/resolve)
 updateSyncSettings(enabled)     // Enable/disable cloud sync

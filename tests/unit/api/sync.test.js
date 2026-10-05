@@ -57,16 +57,3 @@ it('reports network errors without logging settings payloads', async () => {
   mockHttp.get.mockRejectedValueOnce(new Error('Offline'));
   expect(await sync.downloadSettings()).toMatchObject({ success: false, error: 'Offline' });
 });
-
-it.each([
-  [false, { active: true, isVip: true }, false],
-  [true, { active: false, plan: 'free' }, false],
-  [true, { active: true, plan: 'premium', features: { cloud_sync: true } }, true],
-  [true, { active: true, isVip: true }, true],
-])('checks the current authentication and subscription', async (hasToken, subscription, expected) => {
-  expect(await sync.isCloudSyncEnabled({ hasValidToken: async () => hasToken, configStore: { get: () => subscription } })).toBe(expected);
-});
-
-it('propagates authentication failure so the manager can report its cause', async () => {
-  await expect(sync.isCloudSyncEnabled({ hasValidToken: async () => { throw new Error('Auth unavailable'); }, configStore: {} })).rejects.toThrow('Auth unavailable');
-});

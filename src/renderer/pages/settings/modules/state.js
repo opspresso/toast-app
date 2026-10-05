@@ -20,10 +20,6 @@ export const tabInitState = {
   about: false,
 };
 
-// State management to prevent duplicate calls
-export let authStateInitialized = false;
-export let profileDataFetchInProgress = false;
-
 /**
  * Update config state
  * @param {Object} newConfig - New configuration object
@@ -69,20 +65,4 @@ export function updateAuthState(newAuthState) {
  */
 export function setTabInitState(tabId, initialized) {
   tabInitState[tabId] = initialized;
-}
-
-/**
- * Set auth state initialization flag
- * @param {boolean} initialized - Initialization state
- */
-export function setAuthStateInitialized(initialized) {
-  authStateInitialized = initialized;
-}
-
-/**
- * Set profile data fetch progress flag
- * @param {boolean} inProgress - Fetch progress state
- */
-export function setProfileDataFetchInProgress(inProgress) {
-  profileDataFetchInProgress = inProgress;
 }

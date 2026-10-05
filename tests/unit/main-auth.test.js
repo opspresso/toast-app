@@ -836,19 +836,21 @@ describe('Main Auth Module (P0)', () => {
       expect(mockConfig.set).toHaveBeenCalledWith('subscription', {
         isAuthenticated: true,
         isSubscribed: true,
+        is_subscribed: true,
         active: true,
         plan: 'premium',
         expiresAt: '',
+        subscribed_until: '',
         pageGroups: 9,
         isVip: false,
         features: {
           page_groups: 9,
           advanced_actions: false,
-          cloud_sync: false,
+          cloud_sync: true,
         },
         additionalFeatures: {
           advancedActions: false,
-          cloudSync: false,
+          cloudSync: true,
         },
       });
       expect(result).toBeUndefined(); // Function returns void
@@ -866,9 +868,11 @@ describe('Main Auth Module (P0)', () => {
       expect(mockConfig.set).toHaveBeenCalledWith('subscription', {
         isAuthenticated: true,
         isSubscribed: false,
+        is_subscribed: false,
         active: false,
         plan: 'free',
         expiresAt: '',
+        subscribed_until: '',
         pageGroups: 1,
         isVip: false,
         features: {

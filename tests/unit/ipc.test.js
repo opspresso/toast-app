@@ -449,17 +449,11 @@ describe('IPC Handlers', () => {
       expect(mockWindows.toast.setSkipTaskbar).toHaveBeenCalledWith(false);
     });
 
-    test('should handle set-config with subscription sanitization', () => {
+    test('rejects renderer attempts to overwrite server subscription entitlement', () => {
       setupIpcHandlers(mockWindows);
-
-      const handler = mockIpcMain.handle.mock.calls
-        .find(([event]) => event === 'set-config')[1];
-
-      const subscriptionData = { active: true, features: {} };
-      const result = handler({}, 'subscription', subscriptionData);
-
-      expect(mockConfigStore.sanitizeSubscription).toHaveBeenCalledWith(subscriptionData);
-      expect(result).toBe(true);
+      const handler = mockIpcMain.handle.mock.calls.find(([event]) => event === 'set-config')[1];
+      expect(handler({}, 'subscription', { active: true, pageGroups: 9 })).toBe(false);
+      expect(mockConfig.set).not.toHaveBeenCalled();
     });
 
     test('should verify config handlers are registered', () => {

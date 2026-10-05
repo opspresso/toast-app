@@ -23,7 +23,6 @@ function computeRetryDelay(attempt) {
 function createSyncManager(auth, config) {
   let enabled = config.get('cloudSync.enabled') !== false;
   let suspended = false;
-  let accountId = null;
   let generation = 0;
   let applyingRemote = false;
   let inFlight = null;
@@ -62,7 +61,7 @@ function createSyncManager(auth, config) {
   const getCurrentStatus = () => ({
     enabled, deviceId, lastChangeType, lastSyncTime, isSyncing: !!inFlight,
     error: lastError, isConflicted: !!metadata().isConflicted,
-    hasPermission: isCloudSyncAllowed(config.get('subscription') || {}, { isDevelopment: process.env.NODE_ENV === 'development' }),
+    hasPermission: isCloudSyncAllowed(config.get('subscription') || {}),
   });
   const publishStatus = () => auth?.notifySyncStatus?.(getCurrentStatus());
 
@@ -103,7 +102,6 @@ function createSyncManager(auth, config) {
 
   function stopPeriodicSync() {
     suspended = true;
-    accountId = null;
     generation++;
     clearInterval(periodicTimer);
     clearTimeout(debounceTimer);
@@ -127,22 +125,25 @@ function createSyncManager(auth, config) {
     if (!isCurrent(epoch)) {
       return canceled();
     }
-    if (!auth || !(await apiSync.isCloudSyncEnabled({ hasValidToken: auth.hasValidToken, configStore: config }))) {
-      return { success: false, statusCode: 403, error: 'Cloud sync requires a signed-in account with cloud sync access' };
+    if (!auth) {
+      return { success: false, statusCode: 401, error: 'Sign in before syncing' };
     }
+    // Refresh the bounded profile cache before checking stored entitlement. An
+    // expired local subscription must not prevent learning about a renewal.
+    const profile = await auth.fetchUserProfile();
     if (!isCurrent(epoch)) {
       return canceled();
     }
-    if (!accountId) {
-      const profile = await auth.fetchUserProfile();
-      if (!isCurrent(epoch)) {
-        return canceled();
-      }
-      if (!profile?.email) {
-        return { success: false, error: 'Cannot identify the cloud sync account' };
-      }
-      accountId = profile.email.toLowerCase();
+    if (profile?.error) {
+      return { success: false, statusCode: profile.error.statusCode, error: profile.error.message || profile.error.code };
     }
+    if (!profile?.isAuthenticated || !profile.email) {
+      return { success: false, statusCode: 401, error: 'Sign in before syncing' };
+    }
+    if (!isCloudSyncAllowed(profile.subscription)) {
+      return { success: false, statusCode: 403, error: 'This account does not have cloud sync access' };
+    }
+    const accountId = profile.email.toLowerCase();
 
     const previous = metadata();
     if (previous.accountId && previous.accountId !== accountId) {
@@ -359,7 +360,7 @@ function createSyncManager(auth, config) {
     updateCloudSyncSettings: setEnabled,
     startPeriodicSync,
     stopPeriodicSync,
-    syncAfterLogin: async userId => {
+    syncAfterLogin: async () => {
       stopPeriodicSync();
       const loginGeneration = generation;
       if (inFlight) {
@@ -368,14 +369,12 @@ function createSyncManager(auth, config) {
       if (loginGeneration !== generation) {
         return canceled();
       }
-      accountId = typeof userId === 'string' ? userId.toLowerCase() : null;
       startPeriodicSync();
       return syncSettings();
     },
     setAuthManager: manager => {
       stopPeriodicSync();
       auth = manager;
-      accountId = null;
     },
     getLastSyncStatus: () => ({ success: lastSyncTime > 0 && !lastError, timestamp: lastSyncTime, error: lastError }),
     getCurrentStatus,

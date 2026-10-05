@@ -27,8 +27,8 @@ contextBridge.exposeInMainWorld('toast', {
 
   // Login and user information related methods
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
-  fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
-  fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
+  fetchUserProfile: (forceRefresh = false) => ipcRenderer.invoke('fetch-user-profile', forceRefresh === true),
+  fetchSubscription: (forceRefresh = false) => ipcRenderer.invoke('fetch-subscription', forceRefresh === true),
   logout: () => ipcRenderer.invoke('logout'),
 
   // Modal state

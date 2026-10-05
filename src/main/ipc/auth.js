@@ -21,10 +21,10 @@ function setupAuthHandlers() {
   ipcMain.handle('logout', async () => await authManager.logout());
 
   // Get user profile information
-  ipcMain.handle('fetch-user-profile', async () => await authManager.fetchUserProfile());
+  ipcMain.handle('fetch-user-profile', async (_event, forceRefresh) => await authManager.fetchUserProfile(forceRefresh === true));
 
   // Get subscription information
-  ipcMain.handle('fetch-subscription', async () => await authManager.fetchSubscription());
+  ipcMain.handle('fetch-subscription', async (_event, forceRefresh) => await authManager.fetchSubscription(forceRefresh === true));
 
   // Return current authentication token
   ipcMain.handle('get-auth-token', async () => await authManager.getAccessToken());

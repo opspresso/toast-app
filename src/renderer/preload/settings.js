@@ -23,8 +23,8 @@ contextBridge.exposeInMainWorld('settings', {
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
   exchangeCodeForToken: code => ipcRenderer.invoke('exchange-code-for-token', code),
   logout: () => ipcRenderer.invoke('logout'),
-  fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
-  fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
+  fetchUserProfile: (forceRefresh = false) => ipcRenderer.invoke('fetch-user-profile', forceRefresh === true),
+  fetchSubscription: (forceRefresh = false) => ipcRenderer.invoke('fetch-subscription', forceRefresh === true),
   getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
   openUrl: url => ipcRenderer.invoke('open-url', url),
 

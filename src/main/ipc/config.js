@@ -63,7 +63,7 @@ function setupConfigHandlers(windows, config) {
   // Set configuration
   ipcMain.handle('set-config', (event, key, value) => {
     try {
-      const allowed = ['globalHotkey', 'appearance', 'advanced', 'subscription'];
+      const allowed = ['globalHotkey', 'appearance', 'advanced'];
       const keys = key === null && value && typeof value === 'object' ? Object.keys(value) : [key];
       if (keys.some(name => typeof name !== 'string' || !allowed.includes(name.split('.')[0]))) {
         return false;
@@ -76,14 +76,6 @@ function setupConfigHandlers(windows, config) {
       if (key === null && typeof value === 'object') {
         // Set entire config
         config.set(value);
-      }
-      else if (key === 'subscription' && typeof value === 'object') {
-        // Sanitize the object using the sanitizeSubscription function
-        const { sanitizeSubscription } = require('../config');
-        const subscriptionValue = sanitizeSubscription(value);
-
-        // Store the sanitized subscription object
-        config.set(key, subscriptionValue);
       }
       else {
         // Set specific key

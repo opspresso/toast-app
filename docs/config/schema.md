@@ -157,7 +157,7 @@ The configuration file is stored in JSON format and can be modified through the 
 | `subscription.expiresAt` | string | `""` | Subscription expiration date (ISO string) |
 | `subscription.pageGroups` | number | `1` | Maximum number of page groups the user can create |
 
-At login, `updatePageGroupSettings` (`src/main/auth.js`) additionally stores the following fields (dynamic fields outside the schema):
+`auth-manager.js` normalizes verified server profiles through `subscription.js` and stores these additional fields:
 
 | Field | Description |
 |------|------|
@@ -182,7 +182,7 @@ At login, `updatePageGroupSettings` (`src/main/auth.js`) additionally stores the
 - **Authenticated users**: up to 3 pages
 - **Premium subscribers**: up to 9 pages
 
-The actual number of page groups applied is determined dynamically based on the user's authentication and subscription status, in functions such as `updatePageGroupSettings` in `src/main/auth.js`.
+`normalizeSubscription` applies the verified feature limit within the current authentication and subscription tier. Renderers cannot write subscription state through `set-config`.
 
 ### Miscellaneous
 

@@ -154,13 +154,13 @@ describe('Settings Preload Script', () => {
     test('should call fetch-user-profile through IPC', () => {
       settingsAPI.fetchUserProfile();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile', false);
     });
 
     test('should call fetch-subscription through IPC', () => {
       settingsAPI.fetchSubscription();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription', false);
     });
   });
 

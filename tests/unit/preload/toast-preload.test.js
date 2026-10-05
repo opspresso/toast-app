@@ -184,13 +184,13 @@ describe('Toast Preload Script', () => {
     test('should call fetch-user-profile through IPC', () => {
       toastAPI.fetchUserProfile();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile', false);
     });
 
     test('should call fetch-subscription through IPC', () => {
       toastAPI.fetchSubscription();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription', false);
     });
 
     test('should call logout through IPC', () => {

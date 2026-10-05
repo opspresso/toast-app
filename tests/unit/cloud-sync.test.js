@@ -1,6 +1,6 @@
 /** Behavioral sync tests: real merge/metadata logic, mocked network and Electron boundary. */
 const { isDeepStrictEqual: equal } = require('util');
-const mockApi = { isCloudSyncEnabled: jest.fn(), downloadSettings: jest.fn(), uploadSettings: jest.fn() };
+const mockApi = { downloadSettings: jest.fn(), uploadSettings: jest.fn() };
 jest.mock('../../src/main/api', () => ({ sync: mockApi }));
 jest.mock('../../src/main/logger', () => ({ createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }) }));
 jest.mock('../../src/main/action-approval', () => ({ sanitizeRemotePages: jest.fn(async pages => pages), recordRemoteChanges: jest.fn() }));
@@ -8,6 +8,7 @@ jest.mock('../../src/main/utils/icon-normalizer', () => ({ normalizeLocalIcons: 
 const { schema } = require('../../src/main/config');
 const { createSyncManager } = require('../../src/main/cloud-sync');
 const clone = value => JSON.parse(JSON.stringify(value));
+const accountProfile = (email = 'one@example.test') => ({ email, isAuthenticated: true, subscription: { active: true, features: { cloud_sync: true } } });
 const content = name => ({
   pages: [{ id: 'page', name, buttons: [{ shortcut: 'q', name: 'Button', action: 'open', url: 'https://toastapp.dev' }] }],
   snippets: [{ id: 'snippet', keyword: ':one', content: name }],
@@ -44,7 +45,7 @@ let managers;
 const envelope = () => ({ success: true, data: clone(remote), normalized: Object.fromEntries(['pages', 'snippets', 'appearance', 'advanced'].filter(key => Object.hasOwn(remote, key)).map(key => [key, clone(remote[key])])), syncMetadata: { revision: remote.revision } });
 function setup(data) {
   const config = store(data);
-  const auth = { hasValidToken: jest.fn(async () => true), refreshAccessToken: jest.fn(), fetchUserProfile: jest.fn(async () => ({ email: 'one@example.test' })), notifySettingsSynced: jest.fn(), notifyConfigUpdated: jest.fn(), notifySyncStatus: jest.fn() };
+  const auth = { hasValidToken: jest.fn(async () => true), refreshAccessToken: jest.fn(), fetchUserProfile: jest.fn(async () => accountProfile()), notifySettingsSynced: jest.fn(), notifyConfigUpdated: jest.fn(), notifySyncStatus: jest.fn() };
   const manager = createSyncManager(auth, config);
   managers.push(manager);
   return { config, auth, manager };
@@ -55,7 +56,6 @@ beforeEach(() => {
   jest.clearAllMocks();
   managers = [];
   remote = { ...content('cloud'), revision: 4 };
-  mockApi.isCloudSyncEnabled.mockImplementation(async ({ hasValidToken }) => hasValidToken());
   mockApi.downloadSettings.mockImplementation(async () => envelope());
   mockApi.uploadSettings.mockImplementation(async ({ directData }) => {
     if (directData.baseRevision !== remote.revision) return { success: false, statusCode: 409 };
@@ -68,7 +68,7 @@ afterEach(() => { managers.forEach(manager => manager.unsubscribe()); jest.useRe
 
 it('downloads existing cloud buttons and snippets before any initial upload', async () => {
   const { manager, config } = setup();
-  expect(await manager.syncAfterLogin('one@example.test')).toMatchObject({ success: true, revision: 4 });
+  expect(await manager.syncAfterLogin()).toMatchObject({ success: true, revision: 4 });
   expect(config.get('pages')).toEqual(remote.pages);
   expect(config.get('snippets')).toEqual(remote.snippets);
   expect(config.get('_sync.bootstrapBackup').settings.pages[0].name).toBe('factory');
@@ -226,7 +226,7 @@ it('does not resume a pending login sync after logout stops it', async () => {
   mockApi.downloadSettings.mockReturnValueOnce(pending.promise);
   const first = manager.manualSync();
   await jest.advanceTimersByTimeAsync(0);
-  const login = manager.syncAfterLogin('two@example.test');
+  const login = manager.syncAfterLogin();
   manager.stopPeriodicSync();
   pending.resolve(envelope());
   await first;
@@ -235,10 +235,11 @@ it('does not resume a pending login sync after logout stops it', async () => {
 });
 
 it('never uploads the previous account settings into an empty new account', async () => {
-  const { manager, config } = setup();
-  await manager.syncAfterLogin('one@example.test');
+  const { manager, config, auth } = setup();
+  await manager.syncAfterLogin();
   remote = { revision: 0 };
-  await manager.syncAfterLogin('two@example.test');
+  auth.fetchUserProfile.mockResolvedValue(accountProfile('two@example.test'));
+  await manager.syncAfterLogin();
   expect(config.get('pages')).toEqual([]);
   expect(config.get('snippets')).toEqual([]);
   expect(mockApi.uploadSettings).not.toHaveBeenCalled();
@@ -248,7 +249,7 @@ it('never uploads the previous account settings into an empty new account', asyn
 it('checks authentication again instead of reusing a cached sync grant', async () => {
   const { manager, auth } = setup();
   await manager.syncAfterLogin();
-  auth.hasValidToken.mockResolvedValue(false);
+  auth.fetchUserProfile.mockResolvedValue({ isAuthenticated: false });
   expect((await manager.manualSync()).success).toBe(false);
   expect(mockApi.downloadSettings).toHaveBeenCalledTimes(1);
 });
@@ -311,15 +312,17 @@ it('rejects invalid remote actions without dropping only the invalid buttons', a
 });
 
 it("restores an account's offline edits after switching away and back", async () => {
-  const { manager, config } = setup();
-  await manager.syncAfterLogin('one@example.test');
+  const { manager, config, auth } = setup();
+  await manager.syncAfterLogin();
   const firstCloud = clone(remote);
   config.set('snippets', [{ id: 'snippet', keyword: ':one', content: 'offline edit for first account' }]);
   remote = { revision: 0 };
-  await manager.syncAfterLogin('two@example.test');
+  auth.fetchUserProfile.mockResolvedValue(accountProfile('two@example.test'));
+  await manager.syncAfterLogin();
   expect(config.get('snippets')).toEqual([]);
   remote = firstCloud;
-  await manager.syncAfterLogin('one@example.test');
+  auth.fetchUserProfile.mockResolvedValue(accountProfile());
+  await manager.syncAfterLogin();
   expect(config.get('snippets')[0].content).toBe('offline edit for first account');
   expect(remote.snippets[0].content).toBe('offline edit for first account');
 });
@@ -344,4 +347,27 @@ it('publishes progress and failures without announcing a successful sync', async
   expect(auth.notifySyncStatus).toHaveBeenCalledWith(expect.objectContaining({ isSyncing: true }));
   expect(auth.notifySyncStatus).toHaveBeenLastCalledWith(expect.objectContaining({ isSyncing: false, error: 'Server unavailable' }));
   expect(auth.notifySettingsSynced).not.toHaveBeenCalled();
+});
+
+
+it('checks renewed entitlement before a stale local subscription can block sync', async () => {
+  const { manager, config } = setup({ subscription: { active: false, features: { cloud_sync: false } } });
+  expect((await manager.manualSync()).success).toBe(true);
+  expect(config.get('pages')[0].name).toBe('cloud');
+});
+
+it('refreshes entitlement every cycle and stops settings requests after permission is revoked', async () => {
+  const { manager, auth } = setup();
+  await manager.manualSync();
+  auth.fetchUserProfile.mockResolvedValue({ ...accountProfile(), subscription: { active: true, plan: 'Premium', features: { cloud_sync: false } } });
+  expect((await manager.manualSync()).statusCode).toBe(403);
+  expect(mockApi.downloadSettings).toHaveBeenCalledTimes(1);
+});
+
+it('preserves profile service failures and makes no settings requests until recovery', async () => {
+  const { manager, auth } = setup();
+  auth.fetchUserProfile.mockResolvedValueOnce({ error: { statusCode: 503, message: 'Profile unavailable' } });
+  expect(await manager.manualSync()).toMatchObject({ success: false, statusCode: 503, error: 'Profile unavailable' });
+  expect(mockApi.downloadSettings).not.toHaveBeenCalled();
+  expect((await manager.manualSync()).success).toBe(true);
 });

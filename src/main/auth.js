@@ -55,7 +55,7 @@ const TOKEN_EXPIRES_KEY = 'token-expires-at';
 
 // Import common constants
 const { PAGE_GROUPS, DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('./constants');
-const { isSubscriptionActive, calculatePageGroups, normalizeExpiryString } = require('./subscription');
+const { normalizeSubscription } = require('./subscription');
 
 // Set tokens in memory
 async function initializeTokensFromStorage() {
@@ -842,57 +842,7 @@ async function getAccessToken() {
  * @returns {Promise<void>}
  */
 async function updatePageGroupSettings(subscription) {
-  try {
-    const config = createConfigStore();
-
-    // Check active status and subscription status
-    const isActive = isSubscriptionActive(subscription);
-    const isVip = subscription.isVip || false;
-
-    // Calculate number of page groups
-    const pageGroups = calculatePageGroups(subscription);
-
-    // Process expiresAt value - always convert to string
-    const expiresAtStr = normalizeExpiryString(subscription.subscribed_until || subscription.expiresAt);
-
-    logger.info('Verifying subscription information before saving:', {
-      plan: subscription.plan || 'free',
-      expiresAt: expiresAtStr,
-      expiresAtType: typeof expiresAtStr,
-      pageGroups: subscription.features?.page_groups || pageGroups,
-    });
-
-    // Safely save subscription information
-    config.set('subscription', {
-      isAuthenticated: true,
-      isSubscribed: isActive,
-      active: isActive, // Add active field for compatibility
-      plan: subscription.plan || 'free',
-      expiresAt: expiresAtStr, // Safely converted to string
-      pageGroups: subscription.features?.page_groups || pageGroups,
-      isVip,
-      features: {
-        page_groups: subscription.features?.page_groups || pageGroups,
-        advanced_actions: subscription.features?.advanced_actions || false,
-        cloud_sync: subscription.features?.cloud_sync || false,
-      },
-      additionalFeatures: {
-        advancedActions: subscription.features?.advanced_actions || false,
-        cloudSync: subscription.features?.cloud_sync || false,
-      },
-    });
-
-    logger.info('Subscription settings update complete:', {
-      isAuthenticated: true,
-      isSubscribed: isActive,
-      plan: subscription.plan || 'free',
-      pageGroups: subscription.features?.page_groups || pageGroups,
-    });
-  }
-  catch (error) {
-    logger.error('Error updating page group settings:', error);
-    throw error;
-  }
+  createConfigStore().set('subscription', normalizeSubscription(subscription));
 }
 
 /**
