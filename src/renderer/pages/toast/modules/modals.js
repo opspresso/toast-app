@@ -83,7 +83,8 @@ export function setupModalEventListeners() {
             if (success) {
               showStatus(`The ${appName} icon has been set automatically.`, 'success');
             }
-          } catch (error) {
+          }
+          catch (error) {
             console.warn(`Failed to extract ${appName} icon:`, error);
           }
         }
@@ -110,7 +111,8 @@ export function setupModalEventListeners() {
             const appName = extractAppNameFromPath(applicationPath);
             showStatus(`The ${appName} icon has been set automatically.`, 'success');
           }
-        } catch (error) {
+        }
+        catch (error) {
           console.warn('Failed to extract application icon:', error);
         }
       }
@@ -131,7 +133,8 @@ export function setupModalEventListeners() {
         return applicationPath.split('/').pop().replace('.app', '');
       }
       return applicationPath.split('/').pop().split('.')[0];
-    } catch (err) {
+    }
+    catch (err) {
       return null;
     }
   }
@@ -191,12 +194,14 @@ export function setupModalEventListeners() {
               if (success) {
                 showStatus('The icon and button name have been set automatically.', 'success');
               }
-            } catch (error) {
+            }
+            catch (error) {
               console.warn('Automatic icon extraction failed:', error);
             }
           }
         }
-      } catch (error) {
+      }
+      catch (error) {
         if (!isCurrent()) {
           return;
         }
@@ -233,10 +238,12 @@ export function setupModalEventListeners() {
           // Set selected path to input field
           editButtonPathInput.value = result.filePaths[0];
           showStatus('File/folder selected successfully.', 'success');
-        } else {
+        }
+        else {
           showStatus('File/folder selection canceled.', 'info');
         }
-      } catch (error) {
+      }
+      catch (error) {
         if (!isCurrent()) {
           return;
         }
@@ -272,15 +279,18 @@ export function setupModalEventListeners() {
         closeConfirmModal();
         event.preventDefault();
         event.stopImmediatePropagation();
-      } else if (iconSearchModal.classList.contains('show')) {
+      }
+      else if (iconSearchModal.classList.contains('show')) {
         closeIconSearchModal();
         event.preventDefault();
         event.stopImmediatePropagation();
-      } else if (buttonEditModal.classList.contains('show')) {
+      }
+      else if (buttonEditModal.classList.contains('show')) {
         closeButtonEditModal();
         event.preventDefault();
         event.stopImmediatePropagation();
-      } else if (profileModal.classList.contains('show')) {
+      }
+      else if (profileModal.classList.contains('show')) {
         hideProfileModal();
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -311,17 +321,20 @@ export function setupModalEventListeners() {
             showStatus('Please select an application first.', 'warning');
             return;
           }
-        } else if (actionType === 'exec') {
+        }
+        else if (actionType === 'exec') {
           // Extract app name from 'open -a AppName' command
           const command = editButtonCommandInput.value.trim();
           const appName = getAppNameFromOpenCommand(command);
           if (appName) {
             applicationPath = appName;
-          } else {
+          }
+          else {
             showStatus('exec actions require a command in the form "open -a AppName".', 'warning');
             return;
           }
-        } else {
+        }
+        else {
           showStatus('Icon extraction is only supported for Application or Exec actions.', 'warning');
           return;
         }
@@ -346,16 +359,19 @@ export function setupModalEventListeners() {
 
         if (success) {
           showStatus('The icon has been refreshed successfully.', 'success');
-        } else if (success === false && isCurrent()) {
+        }
+        else if (success === false && isCurrent()) {
           showStatus('Failed to refresh the icon.', 'error');
         }
-      } catch (error) {
+      }
+      catch (error) {
         if (!isCurrent()) {
           return;
         }
         console.error('Icon reload error:', error);
         showStatus('An error occurred while refreshing the icon.', 'error');
-      } finally {
+      }
+      finally {
         if (isCurrent()) {
           reloadIconButton.disabled = editButtonIconInput.disabled;
           reloadIconButton.innerHTML = UI_ICONS.refresh;
@@ -437,7 +453,8 @@ export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', o
 export function closeConfirmModal() {
   if (settleConfirmation) {
     settleConfirmation(false);
-  } else {
+  }
+  else {
     confirmModal.classList.remove('show');
     syncModalState();
   }

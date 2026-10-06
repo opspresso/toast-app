@@ -76,7 +76,8 @@ export function setupIconSearchModal() {
       Object.keys(window.IconsCatalog).forEach(category => {
         renderCategoryIcons(category, searchQuery);
       });
-    } else {
+    }
+    else {
       // Display only selected category
       renderCategoryIcons(selectedCategory, searchQuery);
     }
@@ -200,7 +201,8 @@ export async function updateIconPreview() {
     placeholder.style.display = 'block';
     if (value) {
       placeholder.textContent = value;
-    } else {
+    }
+    else {
       placeholder.innerHTML = UI_ICONS.image;
     }
     iconPreview.classList.remove('has-icon');
@@ -227,16 +229,21 @@ export async function updateIconPreview() {
       if (category) {
         showImage(category.icons[key]);
       }
-    } else if (iconValue.startsWith('file://~/')) {
+    }
+    else if (iconValue.startsWith('file://~/')) {
       const resolved = await window.toast.resolveTildePath(iconValue.slice(7));
       showImage(`file://${resolved}`);
-    } else if (/^(file|https?):\/\//.test(iconValue)) {
+    }
+    else if (/^(file|https?):\/\//.test(iconValue)) {
       showImage(iconValue);
-    } else if (iconValue) {
+    }
+    else if (iconValue) {
       showPlaceholder(iconValue);
-    } else if (actionType === 'open' && editButtonUrlInput.value.trim()) {
+    }
+    else if (actionType === 'open' && editButtonUrlInput.value.trim()) {
       showImage(getFaviconFromUrl(editButtonUrlInput.value.trim()));
-    } else if (window.toast.platform === 'darwin') {
+    }
+    else if (window.toast.platform === 'darwin') {
       const reference =
         actionType === 'application'
           ? editButtonApplicationInput.value.trim()
@@ -250,7 +257,8 @@ export async function updateIconPreview() {
         }
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     if (isCurrent()) {
       console.warn('Failed to load icon preview:', error);
       showPlaceholder();

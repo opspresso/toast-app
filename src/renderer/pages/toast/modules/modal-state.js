@@ -42,7 +42,8 @@ export function keepFocusInModal(event) {
     event.preventDefault();
     event.stopImmediatePropagation();
     (event.shiftKey ? last : first)?.focus();
-  } else if (['Enter', ' '].includes(event.key) && !modal.contains(event.target)) {
+  }
+  else if (['Enter', ' '].includes(event.key) && !modal.contains(event.target)) {
     event.preventDefault();
     event.stopImmediatePropagation();
     first?.focus();

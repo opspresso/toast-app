@@ -54,7 +54,8 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
       return true;
     }
     return false;
-  } catch (err) {
+  }
+  catch (err) {
     if (!isCurrent()) {
       return null;
     }
