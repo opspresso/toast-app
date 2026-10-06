@@ -155,6 +155,12 @@ window.settings.importConfig(filePath) // Import configuration from a file
 window.settings.exportConfig(filePath) // Export configuration to a file
 ```
 
+### Preference save results
+
+`setConfig` and `resetConfig` return booleans. `false` means that saving or applying a native preference failed; the renderer must not announce success. The preference writer reloads the stored values on failure, preserves newer configuration broadcasts, restores the controls, and displays an error. A native-application failure can occur after the value was written to disk.
+
+Controls save immediately. Hotkey recording waits for the main process to disable the existing shortcut. Escape cancels recording and restores the saved hotkey; Clear outside recording persists an empty hotkey. Saving and shortcut restoration finish before recording can restart. The main process also restores shortcuts if the recording renderer closes or crashes.
+
 ### Action Management
 
 ```javascript

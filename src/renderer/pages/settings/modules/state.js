@@ -5,7 +5,6 @@
 // State
 export let config = {};
 export let isRecordingHotkey = false;
-export let unsavedChanges = false;
 export const authState = {
   isLoggedIn: false,
   profile: null,
@@ -34,20 +33,6 @@ export function updateConfig(newConfig) {
  */
 export function setRecordingHotkey(recording) {
   isRecordingHotkey = recording;
-}
-
-/**
- * Mark settings as having unsaved changes
- */
-export function markUnsavedChanges() {
-  unsavedChanges = true;
-}
-
-/**
- * Clear unsaved changes flag
- */
-export function clearUnsavedChanges() {
-  unsavedChanges = false;
 }
 
 /**

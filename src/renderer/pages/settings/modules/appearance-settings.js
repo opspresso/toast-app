@@ -3,6 +3,7 @@
  */
 
 import { themeSelect, accentColorPicker, positionSelect, sizeSelect, opacityRange, opacityValue } from './dom-elements.js';
+import { savePreference } from './preference-writes.js';
 import { config } from './state.js';
 import { applyTheme, applyAccentColor } from './utils.js';
 
@@ -69,15 +70,16 @@ export function initializeAppearanceSettings() {
 export function setupAppearanceEventListeners() {
   // Appearance settings
   if (themeSelect) {
-    themeSelect.addEventListener('change', () => {
+    themeSelect.addEventListener('change', async () => {
       window.settings.log.info('Theme setting changed:', themeSelect.value);
-      window.settings.setConfig('appearance.theme', themeSelect.value);
-      applyTheme(themeSelect.value);
+      if (await savePreference('appearance.theme', themeSelect.value, initializeAppearanceSettings)) {
+        applyTheme(config.appearance?.theme || 'system');
+      }
     });
   }
 
   if (accentColorPicker) {
-    accentColorPicker.addEventListener('click', event => {
+    accentColorPicker.addEventListener('click', async event => {
       const swatch = event.target.closest('.accent-swatch');
       if (!swatch) {
         return;
@@ -85,23 +87,24 @@ export function setupAppearanceEventListeners() {
 
       const accentColor = swatch.dataset.accentColor;
       window.settings.log.info('Accent color setting changed:', accentColor);
-      window.settings.setConfig('appearance.accentColor', accentColor);
-      updateAccentSwatchSelection(accentColor);
-      applyAccentColor(accentColor);
+      if (await savePreference('appearance.accentColor', accentColor, initializeAppearanceSettings)) {
+        updateAccentSwatchSelection(config.appearance?.accentColor || 'blue');
+        applyAccentColor(config.appearance?.accentColor);
+      }
     });
   }
 
   if (positionSelect) {
     positionSelect.addEventListener('change', () => {
       window.settings.log.info('Window position setting changed:', positionSelect.value);
-      window.settings.setConfig('appearance.position', positionSelect.value);
+      savePreference('appearance.position', positionSelect.value, initializeAppearanceSettings);
     });
   }
 
   if (sizeSelect) {
     sizeSelect.addEventListener('change', () => {
       window.settings.log.info('Window size setting changed:', sizeSelect.value);
-      window.settings.setConfig('appearance.size', sizeSelect.value);
+      savePreference('appearance.size', sizeSelect.value, initializeAppearanceSettings);
     });
   }
 
@@ -116,7 +119,7 @@ export function setupAppearanceEventListeners() {
     opacityRange.addEventListener('change', () => {
       // Save setting when slider change is complete
       window.settings.log.info('Window opacity setting changed:', opacityRange.value);
-      window.settings.setConfig('appearance.opacity', parseFloat(opacityRange.value));
+      savePreference('appearance.opacity', parseFloat(opacityRange.value), initializeAppearanceSettings);
     });
   }
 }

@@ -720,6 +720,33 @@ describe('IPC Handlers', () => {
       expect(result).toBe(true);
     });
 
+    test('restores a recorded shortcut when its settings renderer is destroyed', () => {
+      setupIpcHandlers(mockWindows);
+      const sender = new (require('events').EventEmitter)();
+      const handler = mockIpcMain.handle.mock.calls.find(([name]) => name === 'temporarily-disable-shortcuts')[1];
+      expect(handler({ sender })).toBe(true);
+      expect(handler({ sender })).toBe(true);
+      expect(sender.listenerCount('destroyed')).toBe(1);
+      sender.emit('destroyed');
+      expect(mockShortcuts.registerGlobalShortcuts).toHaveBeenCalledTimes(1);
+      expect(sender.listenerCount('destroyed')).toBe(0);
+    });
+
+    test('releases the close listener after normal restore and does not re-register during quit', () => {
+      setupIpcHandlers(mockWindows);
+      const sender = new (require('events').EventEmitter)();
+      const handlers = Object.fromEntries(mockIpcMain.handle.mock.calls);
+      handlers['temporarily-disable-shortcuts']({ sender });
+      handlers['restore-shortcuts']();
+      expect(sender.listenerCount('destroyed')).toBe(0);
+      mockShortcuts.registerGlobalShortcuts.mockClear();
+      handlers['temporarily-disable-shortcuts']({ sender });
+      mockApp.isQuitting = true;
+      sender.emit('destroyed');
+      expect(mockShortcuts.registerGlobalShortcuts).not.toHaveBeenCalled();
+      mockApp.isQuitting = false;
+    });
+
     test('should handle restore-shortcuts', () => {
       setupIpcHandlers(mockWindows);
       mockShortcuts.registerGlobalShortcuts.mockReturnValue(true);

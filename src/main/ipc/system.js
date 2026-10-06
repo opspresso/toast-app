@@ -4,8 +4,8 @@
  * Handlers for dialogs, shell, shortcuts, app version, logging, and icon extraction.
  */
 
-const { ipcMain, dialog, shell } = require('electron');
-const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('../shortcuts');
+const { app, ipcMain, dialog, shell } = require('electron');
+const { unregisterGlobalShortcuts, registerGlobalShortcuts, notifyRegistrationFailure } = require('../shortcuts');
 const { createLogger, handleIpcLogging } = require('../logger');
 const { extractAppIcon, extractAppNameFromPath, convertToTildePath, resolveTildePath } = require('../utils/app-icon-extractor');
 const authManager = require('../auth-manager');
@@ -20,6 +20,24 @@ const logger = createLogger('IPC');
  * @param {Object} config - Shared config store
  */
 function setupSystemHandlers(windows, config) {
+  let recordingSender = null;
+  const releaseRecording = () => {
+    recordingSender?.removeListener('destroyed', restoreAfterClose);
+    recordingSender = null;
+  };
+  const restoreAfterClose = () => {
+    releaseRecording();
+    if (!app.isQuitting) {
+      try {
+        if (!registerGlobalShortcuts(config, windows) && config.get('globalHotkey')) {
+          notifyRegistrationFailure(config.get('globalHotkey'));
+        }
+      }
+      catch (error) {
+        logger.error('Error restoring shortcuts after settings closed:', error);
+      }
+    }
+  };
   // Open URL in external browser
   ipcMain.handle('open-url', async (event, url) => {
     try {
@@ -34,10 +52,15 @@ function setupSystemHandlers(windows, config) {
 
   // Handlers for shortcut recording
   // Temporarily disable all shortcuts
-  ipcMain.handle('temporarily-disable-shortcuts', () => {
+  ipcMain.handle('temporarily-disable-shortcuts', event => {
     try {
       // Disable all currently set global shortcuts
       unregisterGlobalShortcuts();
+      releaseRecording();
+      if (event?.sender) {
+        recordingSender = event.sender;
+        recordingSender.once('destroyed', restoreAfterClose);
+      }
       return true;
     }
     catch (error) {
@@ -49,6 +72,7 @@ function setupSystemHandlers(windows, config) {
   // Restore shortcuts
   ipcMain.handle('restore-shortcuts', () => {
     try {
+      releaseRecording();
       // Register global shortcuts again
       return registerGlobalShortcuts(config, windows);
     }
