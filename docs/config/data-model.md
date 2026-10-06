@@ -15,7 +15,7 @@ The main entities in Toast App have the following relationships:
 1. **User** (1) → (n) **Page**: A user can have multiple pages
 2. **Page** (1) → (n) **Button**: A page can contain multiple buttons
 3. **User** (1) → (1) **Settings**: A user has a single set of settings
-4. **User** (1) → (1) **Sync Metadata**: A user has a single sync metadata record
+4. **Device** → **Sync Metadata**: The active account has a baseline; account backups preserve pending work when switching accounts.
 
 ## Data Hierarchy
 
@@ -29,9 +29,9 @@ User configuration
 │   ├── textExpander (device-local enabled state)
 │   ├── cloudSync
 │   ├── subscription
-│   ├── security (exec/script action approval state)
+│   ├── security (executable action and native launch approval state)
 │   └── firstLaunchCompleted
-├── Pages (1-9)
+├── Pages (0-9; account limit controls adding pages)
 │   ├── name
 │   ├── shortcut
 │   └── buttons (up to 15)
@@ -46,7 +46,11 @@ User configuration
     ├── lastSyncedAt
     ├── lastSyncedDevice
     ├── dataHash
-    └── isConflicted
+    ├── isConflicted
+    ├── accountId
+    ├── baseSnapshot / baseRevision
+    ├── bootstrapBackup
+    └── accountBackups
 ```
 
 ## Page Limit Policy

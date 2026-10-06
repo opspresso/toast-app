@@ -190,7 +190,7 @@ The main content area displays different settings depending on the selected tab.
 - **Hide on Focus Loss**: Hide the Toast window when it loses focus
 - **Hide with Escape Key**: Hide the Toast window when the Escape key is pressed
 - **Show in Taskbar**: Show the Toast window in the taskbar/dock
-- **Reset to Defaults**: Reset all settings to their default values
+- **Reset to Defaults**: Reset hotkey, appearance, and advanced preferences; disable text expansion while preserving buttons, Snippets, account data, and sync recovery state
 
 ##### Snippets Tab
 
@@ -315,7 +315,7 @@ The system tray menu provides quick access to Toast app features.
 
 1. The user presses the global shortcut
 2. The Toast window appears at the configured position
-3. The user can search, navigate, or run buttons
+3. The user can navigate or run buttons
 4. The Toast window closes after an action or when the user clicks outside it
 
 ### Configuring Settings
@@ -324,7 +324,7 @@ The system tray menu provides quick access to Toast app features.
 2. The user selects "Settings" from the menu
 3. The Settings window opens
 4. The user moves between tabs to configure various settings
-5. The user saves or cancels the changes
+5. Preferences save immediately; confirm any displayed save error before closing
 
 ### Adding or Editing a Button
 
@@ -362,7 +362,6 @@ The Toast app offers different page limits based on account status:
 A Toast app premium subscription provides additional benefits:
 - Increased page limit (up to 9 pages)
 - Cloud sync/backup of your configuration
-- Priority support
 
 > All action types (application, exec, open, script, chain) behave identically regardless of subscription tier. Subscription only affects the page count limit and cloud sync eligibility.
 
@@ -376,45 +375,18 @@ A Toast app premium subscription provides additional benefits:
 
 ### Settings Window
 
-- **Small screens**: The sidebar collapses into a dropdown menu
+- **Small screens**: Responsive CSS reduces the sidebar width and content padding
 - **Medium screens**: The sidebar and content are placed side by side
 - **Large screens**: A wider content area with more room for controls
 
-## Accessibility Considerations
+## Accessibility Checks
 
-### Keyboard Navigation
+The UI includes focus indicators and modal focus management. Verify keyboard navigation,
+labels, status announcements, and contrast in the actual rendered application when changing
+controls. These implementation features do not establish full accessibility compliance.
 
-- All features are accessible via keyboard
-- Tab order follows a logical flow
-- Focus indicators are visible
+## Editing During Sync
 
-### Screen Readers
-
-- All controls have appropriate labels
-- Status messages are announced
-- Dialog focus is managed appropriately
-
-### Color Contrast
-
-- Text has sufficient contrast against the background
-- Focus indicators are visible
-- Status messages use appropriate colors
-
-## Future UI Improvements
-
-### Toast Window
-
-- Customizable button sizes and spacing
-- Button categories and folders
-- Search history and favorites
-
-### Settings Window
-
-- A visual button editor with drag and drop
-- Toast window preview
-- Theme customization
-- A keyboard shortcut editor
-
-## Conclusion
-
-The Toast app UI is designed to be simple, efficient, and accessible. The Toast window provides quick access to actions, while the Settings window enables comprehensive configuration. System tray integration keeps the app out of the way when it isn't needed.
+Button edits retain their original page snapshot and authentication session. Independent
+remote changes merge; conflicting changes keep the draft open with an error. Snippet updates
+and deletions also check the original item. See [Cloud Sync](../features/cloud-sync.md).

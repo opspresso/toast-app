@@ -33,8 +33,8 @@ Toast is a powerful tool that gives you instant access to your frequently used a
 • **Various Actions**: Launch apps, open websites, execute commands, use keyboard shortcuts, and more
 • **Script Support**: Implement complex automations with JavaScript, AppleScript, Bash, and more
 • **Multi-page**: Organize buttons by category to manage dozens of shortcuts
-• **Customization**: Assign icons, names, and shortcuts to each button
-• **Cloud Sync**: Use the same settings across all your Mac devices
+• **Customization**: Set button icons and names; shortcuts follow button position
+• **Cloud Sync**: Synchronize buttons and preferences across your Macs with cloud sync access
 • **Theme Support**: Light/dark modes and integration with system theme
 • **Lightweight**: Uses minimal resources while running in the background
 
@@ -47,7 +47,7 @@ Toast is a powerful tool that gives you instant access to your frequently used a
 
 ## Simple Usage
 1. Press Alt+Space to open Toast window
-2. Click desired button or press assigned shortcut (Q-Z, A-M)
+2. Click desired button or press assigned shortcut (Q W E R T / A S D F G / Z X C V B)
 3. Action executes immediately and Toast automatically closes
 
 ## Why Toast?

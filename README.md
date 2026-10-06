@@ -20,7 +20,7 @@
 - **⚡ 5 Action Types**: Run commands, open files/URLs, execute scripts, chain actions, launch applications
 - **🎨 Theme Support**: Light/Dark/System themes
 - **📝 Snippets (Text Expansion)**: Type a keyword like `!email` in any app to automatically replace it with predefined text (macOS)
-- **☁️ Cloud Sync**: Sync settings and buttons across multiple devices
+- **☁️ Cloud Sync**: Download and synchronize buttons, Snippets, and preferences across devices
 - **🖼️ Icon Extraction**: Automatic macOS app icon extraction
 - **🌍 Cross-Platform**: Supports macOS and Windows
 
@@ -41,7 +41,8 @@ brew install --cask opspresso/tap/toast
 1. **Launch**: After installation, it runs in the background from the system tray
 2. **Open the Popup**: Press `Alt+Space` (the default shortcut) to summon the Toast popup
 3. **Click a Button**: Click the desired action button or use its keyboard shortcut
-4. **Configure**: Right-click the tray icon → Settings to configure buttons and actions
+4. **Configure**: Use Edit mode in the popup for buttons; open Settings from the tray for preferences and Snippets
+5. **Sync**: Sign in with cloud sync access and enable Cloud Sync. The app downloads first, checks every 15 minutes, and uploads edits after a 5-second debounce. See [Cloud Sync](docs/features/cloud-sync.md).
 
 > 💡 For **detailed usage**, see the [User Guide](docs/guide/user.md).
 

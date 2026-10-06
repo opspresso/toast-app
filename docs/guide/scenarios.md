@@ -185,7 +185,6 @@ This document describes common user scenarios and workflows for the Toast app, s
        const os = require('os');
        result = `Platform: ${process.platform}, Hostname: ${os.hostname()}, Free memory: ${Math.round(os.freemem() / 1024 / 1024)} MB`;
        ```
-   - The user clicks "Test Action" to confirm the script works
    - The user clicks "Save" to add the button
 
 2. **Use the Button**
@@ -255,7 +254,7 @@ This document describes common user scenarios and workflows for the Toast app, s
    - The user switches to edit mode (click the edit icon (📝) or press the comma (,) key)
    - The user clicks the problematic button to edit it
    - The user reviews the action configuration
-   - The user clicks "Test Action" to see the error message
+   - The user saves, leaves edit mode, and runs the button to see its error
    - The user fixes the configuration based on the error
    - The user clicks "Save" to update the button
    - The user tests the button again and confirms it works
@@ -264,7 +263,7 @@ This document describes common user scenarios and workflows for the Toast app, s
 
 - The user can identify and resolve common issues
 - The application provides helpful error messages
-- The user can test an action before saving to confirm it works
+- The user can save and run a button, then revise it based on the reported result
 
 ## Scenario 9: Advanced Configuration
 
@@ -304,6 +303,8 @@ This document describes common user scenarios and workflows for the Toast app, s
      - "Docs" (Open URL: "https://developer.mozilla.org")
      - "Terminal" (Run Command: `open -a Terminal` or `start cmd`)
      - "VS Code" (Run Command: `code .`)
+
+Set **Working Directory** to the project directory and enable **Run in Terminal** for long-running commands.
 
 2. **Use in the Development Workflow**
    - The user is working on a project
