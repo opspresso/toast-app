@@ -3,6 +3,7 @@ import { defaultButtons, emptyButtons, normalizePageButtons, reassignButtonShort
 import { pagingButtonsContainer } from './dom-elements.js';
 import { showStatus } from './utils.js';
 import { userProfile, userSubscription } from './auth.js';
+import { invalidateButtonEditContext } from './modal-state.js';
 
 export let pages = [];
 export let currentPageIndex = 0;
@@ -49,6 +50,9 @@ export function changePage(index) {
 }
 
 export function initializePages(configPages, session = authSessionVersion) {
+  if (session !== authSessionVersion) {
+    invalidateButtonEditContext();
+  }
   storedPages = clone(configPages);
   authSessionVersion = session;
   viewVersion++;

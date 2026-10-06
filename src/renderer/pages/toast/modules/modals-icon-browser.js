@@ -13,6 +13,7 @@ import {
 } from './dom-elements.js';
 import { UI_ICONS } from './constants.js';
 import { getAppNameFromOpenCommand } from './local-icon-utils.js';
+import { captureButtonEditRequest, syncModalState } from './modal-state.js';
 import { showStatus, getFaviconFromUrl } from './utils.js';
 
 /**
@@ -28,6 +29,10 @@ export function setupIconSearchModal() {
 
   // Icon search button click event
   browseIconButton.addEventListener('click', () => {
+    const isCurrent = captureButtonEditRequest();
+    if (!isCurrent()) {
+      return;
+    }
     // Initialize icon container and render icon grid
     renderIconsGrid();
 
@@ -37,7 +42,9 @@ export function setupIconSearchModal() {
 
     // Focus on search field
     setTimeout(() => {
-      iconSearchInput.focus();
+      if (isCurrent() && iconSearchModal.classList.contains('show')) {
+        iconSearchInput.focus();
+      }
     }, 300);
   });
 
@@ -69,8 +76,7 @@ export function setupIconSearchModal() {
       Object.keys(window.IconsCatalog).forEach(category => {
         renderCategoryIcons(category, searchQuery);
       });
-    }
-    else {
+    } else {
       // Display only selected category
       renderCategoryIcons(selectedCategory, searchQuery);
     }
@@ -157,196 +163,97 @@ export function setupIconSearchModal() {
  */
 export function closeIconSearchModal() {
   iconSearchModal.classList.remove('show');
-  window.toast.setModalOpen(false);
+  syncModalState();
 }
 
-/**
- * Try to load extracted icon for preview
- * @param {HTMLElement} previewImg - Preview image element
- * @param {HTMLElement} placeholder - Placeholder element
- * @param {HTMLElement} iconPreview - Icon preview container
- * @param {string} applicationPath - Application path
- * @param {string} fallbackIcon - Fallback icon if extraction fails
- */
-function tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, applicationPath, fallbackIcon) {
-  // Try to get existing extracted icon
-  window.toast
-    .extractAppIcon(applicationPath, false)
-    .then(result => {
-      if (result.success && result.iconUrl) {
-        // Show extracted icon
-        previewImg.src = result.iconUrl;
+let previewVersion = 0;
+
+/** Update only the current edit's preview; late file/image requests cannot replace it. */
+export async function updateIconPreview() {
+  const version = ++previewVersion;
+  const unchanged = captureButtonEditRequest(() =>
+    JSON.stringify([
+      editButtonIconInput.value,
+      editButtonActionSelect.value,
+      editButtonUrlInput.value,
+      editButtonCommandInput.value,
+      editButtonApplicationInput.value,
+    ]),
+  );
+  const isCurrent = () => version === previewVersion && unchanged();
+  if (!isCurrent()) {
+    return;
+  }
+  const iconValue = editButtonIconInput.value.trim();
+  const actionType = editButtonActionSelect.value;
+  const previewImg = document.getElementById('icon-preview-img');
+  const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
+  const fallback = { exec: '⚡', application: '🚀', open: '🌐', script: '📜', chain: '🔗' }[actionType];
+  const showPlaceholder = (value = fallback) => {
+    if (!isCurrent()) {
+      return;
+    }
+    previewImg.onerror = null;
+    previewImg.onload = null;
+    previewImg.removeAttribute('src');
+    previewImg.style.display = 'none';
+    placeholder.style.display = 'block';
+    if (value) {
+      placeholder.textContent = value;
+    } else {
+      placeholder.innerHTML = UI_ICONS.image;
+    }
+    iconPreview.classList.remove('has-icon');
+  };
+  const showImage = url => {
+    if (!isCurrent()) {
+      return;
+    }
+    previewImg.onload = () => {
+      if (isCurrent()) {
         previewImg.style.display = 'block';
         placeholder.style.display = 'none';
         iconPreview.classList.add('has-icon');
-
-        // Handle image loading error
-        previewImg.onerror = function () {
-          previewImg.style.display = 'none';
-          placeholder.style.display = 'block';
-          placeholder.textContent = fallbackIcon;
-          iconPreview.classList.remove('has-icon');
-        };
       }
-      else {
-        // Use fallback icon if extraction fails
-        previewImg.style.display = 'none';
-        placeholder.style.display = 'block';
-        placeholder.textContent = fallbackIcon;
-        iconPreview.classList.remove('has-icon');
+    };
+    previewImg.onerror = () => showPlaceholder();
+    previewImg.src = url;
+  };
+  showPlaceholder();
+  try {
+    if (iconValue.startsWith('FlatColorIcons.')) {
+      const key = iconValue.slice('FlatColorIcons.'.length);
+      const category = Object.values(window.IconsCatalog).find(value => value.icons?.[key]);
+      if (category) {
+        showImage(category.icons[key]);
       }
-    })
-    .catch(error => {
+    } else if (iconValue.startsWith('file://~/')) {
+      const resolved = await window.toast.resolveTildePath(iconValue.slice(7));
+      showImage(`file://${resolved}`);
+    } else if (/^(file|https?):\/\//.test(iconValue)) {
+      showImage(iconValue);
+    } else if (iconValue) {
+      showPlaceholder(iconValue);
+    } else if (actionType === 'open' && editButtonUrlInput.value.trim()) {
+      showImage(getFaviconFromUrl(editButtonUrlInput.value.trim()));
+    } else if (window.toast.platform === 'darwin') {
+      const reference =
+        actionType === 'application'
+          ? editButtonApplicationInput.value.trim()
+          : actionType === 'exec'
+            ? getAppNameFromOpenCommand(editButtonCommandInput.value)
+            : null;
+      if (reference) {
+        const result = await window.toast.extractAppIcon(reference, false);
+        if (result?.success) {
+          showImage(result.remoteUrl || result.iconUrl);
+        }
+      }
+    }
+  } catch (error) {
+    if (isCurrent()) {
       console.warn('Failed to load icon preview:', error);
-      previewImg.style.display = 'none';
-      placeholder.style.display = 'block';
-      placeholder.textContent = fallbackIcon;
-      iconPreview.classList.remove('has-icon');
-    });
-}
-
-/**
- * Update the icon preview (applies the same logic as the toast window buttons)
- */
-export function updateIconPreview() {
-  const iconValue = editButtonIconInput.value.trim();
-  const actionType = editButtonActionSelect.value;
-  const urlValue = editButtonUrlInput.value.trim();
-  const commandValue = editButtonCommandInput.value.trim();
-  const previewImg = document.getElementById('icon-preview-img');
-  const placeholder = iconPreview.querySelector('.icon-preview-placeholder');
-
-  // Handle FlatColorIcons
-  if (iconValue && iconValue.startsWith('FlatColorIcons.')) {
-    const iconKey = iconValue.replace('FlatColorIcons.', '');
-    let iconPath = null;
-
-    // Search in the icon catalog
-    for (const categoryKey of Object.keys(window.IconsCatalog)) {
-      const category = window.IconsCatalog[categoryKey];
-      if (category.icons && category.icons[iconKey]) {
-        iconPath = category.icons[iconKey];
-        break;
-      }
+      showPlaceholder();
     }
-
-    if (iconPath) {
-      previewImg.src = iconPath;
-      previewImg.style.display = 'block';
-      placeholder.style.display = 'none';
-      iconPreview.classList.add('has-icon');
-      return;
-    }
-  }
-  else if (actionType === 'open' && (!iconValue || iconValue === '') && urlValue) {
-    // For open actions where the icon is empty but a URL exists, use the favicon
-    const faviconUrl = getFaviconFromUrl(urlValue);
-    previewImg.src = faviconUrl;
-    previewImg.style.display = 'block';
-    placeholder.style.display = 'none';
-    iconPreview.classList.add('has-icon');
-
-    // Fall back to the default icon if the favicon fails to load
-    previewImg.onerror = function () {
-      previewImg.style.display = 'none';
-      placeholder.style.display = 'block';
-      placeholder.textContent = '🌐';
-      iconPreview.classList.remove('has-icon');
-    };
-    return;
-  }
-  else if (iconValue && (iconValue.startsWith('file://') || iconValue.startsWith('http://') || iconValue.startsWith('https://'))) {
-    // URL-form icon (file://, http://, https://)
-    // Handle file:// URLs with tilde paths
-    if (iconValue.startsWith('file://~/')) {
-      const tildePath = iconValue.substring(7); // Remove 'file://' prefix
-      window.toast
-        .resolveTildePath(tildePath)
-        .then(resolvedPath => {
-          previewImg.src = `file://${resolvedPath}`;
-          previewImg.style.display = 'block';
-          placeholder.style.display = 'none';
-          iconPreview.classList.add('has-icon');
-        })
-        .catch(err => {
-          console.warn('Failed to resolve tilde path:', err);
-          previewImg.src = iconValue; // Fallback to original
-          previewImg.style.display = 'block';
-          placeholder.style.display = 'none';
-          iconPreview.classList.add('has-icon');
-        });
-    }
-    else {
-      previewImg.src = iconValue;
-      previewImg.style.display = 'block';
-      placeholder.style.display = 'none';
-      iconPreview.classList.add('has-icon');
-    }
-
-    // Fall back to the default icon if the image fails to load
-    previewImg.onerror = function () {
-      previewImg.style.display = 'none';
-      placeholder.style.display = 'block';
-      placeholder.textContent = '🔘';
-      iconPreview.classList.remove('has-icon');
-    };
-    return;
-  }
-  else if (iconValue && iconValue !== '') {
-    // Emoji or text icon
-    previewImg.style.display = 'none';
-    placeholder.style.display = 'block';
-    placeholder.textContent = iconValue;
-    iconPreview.classList.remove('has-icon');
-    return;
-  }
-
-  // Detect the 'open -a AppName' pattern in exec actions and show the icon
-  if (actionType === 'exec' && (!iconValue || iconValue === '') && commandValue) {
-    // Supports various patterns: open -a AppName, open -a "App Name", open -a domain.com
-    const appName = getAppNameFromOpenCommand(commandValue);
-    if (appName) {
-      // Check whether an extracted icon exists and try to load it
-      if (window.toast && window.toast.platform === 'darwin') {
-        const appPath = appName;
-        tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, appPath, '📱');
-        return;
-      }
-    }
-  }
-
-  // For application actions with an application path, show the icon
-  if (actionType === 'application' && (!iconValue || iconValue === '') && editButtonApplicationInput.value.trim()) {
-    const applicationPath = editButtonApplicationInput.value.trim();
-    if (window.toast && window.toast.platform === 'darwin') {
-      tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, applicationPath, '🚀');
-      return;
-    }
-  }
-
-  // When there is no icon, show the default icon per action type
-  previewImg.style.display = 'none';
-  placeholder.style.display = 'block';
-  iconPreview.classList.remove('has-icon');
-
-  switch (actionType) {
-    case 'exec':
-      placeholder.textContent = '⚡';
-      break;
-    case 'application':
-      placeholder.textContent = '🚀';
-      break;
-    case 'open':
-      placeholder.textContent = '🌐';
-      break;
-    case 'script':
-      placeholder.textContent = '📜';
-      break;
-    case 'chain':
-      placeholder.textContent = '🔗';
-      break;
-    default:
-      placeholder.innerHTML = UI_ICONS.image;
-      break;
   }
 }

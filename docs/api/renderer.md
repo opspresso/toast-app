@@ -134,6 +134,12 @@ window.addEventListener('before-window-hide', () => {
 });
 ```
 
+### Modal lifecycle
+
+`toast/modules/modal-state.js` tracks the active button edit and visible modals. Icon extraction, file dialogs, and previews apply results only while the originating edit and relevant fields remain current. Closing the editor or switching authentication sessions invalidates pending work.
+
+Confirmations have one active result. Escape, backdrop clicks, and replacement by another confirmation resolve the old request as `false` and remove its listeners. Only the current confirmation can resolve `true`. Keyboard focus stays inside the active modal; launcher shortcuts and page switching remain disabled until all modals close.
+
 ## Settings Window API (`src/renderer/preload/settings.js`)
 
 The Settings Window API provides an interface for the settings window to communicate with the main process.

@@ -4,30 +4,47 @@
  * Simplified local app icon extraction utilities
  */
 
+import { captureButtonEditRequest } from './modal-state.js';
+import { editButtonActionSelect, editButtonCommandInput, editButtonApplicationInput } from './dom-elements.js';
+
 /**
  * Core feature: extract the icon and name from an application and update the UI
  * @param {string} applicationPath - Application file path
  * @param {HTMLElement} iconInput - Icon input field
  * @param {HTMLElement} nameInput - Name input field (optional)
  * @param {boolean} forceRefresh - Whether to force a refresh
- * @returns {Promise<boolean>} - Whether it succeeded
+ * @returns {Promise<boolean|null>} Success/failure, or null when the edit became obsolete
  */
 async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInput = null, forceRefresh = false) {
   if (!applicationPath || !iconInput) {
     return false;
   }
 
+  const originalName = nameInput?.value;
+  const isCurrent = captureButtonEditRequest(() =>
+    JSON.stringify([editButtonActionSelect.value, editButtonCommandInput.value, editButtonApplicationInput.value, iconInput.value, iconInput.disabled]),
+  );
+  if (!isCurrent()) {
+    return null;
+  }
   try {
     const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
 
-    if (result.success) {
+    if (!isCurrent() || result?.canceled) {
+      return null;
+    }
+    if (result?.success) {
       // 1. Update the icon input field
       // If the server upload succeeded, prefer the cross-device shareable https URL;
       // otherwise use the local tilde-path-based file:// URL as before
-      iconInput.value = result.remoteUrl || `file://${result.iconPath}`;
+      const icon = result.remoteUrl || (typeof result.iconPath === 'string' ? `file://${result.iconPath}` : null);
+      if (typeof icon !== 'string') {
+        return false;
+      }
+      iconInput.value = icon;
 
       // 2. Update the button name (only when empty)
-      if (nameInput && !nameInput.value.trim()) {
+      if (nameInput && originalName === nameInput.value && !originalName.trim()) {
         nameInput.value = result.appName;
       }
 
@@ -37,8 +54,10 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
       return true;
     }
     return false;
-  }
-  catch (err) {
+  } catch (err) {
+    if (!isCurrent()) {
+      return null;
+    }
     console.error('Icon extraction error:', err);
     return false;
   }
@@ -61,7 +80,7 @@ function getAppNameFromOpenCommand(command) {
   if (!match) {
     return null;
   }
-  return (match[1] !== undefined ? match[1].replace(/\\(["\\])/g, '$1') : match[2] ?? match[3]) || null;
+  return (match[1] !== undefined ? match[1].replace(/\\(["\\])/g, '$1') : (match[2] ?? match[3])) || null;
 }
 
 export { updateButtonIconFromLocalApp, isLocalIconExtractionSupported, getAppNameFromOpenCommand };

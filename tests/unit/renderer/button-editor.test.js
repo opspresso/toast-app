@@ -24,7 +24,8 @@ beforeEach(() => {
   context = vm.createContext({ ...Object.fromEntries(names.map(name => [name, element()])),
     crypto: require('crypto').webcrypto, module: { exports: {} },
     getPageEditState: () => clone(state), savePageEdit: save,
-    showStatus: jest.fn(), updateIconPreview: jest.fn(),
+    showStatus: jest.fn(), updateIconPreview: jest.fn(), UI_ICONS: { refresh: 'refresh' },
+    beginButtonEditContext: jest.fn(), invalidateButtonEditContext: jest.fn(), syncModalState: jest.fn(),
     window: { toast: { setModalOpen: jest.fn() } },
     document: { querySelector: () => null, getElementById: () => error }, error,
   });

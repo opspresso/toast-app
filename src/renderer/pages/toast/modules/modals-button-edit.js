@@ -25,8 +25,11 @@ import {
   scriptInputGroup,
   applicationInputGroup,
   chainInputGroup,
+  reloadIconButton,
 } from './dom-elements.js';
 import { showStatus } from './utils.js';
+import { UI_ICONS } from './constants.js';
+import { beginButtonEditContext, invalidateButtonEditContext, syncModalState } from './modal-state.js';
 import { getPageEditState, savePageEdit } from './pages.js';
 import { updateIconPreview } from './modals-icon-browser.js';
 
@@ -44,12 +47,19 @@ export function editButtonSettings(button) {
   showStatus(`Editing: ${button.name}`, 'info');
 
   // Save the button being edited (global variable)
-  editState = getPageEditState();
-  const buttons = editState.viewPages[editState.index]?.buttons || [];
-  editState.buttonIndex = buttons.findIndex(item => button.id ? item.id === button.id : item.shortcut === button.shortcut);
-  if (editState.buttonIndex < 0) {
+  const nextEditState = getPageEditState();
+  const buttons = nextEditState.viewPages[nextEditState.index]?.buttons || [];
+  nextEditState.buttonIndex = buttons.findIndex(item => button.id ? item.id === button.id : item.shortcut === button.shortcut);
+  if (nextEditState.buttonIndex < 0) {
     showStatus('The button changed. Reopen it before editing.', 'error');
     return;
+  }
+  editState = nextEditState;
+  beginButtonEditContext();
+  if (reloadIconButton) {
+    reloadIconButton.disabled = false;
+    reloadIconButton.innerHTML = UI_ICONS.refresh;
+    reloadIconButton.title = 'Reload Icon from Application';
   }
   currentEditingButton = { ...buttons[editState.buttonIndex] };
   button = currentEditingButton;
@@ -101,11 +111,11 @@ export function closeButtonEditModal() {
   if (saving) {
     return;
   }
-  // Notify main process that modal is closed
-  window.toast.setModalOpen(false);
-
   buttonEditModal.classList.remove('show');
   currentEditingButton = null;
+  editState = null;
+  invalidateButtonEditContext();
+  syncModalState();
 }
 
 /**

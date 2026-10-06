@@ -30,6 +30,7 @@ import {
   reloadIconButton,
 } from './dom-elements.js';
 import { UI_ICONS } from './constants.js';
+import { captureButtonEditRequest, syncModalState, keepFocusInModal } from './modal-state.js';
 import { showStatus } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
 import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported, getAppNameFromOpenCommand } from './local-icon-utils.js';
@@ -70,9 +71,7 @@ export function setupModalEventListeners() {
       // Supports various patterns: open -a AppName, open -a "App Name", open -a domain.com
       const appName = getAppNameFromOpenCommand(command);
       if (appName) {
-
         // Only run when the icon is empty and local icon extraction is supported
-
         if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
           try {
             // Resolve the application name in the main process
@@ -84,8 +83,7 @@ export function setupModalEventListeners() {
             if (success) {
               showStatus(`The ${appName} icon has been set automatically.`, 'success');
             }
-          }
-          catch (error) {
+          } catch (error) {
             console.warn(`Failed to extract ${appName} icon:`, error);
           }
         }
@@ -112,8 +110,7 @@ export function setupModalEventListeners() {
             const appName = extractAppNameFromPath(applicationPath);
             showStatus(`The ${appName} icon has been set automatically.`, 'success');
           }
-        }
-        catch (error) {
+        } catch (error) {
           console.warn('Failed to extract application icon:', error);
         }
       }
@@ -134,8 +131,7 @@ export function setupModalEventListeners() {
         return applicationPath.split('/').pop().replace('.app', '');
       }
       return applicationPath.split('/').pop().split('.')[0];
-    }
-    catch (err) {
+    } catch (err) {
       return null;
     }
   }
@@ -154,6 +150,12 @@ export function setupModalEventListeners() {
   // Browse button for application selection
   if (browseApplicationButton) {
     browseApplicationButton.addEventListener('click', async () => {
+      const isCurrent = captureButtonEditRequest(() =>
+        JSON.stringify([editButtonActionSelect.value, editButtonApplicationInput.value, editButtonApplicationInput.disabled]),
+      );
+      if (!isCurrent() || editButtonApplicationInput.disabled) {
+        return;
+      }
       try {
         // Set Application folder as default path
         const defaultPath = window.toast?.platform === 'darwin' ? '/Applications' : 'C:\\Program Files';
@@ -168,6 +170,12 @@ export function setupModalEventListeners() {
 
         // Call file selection dialog directly without window manipulation
         const result = await window.toast.showOpenDialog(options);
+        if (!isCurrent()) {
+          return;
+        }
+        if (result.error) {
+          throw new Error(result.error);
+        }
 
         if (!result.canceled && result.filePaths.length > 0) {
           // Set selected application path to input field
@@ -183,14 +191,15 @@ export function setupModalEventListeners() {
               if (success) {
                 showStatus('The icon and button name have been set automatically.', 'success');
               }
-            }
-            catch (error) {
+            } catch (error) {
               console.warn('Automatic icon extraction failed:', error);
             }
           }
         }
-      }
-      catch (error) {
+      } catch (error) {
+        if (!isCurrent()) {
+          return;
+        }
         console.error('Error selecting application:', error);
       }
     });
@@ -199,6 +208,10 @@ export function setupModalEventListeners() {
   // Browse button for path selection
   if (browsePathButton) {
     browsePathButton.addEventListener('click', async () => {
+      const isCurrent = captureButtonEditRequest(() => JSON.stringify([editButtonActionSelect.value, editButtonPathInput.value, editButtonPathInput.disabled]));
+      if (!isCurrent() || editButtonPathInput.disabled) {
+        return;
+      }
       try {
         // Configure file/folder selection dialog options
         const options = {
@@ -209,17 +222,24 @@ export function setupModalEventListeners() {
 
         // Call file selection dialog directly without window manipulation
         const result = await window.toast.showOpenDialog(options);
+        if (!isCurrent()) {
+          return;
+        }
+        if (result.error) {
+          throw new Error(result.error);
+        }
 
         if (!result.canceled && result.filePaths.length > 0) {
           // Set selected path to input field
           editButtonPathInput.value = result.filePaths[0];
           showStatus('File/folder selected successfully.', 'success');
-        }
-        else {
+        } else {
           showStatus('File/folder selection canceled.', 'info');
         }
-      }
-      catch (error) {
+      } catch (error) {
+        if (!isCurrent()) {
+          return;
+        }
         console.error('Error selecting file or folder:', error);
         showStatus('An error occurred while selecting the file or folder.', 'error');
       }
@@ -242,23 +262,28 @@ export function setupModalEventListeners() {
 
   // Close modal with ESC key
   document.addEventListener('keydown', event => {
+    keepFocusInModal(event);
+    if (event.defaultPrevented) {
+      return;
+    }
     if (event.key === 'Escape') {
       // Close modals according to priority
       if (confirmModal.classList.contains('show')) {
         closeConfirmModal();
-        event.stopPropagation();
-      }
-      else if (iconSearchModal.classList.contains('show')) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      } else if (iconSearchModal.classList.contains('show')) {
         closeIconSearchModal();
-        event.stopPropagation();
-      }
-      else if (buttonEditModal.classList.contains('show')) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      } else if (buttonEditModal.classList.contains('show')) {
         closeButtonEditModal();
-        event.stopPropagation();
-      }
-      else if (profileModal.classList.contains('show')) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      } else if (profileModal.classList.contains('show')) {
         hideProfileModal();
-        event.stopPropagation();
+        event.preventDefault();
+        event.stopImmediatePropagation();
       }
     }
   });
@@ -271,6 +296,10 @@ export function setupModalEventListeners() {
   // Icon reload button event listener
   if (reloadIconButton) {
     reloadIconButton.addEventListener('click', async () => {
+      const isCurrent = captureButtonEditRequest();
+      if (!isCurrent()) {
+        return;
+      }
       try {
         const actionType = editButtonActionSelect.value;
         let applicationPath = null;
@@ -282,20 +311,17 @@ export function setupModalEventListeners() {
             showStatus('Please select an application first.', 'warning');
             return;
           }
-        }
-        else if (actionType === 'exec') {
+        } else if (actionType === 'exec') {
           // Extract app name from 'open -a AppName' command
           const command = editButtonCommandInput.value.trim();
           const appName = getAppNameFromOpenCommand(command);
           if (appName) {
             applicationPath = appName;
-          }
-          else {
+          } else {
             showStatus('exec actions require a command in the form "open -a AppName".', 'warning');
             return;
           }
-        }
-        else {
+        } else {
           showStatus('Icon extraction is only supported for Application or Exec actions.', 'warning');
           return;
         }
@@ -320,20 +346,21 @@ export function setupModalEventListeners() {
 
         if (success) {
           showStatus('The icon has been refreshed successfully.', 'success');
-        }
-        else {
+        } else if (success === false && isCurrent()) {
           showStatus('Failed to refresh the icon.', 'error');
         }
-      }
-      catch (error) {
+      } catch (error) {
+        if (!isCurrent()) {
+          return;
+        }
         console.error('Icon reload error:', error);
         showStatus('An error occurred while refreshing the icon.', 'error');
-      }
-      finally {
-        // Re-enable button
-        reloadIconButton.disabled = false;
-        reloadIconButton.innerHTML = UI_ICONS.refresh;
-        reloadIconButton.title = 'Reload Icon from Application';
+      } finally {
+        if (isCurrent()) {
+          reloadIconButton.disabled = editButtonIconInput.disabled;
+          reloadIconButton.innerHTML = UI_ICONS.refresh;
+          reloadIconButton.title = 'Reload Icon from Application';
+        }
       }
     });
   }
@@ -364,66 +391,54 @@ export function setupModalEventListeners() {
  * @param {string} okButtonText - OK button text (default: 'Delete')
  * @returns {Promise<boolean>} - Returns true if confirmed, false if canceled
  */
+let settleConfirmation = null;
+
 export function showConfirmModal(title = 'Confirm', message = 'Are you sure?', okButtonText = 'Delete') {
+  if (settleConfirmation) {
+    settleConfirmation(false);
+  }
   return new Promise(resolve => {
-    // Set modal content
     confirmTitle.textContent = title;
     confirmMessage.textContent = message;
     confirmOkButton.textContent = okButtonText;
-
-    // Store event handlers for cleanup
-    let cleanupCalled = false;
-
-    // Cleanup function to remove event listeners and close modal
-    const cleanup = () => {
-      if (cleanupCalled) {
+    let finished = false;
+    const finish = confirmed => {
+      if (finished) {
         return;
       }
-      cleanupCalled = true;
-      confirmCancelButton.removeEventListener('click', cancelHandler);
-      confirmOkButton.removeEventListener('click', okHandler);
-      confirmModal.removeEventListener('click', outsideClickHandler);
-      closeConfirmModal();
+      finished = true;
+      confirmCancelButton.removeEventListener('click', cancel);
+      confirmOkButton.removeEventListener('click', accept);
+      confirmModal.removeEventListener('click', outside);
+      if (settleConfirmation === finish) {
+        settleConfirmation = null;
+      }
+      confirmModal.classList.remove('show');
+      syncModalState();
+      resolve(confirmed);
     };
-
-    // Define event handlers
-    const cancelHandler = () => {
-      cleanup();
-      resolve(false);
-    };
-
-    const okHandler = () => {
-      cleanup();
-      resolve(true);
-    };
-
-    const outsideClickHandler = event => {
+    const cancel = () => finish(false);
+    const accept = () => finish(true);
+    const outside = event => {
       if (event.target === confirmModal) {
-        cleanup();
-        resolve(false);
+        finish(false);
       }
     };
-
-    // Add event listeners
-    confirmCancelButton.addEventListener('click', cancelHandler);
-    confirmOkButton.addEventListener('click', okHandler);
-    confirmModal.addEventListener('click', outsideClickHandler);
-
-    // Show modal
+    settleConfirmation = finish;
+    confirmCancelButton.addEventListener('click', cancel);
+    confirmOkButton.addEventListener('click', accept);
+    confirmModal.addEventListener('click', outside);
     confirmModal.classList.add('show');
-    window.toast.setModalOpen(true);
-
-    // Focus on cancel button by default
-    setTimeout(() => {
-      confirmCancelButton.focus();
-    }, 100);
+    syncModalState();
+    confirmCancelButton.focus();
   });
 }
 
-/**
- * Close confirm modal
- */
 export function closeConfirmModal() {
-  confirmModal.classList.remove('show');
-  window.toast.setModalOpen(false);
+  if (settleConfirmation) {
+    settleConfirmation(false);
+  } else {
+    confirmModal.classList.remove('show');
+    syncModalState();
+  }
 }

@@ -2,6 +2,8 @@
  * Toast - Authentication and User Management
  */
 
+import { syncModalState } from './modal-state.js';
+
 import { SUBSCRIPTION_URL, DASHBOARD_URL, UI_ICONS } from './constants.js';
 import {
   loginLoadingOverlay,
@@ -394,7 +396,7 @@ export function updateProfileDisplay() {
  */
 export function hideProfileModal() {
   profileModal.classList.remove('show');
-  window.toast.setModalOpen(false);
+  syncModalState();
 }
 
 /**

@@ -15,6 +15,7 @@ beforeEach(() => {
   context = vm.createContext({ module: { exports: {} },
     window: { toast: { savePages: api } }, crypto: require('crypto').webcrypto,
     document: { createElement: element }, pagingButtonsContainer: element(),
+    invalidateButtonEditContext: jest.fn(),
     showStatus: jest.fn(), userProfile: { is_authenticated: true }, userSubscription: { features: { page_groups: 9 } },
     normalizePageButtons: buttons => [...buttons, { name: '', shortcut: 'W', action: 'application' }],
     reassignButtonShortcuts: buttons => buttons, defaultButtons: [], emptyButtons: [],
