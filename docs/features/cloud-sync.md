@@ -19,7 +19,7 @@ The synced sections are `pages` (buttons), `snippets`, `appearance`, and `advanc
 Global shortcuts, text-expander permissions/enabled state, authentication tokens, and action
 approvals remain on the device. Downloaded appearance and advanced settings also update the
 native window and launch-at-login setting; an application error is reported rather than announcing sync success.
-Remote `exec` and `script` actions still require local approval.
+Downloaded native launches and executable actions follow the device-local approval rules below.
 
 OAuth returns through `toast-app://auth`. The build declares that scheme for installed apps.
 Cold-start callbacks are queued until initialization completes; Windows/Linux command-line URLs
@@ -72,6 +72,14 @@ The main process merges unrelated changes and saves once. A conflicting edit, ch
 failed write leaves the form draft open with an error. A reply cannot replace a newer UI snapshot.
 New pages and edited buttons keep stable IDs; padding the display grid does not alter the edit baseline.
 Page deletion remains bound to the page selected before the confirmation dialog opens.
+
+## Download validation and action approval
+
+Remote settings must pass the same action validation used for local edits before they replace local data. A malformed download fails without dropping buttons from the saved configuration.
+
+New remote `exec`, `script`, and configured `application` actions require one-time approval before execution. The same applies to `open` actions that target local paths or non-HTTP(S) URI schemes. A launcher can invoke an interpreter, and a file or custom URI handler can execute code even when arguments never pass through a shell. HTTP(S) links, empty button slots, and built-in Confetti do not prompt.
+
+Approval covers the executable path and parameters, command, script, or opening target. Changing execution fields requires new approval; changing a name or icon does not. Chains check each nested action. Cancel leaves the action pending, and an unrelated local edit cannot approve it. Existing local actions remain trusted when this policy is initialized or extended. Approval state is stored only on this device and is excluded from cloud uploads and ordinary exports.
 
 ## API and errors
 

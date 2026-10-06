@@ -32,11 +32,9 @@ async function executeAction(action, depth = 0) {
     }
 
     // Risky actions downloaded from cloud sync need one-time user approval.
-    if (action.action === 'exec' || action.action === 'script') {
-      const { approved, reason } = await ensureApproved(action);
-      if (!approved) {
-        return { success: false, message: reason };
-      }
+    const { approved, reason } = await ensureApproved(action);
+    if (!approved) {
+      return { success: false, message: reason };
     }
 
     // Execute based on action type

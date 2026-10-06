@@ -236,10 +236,15 @@ const schema = {
         default: false,
         description: 'Whether the trusted action list has been seeded from the local configuration',
       },
+      launchApprovalsInitialized: {
+        type: 'boolean',
+        default: false,
+        description: 'Whether existing native launches have been included in device-local trust',
+      },
       trustedActions: {
         type: 'array',
         default: [],
-        description: 'Fingerprints of exec/script actions approved to run on this device (device-local, never synced)',
+        description: 'Fingerprints of executable actions and native launches approved on this device (never synced)',
       },
       pendingApprovals: {
         type: 'array',

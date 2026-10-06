@@ -227,12 +227,13 @@ For more details on cloud sync, see [Cloud Sync](../features/cloud-sync.md).
 
 ### Security (Device-Local)
 
-The `security` key stores the per-device approval state for `exec`/`script` actions downloaded via cloud sync. These fields are **device-local only** and are not uploaded to the cloud. For details on the behavior, see [Cloud Sync](../features/cloud-sync.md#download-validation-and-action-approval).
+The `security` key stores the per-device approval state for executable actions and native launches downloaded via cloud sync. These fields are **device-local only** and are not uploaded to the cloud. For details on the behavior, see [Cloud Sync](../features/cloud-sync.md#download-validation-and-action-approval).
 
 | Field | Type | Default | Description |
 |------|------|--------|------|
 | `security.approvalsInitialized` | boolean | `false` | Whether the trust list has been seeded from the local configuration |
-| `security.trustedActions` | array | `[]` | List of fingerprints of `exec`/`script` actions approved to run on this device |
+| `security.launchApprovalsInitialized` | boolean | `false` | Whether existing native launches have been included in device-local trust |
+| `security.trustedActions` | array | `[]` | List of fingerprints of executable actions and native launches approved to run on this device |
 | `security.pendingApprovals` | array | `[]` | List of risky actions downloaded via cloud sync that are awaiting one-time user approval |
 
 **Example**:

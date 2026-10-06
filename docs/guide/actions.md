@@ -124,7 +124,7 @@ An action that opens a URL, file, or folder.
 ```
 
 ### Notes
-- If a URL has no protocol scheme (a `<scheme>://` form such as `http://`, `https://`, `ftp://`), `http://` is added automatically. Schemes without `//`, such as `mailto:`, are not recognized.
+- If a URL has no protocol scheme, `http://` is added automatically. Host-and-port addresses also use HTTP. Schemes without `//`, such as `mailto:`, are preserved.
 - `file://` URLs are not allowed. When opening a local file or folder, use the `path` property instead of `url`.
 - You can open a file with the default application or with a specified application.
 
@@ -171,7 +171,7 @@ An action that runs a custom script written in one of several languages.
 
 ### Security Considerations
 - JavaScript scripts run in a `vm.runInContext` context, but the sandbox exposes `require` (all built-in modules), `Buffer`, and more, allowing access to the file system, network, and external processes. Only a non-sensitive allowlist of environment variables (`HOME`, `PATH`, `LANG`, etc.) is passed. This is not a system-level sandbox, so run only trusted scripts.
-- `exec`/`script` actions newly downloaded via cloud sync go through a user confirmation dialog before their first run on this device.
+- Downloaded executable actions and native launches require [device-local approval](../features/cloud-sync.md#download-validation-and-action-approval).
 - External scripts are written to a temporary file and then run; the temporary file is deleted after execution.
 
 ## 5. chain (Chained Execution)

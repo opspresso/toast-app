@@ -74,8 +74,8 @@ describe('Action Approval', () => {
       expect(
         computeFingerprint({
           action: 'application',
-          applicationPath: '/Applications/Visual Studio Code.app',
-          applicationParameters: '~/workspace/project',
+          applicationPath: '',
+          applicationParameters: '',
         }),
       ).toBeNull();
       expect(computeFingerprint(null)).toBeNull();
