@@ -747,7 +747,7 @@ describe('IPC Handlers', () => {
       const result = await handler({}, '/Applications/TestApp.app', false);
 
       expect(mockAppIconExtractor.extractAppNameFromPath).toHaveBeenCalledWith('/Applications/TestApp.app');
-      expect(mockAppIconExtractor.extractAppIcon).toHaveBeenCalledWith('TestApp', null, false);
+      expect(mockAppIconExtractor.extractAppIcon).toHaveBeenCalledWith('/Applications/TestApp.app', null, false);
       expect(result).toEqual({
         success: true,
         iconUrl: 'file:///path/to/icon.png',

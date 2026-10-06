@@ -52,5 +52,16 @@ function isLocalIconExtractionSupported() {
   return window.toast.platform === 'darwin' && typeof window.toast.extractAppIcon === 'function';
 }
 
-// Export as ES6 module
-export { updateButtonIconFromLocalApp, isLocalIconExtractionSupported };
+/** Extract a literal app name without interpreting shell code or trailing arguments. */
+function getAppNameFromOpenCommand(command) {
+  if (typeof command !== 'string') {
+    return null;
+  }
+  const match = command.trim().match(/^open\s+-a\s+(?:"((?:\\.|[^"\\])*)"|'([^']*)'|([^\s"'\\]+))(?:\s|$)/);
+  if (!match) {
+    return null;
+  }
+  return (match[1] !== undefined ? match[1].replace(/\\(["\\])/g, '$1') : match[2] ?? match[3]) || null;
+}
+
+export { updateButtonIconFromLocalApp, isLocalIconExtractionSupported, getAppNameFromOpenCommand };

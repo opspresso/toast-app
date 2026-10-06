@@ -12,6 +12,7 @@ import {
   iconPreview,
 } from './dom-elements.js';
 import { UI_ICONS } from './constants.js';
+import { getAppNameFromOpenCommand } from './local-icon-utils.js';
 import { showStatus, getFaviconFromUrl } from './utils.js';
 
 /**
@@ -303,12 +304,11 @@ export function updateIconPreview() {
   // Detect the 'open -a AppName' pattern in exec actions and show the icon
   if (actionType === 'exec' && (!iconValue || iconValue === '') && commandValue) {
     // Supports various patterns: open -a AppName, open -a "App Name", open -a domain.com
-    const openAppMatch = commandValue.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))/);
-    if (openAppMatch) {
-      const appName = (openAppMatch[1] || openAppMatch[2]).trim();
+    const appName = getAppNameFromOpenCommand(commandValue);
+    if (appName) {
       // Check whether an extracted icon exists and try to load it
       if (window.toast && window.toast.platform === 'darwin') {
-        const appPath = `/Applications/${appName}.app`;
+        const appPath = appName;
         tryLoadExtractedIconForPreview(previewImg, placeholder, iconPreview, appPath, '📱');
         return;
       }

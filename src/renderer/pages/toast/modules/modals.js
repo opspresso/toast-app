@@ -32,7 +32,7 @@ import {
 import { UI_ICONS } from './constants.js';
 import { showStatus } from './utils.js';
 import { hideProfileModal, handleLogout } from './auth.js';
-import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported } from './local-icon-utils.js';
+import { updateButtonIconFromLocalApp, isLocalIconExtractionSupported, getAppNameFromOpenCommand } from './local-icon-utils.js';
 import { closeButtonEditModal, showActionFields, saveButtonSettings } from './modals-button-edit.js';
 import { setupIconSearchModal, closeIconSearchModal, updateIconPreview } from './modals-icon-browser.js';
 
@@ -68,21 +68,15 @@ export function setupModalEventListeners() {
     // Detect the 'open -a AppName' pattern in exec actions
     if (editButtonActionSelect.value === 'exec' && command) {
       // Supports various patterns: open -a AppName, open -a "App Name", open -a domain.com
-      const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))/);
-      if (openAppMatch) {
-        const appName = (openAppMatch[1] || openAppMatch[2]).trim();
-        console.log('Detected app name:', appName, 'from command:', command);
+      const appName = getAppNameFromOpenCommand(command);
+      if (appName) {
 
         // Only run when the icon is empty and local icon extraction is supported
-        console.log('Icon input value:', editButtonIconInput.value.trim());
-        console.log('Is local icon extraction supported:', isLocalIconExtractionSupported());
-        console.log('Platform:', window.toast?.platform);
-        console.log('extractAppIcon function:', typeof window.toast?.extractAppIcon);
 
         if (!editButtonIconInput.value.trim() && isLocalIconExtractionSupported()) {
           try {
-            // Build the /Applications/AppName.app path
-            const appPath = `/Applications/${appName}.app`;
+            // Resolve the application name in the main process
+            const appPath = appName;
 
             // Attempt icon extraction
             const success = await updateButtonIconFromLocalApp(appPath, editButtonIconInput, editButtonNameInput);
@@ -292,10 +286,9 @@ export function setupModalEventListeners() {
         else if (actionType === 'exec') {
           // Extract app name from 'open -a AppName' command
           const command = editButtonCommandInput.value.trim();
-          const openAppMatch = command.match(/^open\s+-a\s+(?:"([^"]+)"|([\w\s.-]+))/);
-          if (openAppMatch) {
-            const appName = (openAppMatch[1] || openAppMatch[2]).trim();
-            applicationPath = `/Applications/${appName}.app`;
+          const appName = getAppNameFromOpenCommand(command);
+          if (appName) {
+            applicationPath = appName;
           }
           else {
             showStatus('exec actions require a command in the form "open -a AppName".', 'warning');

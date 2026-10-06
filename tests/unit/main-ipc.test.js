@@ -521,7 +521,7 @@ describe('Main IPC Handlers (P0)', () => {
       const result = await ipcHandlers['extract-app-icon'](mockEvent, applicationPath, forceRefresh);
 
       expect(extractAppNameFromPath).toHaveBeenCalledWith(applicationPath);
-      expect(extractAppIcon).toHaveBeenCalledWith('Calculator', null, forceRefresh);
+      expect(extractAppIcon).toHaveBeenCalledWith(applicationPath, null, forceRefresh);
       expect(result).toEqual({
         success: true,
         iconUrl: 'file:///path/to/icon.png',

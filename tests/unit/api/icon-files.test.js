@@ -26,7 +26,7 @@ it('uploads a real cached PNG through multipart FormData', async () => {
   const form = mockPost.mock.calls[0][1];
   const uploaded = form.get('icon');
   expect(uploaded.type).toBe('image/png');
-  expect(Buffer.from(await uploaded.arrayBuffer())).toEqual(fs.readFileSync(file));
+  expect(Buffer.from(await uploaded.arrayBuffer()).equals(fs.readFileSync(file))).toBe(true);
 });
 it('does not follow a real symlink from the icon cache to private data', async () => {
   const privateFile = path.join(mockDirectory, 'auth-tokens.json');

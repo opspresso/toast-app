@@ -10,6 +10,7 @@ const { createLogger, handleIpcLogging } = require('../logger');
 const { extractAppIcon, extractAppNameFromPath, convertToTildePath, resolveTildePath } = require('../utils/app-icon-extractor');
 const authManager = require('../auth-manager');
 const apiIcons = require('../api/icons');
+const { getSessionVersion } = require('../api/client');
 
 const logger = createLogger('IPC');
 
@@ -120,24 +121,32 @@ function setupSystemHandlers(windows, config) {
 
   // Extract app icon from application path
   ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false) => {
+    const session = getSessionVersion();
     try {
       const appName = extractAppNameFromPath(applicationPath);
       if (!appName) {
         return { success: false, error: 'Could not extract app name' };
       }
 
-      const iconPath = await extractAppIcon(appName, null, forceRefresh);
+      const iconPath = await extractAppIcon(applicationPath, null, forceRefresh === true);
       if (!iconPath) {
         return { success: false, error: 'Could not extract icon' };
       }
 
+      if (session !== getSessionVersion()) {
+        return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+      }
       const tildePath = convertToTildePath(iconPath);
 
       // For authenticated users, upload the icon to the server (S3) to obtain a cross-device shareable URL.
       // Failure does not affect local icon behavior (only the remoteUrl field is omitted).
       let remoteUrl = null;
       try {
-        if (await authManager.hasValidToken()) {
+        const hasToken = await authManager.hasValidToken();
+        if (session !== getSessionVersion()) {
+          return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+        }
+        if (hasToken) {
           const uploadResult = await apiIcons.uploadIcon({
             filePath: iconPath,
             onUnauthorized: authManager.refreshAccessToken,
@@ -151,6 +160,9 @@ function setupSystemHandlers(windows, config) {
         logger.debug(`Icon upload skipped: ${uploadError.message}`);
       }
 
+      if (session !== getSessionVersion()) {
+        return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+      }
       return {
         success: true,
         iconUrl: `file://${iconPath}`,
