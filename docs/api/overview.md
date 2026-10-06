@@ -1,152 +1,42 @@
-# Toast App API Documentation
+# Toast App API
 
-This document provides an overview of the Toast app's internal APIs.
+Toast App runs local buttons and text expansion. Its main process owns configuration,
+authentication, native actions, and cloud synchronization. Toast Web stores the account's
+cloud settings and exposes the revisioned API used by the app and web editors.
 
-## API Documentation Structure
+## Choose an interface
 
-The Toast app's API documentation is organized as follows:
+- [Main process](main-process.md): configuration, authentication, synchronization, windows, and IPC handlers.
+- [Renderer](renderer.md): the narrow `window.toast` and `window.settings` preload bridges.
+- [Actions](actions.md): application, command, URL/file, script, and chain execution.
+- [Cloud sync](../features/cloud-sync.md): initial download, polling, conflicts, and account isolation.
+- [Configuration schema](../config/schema.md): stored fields and defaults.
 
-### Main Process API
-- **[Main Process API](./main-process.md)**: Detailed API documentation for the main process modules
-  - Configuration module (`config.js`)
-  - Logger module (`logger.js`)
-  - Updater module (`updater.js`)
-  - Executor module (`executor.js`)
-  - Shortcuts module (`shortcuts.js`)
-  - Tray module (`tray.js`)
-  - Window module (`windows.js`)
-  - IPC module (`ipc.js` orchestrator + `ipc/` sub-handlers)
-  - Authentication module (`auth-manager.js`, `auth.js`)
-  - Cloud sync module (`cloud-sync.js`, `cloud-sync/conflict-resolver.js`)
-  - Action approval module (`action-approval.js`)
-  - Subscription helper module (`subscription.js`)
-  - Broadcast utility (`broadcast.js`)
-  - API client module (`api/client.js`)
+Renderers use preload methods. They do not import main-process modules or issue arbitrary IPC
+requests. Treat the context bridge as immutable; keep renderer state in its own modules.
 
-### Action API
-- **[Action API](./actions.md)**: Detailed API documentation for the action modules
-  - Application action (`application.js`)
-  - Exec action (`exec.js`)
-  - Open action (`open.js`)
-  - Script action (`script.js`)
-  - Chain action (`chain.js`)
+## Return values
 
-### Renderer Process API
-- **[Renderer Process API](./renderer.md)**: Renderer process API documentation
-  - Toast Window API (`toast.js`)
-  - Settings Window API (`settings.js`)
+The interfaces have different result shapes. Check the contract of the called method.
 
-## Quick Reference
+| Operation | Result |
+|---|---|
+| `getConfig(key)` | Stored value, or the full configuration when the key is omitted; `null` on a read error |
+| Settings preference writes, reset, import/export | Boolean; `false` is a failure |
+| Guarded page/snippet edits | `{ success, ... }`; preserve the draft when `success` is false |
+| Sync and action execution | `{ success, ... }`; failures include an error |
+| Validation | `{ valid, ... }` |
+| Dialogs | Electron dialog result, including cancellation |
+| Event subscription in Toast | Cleanup function |
 
-### Key API Patterns
+A resolved Promise does not prove success. IPC can also reject; handle both rejection and
+the method's explicit failure result. Do not replace a failed read with defaults and upload them.
 
-#### Result Object
-Every API call returns a consistent result object:
+## Changing an API
 
-```javascript
-// Success result
-{
-  success: true,
-  message: 'The operation completed successfully',
-  // Operation-specific extra data
-}
+1. Read the handler, preload method, renderer caller, and related tests.
+2. Validate input in the main process and keep the exposed capability narrow.
+3. Preserve authentication-session and edit-baseline guards for asynchronous work.
+4. Update the affected contract and run the focused tests, followed by repository checks.
 
-// Error result
-{
-  success: false,
-  message: 'Error message',
-  error: errorObject, // Original error object or string
-  // Additional error details
-}
-```
-
-#### Configuration Schema
-Key sections of the default configuration schema:
-
-```javascript
-{
-  globalHotkey: 'Alt+Space',
-  pages: [],
-  snippets: [],
-  textExpander: { enabled: false, seeded: false },
-  appearance: {
-    theme: 'system',
-    accentColor: 'blue',
-    position: 'center',
-    size: 'medium',
-    opacity: 0.95,
-    buttonLayout: 'grid'
-  },
-  advanced: {
-    launchAtLogin: false,
-    hideAfterAction: true,
-    hideOnBlur: true,
-    hideOnEscape: true,
-    showInTaskbar: false
-  },
-  subscription: {
-    isSubscribed: false,
-    isAuthenticated: false,
-    expiresAt: '',
-    pageGroups: 1
-  }
-}
-```
-
-#### Supported Action Types
-- `application`: Launch an application
-- `exec`: Run a shell command
-- `open`: Open a URL, file, or folder
-- `script`: Run a custom script
-- `chain`: Run a series of actions sequentially
-
-### IPC Channel Summary
-
-Key IPC channels:
-
-| Channel | Type | Description |
-|---------|------|-------------|
-| `execute-action` | handle | Execute an action |
-| `get-config` | handle | Get configuration |
-| `set-config` | handle | Set configuration |
-| `show-toast` | on | Show the Toast window |
-| `hide-toast` | on | Hide the Toast window |
-| `show-settings` | on | Show the settings window |
-| `check-for-updates` | handle | Check for updates |
-
-For the full list of IPC channels, see the [Main Process API documentation](./main-process.md#ipc-module-srcmainipcjs).
-
-## Development Guidelines
-
-### Notes on Using the API
-
-1. **Error handling**: Implement proper error handling for every API call
-2. **Platform compatibility**: Account for platform-specific differences
-3. **Security**: Always validate user input
-4. **Performance**: Make appropriate use of asynchronous operations
-
-### Extension Guide
-
-When adding a new API:
-
-1. Add the function to the appropriate module
-2. Use the consistent result object format
-3. Implement proper error handling
-4. Update the documentation
-5. Write test code
-
-## Related Documentation
-
-- [Configuration Schema](../config/schema.md): Detailed configuration options
-- [Button Actions](../guide/actions.md): Supported button action types
-- [Security](../architecture/security.md): Security model and considerations
-- [Testing](../development/testing.md): API testing strategy
-
-## Version Information
-
-The API follows semantic versioning:
-- **Major version**: Backward-incompatible changes
-- **Minor version**: New features that maintain backward compatibility
-- **Patch version**: Bug fixes and minor improvements
-
-For detailed information on the current API version, see the documentation for each module.
+See [security](../architecture/security.md) and [testing](../development/testing.md).
