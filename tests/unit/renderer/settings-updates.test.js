@@ -50,3 +50,33 @@ it('does not overwrite an in-progress hotkey recording during a background setti
   initializeGeneralSettings();
   expect(context.globalHotkeyInput.value).toBe('Alt+Space');
 });
+
+it('switches tabs without repeating initialization or replacing existing drafts', () => {
+  for (const name of ['initializeAccountSettings', 'initializeCloudSyncUI', 'initializeAboutSettings']) {
+    context[name] = jest.fn();
+  }
+  const createTab = id => {
+    const classes = new Set(id === 'settings' ? ['active'] : []);
+    return { id, getAttribute: () => id, classList: {
+      toggle: (name, active) => active ? classes.add(name) : classes.delete(name),
+      contains: name => classes.has(name),
+    } };
+  };
+  const links = ['settings', 'account', 'snippets', 'about'].map(createTab);
+  const contents = ['settings', 'account', 'snippets', 'about'].map(createTab);
+  context.document.querySelectorAll = selector => selector === '.settings-nav li' ? links : contents;
+  const { initializeUI } = load('index.js', context, 'initializeUI');
+  const { switchTab } = load('modules/tabs.js', context, 'switchTab');
+  initializeUI();
+  const draft = context.config.snippets;
+  switchTab('account');
+  switchTab('snippets');
+  switchTab('unknown');
+  for (const name of ['initializeGeneralSettings', 'initializeAppearanceSettings', 'initializeAdvancedSettings',
+    'initializeAccountSettings', 'initializeCloudSyncUI', 'initializeSnippetsSettings', 'initializeAboutSettings']) {
+    expect(context[name]).toHaveBeenCalledTimes(1);
+  }
+  expect(context.config.snippets).toBe(draft);
+  expect(links.filter(tab => tab.classList.contains('active')).map(tab => tab.id)).toEqual(['snippets']);
+  expect(contents.filter(tab => tab.classList.contains('active')).map(tab => tab.id)).toEqual(['snippets']);
+});

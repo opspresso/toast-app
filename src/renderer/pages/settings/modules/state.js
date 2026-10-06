@@ -11,14 +11,6 @@ export const authState = {
   subscription: null,
 };
 
-// Object for tracking tab initialization state
-export const tabInitState = {
-  settings: false,
-  account: false,
-  snippets: false,
-  about: false,
-};
-
 /**
  * Update config state
  * @param {Object} newConfig - New configuration object
@@ -41,13 +33,4 @@ export function setRecordingHotkey(recording) {
  */
 export function updateAuthState(newAuthState) {
   Object.assign(authState, newAuthState);
-}
-
-/**
- * Set tab initialization state
- * @param {string} tabId - Tab ID
- * @param {boolean} initialized - Initialization state
- */
-export function setTabInitState(tabId, initialized) {
-  tabInitState[tabId] = initialized;
 }

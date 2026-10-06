@@ -20,43 +20,13 @@ import { initializeSnippetsSettings } from './modules/snippets-settings.js';
  * Initialize UI with config values - performs only essential work
  */
 export function initializeUI() {
-  window.settings.log.info('initializeUI called - initializing all required settings');
-
-  // Analysis before full initialization - log progress
-  window.settings.log.info('Task analysis: initializing all tabs (optimized approach)');
-
-  // Requirement: all settings must be initialized
-
-  // General settings - required setting
-  window.settings.log.info('Initializing general settings');
   initializeGeneralSettings();
-
-  // Appearance settings - required setting (theme, etc.)
-  window.settings.log.info('Initializing appearance settings');
   initializeAppearanceSettings();
-
-  // Advanced settings - required setting
-  window.settings.log.info('Initializing advanced settings');
   initializeAdvancedSettings();
-
-  // Account settings
-  window.settings.log.info('Initializing account settings');
   initializeAccountSettings();
-
-  // Cloud Sync settings
-  window.settings.log.info('Initializing cloud sync settings');
   initializeCloudSyncUI();
-
-  // Snippets settings
-  window.settings.log.info('Initializing snippets settings');
   initializeSnippetsSettings();
-
-  // About settings
-  window.settings.log.info('Initializing about tab');
   initializeAboutSettings();
-
-  // All tab content initialization complete
-  window.settings.log.info('All tab content has been initialized.');
 }
 
 // Initialize
@@ -94,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Select the first tab (must be after UI initialization)
         window.settings.log.info('Selecting the first tab...');
-        const firstTabLink = document.querySelector('.settings-nav li');
+        const firstTabLink = document.querySelector('.settings-nav li.active') || document.querySelector('.settings-nav li');
         if (firstTabLink) {
           const firstTabId = firstTabLink.getAttribute('data-tab');
           window.settings.log.info(`Selecting default tab: ${firstTabId}`);
