@@ -89,6 +89,8 @@ An action that runs a shell command.
 - **Windows**: Runs the command using cmd.exe
 - **Linux**: Runs using the `x-terminal-emulator` command
 
+The working directory is validated before either execution mode starts. Paths with spaces, quotes, or shell metacharacters remain literal. On macOS, a simple `open -a App` shortcut also passes the working directory as the folder to open, before any `--args`; `runInTerminal` still opens Terminal for that shortcut. On Linux, the terminal receives separate executable and argument values. Windows starts cmd in the selected directory.
+
 ## 3. open (Open File/URL)
 
 ### Description

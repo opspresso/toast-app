@@ -31,7 +31,7 @@ The Exec action module handles shell command execution. Its only public entry po
 async function executeCommand(action)
 ```
 
-> When `runInTerminal: true`, terminal execution is handled by an internal helper (`openInTerminal`). This helper is an internal implementation and is not exported.
+> `executeCommand` validates and expands the working directory once for both execution modes. `runInTerminal: true` uses the internal `openInTerminal` helper, including macOS `open -a` shortcuts. Terminal launch success means the terminal accepted the command; it does not report the command’s later exit status.
 
 ### Usage Examples
 
