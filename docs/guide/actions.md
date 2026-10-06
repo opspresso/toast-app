@@ -37,8 +37,10 @@ An action that launches the application at the specified path.
 ### Properties
 | Property | Type | Required | Description |
 |------|------|------|------|
-| `applicationPath` | string | Yes | Path of the application to launch |
+| `applicationPath` | string | Yes | Path of the application to launch; `~` and `~/` expand to the home directory |
 | `applicationParameters` | string | No | Command-line parameters to pass to the application. Arguments starting with `~` or `~/` are expanded to the home directory |
+
+Parameters are split on whitespace outside single or double quotes. Quoted segments can appear inside an argument: `--title="two words"` is one argument. Empty quoted arguments are retained. Inside double quotes, `\\"` represents a literal quote; other backslashes are preserved for Windows paths. An unclosed quote reports an error without launching. No shell expansion runs; shell metacharacters are literal arguments.
 
 ### Example
 ```json
@@ -53,9 +55,9 @@ An action that launches the application at the specified path.
 ```
 
 ### Platform-Specific Implementation
-- **macOS**: Uses the `open` command
+- **macOS**: Uses `open -a`; parameters follow `--args` and reach the application directly
 - **Windows**: Runs the application path directly
-- **Linux**: Uses the `xdg-open` command when there are no parameters; runs the path directly when parameters are present
+- **Linux**: Runs the application path directly, with or without parameters
 
 ## 2. exec (Run Command)
 

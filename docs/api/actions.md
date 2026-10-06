@@ -226,7 +226,7 @@ chainResult.results.forEach(result => {
 
 ## Application Action (`src/main/actions/application.js`)
 
-The Application action module handles launching applications.
+The Application action module expands home-relative paths and launches the selected application with an argument array. On macOS, `open -a` separates application arguments with `--args`. Windows and Linux execute the path directly. See [argument syntax](../guide/actions.md#1-application-launch-application).
 
 ### Function
 
@@ -257,8 +257,8 @@ const winResult = await executeApplication({
 
 // Launch with parameters
 const paramResult = await executeApplication({
-  applicationPath: '/Applications/TextEdit.app',
-  applicationParameters: '/Users/username/document.txt'
+  applicationPath: '/Applications/Google Chrome.app',
+  applicationParameters: '--incognito https://example.com'
 });
 ```
 

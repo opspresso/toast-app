@@ -21,12 +21,43 @@ function parseParameters(raw) {
   }
 
   const args = [];
-  const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
-  let match;
-  while ((match = pattern.exec(raw)) !== null) {
-    // execFile spawns no shell, so tilde expansion must happen here or paths
-    // like `~/workspace` reach the launcher as literal relative paths and fail.
-    args.push(expandTilde(match[1] ?? match[2] ?? match[3]));
+  let value = '';
+  let quote = null;
+  let started = false;
+  for (let index = 0; index < raw.length; index++) {
+    const char = raw[index];
+    if (char === '\\' && raw[index + 1] === '"' && quote === '"') {
+      value += raw[++index];
+    }
+    else if (quote) {
+      if (char === quote) {
+        quote = null;
+      }
+      else {
+        value += char;
+      }
+    }
+    else if (char === '"' || char === "'") {
+      quote = char;
+      started = true;
+    }
+    else if (/\s/.test(char)) {
+      if (started) {
+        args.push(expandTilde(value));
+        value = '';
+        started = false;
+      }
+    }
+    else {
+      value += char;
+      started = true;
+    }
+  }
+  if (quote) {
+    throw new Error('Unclosed quote in application parameters');
+  }
+  if (started) {
+    args.push(expandTilde(value));
   }
   return args;
 }
@@ -46,41 +77,29 @@ async function executeApplication(action) {
     }
 
     // Check if the application exists
-    if (!fs.existsSync(action.applicationPath)) {
+    const applicationPath = expandTilde(action.applicationPath);
+    if (!fs.existsSync(applicationPath)) {
       return {
         success: false,
-        message: `Application not found at ${action.applicationPath}`,
+        message: `Application not found at ${applicationPath}`,
       };
     }
 
     const params = parseParameters(action.applicationParameters);
 
-    // Build launcher + argv per platform. Arguments are passed as an array
-    // (execFile spawns no shell) so metacharacters in applicationParameters are
-    // never re-interpreted — closing the command-injection path that string
-    // concatenation into exec() would open, especially for cloud-synced actions.
+    // Preserve argv boundaries without adding shell interpretation. The selected
+    // executable can itself be an interpreter; argv does not limit its capabilities.
     let file;
     let args;
 
     if (process.platform === 'darwin') {
-      // macOS: `open` launches the app bundle; extra params follow the path.
+      // --args separates application arguments from LaunchServices options.
       file = 'open';
-      args = params.length > 0 ? ['-a', action.applicationPath, ...params] : [action.applicationPath];
-    }
-    else if (process.platform === 'win32') {
-      // Windows: run the executable directly with its arguments.
-      file = action.applicationPath;
-      args = params;
-    }
-    else if (params.length > 0) {
-      // Linux with params: run the executable directly with its arguments.
-      file = action.applicationPath;
-      args = params;
+      args = ['-a', applicationPath, ...(params.length ? ['--args', ...params] : [])];
     }
     else {
-      // Linux without params: hand off to the desktop opener.
-      file = 'xdg-open';
-      args = [action.applicationPath];
+      file = applicationPath;
+      args = params;
     }
 
     // Execute the command
