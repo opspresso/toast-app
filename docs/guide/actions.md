@@ -174,7 +174,7 @@ An action that runs a custom script written in one of several languages.
 ### Security Considerations
 - JavaScript scripts run in a `vm.runInContext` context, but the sandbox exposes `require` (all built-in modules), `Buffer`, and more, allowing access to the file system, network, and external processes. Only a non-sensitive allowlist of environment variables (`HOME`, `PATH`, `LANG`, etc.) is passed. This is not a system-level sandbox, so run only trusted scripts.
 - Downloaded executable actions and native launches require [device-local approval](../features/cloud-sync.md#download-validation-and-action-approval).
-- External scripts are written to a temporary file and then run; the temporary file is deleted after execution.
+- Each external script gets a private temporary directory and a script file readable only by its owner on POSIX systems. Toast invokes `osascript`, `powershell`, or `bash` directly with an argument array, then removes the directory on success or failure. Bash scripts need no shebang. Cleanup failures are included in the result message.
 
 ## 5. chain (Chained Execution)
 

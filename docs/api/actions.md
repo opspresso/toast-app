@@ -109,7 +109,7 @@ The Script action module handles running custom scripts in various languages. It
 async function executeScript(action)
 ```
 
-> Depending on the `scriptType` value, `executeScript` delegates to internal helpers (`executeJavaScript`, `executeAppleScript`, `executePowerShell`, `executeBash`). These helpers are internal implementations and are not exported.
+> `executeScript` delegates to `executeJavaScript` or the shared `executeExternalScript` helper. External scripts use unique private temporary directories, asynchronous file operations, and explicit interpreter argv. Cleanup runs even after write or launch failures. A cleanup failure adds `cleanupError` and a message suffix without changing the already completed execution result. These helpers are internal and are not exported.
 
 ### Supported Script Languages
 
