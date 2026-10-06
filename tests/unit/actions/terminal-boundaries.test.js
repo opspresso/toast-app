@@ -6,6 +6,7 @@ const { createRequire } = require('module');
 const { spawnSync } = require('child_process');
 const file = path.resolve(__dirname, '../../../src/main/actions/exec.js');
 const source = fs.readFileSync(file, 'utf8');
+const itPosix = process.platform === 'win32' ? it.skip : it;
 let directory;
 let child;
 function load(platform) {
@@ -20,7 +21,7 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(directory, { recursive: true, force: true }));
 
-it('keeps a real macOS terminal command in a directory containing quotes, spaces and dollar expressions', async () => {
+itPosix('keeps a real macOS terminal command in a directory containing quotes, spaces and dollar expressions', async () => {
   const cwd = path.join(directory, "project's $(printf expanded) space");
   fs.mkdirSync(cwd);
   let execution;
@@ -54,7 +55,7 @@ it.each(['darwin', 'linux', 'win32'])('rejects a missing terminal working direct
   expect(child.execFile).not.toHaveBeenCalled();
 });
 
-it('passes Linux terminal argv and cwd without an outer shell expanding either', async () => {
+itPosix('passes Linux terminal argv and cwd without an outer shell expanding either', async () => {
   const cwd = path.join(directory, 'folder $(printf expanded)');
   fs.mkdirSync(cwd);
   let execution;
@@ -70,7 +71,7 @@ it('passes Linux terminal argv and cwd without an outer shell expanding either',
   expect(child.exec).not.toHaveBeenCalled();
 });
 
-it('keeps a macOS open folder before application arguments', async () => {
+itPosix('keeps a macOS open folder before application arguments', async () => {
   child.exec.mockImplementation((command, options, callback) => {
     const execution = spawnSync('/bin/sh', ['-c', `open() { printf '%s\\n' "$@"; }; ${command}`], { cwd: options.cwd, encoding: 'utf8' });
     callback(null, execution.stdout, execution.stderr);

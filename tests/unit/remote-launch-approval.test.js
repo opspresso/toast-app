@@ -10,7 +10,7 @@ const pages = action => [{ name: 'Remote', buttons: [action] }];
 let store;
 let directory;
 let originalPlatform;
-const launch = { action: 'application', applicationPath: '/bin/sh', applicationParameters: '-c "printf toast-test"' };
+const launch = { action: 'application', applicationPath: process.execPath, applicationParameters: '-e "process.stdout.write(1)"' };
 beforeEach(() => {
   jest.clearAllMocks();
   originalPlatform = process.platform;
