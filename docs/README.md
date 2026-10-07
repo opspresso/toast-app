@@ -7,7 +7,7 @@ The complete documentation set for Toast App. It covers everything from the proj
 ```
 docs/
 ├── guide/          User guides (5)
-├── features/       Feature detail docs (7)
+├── features/       Feature detail docs (8)
 ├── api/            API reference (4)
 ├── architecture/   Architecture docs (3)
 ├── config/         Settings and configuration (4)

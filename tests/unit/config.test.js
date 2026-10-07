@@ -1,4 +1,4 @@
-const { app } = require('electron');
+jest.mock('../../src/main/logger', () => ({ createLogger: () => ({ info: jest.fn(), error: jest.fn(), debug: jest.fn() }) }));
 
 // Mock electron-store
 jest.mock('electron-store', () => {
@@ -96,15 +96,15 @@ describe('Configuration Store', () => {
     // Reset to defaults
     resetToDefaults(config);
 
-    // Verify clear was called
-    expect(config.clear).toHaveBeenCalled();
-
-    // Verify default values were set
-    expect(config.set).toHaveBeenCalledWith('globalHotkey', 'Alt+Space');
-    expect(config.set).toHaveBeenCalledWith('pages', []);
-    // Snippets are preserved and text expander reset to default
-    expect(config.set).toHaveBeenCalledWith('snippets', []);
-    expect(config.set).toHaveBeenCalledWith('textExpander', { enabled: false, seeded: false });
+    expect(config.clear).not.toHaveBeenCalled();
+    expect(config.set).toHaveBeenCalledWith(expect.objectContaining({
+      globalHotkey: 'Alt+Space',
+      textExpander: { enabled: false, seeded: false },
+    }));
+    const updated = config.set.mock.calls[0][0];
+    expect(updated).not.toHaveProperty('pages');
+    expect(updated).not.toHaveProperty('snippets');
+    expect(updated).not.toHaveProperty('_sync');
   });
 
   describe('schema', () => {
@@ -222,34 +222,4 @@ describe('Configuration Store', () => {
     });
   });
 
-  describe('markAsSynced', () => {
-    test('hashes the provided data override instead of the live ConfigStore contents', () => {
-      // Guards against marking an upload as synced using data that changed during the
-      // network round-trip: the hash must reflect what was actually uploaded.
-      const { createConfigStore, markAsSynced, generateDataHash } = require('../../src/main/config');
-      const config = createConfigStore();
-      const liveData = { pages: [{ name: 'live-edited' }], snippets: [], appearance: {}, advanced: {} };
-      config.get.mockImplementation(key => ({ ...liveData, _sync: {} }[key]));
-
-      const uploadedSnapshot = { pages: [{ name: 'uploaded' }], snippets: [], appearance: {}, advanced: {} };
-      markAsSynced(config, null, uploadedSnapshot);
-
-      const syncCall = config.set.mock.calls.find(call => call[0] === '_sync');
-      expect(syncCall).toBeDefined();
-      expect(syncCall[1].dataHash).toBe(generateDataHash(uploadedSnapshot));
-      expect(syncCall[1].dataHash).not.toBe(generateDataHash(liveData));
-    });
-
-    test('falls back to the live ConfigStore contents when no override is given', () => {
-      const { createConfigStore, markAsSynced, generateDataHash } = require('../../src/main/config');
-      const config = createConfigStore();
-      const liveData = { pages: [{ name: 'live' }], snippets: [], appearance: {}, advanced: {} };
-      config.get.mockImplementation(key => ({ ...liveData, _sync: {} }[key]));
-
-      markAsSynced(config);
-
-      const syncCall = config.set.mock.calls.find(call => call[0] === '_sync');
-      expect(syncCall[1].dataHash).toBe(generateDataHash(liveData));
-    });
-  });
 });

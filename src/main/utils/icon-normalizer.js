@@ -8,6 +8,7 @@
  */
 
 const fs = require('fs');
+const { fileURLToPath } = require('url');
 const { createLogger } = require('./../logger');
 const { resolveTildePath } = require('./app-icon-extractor');
 const apiIcons = require('../api/icons');
@@ -24,7 +25,7 @@ const MAX_CONSECUTIVE_FAILURES = 3;
  */
 function iconToAbsolutePath(icon) {
   const rawPath = icon.slice('file://'.length);
-  return rawPath.startsWith('~') ? resolveTildePath(rawPath) : rawPath;
+  return rawPath.startsWith('~') ? resolveTildePath(rawPath) : fileURLToPath(icon);
 }
 
 /**

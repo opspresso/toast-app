@@ -21,10 +21,9 @@ contextBridge.exposeInMainWorld('settings', {
 
   // Authentication and subscription
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
-  exchangeCodeForToken: code => ipcRenderer.invoke('exchange-code-for-token', code),
   logout: () => ipcRenderer.invoke('logout'),
-  fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
-  fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
+  fetchUserProfile: (forceRefresh = false) => ipcRenderer.invoke('fetch-user-profile', forceRefresh === true),
+  fetchSubscription: (forceRefresh = false) => ipcRenderer.invoke('fetch-subscription', forceRefresh === true),
   getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
   openUrl: url => ipcRenderer.invoke('open-url', url),
 
@@ -83,8 +82,7 @@ contextBridge.exposeInMainWorld('settings', {
     requestPermission: () => ipcRenderer.invoke('text-expander:request-permission'),
     openPrivacySettings: section => ipcRenderer.invoke('text-expander:open-privacy-settings', section),
     setEnabled: enabled => ipcRenderer.invoke('text-expander:set-enabled', enabled),
-    saveSnippets: snippets => ipcRenderer.invoke('text-expander:save-snippets', snippets),
-    validateSnippet: (snippet, existing) => ipcRenderer.invoke('text-expander:validate-snippet', snippet, existing),
+    changeSnippet: change => ipcRenderer.invoke('text-expander:change-snippet', change),
   },
 });
 
@@ -127,32 +125,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    window.testIconChange = async () => {
-      try {
-        console.log('Testing icon change detection...');
-        const pages = await window.settings.getConfig('pages');
-        if (pages && pages.length > 0 && pages[0].buttons && pages[0].buttons.length > 0) {
-          // Temporarily change the icon of the first button
-          const modifiedPages = JSON.parse(JSON.stringify(pages));
-          const currentIcon = modifiedPages[0].buttons[0].icon || 'default';
-          modifiedPages[0].buttons[0].icon = currentIcon + '_test_' + Date.now();
 
-          console.log('Setting modified pages...');
-          await window.settings.setConfig('pages', modifiedPages);
-          console.log('Icon change test completed. Check logs for sync activity.');
-
-          return { success: true, message: 'Icon change triggered' };
-        }
-        else {
-          console.log('No buttons found to test icon change');
-          return { success: false, message: 'No buttons found' };
-        }
-      }
-      catch (error) {
-        console.error('Error testing icon change:', error);
-        return { success: false, error: error.message };
-      }
-    };
   }
 });
 
@@ -200,6 +173,10 @@ ipcRenderer.on('auth-state-changed', (event, data) => {
       detail: data,
     }),
   );
+});
+
+ipcRenderer.on('cloud-sync-status', (_event, status) => {
+  window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: status }));
 });
 
 // Settings synchronization event handler

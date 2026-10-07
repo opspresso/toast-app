@@ -310,6 +310,7 @@ const globalShortcut = {
 
 // Mock Screen
 const screen = {
+  getDisplayNearestPoint: jest.fn(() => screen.getPrimaryDisplay()),
   getPrimaryDisplay: jest.fn().mockReturnValue({
     id: 1,
     bounds: { x: 0, y: 0, width: 1920, height: 1080 },

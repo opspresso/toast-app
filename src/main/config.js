@@ -5,6 +5,7 @@
  */
 
 const Store = require('electron-store');
+const { isDeepStrictEqual } = require('util');
 const { createLogger } = require('./logger');
 const { getEnv } = require('./config/env');
 
@@ -161,7 +162,9 @@ const schema = {
         default: '',
       },
       pageGroups: {
-        type: 'number',
+        type: 'integer',
+        minimum: 1,
+        maximum: 9,
         default: 1,
         description: 'Number of page groups: 1 for free users, 3 for authenticated users, 9 for subscribers',
       },
@@ -180,6 +183,11 @@ const schema = {
   _sync: {
     type: 'object',
     properties: {
+      accountBackups: { type: 'object', description: 'Per-account local settings and sync baselines retained when switching accounts' },
+      accountId: { type: 'string', description: 'Owner of the acknowledged cloud snapshot' },
+      baseRevision: { type: 'integer', minimum: 0 },
+      baseSnapshot: { type: 'object', description: 'Last acknowledged cloud settings for three-way merge' },
+      bootstrapBackup: { type: 'object', description: 'Local settings preserved before first download' },
       lastModifiedAt: {
         type: 'number',
         default: 0,
@@ -228,10 +236,15 @@ const schema = {
         default: false,
         description: 'Whether the trusted action list has been seeded from the local configuration',
       },
+      launchApprovalsInitialized: {
+        type: 'boolean',
+        default: false,
+        description: 'Whether existing native launches have been included in device-local trust',
+      },
       trustedActions: {
         type: 'array',
         default: [],
-        description: 'Fingerprints of exec/script actions approved to run on this device (device-local, never synced)',
+        description: 'Fingerprints of executable actions and native launches approved on this device (never synced)',
       },
       pendingApprovals: {
         type: 'array',
@@ -257,52 +270,45 @@ function createConfigStore() {
     return sharedStore;
   }
 
+  let migrated = false;
   try {
-    // First load the configuration without schema validation to migrate it
-    const migrationStore = new Store({
+    const store = new Store({
       name: CONFIG_STORE_NAME,
-      schema: null, // Disable schema validation
+      schema,
       clearInvalidConfig: false,
+      configFileMode: 0o600,
+      deserialize: text => {
+        const data = JSON.parse(text);
+        if (data && typeof data === 'object' && !Array.isArray(data) && data.subscription) {
+          const subscription = migrateLegacySubscription(data.subscription);
+          if (!isDeepStrictEqual(data.subscription, subscription)) {
+            data.subscription = subscription;
+            migrated = true;
+          }
+        }
+        return data;
+      },
     });
-
-    // Attempt subscription data migration
-    try {
-      const subscription = migrationStore.get('subscription');
-      if (subscription) {
-        // Clean up subscription data types
-        const sanitizedSubscription = sanitizeSubscription(subscription);
-
-        // Save the changed data (before schema validation)
-        migrationStore.set('subscription', sanitizedSubscription);
-
-        logger.info('Legacy subscription data migrated successfully');
-      }
+    // Deserialization transforms only in memory. Both the constructor and this
+    // write validate the complete configuration before any migration is saved.
+    if (migrated) {
+      const migratedData = store.store;
+      store.store = migratedData;
     }
-    catch (migrationError) {
-      logger.error('Error during subscription data migration:', migrationError);
-      // Reset subscription data when a migration error occurs
-      try {
-        migrationStore.set('subscription', schema.subscription.default);
-        logger.info('Reset subscription data to defaults due to migration error');
-      }
-      catch (resetError) {
-        logger.error('Failed to reset subscription data:', resetError);
-      }
-    }
-
-    // Now create the Store object with normal schema validation
-    sharedStore = new Store({ name: CONFIG_STORE_NAME, schema });
+    sharedStore = store;
     return sharedStore;
   }
   catch (error) {
-    // As a last resort, disable schema validation and create the Store object
-    logger.error('Error creating config store with schema, falling back to schema-less store:', error);
-    sharedStore = new Store({
-      name: CONFIG_STORE_NAME,
-      schema: null,
-      clearInvalidConfig: false,
-    });
-    return sharedStore;
+    // JSON parser messages may include snippets or other private configuration.
+    logger.error('Could not load the configuration:', error.name);
+    const filePath = require('path').join(require('electron').app.getPath('userData'), `${CONFIG_STORE_NAME}.json`);
+    const failure = new Error(`Toast could not read or validate its settings.
+
+File: ${filePath}
+
+Back up this file, then correct its JSON and setting values or restore a known-good copy. Restart Toast afterward. Your existing settings file was not cleared.`);
+    failure.code = 'CONFIG_READ_FAILED';
+    throw failure;
   }
 }
 
@@ -311,24 +317,12 @@ function createConfigStore() {
  * @param {Store} config - Configuration store instance
  */
 function resetToDefaults(config) {
-  // Preserve current pages and snippets settings
-  const currentPages = config.get('pages');
-  const currentSnippets = config.get('snippets');
-
-  // Clear all existing settings
-  config.clear();
-
-  // Set default values for each key
-  config.set('globalHotkey', schema.globalHotkey.default);
-
-  // Preserve pages/snippets if they exist, otherwise use the default (empty array)
-  config.set('pages', currentPages || schema.pages.default);
-  config.set('snippets', currentSnippets || schema.snippets.default);
-
-  config.set('appearance', schema.appearance.default);
-  config.set('advanced', schema.advanced.default);
-  config.set('textExpander', schema.textExpander.default);
-  config.set('firstLaunchCompleted', false);
+  config.set({
+    globalHotkey: schema.globalHotkey.default,
+    appearance: schema.appearance.default,
+    advanced: schema.advanced.default,
+    textExpander: { ...schema.textExpander.default, ...config.get('textExpander'), enabled: false },
+  });
 }
 
 // Fallback content for the seeded default snippet when the user is not logged in.
@@ -371,62 +365,58 @@ function seedDefaultSnippets(config, loginEmail) {
 function importConfig(config, filePath) {
   try {
     const fs = require('fs');
-    const importedConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-    // Validate imported configuration
-    if (!importedConfig || typeof importedConfig !== 'object') {
-      throw new Error('Invalid configuration format');
+    const imported = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
+      return false;
     }
-
-    // Clear existing configuration
-    config.clear();
-
-    // Import each section with validation
-    if (importedConfig.globalHotkey && typeof importedConfig.globalHotkey === 'string') {
-      config.set('globalHotkey', importedConfig.globalHotkey);
+    const updates = {};
+    if (Object.hasOwn(imported, 'globalHotkey')) {
+      if (typeof imported.globalHotkey !== 'string') {
+        return false;
+      }
+      updates.globalHotkey = imported.globalHotkey;
     }
-    else {
-      config.set('globalHotkey', schema.globalHotkey.default);
+    if (Object.hasOwn(imported, 'pages')) {
+      const { validatePages } = require('./action-validation');
+      if (!validatePages(imported.pages).valid) {
+        return false;
+      }
+      updates.pages = imported.pages;
     }
-
-    if (Array.isArray(importedConfig.pages)) {
-      config.set('pages', importedConfig.pages);
+    if (Object.hasOwn(imported, 'snippets')) {
+      const { validateSnippets } = require('./snippets');
+      if (!validateSnippets(imported.snippets).valid) {
+        return false;
+      }
+      updates.snippets = imported.snippets;
     }
-    else {
-      config.set('pages', schema.pages.default);
+    for (const key of ['appearance', 'advanced']) {
+      if (!Object.hasOwn(imported, key)) {
+        continue;
+      }
+      const value = imported[key];
+      if (!value || typeof value !== 'object' || Array.isArray(value) ||
+        Object.keys(value).some(field => !Object.hasOwn(schema[key].properties, field))) {
+        return false;
+      }
+      updates[key] = { ...schema[key].default, ...value };
     }
-
-    if (Array.isArray(importedConfig.snippets)) {
-      config.set('snippets', importedConfig.snippets);
+    if (!Object.keys(updates).length || Buffer.byteLength(JSON.stringify({ appearance: updates.appearance, advanced: updates.advanced }), 'utf8') > 10000) {
+      return false;
     }
-    else {
-      config.set('snippets', schema.snippets.default);
+    const positions = updates.appearance?.monitorPositions;
+    if (positions !== undefined && (!positions || typeof positions !== 'object' || Array.isArray(positions) ||
+      Object.values(positions).some(position => !position || !Number.isFinite(position.x) || !Number.isFinite(position.y)))) {
+      return false;
     }
-
-    if (importedConfig.appearance && typeof importedConfig.appearance === 'object') {
-      config.set('appearance', {
-        ...schema.appearance.default,
-        ...importedConfig.appearance,
-      });
-    }
-    else {
-      config.set('appearance', schema.appearance.default);
-    }
-
-    if (importedConfig.advanced && typeof importedConfig.advanced === 'object') {
-      config.set('advanced', {
-        ...schema.advanced.default,
-        ...importedConfig.advanced,
-      });
-    }
-    else {
-      config.set('advanced', schema.advanced.default);
-    }
-
+    // Validate and persist all requested sections together. Account bindings,
+    // approvals, sync baselines, recovery copies, and omitted data stay intact.
+    config.set(updates);
     return true;
   }
   catch (error) {
-    logger.error('Error importing configuration:', error);
+    // Parser/schema errors may contain configuration values; never log that data.
+    logger.error('Configuration import failed:', error.name);
     return false;
   }
 }
@@ -457,62 +447,35 @@ function exportConfig(config, filePath) {
   }
 }
 
-/**
- * Ensure subscription object has correct types according to schema
- * @param {Object} subscription - Subscription object to validate/fix
- * @returns {Object} - Subscription object with correct types
- */
-function sanitizeSubscription(subscription) {
-  // Return the default when missing or not an object
-  if (!subscription || typeof subscription !== 'object') {
-    return schema.subscription.default;
+/** Convert supported legacy subscription representations before strict validation. */
+function migrateLegacySubscription(subscription) {
+  if (!subscription || typeof subscription !== 'object' || Array.isArray(subscription)) {
+    return subscription;
   }
-
   const result = { ...subscription };
-
-  // Clean up boolean-type fields
-  result.isSubscribed = Boolean(result.isSubscribed);
-  result.isAuthenticated = Boolean(result.isAuthenticated);
-
-  // The expiresAt field must be a string
-  if (result.expiresAt !== undefined) {
-    if (typeof result.expiresAt === 'string') {
-      // Already a string, use it as-is
+  for (const key of ['isSubscribed', 'isAuthenticated']) {
+    if (result[key] === 'true' || result[key] === '1' || result[key] === 1) {
+      result[key] = true;
     }
-    else if (result.expiresAt instanceof Date) {
-      // Convert a Date object to an ISO string
-      result.expiresAt = result.expiresAt.toISOString();
-    }
-    else if (typeof result.expiresAt === 'number') {
-      // Convert a number (timestamp) to an ISO string
-      result.expiresAt = new Date(result.expiresAt).toISOString();
-    }
-    else {
-      // Set any other type to an empty string
-      result.expiresAt = '';
+    else if (result[key] === 'false' || result[key] === '0' || result[key] === 0) {
+      result[key] = false;
     }
   }
-  else {
-    // Set to an empty string when undefined
-    result.expiresAt = '';
-  }
-
-  // For backward compatibility, move subscribedUntil to expiresAt if it exists
-  if (result.subscribedUntil !== undefined) {
-    if (!result.expiresAt && result.subscribedUntil) {
+  if (Object.hasOwn(result, 'subscribedUntil')) {
+    if (result.expiresAt === undefined || result.expiresAt === null || result.expiresAt === '') {
       result.expiresAt = result.subscribedUntil;
     }
     delete result.subscribedUntil;
   }
-
-  // The pageGroups field must be a number
-  if (result.pageGroups !== undefined) {
-    result.pageGroups = Number(result.pageGroups) || schema.subscription.properties.pageGroups.default;
+  if (result.expiresAt === null) {
+    result.expiresAt = '';
   }
-  else {
-    result.pageGroups = schema.subscription.properties.pageGroups.default;
+  else if (typeof result.expiresAt === 'number' && Number.isFinite(new Date(result.expiresAt).getTime())) {
+    result.expiresAt = new Date(result.expiresAt).toISOString();
   }
-
+  if (typeof result.pageGroups === 'string' && result.pageGroups.trim() !== '' && Number.isInteger(Number(result.pageGroups))) {
+    result.pageGroups = Number(result.pageGroups);
+  }
   return result;
 }
 
@@ -564,86 +527,6 @@ function generateDataHash(data) {
 }
 
 /**
- * Update sync metadata in ConfigStore
- * @param {Object} config - ConfigStore instance
- * @param {Object} metadata - Metadata to update
- */
-function updateSyncMetadata(config, metadata) {
-  const currentSync = config.get('_sync') || schema._sync.default;
-  const updatedSync = {
-    ...currentSync,
-    ...metadata,
-  };
-  config.set('_sync', updatedSync);
-}
-
-/**
- * Mark settings as modified
- * @param {Object} config - ConfigStore instance
- * @param {string} [deviceId] - Device identifier
- */
-function markAsModified(config, deviceId = null) {
-  const timestamp = Date.now();
-  const device = deviceId || getDeviceId();
-
-  // Generate new hash based on current data
-  const currentData = {
-    pages: config.get('pages'),
-    snippets: config.get('snippets'),
-    appearance: config.get('appearance'),
-    advanced: config.get('advanced'),
-  };
-  const dataHash = generateDataHash(currentData);
-
-  // Debug logging
-  const { createLogger } = require('./logger');
-  const logger = createLogger('ConfigDebug');
-  logger.debug('=== markAsModified Debug ===');
-  logger.debug('New hash:', dataHash);
-  logger.debug('Timestamp:', new Date(timestamp).toISOString());
-  logger.debug('Device:', device);
-
-  updateSyncMetadata(config, {
-    lastModifiedAt: timestamp,
-    lastModifiedDevice: device,
-    dataHash,
-    isConflicted: false, // Reset conflict flag when locally modified
-  });
-
-  logger.debug('Sync metadata updated successfully');
-}
-
-/**
- * Mark settings as synced
- * @param {Object} config - ConfigStore instance
- * @param {string} [deviceId] - Device identifier
- * @param {Object} [dataOverride] - Data the hash should be computed from (e.g. an upload
- *   snapshot taken before the network round-trip) instead of the current ConfigStore
- *   contents, which may have changed while the request was in flight.
- */
-function markAsSynced(config, deviceId = null, dataOverride = null) {
-  const timestamp = Date.now();
-  const device = deviceId || getDeviceId();
-
-  // Generate hash based on the provided snapshot, or the current data if none was given
-  const currentData = dataOverride || {
-    pages: config.get('pages'),
-    snippets: config.get('snippets'),
-    appearance: config.get('appearance'),
-    advanced: config.get('advanced'),
-  };
-  const dataHash = generateDataHash(currentData);
-
-  updateSyncMetadata(config, {
-    lastSyncedAt: timestamp,
-    lastSyncedDevice: device,
-    // Do not update lastModifiedAt - preserve the actual modification time
-    dataHash,
-    isConflicted: false,
-  });
-}
-
-/**
  * Check if settings have changes that need sync
  * @param {Object} config - ConfigStore instance
  * @returns {boolean} Whether settings have unsaved changes
@@ -678,25 +561,6 @@ function hasUnsyncedChanges(config) {
   return result;
 }
 
-/**
- * Mark settings as conflicted
- * @param {Object} config - ConfigStore instance
- */
-function markAsConflicted(config) {
-  updateSyncMetadata(config, {
-    isConflicted: true,
-  });
-}
-
-/**
- * Get sync metadata
- * @param {Object} config - ConfigStore instance
- * @returns {Object} Sync metadata
- */
-function getSyncMetadata(config) {
-  return config.get('_sync') || schema._sync.default;
-}
-
 module.exports = {
   schema,
   createConfigStore,
@@ -704,14 +568,8 @@ module.exports = {
   seedDefaultSnippets,
   importConfig,
   exportConfig,
-  sanitizeSubscription,
   // Sync metadata management functions
   getDeviceId,
   generateDataHash,
-  updateSyncMetadata,
-  markAsModified,
-  markAsSynced,
   hasUnsyncedChanges,
-  markAsConflicted,
-  getSyncMetadata,
 };

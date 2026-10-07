@@ -1179,3 +1179,8 @@ button:active {
     transition-duration: 0.01ms !important;
   }
 }
+
+.account-error {
+  color: var(--color-danger, #d32f2f);
+  margin: 0 0 16px;
+}

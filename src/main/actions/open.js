@@ -8,6 +8,7 @@ const { shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { expandTilde } = require('../utils/expand-tilde');
+const { normalizeOpenUrl } = require('../utils/open-url');
 
 /**
  * Open a URL, file, or folder
@@ -48,11 +49,7 @@ async function openItem(action) {
  */
 async function openUrl(url) {
   try {
-    // Validate URL format - check if URL already has any protocol
-    if (!url.match(/^[a-zA-Z0-9.+-]+:\/\//i)) {
-      // Add http:// prefix only if no protocol is present
-      url = 'http://' + url;
-    }
+    url = normalizeOpenUrl(url);
 
     // file:// grants local filesystem access equivalent to the dedicated `path`
     // field, but without its resolve()/existsSync() checks. Local files must go
@@ -106,7 +103,10 @@ async function openPath(itemPath, application) {
     }
 
     // Open with default application
-    await shell.openPath(resolvedPath);
+    const errorMessage = await shell.openPath(resolvedPath);
+    if (errorMessage) {
+      return { success: false, message: `Error opening path: ${errorMessage}` };
+    }
 
     return {
       success: true,

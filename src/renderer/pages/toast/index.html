@@ -156,6 +156,7 @@
           <span class="close-modal" id="close-button-edit">&times;</span>
         </div>
         <div class="modal-body">
+          <p id="button-edit-error" class="error-message hidden" role="alert"></p>
           <div class="form-group">
             <label for="edit-button-name">Button Name</label>
             <input type="text" id="edit-button-name" placeholder="Button Name" />
@@ -280,6 +281,7 @@
                 <option value="applescript">AppleScript (macOS only)</option>
                 <option value="powershell">PowerShell (Windows only)</option>
                 <option value="bash">Bash (macOS/Linux only)</option>
+                <option value="special">Confetti (built-in)</option>
               </select>
             </div>
             <div class="subfield">

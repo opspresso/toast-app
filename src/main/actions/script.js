@@ -4,8 +4,8 @@
  * This module handles executing custom scripts in various languages.
  */
 
-const { exec } = require('child_process');
-const fs = require('fs');
+const { execFile } = require('child_process');
+const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 const { app } = require('electron');
@@ -54,11 +54,9 @@ async function executeScript(action) {
       case 'javascript':
         return executeJavaScript(action.script, action.scriptParams);
       case 'applescript':
-        return executeAppleScript(action.script);
       case 'powershell':
-        return executePowerShell(action.script);
       case 'bash':
-        return executeBash(action.script);
+        return executeExternalScript(action.script, action.scriptType.toLowerCase());
       default:
         return {
           success: false,
@@ -89,7 +87,7 @@ async function executeJavaScript(script, params = {}) {
     // child_process, etc.), so they can read the real process.env or spawn
     // subprocesses directly, bypassing the `env: safeEnv` restriction below.
     // That restriction only actually holds for the shell launchers further
-    // down (osascript/powershell/bash), where `exec()`'s `env` option fully
+    // down (osascript/powershell/bash), where `execFile()`'s `env` option fully
     // replaces the child process's environment at the OS level. A JavaScript
     // script action runs with the same effective privileges as an exec
     // action and must be trusted/approved accordingly (see action-approval.js).
@@ -146,192 +144,52 @@ async function executeJavaScript(script, params = {}) {
   }
 }
 
-/**
- * Execute AppleScript (macOS only)
- * @param {string} script - AppleScript code
- * @returns {Promise<Object>} Result object
- */
-async function executeAppleScript(script) {
-  // Check if running on macOS
-  if (process.platform !== 'darwin') {
-    return {
-      success: false,
-      message: 'AppleScript is only supported on macOS',
-    };
-  }
-
-  try {
-    // Create a temporary file for the script
-    const tempFile = path.join(os.tmpdir(), `toast-applescript-${Date.now()}.scpt`);
-
-    // Write the script to the file
-    fs.writeFileSync(tempFile, script);
-
-    // Execute the script
-    return new Promise(resolve => {
-      exec(`osascript "${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
-        // Clean up the temporary file
-        try {
-          fs.unlinkSync(tempFile);
-        }
-        catch (e) {
-          logger.error('Error removing temporary AppleScript file:', e);
-        }
-
-        if (error) {
-          // Return failures as a {success:false} resolve too, to unify the error channel at the caller (executor)
-          resolve({
-            success: false,
-            message: error.message,
-            error,
-            stderr,
-          });
-          return;
-        }
-
-        resolve({
-          success: true,
-          message: 'AppleScript executed successfully',
-          stdout,
-          stderr,
-        });
-      });
-    });
-  }
-  catch (error) {
-    return {
-      success: false,
-      message: `Error executing AppleScript: ${error.message}`,
-      error,
-    };
-  }
-}
-
-/**
- * Execute PowerShell script (Windows only)
- * @param {string} script - PowerShell script
- * @returns {Promise<Object>} Result object
- */
-async function executePowerShell(script) {
-  // Check if running on Windows
-  if (process.platform !== 'win32') {
-    return {
-      success: false,
-      message: 'PowerShell is only supported on Windows',
-    };
-  }
-
-  try {
-    // Create a temporary file for the script
-    const tempFile = path.join(os.tmpdir(), `toast-powershell-${Date.now()}.ps1`);
-
-    // Write the script to the file
-    fs.writeFileSync(tempFile, script);
-
-    // Execute the script
-    return new Promise(resolve => {
-      exec(`powershell -ExecutionPolicy Bypass -File "${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
-        // Clean up the temporary file
-        try {
-          fs.unlinkSync(tempFile);
-        }
-        catch (e) {
-          logger.error('Error removing temporary PowerShell file:', e);
-        }
-
-        if (error) {
-          // Return failures as a {success:false} resolve too, to unify the error channel at the caller (executor)
-          resolve({
-            success: false,
-            message: error.message,
-            error,
-            stderr,
-          });
-          return;
-        }
-
-        resolve({
-          success: true,
-          message: 'PowerShell script executed successfully',
-          stdout,
-          stderr,
-        });
-      });
-    });
-  }
-  catch (error) {
-    return {
-      success: false,
-      message: `Error executing PowerShell script: ${error.message}`,
-      error,
-    };
-  }
-}
-
-/**
- * Execute Bash script (macOS/Linux only)
- * @param {string} script - Bash script
- * @returns {Promise<Object>} Result object
- */
-async function executeBash(script) {
-  // Check if running on macOS or Linux
-  if (process.platform === 'win32') {
-    return {
-      success: false,
-      message: 'Bash is not supported on Windows',
-    };
-  }
-
-  try {
-    // Create a temporary file for the script
-    const tempFile = path.join(os.tmpdir(), `toast-bash-${Date.now()}.sh`);
-
-    // Write the script to the file
-    fs.writeFileSync(tempFile, script);
-
-    // Make the script executable
-    fs.chmodSync(tempFile, '755');
-
-    // Execute the script
-    return new Promise(resolve => {
-      exec(`"${tempFile}"`, { env: buildSafeEnv() }, (error, stdout, stderr) => {
-        // Clean up the temporary file
-        try {
-          fs.unlinkSync(tempFile);
-        }
-        catch (e) {
-          logger.error('Error removing temporary Bash file:', e);
-        }
-
-        if (error) {
-          // Return failures as a {success:false} resolve too, to unify the error channel at the caller (executor)
-          resolve({
-            success: false,
-            message: error.message,
-            error,
-            stderr,
-          });
-          return;
-        }
-
-        resolve({
-          success: true,
-          message: 'Bash script executed successfully',
-          stdout,
-          stderr,
-        });
-      });
-    });
-  }
-  catch (error) {
-    return {
-      success: false,
-      message: `Error executing Bash script: ${error.message}`,
-      error,
-    };
-  }
-}
-
-module.exports = {
-  executeScript,
+const externalScripts = {
+  applescript: { command: 'osascript', extension: 'scpt', label: 'AppleScript', args: [],
+    unsupported: () => process.platform !== 'darwin' && 'AppleScript is only supported on macOS' },
+  powershell: { command: 'powershell', extension: 'ps1', label: 'PowerShell script', args: ['-ExecutionPolicy', 'Bypass', '-File'],
+    unsupported: () => process.platform !== 'win32' && 'PowerShell is only supported on Windows' },
+  bash: { command: 'bash', extension: 'sh', label: 'Bash script', args: ['--'],
+    unsupported: () => process.platform === 'win32' && 'Bash is not supported on Windows' },
 };
+
+/** Each invocation owns a private directory until its interpreter has exited. */
+async function executeExternalScript(script, type) {
+  const definition = externalScripts[type];
+  const unsupported = definition.unsupported();
+  if (unsupported) {
+    return { success: false, message: unsupported };
+  }
+  let directory;
+  let result;
+  try {
+    directory = await fs.mkdtemp(path.join(os.tmpdir(), `toast-${type}-`));
+    const file = path.join(directory, `script.${definition.extension}`);
+    await fs.writeFile(file, script, { mode: 0o600 });
+    result = await new Promise(resolve => {
+      execFile(definition.command, [...definition.args, file], { env: buildSafeEnv() }, (error, stdout, stderr) => {
+        resolve(error
+          ? { success: false, message: error.message, error, stderr }
+          : { success: true, message: `${definition.label} executed successfully`, stdout, stderr });
+      });
+    });
+  }
+  catch (error) {
+    result = { success: false, message: `Error executing ${definition.label}: ${error.message}`, error };
+  }
+  finally {
+    if (directory) {
+      try {
+        await fs.rm(directory, { recursive: true, force: true });
+      }
+      catch (error) {
+        logger.error('Error removing temporary script directory:', error);
+        result.cleanupError = 'Could not remove the temporary script directory.';
+        result.message += ' Temporary script cleanup failed.';
+      }
+    }
+  }
+  return result;
+}
+
+module.exports = { executeScript };

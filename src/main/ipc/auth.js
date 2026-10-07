@@ -14,20 +14,14 @@ function setupAuthHandlers() {
   // Start login process
   ipcMain.handle('initiate-login', async () => await authManager.initiateLogin());
 
-  // Exchange authentication code for token
-  ipcMain.handle('exchange-code-for-token', async (event, code) => await authManager.exchangeCodeForToken(code));
-
   // Logout
   ipcMain.handle('logout', async () => await authManager.logout());
 
   // Get user profile information
-  ipcMain.handle('fetch-user-profile', async () => await authManager.fetchUserProfile());
-
-  // Get user settings information
-  ipcMain.handle('get-user-settings', async () => await authManager.getUserSettings());
+  ipcMain.handle('fetch-user-profile', async (_event, forceRefresh) => await authManager.fetchUserProfile(forceRefresh === true));
 
   // Get subscription information
-  ipcMain.handle('fetch-subscription', async () => await authManager.fetchSubscription());
+  ipcMain.handle('fetch-subscription', async (_event, forceRefresh) => await authManager.fetchSubscription(forceRefresh === true));
 
   // Return current authentication token
   ipcMain.handle('get-auth-token', async () => await authManager.getAccessToken());

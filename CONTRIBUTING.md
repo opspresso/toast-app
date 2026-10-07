@@ -19,7 +19,7 @@ Thank you for your interest in contributing to Toast App! This document provides
 
 ## Code of Conduct
 
-Please collaborate with a respectful attitude toward one another. If you encounter inappropriate behavior, report it privately through [GitHub Issues](https://github.com/opspresso/toast-app/issues) or to a repository maintainer.
+Please collaborate with a respectful attitude toward one another. If you encounter inappropriate behavior, report it privately to a repository maintainer.
 
 ## Getting Started
 
@@ -209,7 +209,7 @@ We use Jest for unit and integration tests. Make sure your code includes appropr
 ### Writing Tests
 
 - Place tests in the `tests/` directory
-- Name test files with a `.test.js` or `.spec.js` suffix
+- Name test files with a `.test.js` suffix; Jest does not discover `.spec.js` files in this repository
 - Structure tests to mirror the structure of the source code
 - Write tests for both success and failure cases
 - Mock external dependencies as needed

@@ -4,7 +4,9 @@ This document provides API documentation for the main process modules of the Toa
 
 ## Config Module (`src/main/config.js`)
 
-The config module handles configuration management using electron-store.
+The config module owns one shared, schema-validated `electron-store`. It converts supported legacy
+subscription representations in memory and writes them only after complete-file validation succeeds.
+Read or validation failure raises `CONFIG_READ_FAILED`; it never returns a store with validation disabled.
 
 ### Functions
 
@@ -45,13 +47,6 @@ function importConfig(config, filePath)
 function exportConfig(config, filePath)
 
 /**
- * Sanitize subscription data (remove unnecessary fields)
- * @param {Object} subscription - Subscription data
- * @returns {Object} Sanitized subscription data
- */
-function sanitizeSubscription(subscription)
-
-/**
  * Get the device ID (generate one if absent)
  * @returns {string} Device ID
  */
@@ -65,45 +60,11 @@ function getDeviceId()
 function generateDataHash(data)
 
 /**
- * Update sync metadata
- * @param {Store} config - Configuration store instance
- * @param {Object} metadata - Metadata object
- */
-function updateSyncMetadata(config, metadata)
-
-/**
- * Mark as locally modified
- * @param {Store} config - Configuration store instance
- * @param {string} deviceId - Device ID
- */
-function markAsModified(config, deviceId)
-
-/**
- * Mark as synced
- * @param {Store} config - Configuration store instance
- * @param {string} deviceId - Device ID
- */
-function markAsSynced(config, deviceId)
-
-/**
  * Check for unsynced changes
  * @param {Store} config - Configuration store instance
  * @returns {boolean} Whether unsynced changes exist
  */
 function hasUnsyncedChanges(config)
-
-/**
- * Mark as conflicted
- * @param {Store} config - Configuration store instance
- */
-function markAsConflicted(config)
-
-/**
- * Get sync metadata
- * @param {Store} config - Configuration store instance
- * @returns {Object} Sync metadata
- */
-function getSyncMetadata(config)
 ```
 
 ### Usage Example
@@ -450,7 +411,7 @@ hideToastWindow();
 | `ipc/actions.js` | Action execution/validation/testing |
 | `ipc/auth.js` | Login/logout, tokens, profile/subscription lookup |
 | `ipc/cloud-sync.js` | Sync status, manual sync, enabling cloud sync |
-| `ipc/snippets.js` | Text expansion status/permission/toggle, snippet save & validation (`text-expander:get-status`, `text-expander:request-permission`, `text-expander:open-privacy-settings`, `text-expander:set-enabled`, `text-expander:save-snippets`, `text-expander:validate-snippet`) |
+| `ipc/snippets.js` | Text expansion status/permission/toggle, guarded item edits (`text-expander:get-status`, `text-expander:request-permission`, `text-expander:open-privacy-settings`, `text-expander:set-enabled`, `text-expander:change-snippet`) |
 | `ipc/updater.js` | Update check/download/install |
 | `ipc/system.js` | Open URL, dialogs, logging, icon extraction, path conversion, temporary shortcut control |
 
@@ -480,7 +441,7 @@ function setupIpcHandlers(windows)
 |---------|------|-------------|
 | `get-config` | handle | Get a configuration value (by key or the whole config) |
 | `set-config` | handle | Set a configuration value |
-| `save-config` | handle | Save specific configuration changes |
+| `save-pages` | handle | Merge pages against the original snapshot and authentication session |
 | `reset-config` | handle | Reset configuration to defaults |
 | `import-config` | handle | Import configuration from a file |
 | `export-config` | handle | Export configuration to a file |
@@ -516,10 +477,8 @@ function setupIpcHandlers(windows)
 | Channel | Type | Description |
 |---------|------|-------------|
 | `initiate-login` | handle | Start the login process |
-| `exchange-code-for-token` | handle | Exchange an authorization code for a token |
 | `logout` | handle | Log out |
 | `fetch-user-profile` | handle | Fetch user profile information |
-| `get-user-settings` | handle | Get user settings information |
 | `fetch-subscription` | handle | Fetch subscription information |
 | `get-auth-token` | handle | Return the current authentication token |
 
@@ -531,7 +490,8 @@ function setupIpcHandlers(windows)
 | `set-cloud-sync-enabled` | handle | Enable/disable cloud sync |
 | `manual-sync` | handle | Manual sync (upload/download/resolve) |
 | `debug-sync-status` | handle | Sync status debug info |
-| `settings-synced` | on | Forward the settings-sync-complete event |
+| `settings-synced` | main → renderer | Announce an acknowledged synchronization |
+| `cloud-sync-status` | main → renderer | Publish current progress, permission, and conflict/error state |
 
 #### Shortcut-Related
 
@@ -584,8 +544,7 @@ function setupIpcHandlers(windows)
 | `text-expander:request-permission` | handle | Request macOS accessibility permission |
 | `text-expander:open-privacy-settings` | handle | Open the system privacy settings |
 | `text-expander:set-enabled` | handle | Enable/disable text expansion |
-| `text-expander:save-snippets` | handle | Save the snippet list |
-| `text-expander:validate-snippet` | handle | Validate a snippet keyword |
+| `text-expander:change-snippet` | handle | Validate and apply one add/update/delete against the current list |
 
 ### Usage Example
 
@@ -604,11 +563,12 @@ The auth manager module is the entry point for runtime authentication handling. 
 
 ```javascript
 initiateLogin()                 // Start the login process
-exchangeCodeForToken(code)      // Exchange an authorization code for a token
+exchangeCodeForTokenAndUpdateSubscription(code) // Internal: called only after protocol state validation
+restoreSession()                 // Restore credentials/profile and start initial sync
+reloadAccount()                  // Refresh an existing session or start browser login
 logout()                        // Log out
-fetchUserProfile(forceRefresh)  // Fetch the user profile
-getUserSettings(forceRefresh)   // Get user settings
-fetchSubscription(forceRefresh) // Fetch subscription information
+fetchUserProfile(forceRefresh)  // Fetch and persist a verified profile; errors remain explicit
+fetchSubscription(forceRefresh) // Reuse the same profile request and return its normalized subscription
 getAccessToken()                // Return the access token
 syncSettings(action)            // Sync settings (upload/download/resolve)
 updateSyncSettings(enabled)     // Enable/disable cloud sync
@@ -626,108 +586,28 @@ notifyAuthStateChange(authState) // Notify of authentication state changes
 notifySettingsSynced(configData) // Notify that settings sync is complete
 ```
 
-Caching of user profile, settings, and subscription information is handled by `src/main/user-data-manager.js`.
+`user-data-manager.js` caches verified profiles for five minutes in main-process memory. Settings and revision baselines belong to the sync manager.
 
 ## Auth Module (`src/main/auth.js`)
 
-The auth module is the low-level layer for OAuth 2.0-based user authentication, handling token issuance, storage, and refresh. The runtime entry point is `auth-manager.js`, and this module is generally used through `auth-manager.js` rather than called directly.
-
-### Functions
-
-```javascript
-/**
- * Start the login process (OAuth authentication in the external browser)
- * @returns {Promise<boolean>} true on success
- */
-async function initiateLogin()
-
-/**
- * Exchange an authorization code for a token
- * @param {string} code - Authorization code
- * @returns {Promise<Object>} Token information
- */
-async function exchangeCodeForToken(code)
-
-/**
- * Exchange an authorization code for a token and update subscription information
- * @param {string} code - Authorization code
- * @returns {Promise<Object>} Token and subscription information
- */
-async function exchangeCodeForTokenAndUpdateSubscription(code)
-
-/**
- * Fetch user profile information
- * @returns {Promise<Object>} User profile
- */
-async function fetchUserProfile()
-
-/**
- * Fetch subscription information
- * @returns {Promise<Object>} Subscription information
- */
-async function fetchSubscription()
-
-/**
- * Log out
- * @returns {Promise<boolean>} true on success, false on failure
- */
-async function logout()
-
-/**
- * Check whether a valid token exists
- * @returns {Promise<boolean>} Whether the token is valid
- */
-async function hasValidToken()
-
-/**
- * Get the access token (auto-refresh if needed)
- * @returns {Promise<string|null>} Access token
- */
-async function getAccessToken()
-
-/**
- * Force-refresh the access token
- * @returns {Promise<string|null>} New access token
- */
-async function refreshAccessToken()
-
-/**
- * Update page group settings based on subscription status
- * @param {Object} subscription - Subscription information
- * @returns {Promise<void>}
- */
-async function updatePageGroupSettings(subscription)
-
-/**
- * Register the protocol handler (`toast-app://` scheme)
- */
-function registerProtocolHandler()
-
-/**
- * Handle a protocol redirect (e.g., `toast-app://auth?code=...`)
- * @param {string} url - Received protocol URL
- * @returns {Promise<Object>} Processing result
- */
-async function handleAuthRedirect(url)
-```
-
-### Usage Example
+This internal layer owns credential storage and refresh. Runtime callers use `auth-manager.js`
+for login, profile, subscription, and logout notifications.
 
 ```javascript
-const auth = require('./main/auth');
-
-// Start login
-await auth.initiateLogin();
-
-// Check token validity
-if (await auth.hasValidToken()) {
-  const profile = await auth.fetchUserProfile();
-  console.log('User:', profile.name);
-}
-
-// Log out
-await auth.logout();
+initiateLogin()                     // Open the OAuth page; resolves to boolean
+exchangeCodeForToken(code)          // Exchange code and durably save credentials
+fetchUserProfile()                 // Raw profile request; no local profile fallback
+hasValidToken()                     // Load credentials and refresh near expiry
+getAccessToken()                    // Return the memory/stored access token
+refreshAccessToken({ force: true }) // Force refresh after a server 401; returns { success, ... }
+logout()                           // Revoke and delete credentials; resolves to boolean
+registerProtocolHandler()          // Register toast-app only in packaged builds
+validateStateParam(state)          // Consume the matching unexpired OAuth callback state
 ```
+
+`src/index.js` receives the protocol callback, validates its state, and delegates the complete
+login lifecycle to `auth-manager.js`. The renderer cannot directly exchange an authorization code.
+`CONFIG_SUFFIX` isolates token, config, and OAuth state files for separate environments.
 
 ## Cloud Sync Module (`src/main/cloud-sync.js`)
 
@@ -787,72 +667,31 @@ async function syncSettings(action)
 function updateCloudSyncSettings(enabled)
 ```
 
-### Sync Settings
+### Lifecycle and conflicts
 
-- **Periodic sync interval**: 15 minutes (`SYNC_INTERVAL_MS`)
-- **Debounce time**: 5 seconds (`SYNC_DEBOUNCE_MS`)
-- **Max retry count**: 3 (`MAX_RETRY_COUNT`)
-- **Retry exceptions**: Uploads where both `pages` and `snippets` are empty are skipped (no retry); `400` is not retried; `409` merges with server data and re-uploads (`reconcileStaleUpload`)
+The manager downloads before uploading, synchronizes every 15 minutes, and debounces local
+edits for 5 seconds. `getSyncManager()` returns the shared manager. Its `manualSync(action)`,
+`enable()`, `disable()`, `syncAfterLogin()`, `getCurrentStatus()`, and `unsubscribe()` methods
+control one serialized lifecycle. Startup owns initialization; IPC handlers reuse that instance.
 
-### Usage Example
+`cloud-sync/merge.js` exports `mergeSettings(base, local, remote)` and `SyncConflict`.
+It merges independent changes against the last acknowledged snapshot and rejects ambiguous
+changes. Empty arrays are deletions. The server's revision, rather than device timestamps,
+guards uploads. A content conflict requires an explicit upload or download choice.
 
-```javascript
-const { initCloudSync, syncSettings, updateCloudSyncSettings } = require('./main/cloud-sync');
-
-// Initialize cloud sync
-const syncManager = initCloudSync(authManager, userDataManager, config);
-
-// Manual sync (resolve: automatically resolve conflicts)
-const result = await syncSettings('resolve');
-console.log('Sync result:', result);
-
-// Disable cloud sync
-updateCloudSyncSettings(false);
-```
-
-## Conflict Resolver Module (`src/main/cloud-sync/conflict-resolver.js`)
-
-A pure-logic module responsible for sync conflict analysis and per-section merge policies. `cloud-sync.js` uses this module when resolving conflicts.
-
-```javascript
-/**
- * Analyze conflicts and decide a resolution strategy (upload_local / download_server / merge_required / no_action)
- * @param {Object} localMeta - Local metadata
- * @param {Object} serverMeta - Server metadata
- * @param {boolean} hasLocalChanges - Whether local changes exist
- * @returns {Object} { action, reason }
- */
-function analyzeConflict(localMeta, serverMeta, hasLocalChanges)
-
-/**
- * Merge pages — local-first (preserves user edits).
- * If a local page's buttons are empty and a server page with the same name has buttons, keep the server version
- */
-function mergePages(localPages, serverPages)
-
-/**
- * Merge snippets — local-first by keyword, preserving server-only keywords at the end
- */
-function mergeSnippets(localSnippets, serverSnippets)
-
-/**
- * Merge appearance settings — local values take priority
- */
-function mergeAppearance(localAppearance, serverAppearance)
-
-/**
- * Merge advanced settings — local values take priority
- */
-function mergeAdvanced(localAdvanced, serverAdvanced)
-```
+See [Cloud Sync](../features/cloud-sync.md) for account isolation, migration, retries,
+action approval, API compatibility, and the recovery copies stored on the device.
 
 ## Action Approval Module (`src/main/action-approval.js`)
 
-Protects `exec`/`script` actions downloaded via cloud sync so they run only after a one-time user approval per device. Actions created or edited locally are trusted, and only dangerous actions that first appear in remote data are placed in the approval queue. The fingerprints in the trust list and pending list are stored under the config `security` key and are **device-local only** (not uploaded to the cloud).
+Downloaded commands, scripts, configured applications, local paths, and non-HTTP(S) URI
+handlers require local approval before execution. Existing local actions remain trusted.
+Approval fingerprints stay under the device-local `security` key. See the complete
+[approval policy](../features/cloud-sync.md#download-validation-and-action-approval).
 
 ```javascript
 /**
- * Compute a stable fingerprint for a dangerous exec/script action, hashing only fields that affect execution
+ * Compute a stable fingerprint for a executable action or native launch, hashing only fields that affect execution
  * @returns {string|null} sha256 hex, or null for a non-dangerous action
  */
 function computeFingerprint(action)
@@ -881,9 +720,9 @@ function trustCurrentConfig(configStore)
 async function ensureApproved(action)
 
 /**
- * Validate remote pages before saving. Every button action must pass executor validation, and failing entries are removed.
- * Empty-slot buttons (placeholders) are preserved without validation
- * @returns {Promise<Array>} Pages with invalid actions removed
+ * Validate remote pages before saving. Every executable action must pass validation; invalid input rejects the whole download.
+ * Empty slots and built-in Confetti are preserved.
+ * @returns {Promise<Array>} Validated pages
  */
 async function sanitizeRemotePages(pages)
 ```
@@ -909,14 +748,14 @@ function calculatePageGroups(subscription)
 function normalizeExpiryString(value)
 
 /**
- * Login-time rule — decide whether to grant and store the cloud_sync feature (granted by default for active subscribers)
+ * Read cloud_sync permission; an explicit false overrides legacy Premium/VIP inference
  */
-function determineCloudSyncFeature(subscription, options)
+function determineCloudSyncFeature(subscription)
 
 /**
- * Sync-time rule — re-validate stored subscription data (active subscription + feature flag, or premium/VIP plan)
+ * Require an active, unexpired subscription and cloud_sync permission
  */
-function isCloudSyncAllowed(subscription, options)
+function isCloudSyncAllowed(subscription)
 ```
 
 ## Broadcast Utility (`src/main/broadcast.js`)
@@ -985,8 +824,8 @@ function getAuthHeaders()
 /**
  * Execute an authenticated request
  * @param {Function} apiCall - Callback that performs the actual API call (invoked with no arguments, e.g., `() => client.get(url)`)
- * @param {Object} [options] - Options (allowUnauthenticated, defaultValue, isSubscriptionRequest, onUnauthorized)
- * @returns {Promise<Object>} Response data
+ * @param {Object} [options] - Options (onUnauthorized)
+ * @returns {Promise<Object>} Response data or an explicit error object
  */
 async function authenticatedRequest(apiCall, options)
 ```

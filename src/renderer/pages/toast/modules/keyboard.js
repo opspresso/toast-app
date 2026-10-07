@@ -2,9 +2,9 @@
  * Toast - Keyboard Navigation and Shortcuts
  */
 
-import { buttonEditModal, profileModal, iconSearchModal } from './dom-elements.js';
+import { isAnyModalOpen } from './modal-state.js';
 import { filteredButtons, selectedButtonIndex, isSettingsMode, navigateButtons, executeButton, toggleSettingsMode } from './buttons.js';
-import { changePage, addNewPage, removePage } from './pages.js';
+import { pages, changePage, addNewPage, removePage } from './pages.js';
 
 /**
  * Handle keyboard events
@@ -12,7 +12,7 @@ import { changePage, addNewPage, removePage } from './pages.js';
  */
 export function handleKeyDown(event) {
   // Ignore shortcuts when modal is open (except ESC key)
-  if (buttonEditModal.classList.contains('show') || profileModal.classList.contains('show')) {
+  if (event.defaultPrevented || isAnyModalOpen()) {
     // ESC key is only used to close modals (already handled in separate event listeners)
     return;
   }
@@ -43,7 +43,7 @@ export function handleKeyDown(event) {
     case 'Escape':
       // Exit edit mode when ESC key is pressed in settings mode
       // Note: Modal closing is handled separately when modal is open
-      if (isSettingsMode && !buttonEditModal.classList.contains('show')) {
+      if (isSettingsMode) {
         event.preventDefault();
         toggleSettingsMode();
       }
@@ -52,7 +52,7 @@ export function handleKeyDown(event) {
         event.preventDefault();
         // Get hideOnEscape setting and hide window if enabled
         window.toast.getConfig('advanced.hideOnEscape').then(hideOnEscape => {
-          if (hideOnEscape !== false) {
+          if (hideOnEscape !== false && !isAnyModalOpen() && !isSettingsMode) {
             hideToastWindow();
           }
         });
@@ -114,16 +114,15 @@ export function handleKeyDown(event) {
  * Handle keyboard page switching (1-9 key events)
  * @param {KeyboardEvent} event - Keyboard event
  */
-export async function handlePageSwitching(event) {
+export function handlePageSwitching(event) {
   // Keyboard paging does not work when a modal is open
-  if (buttonEditModal.classList.contains('show') || profileModal.classList.contains('show') || iconSearchModal.classList.contains('show')) {
+  if (event.defaultPrevented || isAnyModalOpen()) {
     return;
   }
 
   // Handle number keys 1-9
   if (/^[1-9]$/.test(event.key) && !event.ctrlKey && !event.altKey && !event.metaKey) {
     const pageNum = parseInt(event.key) - 1;
-    const { pages } = await import('./pages.js');
     if (pageNum >= 0 && pageNum < pages.length) {
       changePage(pageNum);
     }
@@ -147,9 +146,7 @@ function hideToastWindow() {
  */
 export function setupKeyboardEventListeners() {
   // Keyboard page switching (1-9 key events)
-  document.addEventListener('keydown', async event => {
-    await handlePageSwitching(event);
-  });
+  document.addEventListener('keydown', handlePageSwitching);
 
   // Keyboard navigation
   document.addEventListener('keydown', handleKeyDown);

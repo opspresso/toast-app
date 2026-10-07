@@ -1,16 +1,20 @@
 # Domains
 main:
   - changed-files:
-      - src/main/**/*
+      - any-glob-to-any-file:
+          - src/main/**/*
 
 renderer:
   - changed-files:
-      - src/renderer/**/*
+      - any-glob-to-any-file:
+          - src/renderer/**/*
 
 docs:
   - changed-files:
-      - docs/**/*
+      - any-glob-to-any-file:
+          - docs/**/*
 
 test:
   - changed-files:
-      - tests/**/*
+      - any-glob-to-any-file:
+          - tests/**/*

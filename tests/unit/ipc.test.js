@@ -35,7 +35,6 @@ const mockAuthManager = {
   exchangeCodeForToken: jest.fn(),
   logout: jest.fn(),
   fetchUserProfile: jest.fn(),
-  getUserSettings: jest.fn(),
   fetchSubscription: jest.fn(),
   getAccessToken: jest.fn(),
   hasValidToken: jest.fn(),
@@ -68,6 +67,7 @@ const mockWindows = {
     setSize: jest.fn(),
     setSkipTaskbar: jest.fn(),
     getPosition: jest.fn(() => [100, 100]),
+    getBounds: jest.fn(() => ({ width: 700, height: 500 })),
     setPosition: jest.fn(),
     show: jest.fn(),
     hide: jest.fn(),
@@ -176,7 +176,8 @@ jest.mock('../../src/main/cloud-sync', () => ({
 }));
 
 // Import the module after mocks are set up
-const { setupIpcHandlers, isModalOpened } = require('../../src/main/ipc');
+let setupIpcHandlers;
+let isModalOpened;
 
 describe('IPC Handlers', () => {
   let mockCloudSyncManager;
@@ -184,6 +185,8 @@ describe('IPC Handlers', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    jest.resetModules();
+    ({ setupIpcHandlers, isModalOpened } = require('../../src/main/ipc'));
     
     // Setup default returns
     mockExecutor.executeAction.mockResolvedValue({ success: true, message: 'Action executed' });
@@ -234,6 +237,7 @@ describe('IPC Handlers', () => {
       expect(mockIpcMain.on).toHaveBeenCalledWith('modal-state-changed', expect.any(Function));
       expect(mockIpcMain.handle).toHaveBeenCalledWith('is-modal-open', expect.any(Function));
       expect(mockIpcMain.handle).toHaveBeenCalledWith('execute-action', expect.any(Function));
+      expect(mockIpcMain.handle).not.toHaveBeenCalledWith('exchange-code-for-token', expect.any(Function));
     });
   });
 
@@ -415,7 +419,7 @@ describe('IPC Handlers', () => {
 
       const result = handler({});
 
-      expect(result).toEqual(mockConfig.store);
+      expect(result).toEqual({ ...mockConfig.store, authSessionVersion: 0 });
     });
 
     test('should handle set-config', () => {
@@ -424,9 +428,9 @@ describe('IPC Handlers', () => {
       const handler = mockIpcMain.handle.mock.calls
         .find(([event]) => event === 'set-config')[1];
 
-      const result = handler({}, 'test.key', 'test value');
+      const result = handler({}, 'globalHotkey', 'Ctrl+Space');
 
-      expect(mockConfig.set).toHaveBeenCalledWith('test.key', 'test value');
+      expect(mockConfig.set).toHaveBeenCalledWith('globalHotkey', 'Ctrl+Space');
       expect(result).toBe(true);
     });
 
@@ -450,17 +454,11 @@ describe('IPC Handlers', () => {
       expect(mockWindows.toast.setSkipTaskbar).toHaveBeenCalledWith(false);
     });
 
-    test('should handle set-config with subscription sanitization', () => {
+    test('rejects renderer attempts to overwrite server subscription entitlement', () => {
       setupIpcHandlers(mockWindows);
-
-      const handler = mockIpcMain.handle.mock.calls
-        .find(([event]) => event === 'set-config')[1];
-
-      const subscriptionData = { active: true, features: {} };
-      const result = handler({}, 'subscription', subscriptionData);
-
-      expect(mockConfigStore.sanitizeSubscription).toHaveBeenCalledWith(subscriptionData);
-      expect(result).toBe(true);
+      const handler = mockIpcMain.handle.mock.calls.find(([event]) => event === 'set-config')[1];
+      expect(handler({}, 'subscription', { active: true, pageGroups: 9 })).toBe(false);
+      expect(mockConfig.set).not.toHaveBeenCalled();
     });
 
     test('should verify config handlers are registered', () => {
@@ -470,7 +468,7 @@ describe('IPC Handlers', () => {
 
       expect(handleEvents).toContain('get-config');
       expect(handleEvents).toContain('set-config');
-      expect(handleEvents).toContain('save-config');
+      expect(handleEvents).toContain('save-pages');
       expect(handleEvents).toContain('reset-config');
       expect(handleEvents).toContain('import-config');
       expect(handleEvents).toContain('export-config');
@@ -722,6 +720,33 @@ describe('IPC Handlers', () => {
       expect(result).toBe(true);
     });
 
+    test('restores a recorded shortcut when its settings renderer is destroyed', () => {
+      setupIpcHandlers(mockWindows);
+      const sender = new (require('events').EventEmitter)();
+      const handler = mockIpcMain.handle.mock.calls.find(([name]) => name === 'temporarily-disable-shortcuts')[1];
+      expect(handler({ sender })).toBe(true);
+      expect(handler({ sender })).toBe(true);
+      expect(sender.listenerCount('destroyed')).toBe(1);
+      sender.emit('destroyed');
+      expect(mockShortcuts.registerGlobalShortcuts).toHaveBeenCalledTimes(1);
+      expect(sender.listenerCount('destroyed')).toBe(0);
+    });
+
+    test('releases the close listener after normal restore and does not re-register during quit', () => {
+      setupIpcHandlers(mockWindows);
+      const sender = new (require('events').EventEmitter)();
+      const handlers = Object.fromEntries(mockIpcMain.handle.mock.calls);
+      handlers['temporarily-disable-shortcuts']({ sender });
+      handlers['restore-shortcuts']();
+      expect(sender.listenerCount('destroyed')).toBe(0);
+      mockShortcuts.registerGlobalShortcuts.mockClear();
+      handlers['temporarily-disable-shortcuts']({ sender });
+      mockApp.isQuitting = true;
+      sender.emit('destroyed');
+      expect(mockShortcuts.registerGlobalShortcuts).not.toHaveBeenCalled();
+      mockApp.isQuitting = false;
+    });
+
     test('should handle restore-shortcuts', () => {
       setupIpcHandlers(mockWindows);
       mockShortcuts.registerGlobalShortcuts.mockReturnValue(true);
@@ -749,7 +774,7 @@ describe('IPC Handlers', () => {
       const result = await handler({}, '/Applications/TestApp.app', false);
 
       expect(mockAppIconExtractor.extractAppNameFromPath).toHaveBeenCalledWith('/Applications/TestApp.app');
-      expect(mockAppIconExtractor.extractAppIcon).toHaveBeenCalledWith('TestApp', null, false);
+      expect(mockAppIconExtractor.extractAppIcon).toHaveBeenCalledWith('/Applications/TestApp.app', null, false);
       expect(result).toEqual({
         success: true,
         iconUrl: 'file:///path/to/icon.png',

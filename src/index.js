@@ -5,10 +5,8 @@
  * It initializes the Electron app, creates windows, and sets up event listeners.
  */
 
-const { app, session } = require('electron');
+const { app, session, dialog } = require('electron');
 const { loadEnv } = require('./main/config/env');
-const path = require('path');
-const fs = require('fs');
 const { createLogger, maskAuthUrl } = require('./main/logger');
 
 // Create module-specific logger
@@ -18,7 +16,7 @@ const logger = createLogger('Main');
 loadEnv();
 
 // Import modules
-const { createConfigStore, seedDefaultSnippets } = require('./main/config');
+const { createConfigStore } = require('./main/config');
 const { registerGlobalShortcuts, unregisterGlobalShortcuts, notifyRegistrationFailure } = require('./main/shortcuts');
 const { createTray, destroyTray } = require('./main/tray');
 const { createToastWindow, showSettingsWindow, closeAllWindows, windows } = require('./main/windows');
@@ -28,6 +26,11 @@ const auth = require('./main/auth');
 const cloudSync = require('./main/cloud-sync');
 const userDataManager = require('./main/user-data-manager');
 const { initializeApprovals } = require('./main/action-approval');
+const { createProtocolDispatcher } = require('./main/protocol-dispatcher');
+const protocolDispatcher = createProtocolDispatcher();
+
+// Windows and Linux pass a cold-start deep link on the command line.
+process.argv.forEach(protocolDispatcher.receive);
 
 // Hide Dock icon on macOS
 if (process.platform === 'darwin' && app.dock) {
@@ -40,8 +43,8 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-// Create configuration store
-const config = createConfigStore();
+// Load configuration after Electron is ready so startup failures can be shown safely.
+let config = null;
 
 /**
  * Load environment configuration files and apply to app
@@ -49,41 +52,9 @@ const config = createConfigStore();
 async function loadEnvironmentConfig() {
   logger.info('Starting to load environment configuration files...');
   try {
-    // 1. Load authentication token
-    const hasToken = await auth.hasValidToken();
-    logger.info('Authentication token check result:', hasToken ? 'Token exists' : 'No token');
-
-    // 2. Load user profile
-    if (hasToken) {
-      const userProfile = await authManager.fetchUserProfile();
-      logger.info('User profile loading complete:', userProfile ? 'Success' : 'Failed');
-
-      // 3. Load user settings
-      const userSettings = await authManager.getUserSettings();
-      logger.info('User settings loading complete:', userSettings ? 'Success' : 'Failed');
-
-      // Authentication state notification
-      if (userProfile) {
-        authManager.notifyAuthStateChange({
-          isAuthenticated: true,
-          profile: userProfile,
-          settings: userSettings,
-        });
-        logger.info('Authentication state update notification sent');
-      }
-
-      // Seed the default snippet with the logged-in email (once, after
-      // any cloud-synced snippets have been applied)
-      seedDefaultSnippets(config, userProfile && userProfile.email);
-    }
-    else {
-      logger.info('No valid token, initializing authentication state');
-      authManager.notifyAuthStateChange({
-        isAuthenticated: false,
-      });
-
-      // Seed the default snippet with the fallback email when not logged in
-      seedDefaultSnippets(config);
+    const result = await authManager.restoreSession();
+    if (!result.success) {
+      logger.warn('Startup account restoration:', result.error);
     }
   }
   catch (error) {
@@ -96,19 +67,6 @@ async function loadEnvironmentConfig() {
  * Initialize the application
  */
 function initialize() {
-  // Create necessary directories
-  const appDataPath = app.getPath('userData');
-  const configPath = path.join(appDataPath, 'config');
-
-  if (!fs.existsSync(configPath)) {
-    fs.mkdirSync(configPath, { recursive: true });
-  }
-
-  // Set up auto launch
-  app.setLoginItemSettings({
-    openAtLogin: config.get('advanced.launchAtLogin') || false,
-  });
-
   // Allow remote button icons (e.g. site favicons) in the file:// based UI.
   // Windows are loaded via loadFile, so every https image is cross-origin and
   // Chromium blocks responses that carry Cross-Origin-Resource-Policy headers
@@ -170,7 +128,7 @@ function initialize() {
   auth.registerProtocolHandler();
 
   // Set up URL protocol request handling function
-  global.handleProtocolRequest = url => {
+  protocolDispatcher.setHandler(url => {
     logger.info('Processing protocol request:', maskAuthUrl(url));
 
     // Directly extract authentication code from URL
@@ -201,7 +159,7 @@ function initialize() {
           }
 
           // Existing OAuth code handling logic
-          logger.info('Starting authentication code exchange:', code.substring(0, 6) + '...');
+          logger.info('Starting authentication code exchange');
           authManager
             .exchangeCodeForTokenAndUpdateSubscription(code)
             .then(result => {
@@ -214,19 +172,12 @@ function initialize() {
         }
         else if (action === 'reload_auth' && token && userId) {
           // Handle deep link coming from the connect page
-          logger.info('Processing auth reload request with token:', token.substring(0, 8) + '...');
-          auth
-            .handleAuthRedirect(url)
+          logger.info('Processing auth reload request');
+          authManager
+            .reloadAccount()
             .then(result => {
               logger.info('Auth reload result:', result.success ? 'Success' : 'Failed');
-              if (result.success) {
-                authManager.notifyAuthStateChange({
-                  type: 'auth-reload',
-                  subscription: result.subscription,
-                  message: 'Authentication information has been refreshed.',
-                });
-              }
-              else {
+              if (!result.success) {
                 authManager.notifyLoginError(result.error || 'Auth reload failed');
               }
             })
@@ -253,7 +204,7 @@ function initialize() {
         windows.settings.webContents.send('protocol-data', url);
       }
     }
-  };
+  });
 
   // Set quitting flag on app
   app.isQuitting = false;
@@ -262,10 +213,19 @@ function initialize() {
 // When Electron has finished initialization
 // (auto-update is owned solely by src/main/updater.js — initialized in ipc.js's initAutoUpdater)
 app.whenReady().then(() => {
+  try {
+    config = createConfigStore();
+  }
+  catch (error) {
+    logger.error('Settings initialization failed:', error.code || error.name);
+    dialog.showErrorBox('Toast could not load its settings', error.message);
+    app.quit();
+    return;
+  }
   initialize();
 
   // Show the settings window on first launch if this is a new installation
-  const isFirstLaunch = !config.has('firstLaunchCompleted');
+  const isFirstLaunch = config.get('firstLaunchCompleted') !== true;
   if (isFirstLaunch) {
     // Set first launch flag
     config.set('firstLaunchCompleted', true);
@@ -290,18 +250,14 @@ app.on('second-instance', (_, commandLine) => {
   if (process.platform === 'win32' || process.platform === 'linux') {
     // Deep link handling in Windows and Linux
     const url = commandLine.find(arg => arg.startsWith('toast-app://'));
-    if (url && global.handleProtocolRequest) {
-      global.handleProtocolRequest(url);
-    }
+    protocolDispatcher.receive(url);
   }
 });
 
 // Protocol URL handling on macOS
 app.on('open-url', (event, url) => {
   event.preventDefault();
-  if (url.startsWith('toast-app://') && global.handleProtocolRequest) {
-    global.handleProtocolRequest(url);
-  }
+  protocolDispatcher.receive(url);
 });
 
 // Quit when all windows are closed, except on macOS
@@ -313,6 +269,9 @@ app.on('window-all-closed', () => {
 
 // On macOS, re-create the window when the dock icon is clicked or show it if already created
 app.on('activate', () => {
+  if (!config) {
+    return;
+  }
   if (!windows.toast || windows.toast.isDestroyed()) {
     createToastWindow(config);
   }
@@ -374,8 +333,7 @@ app.on('before-quit', () => {
     logger.error('Error closing windows:', error);
   }
 
-  // Clear global protocol handler
-  global.handleProtocolRequest = null;
+  protocolDispatcher.clear();
 
   logger.info('Application cleanup completed');
 });

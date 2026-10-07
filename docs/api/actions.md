@@ -31,7 +31,7 @@ The Exec action module handles shell command execution. Its only public entry po
 async function executeCommand(action)
 ```
 
-> When `runInTerminal: true`, terminal execution is handled by an internal helper (`openInTerminal`). This helper is an internal implementation and is not exported.
+> `executeCommand` validates and expands the working directory once for both execution modes. `runInTerminal: true` uses the internal `openInTerminal` helper, including macOS `open -a` shortcuts. Terminal launch success means the terminal accepted the command; it does not report the command’s later exit status.
 
 ### Usage Examples
 
@@ -109,7 +109,7 @@ The Script action module handles running custom scripts in various languages. It
 async function executeScript(action)
 ```
 
-> Depending on the `scriptType` value, `executeScript` delegates to internal helpers (`executeJavaScript`, `executeAppleScript`, `executePowerShell`, `executeBash`). These helpers are internal implementations and are not exported.
+> `executeScript` delegates to `executeJavaScript` or the shared `executeExternalScript` helper. External scripts use unique private temporary directories, asynchronous file operations, and explicit interpreter argv. Cleanup runs even after write or launch failures. A cleanup failure adds `cleanupError` and a message suffix without changing the already completed execution result. These helpers are internal and are not exported.
 
 ### Supported Script Languages
 
@@ -226,7 +226,7 @@ chainResult.results.forEach(result => {
 
 ## Application Action (`src/main/actions/application.js`)
 
-The Application action module handles launching applications.
+The Application action module expands home-relative paths and launches the selected application with an argument array. On macOS, `open -a` separates application arguments with `--args`. Windows and Linux execute the path directly. See [argument syntax](../guide/actions.md#1-application-launch-application).
 
 ### Function
 
@@ -257,8 +257,8 @@ const winResult = await executeApplication({
 
 // Launch with parameters
 const paramResult = await executeApplication({
-  applicationPath: '/Applications/TextEdit.app',
-  applicationParameters: '/Users/username/document.txt'
+  applicationPath: '/Applications/Google Chrome.app',
+  applicationParameters: '--incognito https://example.com'
 });
 ```
 
@@ -321,7 +321,7 @@ Every action module implements the following error handling:
 1. **Script execution environment**: JavaScript scripts run in a `vm` context, but `require` (all built-in modules) and `Buffer` are exposed, so this is not a system-level sandbox. Environment variables are limited to a non-sensitive allowlist (`HOME`, `PATH`, etc.). Only run trusted scripts.
 2. **Path validation**: File and application paths are validated before execution. Application launches from the `open` action use an argument-array (`execFile`) approach that does not go through a shell, blocking injection.
 3. **Command escaping**: The `command` of an `exec` action runs as the user-defined shell command as-is; only `workingDir` and AppleScript arguments are escaped.
-4. **Remote action approval**: `exec`/`script` actions newly downloaded via cloud sync go through a user confirmation dialog before their first run on this device (`src/main/action-approval.js`).
+4. **Remote action approval**: Downloaded executable actions and native launches require device-local approval; see [the complete policy](../features/cloud-sync.md#download-validation-and-action-approval). Arguments passed without a shell can still invoke an interpreter.
 
 ## Performance Optimization
 

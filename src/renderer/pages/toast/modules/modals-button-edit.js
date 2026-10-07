@@ -25,13 +25,18 @@ import {
   scriptInputGroup,
   applicationInputGroup,
   chainInputGroup,
+  reloadIconButton,
 } from './dom-elements.js';
 import { showStatus } from './utils.js';
-import { pages, currentPageIndex, updateCurrentPageButtons } from './pages.js';
+import { UI_ICONS } from './constants.js';
+import { beginButtonEditContext, invalidateButtonEditContext, syncModalState } from './modal-state.js';
+import { getPageEditState, savePageEdit } from './pages.js';
 import { updateIconPreview } from './modals-icon-browser.js';
 
 // State variables
 let currentEditingButton = null;
+let editState = null;
+let saving = false;
 
 /**
  * Edit button settings (settings mode)
@@ -42,7 +47,23 @@ export function editButtonSettings(button) {
   showStatus(`Editing: ${button.name}`, 'info');
 
   // Save the button being edited (global variable)
-  currentEditingButton = button;
+  const nextEditState = getPageEditState();
+  const buttons = nextEditState.viewPages[nextEditState.index]?.buttons || [];
+  nextEditState.buttonIndex = buttons.findIndex(item => button.id ? item.id === button.id : item.shortcut === button.shortcut);
+  if (nextEditState.buttonIndex < 0) {
+    showStatus('The button changed. Reopen it before editing.', 'error');
+    return;
+  }
+  editState = nextEditState;
+  beginButtonEditContext();
+  if (reloadIconButton) {
+    reloadIconButton.disabled = false;
+    reloadIconButton.innerHTML = UI_ICONS.refresh;
+    reloadIconButton.title = 'Reload Icon from Application';
+  }
+  currentEditingButton = { ...buttons[editState.buttonIndex] };
+  button = currentEditingButton;
+  showButtonError('');
 
   // Fill form fields with current button values
   editButtonNameInput.value = button.name || '';
@@ -87,11 +108,14 @@ export function editButtonSettings(button) {
  * Close button edit modal
  */
 export function closeButtonEditModal() {
-  // Notify main process that modal is closed
-  window.toast.setModalOpen(false);
-
+  if (saving) {
+    return;
+  }
   buttonEditModal.classList.remove('show');
   currentEditingButton = null;
+  editState = null;
+  invalidateButtonEditContext();
+  syncModalState();
 }
 
 /**
@@ -105,6 +129,13 @@ export function showActionFields(actionType) {
   urlInputGroup.style.display = 'none';
   scriptInputGroup.style.display = 'none';
   chainInputGroup.style.display = 'none';
+
+  editButtonScriptInput.readOnly = actionType === 'script' && editButtonScriptTypeSelect.value === 'special';
+  editButtonScriptParamsInput.readOnly = editButtonScriptInput.readOnly;
+  if (editButtonScriptInput.readOnly) {
+    editButtonScriptInput.value = 'confetti';
+    editButtonScriptParamsInput.value = '';
+  }
 
   // Update icon field hint
   const iconHint = document.querySelector('.field-hint');
@@ -141,28 +172,29 @@ export function showActionFields(actionType) {
 /**
  * Save button settings
  */
-export function saveButtonSettings() {
-  if (!currentEditingButton) {
+export async function saveButtonSettings() {
+  if (!currentEditingButton || saving) {
     return;
   }
 
-  // Get current page and button index
-  const pageIndex = currentPageIndex;
-  const buttonIndex = pages[pageIndex].buttons.findIndex(b => b.shortcut === currentEditingButton.shortcut);
-
-  if (buttonIndex < 0) {
-    showStatus('Button not found.', 'error');
-    return;
-  }
+  const pageIndex = editState.index;
+  const buttonIndex = editState.buttonIndex;
+  showButtonError('');
 
   // Create new button object with input values
   const action = editButtonActionSelect.value;
   const updatedButton = {
+    ...currentEditingButton,
+    id: currentEditingButton.id || crypto.randomUUID(),
     name: editButtonNameInput.value.trim(),
     icon: editButtonIconInput.value.trim(),
     shortcut: currentEditingButton.shortcut.trim(), // Shortcut cannot be changed
     action,
   };
+
+  for (const key of ['applicationPath', 'applicationParameters', 'command', 'workingDir', 'runInTerminal', 'url', 'path', 'application', 'script', 'scriptType', 'scriptParams', 'actions', 'stopOnError']) {
+    delete updatedButton[key];
+  }
 
   // Set additional properties based on action type
   switch (action) {
@@ -205,6 +237,10 @@ export function saveButtonSettings() {
     case 'script':
       updatedButton.script = editButtonScriptInput.value.trim();
       updatedButton.scriptType = editButtonScriptTypeSelect.value;
+      if (updatedButton.scriptType === 'special') {
+        updatedButton.script = 'confetti';
+        break;
+      }
 
       // Add script parameters (parse as JSON format)
       if (editButtonScriptParamsInput.value.trim()) {
@@ -212,8 +248,8 @@ export function saveButtonSettings() {
           updatedButton.scriptParams = JSON.parse(editButtonScriptParamsInput.value.trim());
         }
         catch (error) {
-          showStatus('Script parameter JSON format is invalid. Using an empty object.', 'error');
-          updatedButton.scriptParams = {};
+          showButtonError('Script parameters must be valid JSON. Your draft is preserved.');
+          return;
         }
       }
       break;
@@ -226,28 +262,39 @@ export function saveButtonSettings() {
       break;
   }
 
-  // Update button
-  pages[pageIndex].buttons[buttonIndex] = updatedButton;
-
-  // Update current page buttons
-  updateCurrentPageButtons(pages[pageIndex].buttons);
-
-  // Save configuration
-  window.toast
-    .saveConfig({ pages })
-    .then(() => {
-      // Close modal
-      closeButtonEditModal();
-
-      // Update UI - stay on current page
-      import('./buttons.js').then(({ showCurrentPageButtons }) => {
-        showCurrentPageButtons();
-      });
-
-      // Show success message
-      showStatus(`Button "${updatedButton.name}" settings have been updated.`, 'success');
-    })
-    .catch(error => {
-      showStatus(`Error saving settings: ${error}`, 'error');
+  const nextPages = JSON.parse(JSON.stringify(editState.pages));
+  nextPages[pageIndex] = {
+    ...nextPages[pageIndex],
+    id: nextPages[pageIndex].id || crypto.randomUUID(),
+    buttons: editState.viewPages[pageIndex].buttons.map((button, index) => index === buttonIndex ? updatedButton : button),
+  };
+  saving = true;
+  const controls = buttonEditModal.querySelectorAll('input, textarea, select, button');
+  controls.forEach(control => {
+    control.disabled = true;
+  });
+  try {
+    await savePageEdit(nextPages, editState);
+    saving = false;
+    closeButtonEditModal();
+    showStatus(`Button "${updatedButton.name}" settings have been updated.`, 'success');
+  }
+  catch (error) {
+    showButtonError(error.message);
+  }
+  finally {
+    saving = false;
+    controls.forEach(control => {
+      control.disabled = false;
     });
+  }
+}
+
+function showButtonError(message) {
+  const element = document.getElementById('button-edit-error');
+  element.textContent = message;
+  element.classList.toggle('hidden', !message);
+  if (message) {
+    element.scrollIntoView({ block: 'nearest' });
+  }
 }

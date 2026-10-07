@@ -66,7 +66,6 @@ jest.mock('../../src/main/auth-manager', () => ({
   exchangeCodeForToken: jest.fn(),
   logout: jest.fn(),
   fetchUserProfile: jest.fn(),
-  getUserSettings: jest.fn(),
   fetchSubscription: jest.fn(),
   getAccessToken: jest.fn(),
 }));
@@ -172,7 +171,7 @@ describe('Main IPC Handlers (P0)', () => {
         'validate-action',
         'get-config',
         'set-config',
-        'save-config',
+        'save-pages',
         'initiate-login',
         'logout',
         'fetch-user-profile',
@@ -276,20 +275,12 @@ describe('Main IPC Handlers (P0)', () => {
       expect(result).toBe(true);
     });
 
-    test('should handle save-config requests', async () => {
-      const mockEvent = {};
-      const changes = {
-        globalHotkey: 'Ctrl+Space',
-        pages: [{ id: '1', buttons: [] }],
-      };
-
-      // Mock config.get for subscription data used in the handler
-      mockConfig.get.mockReturnValue({});
-
-      const result = await ipcHandlers['save-config'](mockEvent, changes);
-
-      expect(mockConfig.set).toHaveBeenCalledWith('globalHotkey', 'Ctrl+Space');
-      expect(mockConfig.set).toHaveBeenCalledWith('pages', changes.pages);
+    test('saves a batch of preferences in one store update', async () => {
+      const changes = { globalHotkey: 'Ctrl+Space', appearance: { theme: 'light' } };
+      mockConfig.get.mockImplementation(key => key === 'pages' ? [] : key === 'subscription' ? {} : undefined);
+      const result = await ipcHandlers['set-config']({}, null, changes);
+      expect(mockConfig.set).toHaveBeenCalledWith(changes);
+      expect(mockConfig.set).toHaveBeenCalledTimes(1);
       expect(result).toBe(true);
     });
 
@@ -530,7 +521,7 @@ describe('Main IPC Handlers (P0)', () => {
       const result = await ipcHandlers['extract-app-icon'](mockEvent, applicationPath, forceRefresh);
 
       expect(extractAppNameFromPath).toHaveBeenCalledWith(applicationPath);
-      expect(extractAppIcon).toHaveBeenCalledWith('Calculator', null, forceRefresh);
+      expect(extractAppIcon).toHaveBeenCalledWith(applicationPath, null, forceRefresh);
       expect(result).toEqual({
         success: true,
         iconUrl: 'file:///path/to/icon.png',

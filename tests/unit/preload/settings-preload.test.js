@@ -84,6 +84,7 @@ describe('Settings Preload Script', () => {
 
     test('should expose authentication methods', () => {
       expect(settingsAPI.initiateLogin).toBeDefined();
+      expect(settingsAPI.exchangeCodeForToken).toBeUndefined();
       expect(settingsAPI.logout).toBeDefined();
       expect(settingsAPI.fetchUserProfile).toBeDefined();
       expect(settingsAPI.fetchSubscription).toBeDefined();
@@ -154,13 +155,13 @@ describe('Settings Preload Script', () => {
     test('should call fetch-user-profile through IPC', () => {
       settingsAPI.fetchUserProfile();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile', false);
     });
 
     test('should call fetch-subscription through IPC', () => {
       settingsAPI.fetchSubscription();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription', false);
     });
   });
 
@@ -417,4 +418,11 @@ describe('Settings Preload Script', () => {
       });
     });
   });
+  test('forwards sync progress and failure status to the renderer', () => {
+    const listener = mockIpcRenderer.on.mock.calls.find(([name]) => name === 'cloud-sync-status')[1];
+    const status = { enabled: true, error: 'Conflict', isConflicted: true };
+    listener({}, status);
+    expect(mockWindow.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'cloud-sync-status', detail: status }));
+  });
+
 });

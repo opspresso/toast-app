@@ -17,7 +17,7 @@ Environment variables can be set in the following ways:
 
 Create a `.env` or `.env.local` file in the `src/main/config/` directory to set environment variables.
 
-**Loading priority**: `.env.local` (local development environment) > `.env` (default environment)
+**Loading priority**: `.env.local` > existing process environment > `.env`. The local file loads with `override: true`.
 
 ```bash
 # .env file example
@@ -58,7 +58,7 @@ These are the environment variables used for user authentication and API communi
 |--------|--------|------|------|
 | `CLIENT_ID` | - | OAuth client ID | `toast_app_client_id` |
 | `CLIENT_SECRET` | - | OAuth client secret | `your_client_secret` |
-| `CONFIG_SUFFIX` | - | When running multiple instances simultaneously, isolates the auth token file (`auth-tokens-${CONFIG_SUFFIX}.json`) and the settings store (`config-${CONFIG_SUFFIX}.json`) together (defaults to `auth-tokens.json` and `config.json` respectively when unset) | `dev` |
+| `CONFIG_SUFFIX` | - | When running multiple instances simultaneously, isolates the OAuth state store as well as the auth token file (`auth-tokens-${CONFIG_SUFFIX}.json`) and the settings store (`config-${CONFIG_SUFFIX}.json`) together (defaults to `auth-tokens.json` and `config.json` respectively when unset) | `dev` |
 
 ### Authentication Variable Example
 
@@ -102,8 +102,8 @@ TOKEN_EXPIRES_IN=3600
 **Token expiration time details**:
 - The `expires_in` value in the server response always takes priority; `TOKEN_EXPIRES_IN` is the fallback for when the server does not provide a value.
 - **31536000**: 1 year (default setting)
-- **Negative value (-1)**: Sets the token as unlimited (effectively permanent)
-- **0**: Treated as a falsy value and replaced with the default (1 year)
+- **Negative fallback (-1)**: Stores a distant local expiry for legacy compatibility; server JWT expiry and revocation still apply
+- **0**: Immediately expired; the next authenticated operation must refresh
 - **Positive value**: The token is valid for that number of seconds
 
 ## Application Settings Variables
@@ -114,7 +114,7 @@ These are the environment variables used for the application's basic settings.
 |--------|--------|------|------|
 | `TOAST_URL` | `https://toastapp.dev` | Toast web service URL | `https://toastapp.dev` |
 | `NODE_ENV` | - | Runtime environment mode (development/production) | `development` |
-| `AUTO_INSTALL_UPDATES` | - | If `true`, installs updates automatically once the download completes | `true` |
+| `AUTO_INSTALL_UPDATES` | - | If `true`, prompts to restart and install when a download completes | `true` |
 
 ### NODE_ENV Setting
 
@@ -208,7 +208,7 @@ NODE_ENV=development
 ### Token-related problems
 
 1. Verify the `TOKEN_EXPIRES_IN` value is in the correct format (a number)
-2. Use 0 or a negative value to set an indefinite token
+2. Check the server response: a nonnegative numeric `expires_in` overrides this fallback, including zero
 3. Verify the token expiration time is not too short
 
 ## Related Documents

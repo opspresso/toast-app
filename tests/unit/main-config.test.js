@@ -223,55 +223,25 @@ describe('Main Config Module (P0)', () => {
       }
     });
 
-    test('should create multiple store instances', () => {
+    test('reuses one store instance so change listeners observe every write', () => {
       const store1 = config.createConfigStore();
       const store2 = config.createConfigStore();
 
-      // Both calls should return store-like objects
+      // Both callers share the store that owns validation and change listeners.
       expect(store1).toBeDefined();
       expect(store2).toBeDefined();
       expect(store1).toBe(mockStore);
       expect(store2).toBe(mockStore);
+      expect(require('electron-store')).toHaveBeenCalledTimes(1);
     });
 
-    test('should handle store creation errors', () => {
-      // Clear the Store mock and re-mock it for this specific test
-      jest.clearAllMocks();
+    test('reports store creation errors without retrying with validation disabled', () => {
       const Store = require('electron-store');
-      
-      let callCount = 0;
-      Store.mockImplementation((options) => {
-        callCount++;
-        // First call is migration store (without schema)
-        // Second call is the real store (with schema) - make this one fail
-        if (callCount === 2 && options && options.schema) {
-          throw new Error('Store creation failed');
-        }
-        // All other calls return mockStore
-        return mockStore;
-      });
-
-      // The function should handle errors gracefully and create a schema-less store
-      const store = config.createConfigStore();
-      expect(store).toBeDefined();
-      expect(store).toBe(mockStore);
-      
-      // Verify the call sequence:
-      // 1. Migration store (no schema)
-      // 2. Real store with schema (fails) 
-      // 3. Fallback store (no schema)
-      expect(Store).toHaveBeenCalledTimes(3);
-      expect(Store).toHaveBeenNthCalledWith(1, expect.objectContaining({ 
-        schema: null,
-        clearInvalidConfig: false
-      }));
-      expect(Store).toHaveBeenNthCalledWith(2, expect.objectContaining({ 
-        schema: config.schema 
-      }));
-      expect(Store).toHaveBeenNthCalledWith(3, expect.objectContaining({ 
-        schema: null,
-        clearInvalidConfig: false
-      }));
+      Store.mockClear();
+      Store.mockImplementationOnce(() => { throw new Error('Store creation failed'); });
+      expect(() => config.createConfigStore()).toThrow('could not read or validate');
+      expect(Store).toHaveBeenCalledTimes(1);
+      expect(Store).toHaveBeenCalledWith(expect.objectContaining({ schema: config.schema, clearInvalidConfig: false }));
     });
   });
 
@@ -285,7 +255,7 @@ describe('Main Config Module (P0)', () => {
     test('should reset to defaults', () => {
       config.resetToDefaults(store);
 
-      expect(store.clear).toHaveBeenCalled();
+      expect(store.clear).not.toHaveBeenCalled();
     });
 
     test('should export configuration', () => {
@@ -303,7 +273,7 @@ describe('Main Config Module (P0)', () => {
       const filePath = '/test/path/config.json';
       const configToImport = {
         globalHotkey: 'Ctrl+Space',
-        pages: [{ id: '1', buttons: [] }],
+        pages: [{ id: '1', name: 'Imported', buttons: [] }],
         appearance: { theme: 'dark', position: 'top' },
         advanced: { launchAtLogin: true },
       };
@@ -313,9 +283,8 @@ describe('Main Config Module (P0)', () => {
 
       const result = config.importConfig(store, filePath);
 
-      expect(store.clear).toHaveBeenCalled();
-      expect(store.set).toHaveBeenCalledWith('globalHotkey', configToImport.globalHotkey);
-      expect(store.set).toHaveBeenCalledWith('pages', configToImport.pages);
+      expect(store.clear).not.toHaveBeenCalled();
+      expect(store.set).toHaveBeenCalledWith(expect.objectContaining({ globalHotkey: configToImport.globalHotkey, pages: configToImport.pages }));
       expect(result).toBe(true);
     });
 
@@ -325,13 +294,13 @@ describe('Main Config Module (P0)', () => {
         appearance: null,
       };
 
-      config.importConfig(store, invalidConfig);
-      
-      // Should handle invalid config gracefully by sanitizing data
-      expect(store.set).toHaveBeenCalled();
+      mockFs.readFileSync.mockReturnValue(JSON.stringify(invalidConfig));
+      store.set.mockClear();
+      expect(config.importConfig(store, '/test/invalid.json')).toBe(false);
+      expect(store.set).not.toHaveBeenCalled();
     });
 
-    test('should sanitize subscription data', () => {
+    test('converts supported legacy representations before validating the full file', () => {
       const subscription = {
         id: 'sub_123',
         active: true,
@@ -341,7 +310,8 @@ describe('Main Config Module (P0)', () => {
         extraneous: 'should be preserved',
       };
 
-      const sanitized = config.sanitizeSubscription(subscription);
+      const { deserialize } = require('electron-store').mock.calls.at(-1)[0];
+      const sanitized = deserialize(JSON.stringify({ subscription })).subscription;
 
       expect(sanitized).toBeDefined();
       expect(sanitized.id).toBe('sub_123');
@@ -405,37 +375,8 @@ describe('Main Config Module (P0)', () => {
       expect(hash1).not.toBe(hash2);
     });
 
-    test('should update sync metadata', () => {
-      const metadata = {
-        lastModifiedAt: Date.now(),
-        dataHash: 'new-hash',
-        isConflicted: false,
-      };
 
-      config.updateSyncMetadata(store, metadata);
 
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining(metadata));
-    });
-
-    test('should mark as modified', () => {
-      config.markAsModified(store, 'device-123');
-
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
-        lastModifiedDevice: 'device-123',
-        isConflicted: false,
-      }));
-    });
-
-    test('should mark as synced', () => {
-      config.markAsSynced(store, 'device-123');
-
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
-        lastSyncedDevice: 'device-123',
-        isConflicted: false,
-        dataHash: expect.any(String),
-        lastSyncedAt: expect.any(Number),
-      }));
-    });
 
     test('should check for unsynced changes when hash differs', () => {
       // Mock different hashes to simulate changes
@@ -475,20 +416,7 @@ describe('Main Config Module (P0)', () => {
       expect(hasChanges).toBe(true);
     });
 
-    test('should mark as conflicted', () => {
-      config.markAsConflicted(store);
 
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.objectContaining({
-        isConflicted: true,
-      }));
-    });
-
-    test('should get sync metadata', () => {
-      const metadata = config.getSyncMetadata(store);
-
-      expect(store.get).toHaveBeenCalledWith('_sync');
-      expect(metadata).toBeDefined();
-    });
   });
 
   describe('Error Handling', () => {
@@ -525,29 +453,6 @@ describe('Main Config Module (P0)', () => {
   });
 
   describe('Integration Tests', () => {
-    test('should handle complete config lifecycle', () => {
-      const store = config.createConfigStore();
-      
-      // Export initial config (requires filePath parameter)
-      const exported = config.exportConfig(store, '/test/export.json');
-      expect(exported).toBe(true);
-      
-      // Modify and mark as modified
-      config.markAsModified(store);
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.any(Object));
-      
-      // Check for unsynced changes
-      const hasChanges = config.hasUnsyncedChanges(store);
-      expect(typeof hasChanges).toBe('boolean');
-      
-      // Mark as synced
-      config.markAsSynced(store);
-      expect(store.set).toHaveBeenCalledWith('_sync', expect.any(Object));
-      
-      // Get final metadata
-      const metadata = config.getSyncMetadata(store);
-      expect(metadata).toBeDefined();
-    });
 
     test('should handle schema validation through store creation', () => {
       // Test that createConfigStore returns a valid store object

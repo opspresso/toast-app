@@ -5,24 +5,11 @@
 // State
 export let config = {};
 export let isRecordingHotkey = false;
-export let unsavedChanges = false;
 export const authState = {
   isLoggedIn: false,
   profile: null,
   subscription: null,
 };
-
-// Object for tracking tab initialization state
-export const tabInitState = {
-  settings: false,
-  account: false,
-  snippets: false,
-  about: false,
-};
-
-// State management to prevent duplicate calls
-export let authStateInitialized = false;
-export let profileDataFetchInProgress = false;
 
 /**
  * Update config state
@@ -41,48 +28,9 @@ export function setRecordingHotkey(recording) {
 }
 
 /**
- * Mark settings as having unsaved changes
- */
-export function markUnsavedChanges() {
-  unsavedChanges = true;
-}
-
-/**
- * Clear unsaved changes flag
- */
-export function clearUnsavedChanges() {
-  unsavedChanges = false;
-}
-
-/**
  * Update auth state
  * @param {Object} newAuthState - New auth state
  */
 export function updateAuthState(newAuthState) {
   Object.assign(authState, newAuthState);
-}
-
-/**
- * Set tab initialization state
- * @param {string} tabId - Tab ID
- * @param {boolean} initialized - Initialization state
- */
-export function setTabInitState(tabId, initialized) {
-  tabInitState[tabId] = initialized;
-}
-
-/**
- * Set auth state initialization flag
- * @param {boolean} initialized - Initialization state
- */
-export function setAuthStateInitialized(initialized) {
-  authStateInitialized = initialized;
-}
-
-/**
- * Set profile data fetch progress flag
- * @param {boolean} inProgress - Fetch progress state
- */
-export function setProfileDataFetchInProgress(inProgress) {
-  profileDataFetchInProgress = inProgress;
 }

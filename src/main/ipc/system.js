@@ -4,12 +4,13 @@
  * Handlers for dialogs, shell, shortcuts, app version, logging, and icon extraction.
  */
 
-const { ipcMain, dialog, shell } = require('electron');
-const { unregisterGlobalShortcuts, registerGlobalShortcuts } = require('../shortcuts');
+const { app, ipcMain, dialog, shell } = require('electron');
+const { unregisterGlobalShortcuts, registerGlobalShortcuts, notifyRegistrationFailure } = require('../shortcuts');
 const { createLogger, handleIpcLogging } = require('../logger');
 const { extractAppIcon, extractAppNameFromPath, convertToTildePath, resolveTildePath } = require('../utils/app-icon-extractor');
 const authManager = require('../auth-manager');
 const apiIcons = require('../api/icons');
+const { getSessionVersion } = require('../api/client');
 
 const logger = createLogger('IPC');
 
@@ -19,6 +20,24 @@ const logger = createLogger('IPC');
  * @param {Object} config - Shared config store
  */
 function setupSystemHandlers(windows, config) {
+  let recordingSender = null;
+  const releaseRecording = () => {
+    recordingSender?.removeListener('destroyed', restoreAfterClose);
+    recordingSender = null;
+  };
+  const restoreAfterClose = () => {
+    releaseRecording();
+    if (!app.isQuitting) {
+      try {
+        if (!registerGlobalShortcuts(config, windows) && config.get('globalHotkey')) {
+          notifyRegistrationFailure(config.get('globalHotkey'));
+        }
+      }
+      catch (error) {
+        logger.error('Error restoring shortcuts after settings closed:', error);
+      }
+    }
+  };
   // Open URL in external browser
   ipcMain.handle('open-url', async (event, url) => {
     try {
@@ -33,10 +52,15 @@ function setupSystemHandlers(windows, config) {
 
   // Handlers for shortcut recording
   // Temporarily disable all shortcuts
-  ipcMain.handle('temporarily-disable-shortcuts', () => {
+  ipcMain.handle('temporarily-disable-shortcuts', event => {
     try {
       // Disable all currently set global shortcuts
       unregisterGlobalShortcuts();
+      releaseRecording();
+      if (event?.sender) {
+        recordingSender = event.sender;
+        recordingSender.once('destroyed', restoreAfterClose);
+      }
       return true;
     }
     catch (error) {
@@ -48,6 +72,7 @@ function setupSystemHandlers(windows, config) {
   // Restore shortcuts
   ipcMain.handle('restore-shortcuts', () => {
     try {
+      releaseRecording();
       // Register global shortcuts again
       return registerGlobalShortcuts(config, windows);
     }
@@ -120,24 +145,32 @@ function setupSystemHandlers(windows, config) {
 
   // Extract app icon from application path
   ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false) => {
+    const session = getSessionVersion();
     try {
       const appName = extractAppNameFromPath(applicationPath);
       if (!appName) {
         return { success: false, error: 'Could not extract app name' };
       }
 
-      const iconPath = await extractAppIcon(appName, null, forceRefresh);
+      const iconPath = await extractAppIcon(applicationPath, null, forceRefresh === true);
       if (!iconPath) {
         return { success: false, error: 'Could not extract icon' };
       }
 
+      if (session !== getSessionVersion()) {
+        return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+      }
       const tildePath = convertToTildePath(iconPath);
 
       // For authenticated users, upload the icon to the server (S3) to obtain a cross-device shareable URL.
       // Failure does not affect local icon behavior (only the remoteUrl field is omitted).
       let remoteUrl = null;
       try {
-        if (await authManager.hasValidToken()) {
+        const hasToken = await authManager.hasValidToken();
+        if (session !== getSessionVersion()) {
+          return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+        }
+        if (hasToken) {
           const uploadResult = await apiIcons.uploadIcon({
             filePath: iconPath,
             onUnauthorized: authManager.refreshAccessToken,
@@ -151,6 +184,9 @@ function setupSystemHandlers(windows, config) {
         logger.debug(`Icon upload skipped: ${uploadError.message}`);
       }
 
+      if (session !== getSessionVersion()) {
+        return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+      }
       return {
         success: true,
         iconUrl: `file://${iconPath}`,

@@ -80,7 +80,7 @@ describe('Executor', () => {
       
       const result = await executeAction(action);
       
-      expect(ensureApproved).not.toHaveBeenCalled();
+      expect(ensureApproved).toHaveBeenCalledWith(action);
       expect(executeApplication).toHaveBeenCalledWith(action);
       expect(result).toEqual(expectedResult);
     });
@@ -117,13 +117,13 @@ describe('Executor', () => {
       expect(result.success).toBe(false);
     });
 
-    test('should not require approval for non-risky actions', async () => {
+    test('should execute web links after the approval module allows them', async () => {
       const action = { action: 'open', url: 'https://example.com' };
       openItem.mockResolvedValue({ success: true });
 
       await executeAction(action);
 
-      expect(ensureApproved).not.toHaveBeenCalled();
+      expect(ensureApproved).toHaveBeenCalledWith(action);
     });
 
     test('should execute open action', async () => {

@@ -107,7 +107,7 @@ describe('Toast Preload Script', () => {
     test('should expose configuration and action methods', () => {
       expect(toastAPI.getConfig).toBeDefined();
       expect(toastAPI.executeAction).toBeDefined();
-      expect(toastAPI.saveConfig).toBeDefined();
+      expect(toastAPI.savePages).toBeDefined();
     });
 
     test('should expose window control methods', () => {
@@ -184,90 +184,19 @@ describe('Toast Preload Script', () => {
     test('should call fetch-user-profile through IPC', () => {
       toastAPI.fetchUserProfile();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-user-profile', false);
     });
 
     test('should call fetch-subscription through IPC', () => {
       toastAPI.fetchSubscription();
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('fetch-subscription', false);
     });
 
     test('should call logout through IPC', () => {
       toastAPI.logout();
       
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('logout');
-    });
-  });
-
-  describe('Restricted invoke Function', () => {
-    test('should allow whitelisted channels', () => {
-      const allowedChannels = ['logout', 'resetToDefaults', 'resetAppSettings'];
-      
-      allowedChannels.forEach(channel => {
-        toastAPI.invoke(channel, 'test-arg');
-        expect(mockIpcRenderer.invoke).toHaveBeenCalledWith(channel, 'test-arg');
-      });
-    });
-
-    test('should reject disallowed channels', () => {
-      expect(() => {
-        toastAPI.invoke('malicious-channel', 'test-arg');
-      }).toThrow('Disallowed channel: malicious-channel');
-    });
-  });
-
-  describe('resetToDefaults Function', () => {
-    beforeEach(() => {
-      mockIpcRenderer.invoke.mockResolvedValue({ success: true });
-    });
-
-    test('should reset to defaults without keeping anything', async () => {
-      mockIpcRenderer.invoke.mockResolvedValue({ success: true });
-      
-      const result = await toastAPI.resetToDefaults();
-      
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('resetToDefaults');
-      expect(result).toEqual({ success: true, message: 'Settings have been reset to defaults.' });
-    });
-
-    test('should backup and restore appearance settings when keepAppearance is true', async () => {
-      const mockAppearance = { theme: 'dark', fontSize: 'large' };
-      mockIpcRenderer.invoke
-        .mockResolvedValueOnce(mockAppearance) // get-config for appearance
-        .mockResolvedValueOnce({ success: true }) // resetToDefaults
-        .mockResolvedValueOnce({ success: true }); // save-config
-      
-      const result = await toastAPI.resetToDefaults({ keepAppearance: true });
-      
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('get-config', 'appearance');
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('resetToDefaults');
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('save-config', { appearance: mockAppearance });
-      expect(result).toEqual({ success: true, message: 'Settings have been reset to defaults.' });
-    });
-
-    test('should handle reset errors gracefully', async () => {
-      const testError = new Error('Reset failed');
-      mockIpcRenderer.invoke.mockRejectedValueOnce(testError);
-
-      const result = await toastAPI.resetToDefaults();
-
-      expect(result).toEqual({
-        success: false,
-        error: 'Reset failed'
-      });
-    });
-
-    test('should handle reset errors without message gracefully', async () => {
-      const emptyError = new Error('');
-      mockIpcRenderer.invoke.mockRejectedValueOnce(emptyError);
-
-      const result = await toastAPI.resetToDefaults();
-
-      expect(result).toEqual({
-        success: false,
-        error: 'An error occurred while resetting settings.'
-      });
     });
   });
 
@@ -322,12 +251,11 @@ describe('Toast Preload Script', () => {
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('get-config', testKey);
     });
 
-    test('should call save-config with config parameter', () => {
-      const testConfig = { pages: [{ id: 1, buttons: [] }] };
-      
-      toastAPI.saveConfig(testConfig);
-      
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('save-config', testConfig);
+    test('sends page edits with the original snapshot and account session', () => {
+      const pages = [{ id: 'page', name: 'Test', buttons: [] }];
+      const base = { pages: [], session: 0 };
+      toastAPI.savePages(pages, base);
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('save-pages', pages, base);
     });
 
     test('should not expose getEnv (environment variables are main-process only)', () => {
@@ -420,7 +348,7 @@ describe('Toast Preload Script', () => {
       
       // Test cleanup function
       cleanup();
-      expect(mockIpcRenderer.removeListener).toHaveBeenCalledWith('config-updated', callback);
+      expect(mockIpcRenderer.removeListener).toHaveBeenCalledWith('config-updated', mockIpcRenderer.on.mock.calls.find(([name]) => name === 'config-updated')[1]);
     });
 
     test('should register login-success listener and return cleanup function', () => {
@@ -432,7 +360,7 @@ describe('Toast Preload Script', () => {
       expect(typeof cleanup).toBe('function');
       
       cleanup();
-      expect(mockIpcRenderer.removeListener).toHaveBeenCalledWith('login-success', callback);
+      expect(mockIpcRenderer.removeListener).toHaveBeenCalledWith('login-success', mockIpcRenderer.on.mock.calls.find(([name]) => name === 'login-success')[1]);
     });
 
     test('should register login-error listener and return cleanup function', () => {

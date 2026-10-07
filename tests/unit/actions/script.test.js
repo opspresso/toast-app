@@ -5,11 +5,9 @@
  */
 
 // Mock dependencies
-jest.mock('fs', () => ({
-  writeFileSync: jest.fn(),
-  unlinkSync: jest.fn(),
-  chmodSync: jest.fn(),
-}));
+jest.mock('fs', () => ({ promises: {
+  mkdtemp: jest.fn(), writeFile: jest.fn(), rm: jest.fn(),
+} }));
 
 jest.mock('path', () => ({
   join: jest.fn((...parts) => parts.join('/')),
@@ -20,7 +18,7 @@ jest.mock('os', () => ({
 }));
 
 jest.mock('child_process', () => ({
-  exec: jest.fn(),
+  execFile: jest.fn(),
 }));
 
 jest.mock('vm', () => ({
@@ -44,10 +42,10 @@ jest.mock('../../../src/main/logger', () => ({
 }));
 
 const { executeScript } = require('../../../src/main/actions/script');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const vm = require('vm');
 const { app } = require('electron');
 
@@ -62,9 +60,10 @@ describe('Script Action', () => {
     originalPlatform = process.platform;
     
     // Setup default mock implementations
-    // exec is called as exec(command, options, callback); tolerate the optional options arg
-    exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
-      const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
+    fs.mkdtemp.mockImplementation(async prefix => prefix + 'unique');
+    fs.writeFile.mockResolvedValue(undefined);
+    fs.rm.mockResolvedValue(undefined);
+    execFile.mockImplementation((command, args, options, callback) => {
       callback(null, 'mock stdout', 'mock stderr');
     });
     
@@ -269,12 +268,12 @@ describe('Script Action', () => {
 
       const result = await executeScript(action);
 
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('toast-applescript-'),
-        'display dialog "Hello World"'
+        'display dialog "Hello World"', { mode: 0o600 }
       );
-      expect(exec).toHaveBeenCalledWith(
-        expect.stringContaining('osascript'),
+      expect(execFile).toHaveBeenCalledWith(
+        'osascript', [expect.stringContaining('script.scpt')],
         expect.any(Object),
         expect.any(Function)
       );
@@ -315,8 +314,7 @@ describe('Script Action', () => {
       };
 
       const error = new Error('AppleScript error');
-      exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
-        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
+      execFile.mockImplementation((command, args, options, callback) => {
         callback(error, null, 'error output');
       });
 
@@ -340,8 +338,8 @@ describe('Script Action', () => {
 
       await executeScript(action);
 
-      expect(fs.unlinkSync).toHaveBeenCalledWith(
-        expect.stringContaining('toast-applescript-')
+      expect(fs.rm).toHaveBeenCalledWith(
+        expect.stringContaining('toast-applescript-'), { recursive: true, force: true }
       );
     });
 
@@ -355,14 +353,16 @@ describe('Script Action', () => {
         scriptType: 'applescript',
       };
 
-      fs.unlinkSync.mockImplementation(() => {
+      fs.rm.mockImplementation(() => {
         throw new Error('File deletion error');
       });
 
       const result = await executeScript(action);
 
-      // Should still succeed despite cleanup error
+      // Execution completed, but cleanup failure remains visible to the caller.
       expect(result.success).toBe(true);
+      expect(result.cleanupError).toContain('Could not remove');
+      expect(result.message).toContain('cleanup failed');
     });
   });
 
@@ -379,12 +379,12 @@ describe('Script Action', () => {
 
       const result = await executeScript(action);
 
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('toast-powershell-'),
-        'Write-Host "Hello World"'
+        'Write-Host "Hello World"', { mode: 0o600 }
       );
-      expect(exec).toHaveBeenCalledWith(
-        expect.stringContaining('powershell -ExecutionPolicy Bypass'),
+      expect(execFile).toHaveBeenCalledWith(
+        'powershell', ['-ExecutionPolicy', 'Bypass', '-File', expect.stringContaining('script.ps1')],
         expect.any(Object),
         expect.any(Function)
       );
@@ -425,8 +425,7 @@ describe('Script Action', () => {
       };
 
       const error = new Error('PowerShell error');
-      exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
-        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
+      execFile.mockImplementation((command, args, options, callback) => {
         callback(error, null, 'error output');
       });
 
@@ -452,16 +451,12 @@ describe('Script Action', () => {
 
       const result = await executeScript(action);
 
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('toast-bash-'),
-        'echo "Hello World"'
+        'echo "Hello World"', { mode: 0o600 }
       );
-      expect(fs.chmodSync).toHaveBeenCalledWith(
-        expect.stringContaining('toast-bash-'),
-        '755'
-      );
-      expect(exec).toHaveBeenCalledWith(
-        expect.stringContaining('/tmp/toast-bash-'),
+      expect(execFile).toHaveBeenCalledWith(
+        'bash', ['--', expect.stringContaining('script.sh')],
         expect.any(Object),
         expect.any(Function)
       );
@@ -518,8 +513,7 @@ describe('Script Action', () => {
       };
 
       const error = new Error('Bash error');
-      exec.mockImplementation((command, optionsOrCallback, maybeCallback) => {
-        const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
+      execFile.mockImplementation((command, args, options, callback) => {
         callback(error, null, 'error output');
       });
 
@@ -617,7 +611,7 @@ describe('Script Action', () => {
       };
 
       const error = new Error('File system error');
-      fs.writeFileSync.mockImplementation(() => {
+      fs.writeFile.mockImplementation(() => {
         throw error;
       });
 

@@ -2,6 +2,8 @@
  * Toast - Authentication and User Management
  */
 
+import { syncModalState } from './modal-state.js';
+
 import { SUBSCRIPTION_URL, DASHBOARD_URL, UI_ICONS } from './constants.js';
 import {
   loginLoadingOverlay,
@@ -394,7 +396,7 @@ export function updateProfileDisplay() {
  */
 export function hideProfileModal() {
   profileModal.classList.remove('show');
-  window.toast.setModalOpen(false);
+  syncModalState();
 }
 
 /**
@@ -437,59 +439,6 @@ export async function handleLogout() {
   catch (error) {
     console.error('Logout error:', error);
     showStatus(`Logout error: ${error.message || 'Unknown error'}`, 'error');
-  }
-}
-
-/**
- * Reset app settings to default values
- * @param {Object} options - Reset options
- * @param {boolean} options.keepAppearance - Whether to keep appearance settings
- * @returns {Promise<Object>} Result object
- */
-export async function resetToDefaults(options = { keepAppearance: true }) {
-  try {
-    showStatus('Resetting settings...', 'info');
-
-    // Call resetToDefaults function (exposed from preload)
-    const result = await window.toast.resetToDefaults(options);
-
-    if (result.success) {
-      showStatus('Settings have been reset to defaults.', 'success');
-      return { success: true };
-    }
-    else {
-      showStatus(`Failed to reset settings: ${result.error}`, 'error');
-      return { success: false, error: result.error };
-    }
-  }
-  catch (error) {
-    console.error('Error resetting settings:', error);
-    showStatus(`Error resetting settings: ${error.message || 'Unknown error'}`, 'error');
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Handle page limit for unauthenticated users after logout
- */
-export async function handlePageLimitAfterLogout() {
-  // Import pages module dynamically to avoid circular dependency
-  const { pages, renderPagingButtons } = await import('./pages.js');
-  const { showCurrentPageButtons } = await import('./buttons.js');
-
-  // Limit number of pages (unauthenticated users are limited to 1 page)
-  if (pages.length > 1) {
-    // Keep only the first page and delete the rest
-    pages.splice(1); // Remove all pages except the first one
-
-    // Update UI
-    renderPagingButtons();
-    showCurrentPageButtons();
-
-    // Save configuration
-    await window.toast.saveConfig({ pages });
-
-    showStatus('Unauthenticated users can only use 1 page. Only the first page has been kept.', 'info');
   }
 }
 

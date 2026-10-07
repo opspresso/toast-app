@@ -28,7 +28,7 @@ The Toast app's configuration file is stored in the following locations dependin
 - **Windows**: `%APPDATA%\Toast\config.json`
 - **Linux**: `~/.config/Toast/config.json`
 
-The configuration file is stored in JSON format and can be modified through the app's settings UI or edited directly with a text editor.
+The configuration file is JSON. Prefer the app UI. Quit Toast before editing it directly, and retain a backup. Invalid files stop startup without replacing the original. `CONFIG_SUFFIX` changes the filename to `config-<suffix>.json`.
 
 ## Configuration Options
 
@@ -113,7 +113,7 @@ The configuration file is stored in JSON format and can be modified through the 
 | `appearance.opacity` | number | `0.95` | Toast popup opacity (0.1 - 1.0) |
 | `appearance.buttonLayout` | string | `"grid"` | Button layout (`"grid"`, `"list"`) |
 
-> The entire `appearance` object is synced to the cloud as a single unit.
+> The `appearance` object is synchronized. The app merges independent field changes against its baseline.
 
 **Example**:
 ```json
@@ -155,9 +155,9 @@ The configuration file is stored in JSON format and can be modified through the 
 | `subscription.isSubscribed` | boolean | `false` | Whether the user has a premium subscription |
 | `subscription.isAuthenticated` | boolean | `false` | User authentication status |
 | `subscription.expiresAt` | string | `""` | Subscription expiration date (ISO string) |
-| `subscription.pageGroups` | number | `1` | Maximum number of page groups the user can create |
+| `subscription.pageGroups` | integer (1–9) | `1` | Maximum number of page groups the user can create |
 
-At login, `updatePageGroupSettings` (`src/main/auth.js`) additionally stores the following fields (dynamic fields outside the schema):
+`auth-manager.js` normalizes verified server profiles through `subscription.js` and stores these additional fields:
 
 | Field | Description |
 |------|------|
@@ -182,7 +182,7 @@ At login, `updatePageGroupSettings` (`src/main/auth.js`) additionally stores the
 - **Authenticated users**: up to 3 pages
 - **Premium subscribers**: up to 9 pages
 
-The actual number of page groups applied is determined dynamically based on the user's authentication and subscription status, in functions such as `updatePageGroupSettings` in `src/main/auth.js`.
+`normalizeSubscription` applies the verified feature limit within the current authentication and subscription tier. Renderers cannot write subscription state through `set-config`.
 
 ### Miscellaneous
 
@@ -208,7 +208,12 @@ For more details on cloud sync, see [Cloud Sync](../features/cloud-sync.md).
 | `_sync.lastModifiedDevice` | string | ID of the device that made the last modification |
 | `_sync.lastSyncedAt` | number | Time of the last sync with the server (timestamp) |
 | `_sync.lastSyncedDevice` | string | ID of the device that last synced |
-| `_sync.dataHash` | string | Hash of the sync data (for conflict detection) |
+| `_sync.dataHash` | string | Hash used to detect local changes |
+| `_sync.accountId` | string | Owner of the active baseline |
+| `_sync.baseSnapshot` | object | Last acknowledged cloud settings |
+| `_sync.baseRevision` | integer | Last acknowledged server revision |
+| `_sync.bootstrapBackup` | object | Local settings preserved before first download |
+| `_sync.accountBackups` | object | Per-account pending settings and baseline |
 | `_sync.isConflicted` | boolean | Whether a sync conflict has occurred |
 
 **Example**:
@@ -227,12 +232,13 @@ For more details on cloud sync, see [Cloud Sync](../features/cloud-sync.md).
 
 ### Security (Device-Local)
 
-The `security` key stores the per-device approval state for `exec`/`script` actions downloaded via cloud sync. These fields are **device-local only** and are not uploaded to the cloud. For details on the behavior, see [Cloud Sync](../features/cloud-sync.md#download-validation-and-action-approval).
+The `security` key stores the per-device approval state for executable actions and native launches downloaded via cloud sync. These fields are **device-local only** and are not uploaded to the cloud. For details on the behavior, see [Cloud Sync](../features/cloud-sync.md#download-validation-and-action-approval).
 
 | Field | Type | Default | Description |
 |------|------|--------|------|
 | `security.approvalsInitialized` | boolean | `false` | Whether the trust list has been seeded from the local configuration |
-| `security.trustedActions` | array | `[]` | List of fingerprints of `exec`/`script` actions approved to run on this device |
+| `security.launchApprovalsInitialized` | boolean | `false` | Whether existing native launches have been included in device-local trust |
+| `security.trustedActions` | array | `[]` | List of fingerprints of executable actions and native launches approved to run on this device |
 | `security.pendingApprovals` | array | `[]` | List of risky actions downloaded via cloud sync that are awaiting one-time user approval |
 
 **Example**:

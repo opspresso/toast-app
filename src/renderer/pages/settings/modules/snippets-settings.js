@@ -19,7 +19,7 @@ import {
   snippetFormTitle,
   snippetCancelEditButton,
 } from './dom-elements.js';
-import { config, updateConfig } from './state.js';
+import { config, updateConfig, authState } from './state.js';
 
 /**
  * Local working copy of the snippet array. Persisted via the main process,
@@ -27,15 +27,10 @@ import { config, updateConfig } from './state.js';
  */
 let snippets = [];
 
-// id of the snippet currently being edited in the form (null = add mode)
-let editingId = null;
-
-/**
- * Generate a stable-enough id for a new snippet without extra dependencies.
- */
-function newSnippetId() {
-  return `sn-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-}
+let editingOriginal = null;
+let editingAccount = null;
+let saving = false;
+let viewVersion = 0;
 
 /**
  * Initialize the Snippets tab: load snippets, render, and reflect status.
@@ -44,6 +39,7 @@ export function initializeSnippetsSettings() {
   window.settings.log.info('initializeSnippetsSettings called');
 
   try {
+    viewVersion++;
     snippets = Array.isArray(config.snippets) ? config.snippets.map(s => ({ ...s })) : [];
     renderSnippets();
     refreshStatus();
@@ -118,10 +114,10 @@ function renderSnippets() {
     const enabledToggle = document.createElement('input');
     enabledToggle.type = 'checkbox';
     enabledToggle.checked = snippet.enabled !== false;
+    enabledToggle.disabled = saving;
     enabledToggle.title = 'Enable this snippet';
     enabledToggle.addEventListener('change', () => {
-      snippet.enabled = enabledToggle.checked;
-      persistSnippets();
+      void persistChange({ type: 'update', original: snippet, snippet: { ...snippet, enabled: enabledToggle.checked } });
     });
 
     const info = document.createElement('div');
@@ -138,6 +134,7 @@ function renderSnippets() {
     const editButton = document.createElement('button');
     editButton.className = 'secondary-button';
     editButton.textContent = 'Edit';
+    editButton.disabled = saving;
     editButton.addEventListener('click', () => {
       startEditSnippet(snippet);
     });
@@ -145,13 +142,13 @@ function renderSnippets() {
     const deleteButton = document.createElement('button');
     deleteButton.className = 'secondary-button';
     deleteButton.textContent = 'Delete';
-    deleteButton.addEventListener('click', () => {
-      if (editingId === snippet.id) {
-        exitEditMode();
+    deleteButton.disabled = saving;
+    deleteButton.addEventListener('click', async () => {
+      if (await persistChange({ type: 'delete', original: snippet })) {
+        if (editingOriginal && sameSnippet(editingOriginal, snippet)) {
+          exitEditMode();
+        }
       }
-      snippets = snippets.filter(s => s.id !== snippet.id);
-      renderSnippets();
-      persistSnippets();
     });
 
     row.appendChild(enabledToggle);
@@ -162,30 +159,57 @@ function renderSnippets() {
   });
 }
 
-/**
- * Persist snippets through the main process (which refreshes the matcher and
- * lets cloud sync pick up the change), and update the local settings config.
- */
-function persistSnippets() {
-  window.settings.textExpander
-    .saveSnippets(snippets)
-    .then(result => {
-      if (!result || !result.success) {
-        window.settings.log.error('Failed to save snippets:', result && result.error);
-        return;
+function sameSnippet(left, right) {
+  return left.id ? left.id === right.id : left.keyword === right.keyword;
+}
+
+async function persistChange(change) {
+  if (saving) {
+    return false;
+  }
+  saving = true;
+  const version = viewVersion;
+  for (const input of [snippetKeywordInput, snippetContentInput, snippetLabelInput, snippetAddButton, snippetCancelEditButton]) {
+    if (input) {
+      input.disabled = true;
+    }
+  }
+  renderSnippets();
+  try {
+    const result = await window.settings.textExpander.changeSnippet(change);
+    if (!result?.success) {
+      showFormError(result?.error || 'Could not save the snippet.');
+      return false;
+    }
+    // A config-updated broadcast may already contain a newer cloud snapshot.
+    if (version === viewVersion) {
+      snippets = result.snippets;
+      updateConfig({ ...config, snippets });
+    }
+    return true;
+  }
+  catch (error) {
+    window.settings.log.error('Error saving snippet:', error.message);
+    showFormError('Could not save the snippet. Your draft is preserved.');
+    return false;
+  }
+  finally {
+    saving = false;
+    for (const input of [snippetKeywordInput, snippetContentInput, snippetLabelInput, snippetAddButton, snippetCancelEditButton]) {
+      if (input) {
+        input.disabled = false;
       }
-      updateConfig({ ...config, snippets: snippets.map(s => ({ ...s })) });
-    })
-    .catch(error => {
-      window.settings.log.error('Error saving snippets:', error);
-    });
+    }
+    renderSnippets();
+  }
 }
 
 /**
  * Switch the form into edit mode for an existing snippet.
  */
 function startEditSnippet(snippet) {
-  editingId = snippet.id;
+  editingOriginal = { ...snippet };
+  editingAccount = authState.profile?.email || null;
   snippetKeywordInput.value = snippet.keyword || '';
   snippetContentInput.value = snippet.content || '';
   snippetLabelInput.value = snippet.label || '';
@@ -208,7 +232,8 @@ function startEditSnippet(snippet) {
  * Reset the form back to add mode.
  */
 function exitEditMode() {
-  editingId = null;
+  editingOriginal = null;
+  editingAccount = null;
   snippetKeywordInput.value = '';
   snippetContentInput.value = '';
   snippetLabelInput.value = '';
@@ -228,45 +253,28 @@ function exitEditMode() {
 /**
  * Handle the snippet form submit: validate, then add or save edits.
  */
-function handleAddSnippet() {
-  const keyword = (snippetKeywordInput.value || '').trim();
-  const content = snippetContentInput.value || '';
-  const label = (snippetLabelInput.value || '').trim();
-
-  const existing = editingId ? snippets.find(s => s.id === editingId) : null;
+async function handleAddSnippet() {
+  if (saving) {
+    return;
+  }
+  if (editingOriginal && editingAccount !== (authState.profile?.email || null)) {
+    showFormError('The account changed. Your draft is preserved; reopen a snippet from the current account before saving.');
+    return;
+  }
   const candidate = {
-    id: editingId || newSnippetId(),
-    keyword,
-    content,
-    label,
-    enabled: existing ? existing.enabled !== false : true,
+    ...(editingOriginal || {}),
+    keyword: (snippetKeywordInput.value || '').trim(),
+    content: snippetContentInput.value || '',
+    label: (snippetLabelInput.value || '').trim(),
+    enabled: editingOriginal ? editingOriginal.enabled !== false : true,
   };
-
-  // validateSnippet excludes the snippet's own id, so editing a snippet
-  // without changing its keyword does not trip the duplicate check.
-  window.settings.textExpander
-    .validateSnippet(candidate, snippets)
-    .then(result => {
-      if (!result.valid) {
-        showFormError(result.errors.join(' '));
-        return;
-      }
-      hideFormError();
-
-      if (editingId) {
-        snippets = snippets.map(s => (s.id === editingId ? candidate : s));
-      }
-      else {
-        snippets = [...snippets, candidate];
-      }
-      renderSnippets();
-      persistSnippets();
-      exitEditMode();
-    })
-    .catch(error => {
-      window.settings.log.error('Snippet validation error:', error);
-      showFormError('Validation failed.');
-    });
+  const change = editingOriginal
+    ? { type: 'update', original: editingOriginal, snippet: candidate }
+    : { type: 'add', snippet: candidate };
+  hideFormError();
+  if (await persistChange(change)) {
+    exitEditMode();
+  }
 }
 
 function showFormError(message) {

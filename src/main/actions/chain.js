@@ -4,10 +4,7 @@
  * This module handles executing a series of actions in sequence.
  */
 
-// Upper bound on chain nesting depth, matching executor.js's validateAction.
-// Without this, a deeply/self nested chain could exhaust the call stack at
-// execution time even if it somehow bypassed validation.
-const MAX_CHAIN_DEPTH = 10;
+const { MAX_CHAIN_DEPTH } = require('../action-validation');
 
 /**
  * Execute a chain of actions in sequence

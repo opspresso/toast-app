@@ -47,16 +47,6 @@ jest.mock('path', () => ({
   dirname: jest.fn((path) => path.split('/').slice(0, -1).join('/') || '/'),
 }));
 
-// Mock config
-const mockConfig = {
-  get: jest.fn(),
-  set: jest.fn(),
-};
-
-jest.mock('../../src/main/config', () => ({
-  createConfigStore: jest.fn(() => mockConfig),
-}));
-
 // Mock config/env
 jest.mock('../../src/main/config/env', () => ({
   getEnv: jest.fn((key, defaultValue) => {
@@ -92,7 +82,6 @@ const mockApiAuth = {
   exchangeCodeForToken: jest.fn(),
   refreshAccessToken: jest.fn(),
   fetchUserProfile: jest.fn(),
-  handleAuthRedirect: jest.fn(),
   logout: jest.fn(),
   revokeToken: jest.fn(),
 };
@@ -160,14 +149,6 @@ describe('Main Auth Module (P0)', () => {
       expires_in: 3600,
     });
 
-    mockApiAuth.handleAuthRedirect.mockResolvedValue({
-      success: true,
-      profile: {
-        id: 'user123',
-        email: 'test@example.com',
-        name: 'Test User',
-      },
-    });
 
     mockApiAuth.fetchUserProfile.mockResolvedValue({
       id: 'user123',
@@ -287,102 +268,24 @@ describe('Main Auth Module (P0)', () => {
       await logoutPromise;
     });
 
-    test('should handle auth redirect URLs', async () => {
-      const authUrl = 'toast-app://auth?code=test-code&state=test-state';
-
-      const result = await auth.handleAuthRedirect(authUrl);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-    });
-
-    test('should handle malformed redirect URLs', async () => {
-      const invalidUrl = 'invalid-url';
-
-      const result = await auth.handleAuthRedirect(invalidUrl);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid URL');
-    });
-
-    test('reload_auth deep link returns an object result when starting login for an unauthenticated user', async () => {
-      // initiateLogin() resolves to a bare boolean, but handleAuthRedirect's callers
-      // (e.g. src/index.js) check result.success — a bare `true` would read as failure.
-      mockClient.getAccessToken.mockReturnValue(null);
-      mockFs.existsSync.mockReturnValue(false); // no stored token file either
-
-      const redirectUrl = 'toast-app://auth?action=reload_auth&token=abc123&userId=user1';
-      const result = await auth.handleAuthRedirect(redirectUrl);
-
-      expect(result).toEqual({ success: true });
-      expect(mockShell.openExternal).toHaveBeenCalled();
-    });
-
-    test('discards the subscription update (no authenticated config write) when logout completes while the post-login subscription fetch is still in flight', async () => {
-      // Regression: exchangeCodeForToken's own storeTokens call is guarded, but the
-      // subsequent fetchSubscription()+updatePageGroupSettings() write in
-      // exchangeCodeForTokenAndUpdateSubscription was not — a logout completing during
-      // that fetch got its anonymous config write overwritten back to authenticated.
-      mockApiAuth.exchangeCodeForToken.mockResolvedValue({
-        success: true,
-        access_token: 'new-access-token',
-        refresh_token: 'new-refresh-token',
-        expires_in: 3600,
-      });
-
-      let resolveProfile;
-      mockApiAuth.fetchUserProfile.mockImplementationOnce(
-        () =>
-          new Promise(resolve => {
-            resolveProfile = resolve;
-          }),
-      );
-
-      const exchangePromise = auth.exchangeCodeForTokenAndUpdateSubscription('test-code');
-
-      // Let the code exchange (its own separate await chain) complete and the
-      // subscription fetch reach the pending apiAuth.fetchUserProfile() call above,
-      // before logging out — otherwise logout could race ahead of the exchange itself.
-      await new Promise(resolve => setImmediate(resolve));
-      await new Promise(resolve => setImmediate(resolve));
-
-      mockConfig.set.mockClear();
-      await auth.logout();
-
-      resolveProfile({
-        id: 'user123',
-        email: 'test@example.com',
-        subscription: { active: true, plan: 'premium' },
-      });
-      const result = await exchangePromise;
-
-      expect(result.success).toBe(false);
-      expect(mockConfig.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
-    });
-
-    test('reports failure instead of writing an authenticated config when the post-login subscription fetch itself fails', async () => {
-      // Regression: fetchSubscription() returns the error-shaped profileData as-is on
-      // failure (not a subscription object). refreshSubscriptionSettings() previously
-      // passed that straight to updatePageGroupSettings(), which unconditionally writes
-      // isAuthenticated: true — silently reporting login success on a failed profile fetch.
-      mockApiAuth.exchangeCodeForToken.mockResolvedValue({
-        success: true,
-        access_token: 'new-access-token',
-        refresh_token: 'new-refresh-token',
-        expires_in: 3600,
-      });
-      mockApiAuth.fetchUserProfile.mockResolvedValue({
-        error: { code: 'PROFILE_FETCH_FAILED', message: 'Network error' },
-      });
-
-      const result = await auth.exchangeCodeForTokenAndUpdateSubscription('test-code');
-
-      expect(result.success).toBe(false);
-      expect(mockConfig.set).not.toHaveBeenCalledWith('subscription', expect.objectContaining({ isAuthenticated: true }));
-    });
   });
 
   describe('Token Management', () => {
+    test('refreshes a server-rejected token even before local expiry', async () => {
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({ success: true, access_token: 'replacement', expires_in: 3600 });
+      expect((await auth.refreshAccessToken({ force: true })).success).toBe(true);
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(1);
+      expect(mockClient.setAccessToken).toHaveBeenCalledWith('replacement', { refresh: true });
+    });
+
+    test('does not switch the in-memory account if persisting login credentials fails', async () => {
+      await new Promise(resolve => setImmediate(resolve));
+      mockClient.setAccessToken.mockClear();
+      mockFs.writeFileSync.mockImplementationOnce(() => { throw new Error('Disk full'); });
+      expect((await auth.exchangeCodeForToken('test-code')).success).toBe(false);
+      expect(mockClient.setAccessToken).not.toHaveBeenCalled();
+    });
+
     test('should check for valid token', async () => {
       mockFs.existsSync.mockReturnValue(true);
 
@@ -607,6 +510,23 @@ describe('Main Auth Module (P0)', () => {
       expect(handler).toHaveBeenCalled();
     });
 
+    test('does not delete a new login while finishing an expired-session refresh', async () => {
+      let finishCleanup;
+      mockApiAuth.refreshAccessToken.mockResolvedValueOnce({ success: false, code: 'SESSION_EXPIRED', requireRelogin: true });
+      mockApiAuth.logout.mockImplementationOnce(() => new Promise(resolve => { finishCleanup = resolve; }));
+      const expiredHandler = jest.fn();
+      auth.setSessionExpiredHandler(expiredHandler);
+      const oldRefresh = auth.refreshAccessToken({ force: true });
+      await new Promise(resolve => setImmediate(resolve));
+      expect(mockApiAuth.logout).toHaveBeenCalled();
+      expect((await auth.exchangeCodeForToken('new-login-code')).success).toBe(true);
+      mockFs.unlinkSync.mockClear();
+      finishCleanup({ success: true });
+      expect((await oldRefresh).success).toBe(false);
+      expect(mockFs.unlinkSync).not.toHaveBeenCalled();
+      expect(expiredHandler).not.toHaveBeenCalled();
+    });
+
     test('logout prevents an in-flight refresh from resurrecting the deleted token file', async () => {
       mockFs.existsSync.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue(JSON.stringify({
@@ -626,6 +546,8 @@ describe('Main Auth Module (P0)', () => {
       );
 
       const refreshPromise = auth.refreshAccessToken();
+      await new Promise(resolve => setImmediate(resolve));
+      expect(mockApiAuth.refreshAccessToken).toHaveBeenCalledTimes(1);
 
       // logout() runs to completion while the refresh above is still in flight.
       mockFs.writeFileSync.mockClear();
@@ -690,28 +612,6 @@ describe('Main Auth Module (P0)', () => {
       expect(profile.error.message).toContain('Profile fetch failed');
     });
 
-    test('should fetch subscription information', async () => {
-      const subscription = await auth.fetchSubscription();
-
-      expect(subscription).toBeDefined();
-      expect(subscription.active).toBe(true);
-      expect(subscription.plan).toBe('premium');
-    });
-
-    test('should return default subscription when no subscription data', async () => {
-      mockApiAuth.fetchUserProfile.mockResolvedValue({
-        id: 'user123',
-        email: 'test@example.com',
-        name: 'Test User',
-        // No subscription field
-      });
-
-      const subscription = await auth.fetchSubscription();
-
-      expect(subscription.id).toBe('sub_free_anonymous');
-      expect(subscription.active).toBe(false);
-      expect(subscription.isSubscribed).toBe(false);
-    });
   });
 
   describe('Logout Process', () => {
@@ -789,68 +689,6 @@ describe('Main Auth Module (P0)', () => {
     });
   });
 
-  describe('Page Group Settings', () => {
-    test('should update page group settings based on subscription', async () => {
-      const subscription = {
-        active: true,
-        plan: 'premium',
-        features: { page_groups: 9 },
-      };
-
-      const result = await auth.updatePageGroupSettings(subscription);
-
-      expect(mockConfig.set).toHaveBeenCalledWith('subscription', {
-        isAuthenticated: true,
-        isSubscribed: true,
-        active: true,
-        plan: 'premium',
-        expiresAt: '',
-        pageGroups: 9,
-        isVip: false,
-        features: {
-          page_groups: 9,
-          advanced_actions: false,
-          cloud_sync: false,
-        },
-        additionalFeatures: {
-          advancedActions: false,
-          cloudSync: false,
-        },
-      });
-      expect(result).toBeUndefined(); // Function returns void
-    });
-
-    test('should handle anonymous subscription', async () => {
-      const anonymousSubscription = {
-        active: false,
-        plan: 'free',
-        features: { page_groups: 1 },
-      };
-
-      const result = await auth.updatePageGroupSettings(anonymousSubscription);
-
-      expect(mockConfig.set).toHaveBeenCalledWith('subscription', {
-        isAuthenticated: true,
-        isSubscribed: false,
-        active: false,
-        plan: 'free',
-        expiresAt: '',
-        pageGroups: 1,
-        isVip: false,
-        features: {
-          page_groups: 1,
-          advanced_actions: false,
-          cloud_sync: false,
-        },
-        additionalFeatures: {
-          advancedActions: false,
-          cloudSync: false,
-        },
-      });
-      expect(result).toBeUndefined(); // Function returns void
-    });
-  });
-
   describe('Token Storage', () => {
     test('should read token file when it exists', async () => {
       mockFs.existsSync.mockReturnValue(true);
@@ -885,6 +723,21 @@ describe('Main Auth Module (P0)', () => {
       // Should handle corrupted token file gracefully and return false
       expect(result).toBe(false);
       expect(mockFs.readFileSync).toHaveBeenCalled();
+    });
+
+    test('does not retain the previous account refresh token when a new login omits it', async () => {
+      mockApiAuth.exchangeCodeForToken.mockResolvedValueOnce({ success: true, access_token: 'new-account', expires_in: 3600 });
+      expect((await auth.exchangeCodeForToken('test-code')).success).toBe(true);
+      const saved = JSON.parse(mockFs.writeFileSync.mock.calls[0][1]);
+      expect(saved['refresh-token']).toBeUndefined();
+      expect(mockClient.setRefreshToken).toHaveBeenLastCalledWith(null);
+    });
+
+    test('honors zero seconds from the server as expired instead of unlimited', async () => {
+      mockApiAuth.exchangeCodeForToken.mockResolvedValueOnce({ success: true, access_token: 'zero-life', expires_in: 0 });
+      expect((await auth.exchangeCodeForToken('test-code')).success).toBe(true);
+      const saved = JSON.parse(mockFs.writeFileSync.mock.calls[0][1]);
+      expect(saved['token-expires-at']).toBeLessThanOrEqual(Date.now());
     });
 
     test('should write token file successfully', async () => {
@@ -1004,28 +857,13 @@ describe('Main Auth Module (P0)', () => {
       expect(result.error).toContain('500 Internal Server Error');
     });
 
-    test('should handle missing environment variables', async () => {
-      const originalNodeEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-      
-      const { getEnv } = require('../../src/main/config/env');
-      // Mock to return undefined for CLIENT_ID, which will fall back to empty string in production
-      getEnv.mockImplementation((key, defaultValue) => 
-        key === 'CLIENT_ID' ? undefined : defaultValue
-      );
-
+    test('rejects login before opening a browser when CLIENT_ID is missing', async () => {
       jest.resetModules();
+      const { getEnv } = require('../../src/main/config/env');
+      getEnv.mockImplementation((_key, fallback) => fallback);
       const envlessAuth = require('../../src/main/auth');
-      
-      try {
-        // In production with missing CLIENT_ID, it should still succeed (returns true)
-        // but the OAuth flow will fail later when server rejects empty client_id
-        const result = await envlessAuth.initiateLogin();
-        expect(result).toBe(true);
-      } finally {
-        // Restore NODE_ENV
-        process.env.NODE_ENV = originalNodeEnv;
-      }
+      await expect(envlessAuth.initiateLogin()).rejects.toThrow('OAuth client configuration is missing');
+      expect(mockShell.openExternal).not.toHaveBeenCalled();
     });
   });
 
@@ -1035,20 +873,15 @@ describe('Main Auth Module (P0)', () => {
       const loginResult = await auth.initiateLogin();
       expect(loginResult).toBe(true);
 
-      // 2. Handle redirect
-      const redirectUrl = 'toast-app://auth?code=test-code&state=test-state';
-      const redirectResult = await auth.handleAuthRedirect(redirectUrl);
+      // 2. Exchange the validated code
+      const redirectResult = await auth.exchangeCodeForToken('test-code');
       expect(redirectResult.success).toBe(true);
 
       // 3. Fetch profile
       const profile = await auth.fetchUserProfile();
       expect(profile.id).toBeDefined();
 
-      // 4. Fetch subscription
-      const subscription = await auth.fetchSubscription();
-      expect(subscription).toBeDefined();
-
-      // 5. Logout
+      // 4. Logout
       const logoutResult = await auth.logout();
       expect(logoutResult).toBe(true); // logout returns boolean, not object
     });

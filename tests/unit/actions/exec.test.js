@@ -50,8 +50,8 @@ describe('Exec Action', () => {
       }
       callback(null, 'mock stdout', 'mock stderr');
     });
-    execFile.mockImplementation((file, args, callback) => {
-      callback(null, 'mock stdout', 'mock stderr');
+    execFile.mockImplementation((file, args, options, callback) => {
+      (callback || options)(null, 'mock stdout', 'mock stderr');
     });
   });
 
@@ -186,13 +186,13 @@ describe('Exec Action', () => {
 
         // Uses escapeShellArg which wraps path in single quotes for Unix
         expect(exec).toHaveBeenCalledWith(
-          "open -a \"Visual Studio Code\" '/test/project'",
-          { shell: true },
+          "open -a 'Visual Studio Code' '/test/project'",
+          { shell: true, cwd: '/test/project' },
           expect.any(Function)
         );
         expect(result).toEqual({
           success: true,
-          message: 'Application "Visual Studio Code" opened with working directory: /test/project',
+          message: 'Command executed successfully',
           stdout: 'mock stdout',
           stderr: 'mock stderr',
         });
@@ -208,8 +208,8 @@ describe('Exec Action', () => {
 
         // Uses escapeShellArg which wraps path in single quotes for Unix
         expect(exec).toHaveBeenCalledWith(
-          "open -a Calculator '/test/project'",
-          { shell: true },
+          "open -a 'Calculator' '/test/project'",
+          { shell: true, cwd: '/test/project' },
           expect.any(Function)
         );
         expect(result.success).toBe(true);
@@ -225,8 +225,8 @@ describe('Exec Action', () => {
 
         // Uses escapeShellArg which wraps path in single quotes for Unix
         expect(exec).toHaveBeenCalledWith(
-          "open -a \"Visual Studio Code\" --new-window '/test/project'",
-          { shell: true },
+          "open -a 'Visual Studio Code' '/test/project' --new-window",
+          { shell: true, cwd: '/test/project' },
           expect.any(Function)
         );
         expect(result.success).toBe(true);
@@ -242,8 +242,8 @@ describe('Exec Action', () => {
 
         // Uses escapeShellArg which wraps path in single quotes for Unix
         expect(exec).toHaveBeenCalledWith(
-          "open -a \"Visual Studio Code\" '/test/project'",
-          { shell: true },
+          "open -a 'Visual Studio Code' '/test/project'",
+          { shell: true, cwd: '/test/project' },
           expect.any(Function)
         );
         expect(result.success).toBe(true);
@@ -338,7 +338,7 @@ describe('Exec Action', () => {
 
         expect(execFile).toHaveBeenCalledWith(
           'osascript',
-          ['-e', 'tell application "Terminal" to do script "cd /test/project && npm start"'],
+          ['-e', "tell application \"Terminal\" to do script \"cd -- '/test/project' && npm start\""],
           expect.any(Function)
         );
         expect(result.success).toBe(true);
@@ -398,7 +398,7 @@ describe('Exec Action', () => {
           const result = await executeCommand(action);
 
           expect(exec).toHaveBeenCalledWith(
-            'start cmd.exe /K "npm start"',
+            'start "" cmd.exe /K "npm start"',
             { shell: true },
             expect.any(Function)
           );
@@ -415,8 +415,8 @@ describe('Exec Action', () => {
           const result = await executeCommand(action);
 
           expect(exec).toHaveBeenCalledWith(
-            'start cmd.exe /K "cd /d C:\\test\\project && npm start"',
-            { shell: true },
+            'start "" cmd.exe /K "npm start"',
+            { shell: true, cwd: 'C:\\test\\project' },
             expect.any(Function)
           );
           expect(result.success).toBe(true);
@@ -438,9 +438,9 @@ describe('Exec Action', () => {
 
           const result = await executeCommand(action);
 
-          expect(exec).toHaveBeenCalledWith(
-            'x-terminal-emulator -e "bash -c \'npm start; exec bash\'"',
-            { shell: true },
+          expect(execFile).toHaveBeenCalledWith(
+            'x-terminal-emulator', ['-e', 'bash', '-c', 'npm start; exec bash'],
+            {},
             expect.any(Function)
           );
           expect(result.success).toBe(true);
@@ -455,9 +455,9 @@ describe('Exec Action', () => {
 
           const result = await executeCommand(action);
 
-          expect(exec).toHaveBeenCalledWith(
-            'x-terminal-emulator -e "bash -c \'cd /test/project && npm start; exec bash\'"',
-            { shell: true },
+          expect(execFile).toHaveBeenCalledWith(
+            'x-terminal-emulator', ['-e', 'bash', '-c', 'npm start; exec bash'],
+            { cwd: '/test/project' },
             expect.any(Function)
           );
           expect(result.success).toBe(true);

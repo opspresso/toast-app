@@ -185,7 +185,7 @@ describe('Cloud Sync IPC Handlers', () => {
       expect(mockGetSyncManager).not.toHaveBeenCalled();
     });
 
-    test('performs the sync and broadcasts config-updated on success', async () => {
+    test('delegates the sync without duplicating manager notifications', async () => {
       const manager = { manualSync: jest.fn().mockResolvedValue({ success: true }) };
       mockGetSyncManager.mockReturnValue(manager);
       config.get.mockImplementation(key => `value-${key}`);
@@ -194,11 +194,7 @@ describe('Cloud Sync IPC Handlers', () => {
 
       expect(manager.manualSync).toHaveBeenCalledWith('upload');
       expect(result).toEqual({ success: true });
-      expect(mockBroadcastToWindows).toHaveBeenCalledWith(
-        windows,
-        'config-updated',
-        expect.objectContaining({ pages: 'value-pages', snippets: 'value-snippets' }),
-      );
+      expect(mockBroadcastToWindows).not.toHaveBeenCalled();
     });
 
     test('does not broadcast when the sync result is unsuccessful', async () => {
@@ -268,15 +264,8 @@ describe('Cloud Sync IPC Handlers', () => {
     });
   });
 
-  describe('settings-synced forwarding', () => {
-    test('forwards the settings-synced event to both windows', () => {
-      const call = mockIpcMain.on.mock.calls.find(([name]) => name === 'settings-synced');
-      expect(call).toBeDefined();
-
-      const handler = call[1];
-      handler({}, { pages: [] });
-
-      expect(mockBroadcastToWindows).toHaveBeenCalledWith(windows, 'settings-synced', { pages: [] });
-    });
+  test('rejects non-boolean preference values', async () => {
+    expect(await getHandler('set-cloud-sync-enabled')({}, 'false')).toEqual({ success: false, error: 'enabled must be a boolean' });
+    expect(mockGetSyncManager).not.toHaveBeenCalled();
   });
 });

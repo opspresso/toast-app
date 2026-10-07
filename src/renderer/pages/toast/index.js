@@ -2,9 +2,8 @@
  * Toast - Main Entry Point
  */
 
-import { defaultButtons } from './modules/constants.js';
 import { closeButton, settingsModeToggle, settingsButton, addPageButton, removePageButton, userButton } from './modules/dom-elements.js';
-import { applyAppearanceSettings, showStatus } from './modules/utils.js';
+import { applyAppearanceSettings } from './modules/utils.js';
 import { initClock } from './modules/clock.js';
 import {
   fetchUserProfileAndSubscription,
@@ -12,9 +11,8 @@ import {
   updateUserButton,
   showUserProfile,
   setupAuthEventHandlers,
-  handlePageLimitAfterLogout,
 } from './modules/auth.js';
-import { initializePages, addNewPage, removePage, pages, renderPagingButtons, changePage } from './modules/pages.js';
+import { initializePages, addNewPage, removePage } from './modules/pages.js';
 import { toggleSettingsMode, showCurrentPageButtons } from './modules/buttons.js';
 import { setupKeyboardEventListeners } from './modules/keyboard.js';
 import { setupModalEventListeners } from './modules/modals.js';
@@ -104,7 +102,7 @@ function setupEventListeners() {
       // Handle cases where config.pages is undefined, null, or empty array
       if ('pages' in config) {
         const configPages = config.pages || [];
-        initializePages(configPages);
+        initializePages(configPages, config.authSessionVersion);
 
         if (configPages.length === 0) {
           // Display guidance message when no pages exist
@@ -128,32 +126,19 @@ function setupEventListeners() {
       }
     });
   }
-
-  // Handle special commands (confetti animation, etc.) - only if window.toast exists
-  if (window.toast) {
-    window.toast.onSpecialCommand = function (command) {
-      if (command === 'confetti' || command === '꽃가루') {
-        // Run confetti animation
-        showStatus('🎉 Let it go!', 'success');
-        if (window.confetti && window.confetti.start) {
-          window.confetti.start({
-            duration: 5, // Run for 5 seconds
-            density: 100, // Confetti density
-          });
-        }
-        return true; // Command handled
-      }
-
-      return false; // Command could not be handled
-    };
-  }
 }
 
 /**
  * Initialize the application
  */
 function initializeApp() {
-  // Always initialize clock first (independent of window.toast)
+  if (!window.toast) {
+    const error = document.createElement('p');
+    error.setAttribute('role', 'alert');
+    error.textContent = 'Toast could not load its app connection. Restart the app to try again.';
+    document.body.replaceChildren(error);
+    return;
+  }
   initClock();
 
   // Load configuration (only if window.toast exists)
@@ -163,25 +148,8 @@ function initializeApp() {
 
       // Page settings
       if (config.pages) {
-        initializePages(config.pages);
+        initializePages(config.pages, config.authSessionVersion);
       }
-      else {
-        // Create default page if no pages exist
-        const newPage = {
-          name: 'Page 1',
-          shortcut: '1',
-          buttons: [...defaultButtons],
-        };
-
-        const newPages = [newPage];
-        initializePages(newPages);
-
-        // Save the default configuration
-        if (window.toast.saveConfig) {
-          window.toast.saveConfig({ pages: newPages });
-        }
-      }
-
       // Check subscription status
       if (config.subscription) {
         import('./modules/auth.js')
@@ -213,28 +181,15 @@ function initializeApp() {
         });
     });
   }
-  else {
-    // If window.toast doesn't exist, just show default buttons
-    const newPage = {
-      name: 'Page 1',
-      shortcut: '1',
-      buttons: [...defaultButtons],
-    };
-    initializePages([newPage]);
-  }
-
   // Set up event listeners
   setupEventListeners();
 }
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', initializeApp);
-
-// Also try to initialize clock immediately in case DOMContentLoaded already fired
+// Modules execute after parsing. Select one startup path so subscriptions,
+// event handlers, and the clock interval are registered only once.
 if (document.readyState === 'loading') {
-  // Document is still loading, wait for DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
 }
 else {
-  // Document is already loaded, initialize immediately
   initializeApp();
 }

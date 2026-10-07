@@ -1,7 +1,7 @@
 /**
  * Toast - Action Approval
  *
- * Guards exec/script actions that arrive via cloud sync. Actions created or
+ * Guards executable actions and native launches that arrive via cloud sync. Actions created or
  * edited locally are trusted; risky actions first seen in remote data are put
  * on a pending list and require a one-time user confirmation before they run.
  *
@@ -12,6 +12,8 @@
 
 const crypto = require('crypto');
 const { createLogger } = require('./logger');
+const { validateAction, MAX_CHAIN_DEPTH } = require('./action-validation');
+const { normalizeOpenUrl } = require('./utils/open-url');
 
 const logger = createLogger('ActionApproval');
 
@@ -33,7 +35,7 @@ const state = {
  * @returns {string|null} sha256 hex fingerprint, or null for non-risky actions
  */
 function computeFingerprint(action) {
-  if (!action || typeof action !== 'object') {
+  if (!action || typeof action !== 'object' || isBuiltinButton(action)) {
     return null;
   }
 
@@ -54,17 +56,34 @@ function computeFingerprint(action) {
       scriptParams: action.scriptParams || '',
     };
   }
+  else if (action.action === 'application' && action.applicationPath) {
+    canonical = {
+      action: 'application',
+      applicationPath: action.applicationPath,
+      applicationParameters: action.applicationParameters || '',
+    };
+  }
+  else if (action.action === 'open') {
+    if (action.url) {
+      const url = normalizeOpenUrl(action.url);
+      if (/^https?:/i.test(url)) {
+        return null;
+      }
+      canonical = { action: 'open', url };
+    }
+    else if (action.path) {
+      canonical = { action: 'open', path: action.path, application: action.application || '' };
+    }
+    else {
+      return null;
+    }
+  }
   else {
     return null;
   }
 
   return crypto.createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }
-
-// Upper bound on chain nesting depth when walking actions, matching
-// executor.js's validateAction. Guards local (not-yet-sanitized) config data
-// against a pathologically/self nested chain exhausting the call stack.
-const MAX_CHAIN_DEPTH = 10;
 
 /**
  * Collect fingerprints of all risky actions in the given pages,
@@ -91,7 +110,7 @@ function collectRiskyFingerprints(pages) {
   if (Array.isArray(pages)) {
     for (const page of pages) {
       if (page && Array.isArray(page.buttons)) {
-        page.buttons.forEach(visit);
+        page.buttons.forEach(button => visit(button));
       }
     }
   }
@@ -103,6 +122,7 @@ function getSecurity(configStore) {
   const security = configStore.get('security') || {};
   return {
     approvalsInitialized: !!security.approvalsInitialized,
+    launchApprovalsInitialized: !!security.launchApprovalsInitialized,
     trustedActions: Array.isArray(security.trustedActions) ? security.trustedActions : [],
     pendingApprovals: Array.isArray(security.pendingApprovals) ? security.pendingApprovals : [],
   };
@@ -136,14 +156,19 @@ function initializeApprovals(configStore, windows) {
   state.windows = windows || null;
 
   const security = getSecurity(configStore);
-  if (security.approvalsInitialized) {
+  if (security.approvalsInitialized && security.launchApprovalsInitialized) {
     return;
   }
 
   const current = collectRiskyFingerprints(configStore.get('pages'));
-  const seeded = addTrusted(security, current.keys());
-  setSecurity(configStore, { ...seeded, approvalsInitialized: true });
-  logger.info(`Action approvals initialized: ${current.size} existing risky action(s) trusted`);
+  const pending = new Set(security.pendingApprovals.map(entry => entry.fingerprint));
+  // Extend existing-device trust to newly protected native launches only. An
+  // upgrade must not approve an exec/script action already awaiting consent.
+  const seeds = [...current].filter(([fingerprint, action]) => !pending.has(fingerprint) &&
+    (!security.approvalsInitialized || action.action === 'application' || action.action === 'open'));
+  const seeded = addTrusted(security, seeds.map(([fingerprint]) => fingerprint));
+  setSecurity(configStore, { ...seeded, approvalsInitialized: true, launchApprovalsInitialized: true });
+  logger.info(`Action approvals initialized: ${seeds.length} existing risky action(s) trusted`);
 }
 
 /**
@@ -167,6 +192,12 @@ function recordRemoteChanges(configStore, incomingPages) {
       let preview;
       if (action.action === 'exec') {
         preview = action.command || '';
+      }
+      else if (action.action === 'application') {
+        preview = `${action.applicationPath}\n${action.applicationParameters || ''}`;
+      }
+      else if (action.action === 'open') {
+        preview = action.url || `${action.path}\n${action.application || 'Default application'}`;
       }
       else {
         preview = action.script || '';
@@ -287,14 +318,8 @@ async function promptUser(entry, fingerprint) {
   }
 }
 
-/**
- * Empty page slots are stored as application buttons without a path. They
- * cannot execute anything, so they are preserved instead of being dropped.
- * @param {Object} button - Button from remote page data
- * @returns {boolean} Whether the button is an inert empty slot
- */
-function isEmptySlotButton(button) {
-  return Boolean(button) && button.action === 'application' && !button.applicationPath;
+function isBuiltinButton(button) {
+  return button?.action === 'script' && button.scriptType === 'special' && button.script === 'confetti';
 }
 
 /**
@@ -309,9 +334,6 @@ async function sanitizeRemotePages(pages) {
     return [];
   }
 
-  // Lazy require to avoid a load-time cycle (executor also requires this module)
-  const { validateAction } = require('./executor');
-
   const sanitized = [];
   for (const page of pages) {
     if (!page || typeof page !== 'object') {
@@ -325,11 +347,7 @@ async function sanitizeRemotePages(pages) {
 
     const buttons = [];
     for (const button of page.buttons) {
-      if (isEmptySlotButton(button)) {
-        buttons.push(button);
-        continue;
-      }
-      const validation = await validateAction(button);
+      const validation = validateAction(button, 0, { allowInert: true });
       if (validation.valid) {
         buttons.push(button);
       }

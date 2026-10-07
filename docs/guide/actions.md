@@ -37,8 +37,10 @@ An action that launches the application at the specified path.
 ### Properties
 | Property | Type | Required | Description |
 |------|------|------|------|
-| `applicationPath` | string | Yes | Path of the application to launch |
+| `applicationPath` | string | Yes | Path of the application to launch; `~` and `~/` expand to the home directory |
 | `applicationParameters` | string | No | Command-line parameters to pass to the application. Arguments starting with `~` or `~/` are expanded to the home directory |
+
+Parameters are split on whitespace outside single or double quotes. Quoted segments can appear inside an argument: `--title="two words"` is one argument. Empty quoted arguments are retained. Inside double quotes, `\\"` represents a literal quote; other backslashes are preserved for Windows paths. An unclosed quote reports an error without launching. No shell expansion runs; shell metacharacters are literal arguments.
 
 ### Example
 ```json
@@ -53,9 +55,9 @@ An action that launches the application at the specified path.
 ```
 
 ### Platform-Specific Implementation
-- **macOS**: Uses the `open` command
+- **macOS**: Uses `open -a`; parameters follow `--args` and reach the application directly
 - **Windows**: Runs the application path directly
-- **Linux**: Uses the `xdg-open` command when there are no parameters; runs the path directly when parameters are present
+- **Linux**: Runs the application path directly, with or without parameters
 
 ## 2. exec (Run Command)
 
@@ -86,6 +88,8 @@ An action that runs a shell command.
 - **macOS**: Runs the command using Terminal.app (via osascript)
 - **Windows**: Runs the command using cmd.exe
 - **Linux**: Runs using the `x-terminal-emulator` command
+
+The working directory is validated before either execution mode starts. Paths with spaces, quotes, or shell metacharacters remain literal. On macOS, a simple `open -a App` shortcut also passes the working directory as the folder to open, before any `--args`; `runInTerminal` still opens Terminal for that shortcut. On Linux, the terminal receives separate executable and argument values. Windows starts cmd in the selected directory.
 
 ## 3. open (Open File/URL)
 
@@ -122,7 +126,7 @@ An action that opens a URL, file, or folder.
 ```
 
 ### Notes
-- If a URL has no protocol scheme (a `<scheme>://` form such as `http://`, `https://`, `ftp://`), `http://` is added automatically. Schemes without `//`, such as `mailto:`, are not recognized.
+- If a URL has no protocol scheme, `http://` is added automatically. Host-and-port addresses also use HTTP. Schemes without `//`, such as `mailto:`, are preserved.
 - `file://` URLs are not allowed. When opening a local file or folder, use the `path` property instead of `url`.
 - You can open a file with the default application or with a specified application.
 
@@ -169,8 +173,8 @@ An action that runs a custom script written in one of several languages.
 
 ### Security Considerations
 - JavaScript scripts run in a `vm.runInContext` context, but the sandbox exposes `require` (all built-in modules), `Buffer`, and more, allowing access to the file system, network, and external processes. Only a non-sensitive allowlist of environment variables (`HOME`, `PATH`, `LANG`, etc.) is passed. This is not a system-level sandbox, so run only trusted scripts.
-- `exec`/`script` actions newly downloaded via cloud sync go through a user confirmation dialog before their first run on this device.
-- External scripts are written to a temporary file and then run; the temporary file is deleted after execution.
+- Downloaded executable actions and native launches require [device-local approval](../features/cloud-sync.md#download-validation-and-action-approval).
+- Each external script gets a private temporary directory and a script file readable only by its owner on POSIX systems. Toast invokes `osascript`, `powershell`, or `bash` directly with an argument array, then removes the directory on success or failure. Bash scripts need no shebang. Cleanup failures are included in the result message.
 
 ## 5. chain (Chained Execution)
 

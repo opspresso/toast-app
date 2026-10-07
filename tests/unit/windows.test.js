@@ -8,6 +8,8 @@
 const mockWindow = {
   isDestroyed: jest.fn(() => false),
   setOpacity: jest.fn(),
+  setSize: jest.fn(),
+  setSkipTaskbar: jest.fn(),
   loadFile: jest.fn(),
   getPosition: jest.fn(() => [100, 100]),
   setPosition: jest.fn(),
@@ -57,6 +59,7 @@ jest.mock('electron', () => ({
   BrowserWindow: mockBrowserWindow,
   app: {
     isQuitting: false,
+    setLoginItemSettings: jest.fn(),
   },
   screen: mockScreen,
 }));
@@ -185,7 +188,7 @@ describe('Windows Management', () => {
         expect.stringContaining('toast/index.html')
       );
       expect(mockWindow.setOpacity).toHaveBeenCalledWith(0.95);
-      expect(positionToastWindow).toHaveBeenCalledWith(mockWindow, mockConfig);
+      expect(positionToastWindow).toHaveBeenCalledWith(mockWindow, mockConfig, { useSavedPosition: true });
       expect(result).toBe(mockWindow);
       expect(windows.toast).toBe(mockWindow);
     });

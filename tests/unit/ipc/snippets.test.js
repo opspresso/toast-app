@@ -22,10 +22,6 @@ jest.mock('../../../src/main/text-expander', () => ({
   refreshSnippets: jest.fn(),
 }));
 
-jest.mock('../../../src/main/text-expander/matcher', () => ({
-  validateSnippet: jest.fn(),
-}));
-
 jest.mock('../../../src/main/logger', () => ({
   createLogger: jest.fn(() => ({
     info: jest.fn(),
@@ -120,5 +116,59 @@ describe('Snippets IPC Handlers', () => {
 
       expect(result).toBe(false);
     });
+  });
+});
+
+describe('atomic snippet edits', () => {
+  let data;
+  let config;
+  let handler;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    data = [{ keyword: ':one', content: 'first' }, { keyword: ':two', content: 'second' }];
+    config = { get: () => data, set: jest.fn((_key, next) => { data = next; }) };
+    setupSnippetsHandlers({}, config);
+    handler = getHandler('text-expander:change-snippet');
+  });
+
+  test('deletes only the selected legacy snippet when IDs are absent', () => {
+    expect(handler({}, { type: 'delete', original: data[0] }).success).toBe(true);
+    expect(data).toEqual([{ keyword: ':two', content: 'second' }]);
+  });
+
+  test('rejects a stale edit and preserves the newer cloud value', () => {
+    const original = { ...data[0] };
+    data[0] = { ...data[0], content: 'cloud changed' };
+    const result = handler({}, { type: 'update', original, snippet: { ...original, content: 'local draft' } });
+    expect(result).toMatchObject({ success: false, conflict: true });
+    expect(data[0].content).toBe('cloud changed');
+    expect(config.set).not.toHaveBeenCalled();
+  });
+
+  test('retains unrelated cloud additions when editing one snippet', () => {
+    const original = { ...data[0] };
+    data.push({ keyword: ':three', content: 'new cloud entry' });
+    expect(handler({}, { type: 'update', original, snippet: { ...original, keyword: ':renamed' } }).success).toBe(true);
+    expect(data).toHaveLength(3);
+    expect(data[0]).toMatchObject({ keyword: ':renamed', id: expect.any(String) });
+    expect(data[2].content).toBe('new cloud entry');
+  });
+
+  test('rejects invalid input at the main process boundary', () => {
+    const result = handler({}, { type: 'add', snippet: { keyword: 'x', content: 'too short' } });
+    expect(result.success).toBe(false);
+    expect(config.set).not.toHaveBeenCalled();
+  });
+
+  test('rejects duplicate keywords even when all snippets lack IDs', () => {
+    const result = handler({}, { type: 'add', snippet: { keyword: ':one', content: 'duplicate' } });
+    expect(result.success).toBe(false);
+    expect(config.set).not.toHaveBeenCalled();
+  });
+
+  test('reports a failed store write without changing the current list', () => {
+    config.set.mockImplementationOnce(() => { throw new Error('Disk full'); });
+    expect(handler({}, { type: 'delete', original: data[0] }).success).toBe(false);
+    expect(data).toHaveLength(2);
   });
 });

@@ -7,7 +7,6 @@
 const axios = require('axios');
 const { version: APP_VERSION } = require('../../../package.json');
 const { getEnv } = require('../config/env');
-const { DEFAULT_ANONYMOUS_SUBSCRIPTION } = require('../constants');
 
 // Base URL and endpoint configuration
 const TOAST_URL = getEnv('TOAST_URL', 'https://toastapp.dev');
@@ -34,12 +33,16 @@ const ENDPOINTS = {
 // Token management (in memory)
 let currentToken = null;
 let currentRefreshToken = null;
+let sessionVersion = 0;
 
 /**
  * Set access token
  * @param {string} token - Access token to set
  */
-function setAccessToken(token) {
+function setAccessToken(token, { refresh = false } = {}) {
+  if (!refresh && token !== currentToken) {
+    sessionVersion++;
+  }
   currentToken = token;
 }
 
@@ -71,6 +74,7 @@ function getRefreshToken() {
  * Clear tokens (logout)
  */
 function clearTokens() {
+  sessionVersion++;
   currentToken = null;
   currentRefreshToken = null;
 }
@@ -115,207 +119,73 @@ function createApiClient(options = {}) {
   return axios.create(clientOptions);
 }
 
-// Track token refresh attempts to prevent infinite loops
-const tokenRefreshTracking = {
-  requestsAfterRefresh: 0,
-  maxRequestsAfterRefresh: 3, // Maximum allowed consecutive requests after refresh
-  lastRefreshTime: 0,
-  refreshCooldownMs: 10000, // 10 seconds minimum between refresh attempts
-};
-
-/**
- * Common function to handle authenticated API requests
- * @param {Function} apiCall - API call function
- * @param {Object} options - Options
- * @returns {Promise<any>} API response
- */
+/** Retry one unauthorized request after a shared refresh, within the same session. */
 async function authenticatedRequest(apiCall, options = {}) {
-  const { allowUnauthenticated = false, defaultValue = null, isSubscriptionRequest = false, onUnauthorized = null } = options;
-
-  // Default subscription response
-  const defaultSubscription = DEFAULT_ANONYMOUS_SUBSCRIPTION;
-
-  if (!currentToken) {
-    if (allowUnauthenticated && defaultValue) {
-      return defaultValue;
-    }
-
-    return {
-      error: {
-        code: 'NO_TOKEN',
-        message: 'Authentication required. Please log in.',
-      },
-    };
+  const { onUnauthorized } = options;
+  const version = sessionVersion;
+  const token = currentToken;
+  const changedSession = () => ({ error: { code: 'AUTH_SESSION_CHANGED', statusCode: 401, message: 'The account changed during this request.' } });
+  const failure = (error, extra = {}) => {
+    const statusCode = error?.response?.status;
+    return { error: { code: statusCode ? `HTTP_${statusCode}` : 'API_ERROR', message: error?.message || 'API request failed', statusCode, ...extra } };
+  };
+  if (!token) {
+    return { error: { code: 'NO_TOKEN', message: 'Authentication required. Please log in.' } };
   }
 
   try {
-    return await apiCall();
+    const result = await apiCall();
+    return version === sessionVersion ? result : changedSession();
   }
   catch (error) {
-    // Handle 401 unauthorized error
-    if (error.response && error.response.status === 401) {
-      // Prevent infinite refresh loops
-      const now = Date.now();
-      const timeSinceLastRefresh = now - tokenRefreshTracking.lastRefreshTime;
-
-      if (timeSinceLastRefresh < tokenRefreshTracking.refreshCooldownMs) {
-        // Another concurrent request may have already refreshed the token within this
-        // cooldown window, so retry with the current token before falling back — otherwise
-        // a valid session gets treated as unauthenticated just because a sibling request
-        // happened to refresh moments earlier.
-        try {
-          return await apiCall();
-        }
-        catch (retryError) {
-          if (allowUnauthenticated && defaultValue) {
-            return defaultValue;
-          }
-
-          return {
-            error: {
-              code: 'AUTH_REFRESH_RATE_LIMIT',
-              message: 'Authentication refresh rate limit exceeded. Please try again later.',
-            },
-          };
-        }
+    if (version !== sessionVersion) {
+      return changedSession();
+    }
+    if (error.response?.status !== 401) {
+      return failure(error);
+    }
+    // A sibling request may have refreshed the token while this request was in flight.
+    if (currentToken === token) {
+      if (typeof onUnauthorized !== 'function') {
+        return failure(error);
       }
-
-      if (tokenRefreshTracking.requestsAfterRefresh >= tokenRefreshTracking.maxRequestsAfterRefresh) {
-        // Reset token to force re-login
-        clearTokens();
-
-        if (isSubscriptionRequest) {
-          return defaultSubscription;
-        }
-
-        return {
-          error: {
-            code: 'AUTH_REFRESH_LOOP',
-            message: 'Authentication failure loop detected. Please log in again.',
-            requireRelogin: true,
-          },
-        };
+      let refreshed;
+      try {
+        refreshed = await onUnauthorized({ force: true });
       }
-
-      // Call re-authentication callback
-      if (onUnauthorized && typeof onUnauthorized === 'function') {
-        tokenRefreshTracking.lastRefreshTime = now;
-
-        const refreshResult = await onUnauthorized();
-
-        if (refreshResult && refreshResult.success) {
-          // Special handling for a throttled request whose token is still valid
-          if (refreshResult.throttled && refreshResult.tokenValid) {
-            try {
-              // Token is still valid, so retry the API call
-              const result = await apiCall();
-              return result;
-            }
-            catch (retryError) {
-              // If it still fails, return an error
-              if (allowUnauthenticated && defaultValue) {
-                return defaultValue;
-              }
-
-              return {
-                error: {
-                  code: 'API_ERROR_WITH_VALID_TOKEN',
-                  message: 'API request failed with a valid token. Please try again later.',
-                  statusCode: retryError.response?.status,
-                  originalError: retryError.message,
-                },
-              };
-            }
-          }
-          else {
-            try {
-              // Normal successful token refresh case
-              // Increment counter for requests after refresh
-              tokenRefreshTracking.requestsAfterRefresh++;
-
-              const result = await apiCall();
-
-              // Reset counter after successful request
-              tokenRefreshTracking.requestsAfterRefresh = 0;
-
-              return result;
-            }
-            catch (retryError) {
-              if (allowUnauthenticated && defaultValue) {
-                return defaultValue;
-              }
-
-              return {
-                error: {
-                  code: 'AUTH_REFRESH_FAILED',
-                  message: 'Authentication failed even after token refresh. Please log in again.',
-                  requireRelogin: true,
-                },
-              };
-            }
-          }
-        }
-        else if (refreshResult && refreshResult.requireRelogin) {
-          // The refresh callback identified the session itself as dead (e.g. the refresh
-          // token was rejected as expired/invalid) — reset tokens so the app doesn't keep
-          // retrying with credentials that can never succeed again.
+      catch (refreshError) {
+        return version === sessionVersion ? failure(refreshError, { code: 'AUTH_REFRESH_FAILED', requireRelogin: false }) : changedSession();
+      }
+      if (version !== sessionVersion) {
+        return changedSession();
+      }
+      if (!refreshed?.success) {
+        if (refreshed?.requireRelogin) {
           clearTokens();
-
-          if (isSubscriptionRequest) {
-            return defaultSubscription;
-          }
-
-          return {
-            error: {
-              code: 'AUTH_REFRESH_FAILED',
-              message: 'Failed to refresh authentication. Please log in again.',
-              requireRelogin: true,
-            },
-          };
         }
-        else {
-          // Refresh failed for a transient reason (network error, server error, missing
-          // credentials, ...) rather than a dead session — keep the existing tokens so a
-          // later attempt can still succeed, instead of forcing a full logout.
-          if (allowUnauthenticated && defaultValue) {
-            return defaultValue;
-          }
-
-          if (isSubscriptionRequest) {
-            return defaultSubscription;
-          }
-
-          return {
-            error: {
-              code: 'AUTH_REFRESH_FAILED',
-              message: 'Failed to refresh authentication. Please try again later.',
-              requireRelogin: false,
-            },
-          };
-        }
-      }
-
-      if (allowUnauthenticated && defaultValue) {
-        return defaultValue;
+        return failure(error, {
+          code: 'AUTH_REFRESH_FAILED',
+          message: refreshed?.requireRelogin ? 'Your session expired. Please log in again.' : 'Could not refresh authentication. Please try again later.',
+          requireRelogin: refreshed?.requireRelogin === true,
+          statusCode: refreshed?.requireRelogin ? 401 : refreshed?.statusCode,
+        });
       }
     }
-
-    // Handle errors for subscription API
-    if (isSubscriptionRequest) {
-      return defaultSubscription;
+    if (!currentToken) {
+      return changedSession();
     }
-
-    if (allowUnauthenticated && defaultValue) {
-      return defaultValue;
+    try {
+      const result = await apiCall();
+      return version === sessionVersion ? result : changedSession();
     }
-
-    return {
-      error: {
-        code: error.response?.status ? `HTTP_${error.response.status}` : 'API_ERROR',
-        message: error.message,
-        statusCode: error.response?.status,
-      },
-    };
+    catch (retryError) {
+      if (version !== sessionVersion) {
+        return changedSession();
+      }
+      return failure(retryError, retryError.response?.status === 401
+        ? { code: 'AUTH_REFRESH_FAILED', requireRelogin: true }
+        : {});
+    }
   }
 }
 
@@ -327,6 +197,7 @@ module.exports = {
   setAccessToken,
   setRefreshToken,
   getAccessToken,
+  getSessionVersion: () => sessionVersion,
   getRefreshToken,
   clearTokens,
   getAuthHeaders,

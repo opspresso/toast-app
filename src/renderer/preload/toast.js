@@ -8,6 +8,12 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+function subscribe(channel, callback) {
+  const listener = (_event, data) => callback(data);
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+}
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('toast', {
@@ -21,49 +27,9 @@ contextBridge.exposeInMainWorld('toast', {
 
   // Login and user information related methods
   initiateLogin: () => ipcRenderer.invoke('initiate-login'),
-  fetchUserProfile: () => ipcRenderer.invoke('fetch-user-profile'),
-  fetchSubscription: () => ipcRenderer.invoke('fetch-subscription'),
-  getUserSettings: () => ipcRenderer.invoke('get-user-settings'),
+  fetchUserProfile: (forceRefresh = false) => ipcRenderer.invoke('fetch-user-profile', forceRefresh === true),
+  fetchSubscription: (forceRefresh = false) => ipcRenderer.invoke('fetch-subscription', forceRefresh === true),
   logout: () => ipcRenderer.invoke('logout'),
-
-  invoke: (channel, ...args) => {
-    // Only call invoke for allowed channels
-    const allowedChannels = ['logout', 'resetToDefaults', 'resetAppSettings'];
-    if (allowedChannels.includes(channel)) {
-      return ipcRenderer.invoke(channel, ...args);
-    }
-    throw new Error(`Disallowed channel: ${channel}`);
-  },
-
-  // Reset app settings to defaults
-  resetToDefaults: async (options = {}) => {
-    try {
-      // Backup current settings (if there are settings to keep)
-      const backupSettings = {};
-
-      // Option to keep appearance settings
-      if (options.keepAppearance) {
-        backupSettings.appearance = await ipcRenderer.invoke('get-config', 'appearance');
-      }
-
-      // Execute settings reset
-      await ipcRenderer.invoke('resetToDefaults');
-
-      // Restore backed up settings
-      if (Object.keys(backupSettings).length > 0) {
-        await ipcRenderer.invoke('save-config', backupSettings);
-      }
-
-      return { success: true, message: 'Settings have been reset to defaults.' };
-    }
-    catch (error) {
-      window.toast.log.error('Settings reset error:', error);
-      return {
-        success: false,
-        error: error.message || 'An error occurred while resetting settings.',
-      };
-    }
-  },
 
   // Modal state
   setModalOpen: isOpen => ipcRenderer.send('modal-state-changed', isOpen),
@@ -98,7 +64,7 @@ contextBridge.exposeInMainWorld('toast', {
   platform: process.platform,
 
   // Save configuration
-  saveConfig: config => ipcRenderer.invoke('save-config', config),
+  savePages: (pages, base) => ipcRenderer.invoke('save-pages', pages, base),
 
   // File dialogs
   showOpenDialog: options => ipcRenderer.invoke('show-open-dialog', options),
@@ -109,51 +75,12 @@ contextBridge.exposeInMainWorld('toast', {
   // Path utilities
   resolveTildePath: tildePath => ipcRenderer.invoke('resolve-tilde-path', tildePath),
 
-  // Listen for events
-  onConfigUpdated: callback => {
-    ipcRenderer.on('config-updated', (event, config) => callback(config));
-
-    // Return a function to remove the event listener
-    return () => {
-      ipcRenderer.removeListener('config-updated', callback);
-    };
-  },
-
-  // Authentication related event listeners
-  onLoginSuccess: callback => {
-    ipcRenderer.on('login-success', (event, data) => callback(data));
-    return () => {
-      ipcRenderer.removeListener('login-success', callback);
-    };
-  },
-
-  onLoginError: callback => {
-    ipcRenderer.on('login-error', (event, data) => callback(data));
-    return () => {
-      ipcRenderer.removeListener('login-error', callback);
-    };
-  },
-
-  onLogoutSuccess: callback => {
-    ipcRenderer.on('logout-success', (event, data) => callback(data));
-    return () => {
-      ipcRenderer.removeListener('logout-success', callback);
-    };
-  },
-
-  onAuthStateChanged: callback => {
-    ipcRenderer.on('auth-state-changed', (event, data) => callback(data));
-    return () => {
-      ipcRenderer.removeListener('auth-state-changed', callback);
-    };
-  },
-
-  onAuthReloadSuccess: callback => {
-    ipcRenderer.on('auth-reload-success', (event, data) => callback(data));
-    return () => {
-      ipcRenderer.removeListener('auth-reload-success', callback);
-    };
-  },
+  onConfigUpdated: callback => subscribe('config-updated', callback),
+  onLoginSuccess: callback => subscribe('login-success', callback),
+  onLoginError: callback => subscribe('login-error', callback),
+  onLogoutSuccess: callback => subscribe('logout-success', callback),
+  onAuthStateChanged: callback => subscribe('auth-state-changed', callback),
+  onAuthReloadSuccess: callback => subscribe('auth-reload-success', callback),
 });
 
 // Handle keyboard shortcuts
@@ -188,6 +115,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.dispatchEvent(
       new CustomEvent('config-loaded', {
         detail: {
+          authSessionVersion: config.authSessionVersion,
           pages: config.pages,
           appearance: config.appearance,
           subscription: config.subscription,

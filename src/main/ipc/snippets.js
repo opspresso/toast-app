@@ -7,7 +7,8 @@
 
 const { ipcMain, shell } = require('electron');
 const textExpander = require('../text-expander');
-const matcher = require('../text-expander/matcher');
+const { changeSnippet } = require('../snippets');
+const { broadcastToWindows } = require('../broadcast');
 const { createLogger } = require('../logger');
 
 const logger = createLogger('IPC');
@@ -83,34 +84,23 @@ function setupSnippetsHandlers(windows, config) {
     }
   });
 
-  // Persist the snippet list and refresh the running matcher's cache
-  ipcMain.handle('text-expander:save-snippets', (event, snippets) => {
+  // Validate and apply one edit against the current main-process snapshot.
+  ipcMain.handle('text-expander:change-snippet', (_event, change) => {
     try {
-      if (!Array.isArray(snippets)) {
-        return { success: false, error: 'Snippets must be an array' };
+      const result = changeSnippet(config.get('snippets') || [], change);
+      if (!result.success) {
+        return result;
       }
-      config.set('snippets', snippets);
-      textExpander.refreshSnippets();
-      return { success: true };
+      config.set('snippets', result.snippets);
+      // The text expander refreshes through the shared store's onDidChange listener.
+      broadcastToWindows(windows, 'config-updated', { snippets: result.snippets });
+      return result;
     }
     catch (error) {
-      logger.error('Error saving snippets:', error);
-      return { success: false, error: error.message };
-    }
-  });
-
-  // Validate a single snippet against the existing set (shared pure logic)
-  ipcMain.handle('text-expander:validate-snippet', (event, snippet, existing) => {
-    try {
-      return matcher.validateSnippet(snippet, Array.isArray(existing) ? existing : []);
-    }
-    catch (error) {
-      logger.error('Error validating snippet:', error);
-      return { valid: false, errors: ['Validation failed'] };
+      logger.error('Error saving snippet:', error.message);
+      return { success: false, error: 'Could not save the snippet. Your changes were not saved.' };
     }
   });
 }
 
-module.exports = {
-  setupSnippetsHandlers,
-};
+module.exports = { setupSnippetsHandlers };
