@@ -2,8 +2,7 @@
 
 ## Development Environment Setup
 
-Use Node.js 24 from `.nvmrc` and npm 10 or later. The package supports Node 22.12+ and CI
-checks Node 22/24. Electron bundles its own Node runtime; the build-time Node version does
+Use Node.js 26.11.1 from `.nvmrc` and npm 11.20 or later. CI uses the same pinned Node version. Electron bundles its own Node runtime; the build-time Node version does
 not change it. Keep application code compatible with the bundled runtime.
 
 ```bash
@@ -55,6 +54,17 @@ Artifacts are written to `dist/`. Platform tooling and signing credentials can b
 Verify an actual artifact before claiming signing/notarization or native compatibility.
 The release workflow publishes on tags or manual dispatch; local build commands use
 `--publish never`. Do not trigger release workflows for ordinary verification.
+
+Release tags must match `package.json`. Both tag pushes and manual dispatch build the
+commit referenced by that tag. macOS and Windows builds must both pass before publication.
+macOS packages require signature, notarization ticket, and Gatekeeper checks. Windows
+packages require the configured signer, valid Authenticode integrity, and a trusted
+timestamp; CI also confirms that modified executables fail verification. This verifies
+the configured certificate and does not change the operating system trust store.
+
+GitHub Releases in `opspresso/toast` and `opspresso/toast-app` contain the same installers,
+update metadata, and blockmaps. Homebrew receives the released DMG's SHA-256. Failed
+dispatches fail the workflow. The root package is private; npm publication is disabled.
 
 ## Development Workflow
 
