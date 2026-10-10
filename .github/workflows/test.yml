@@ -12,9 +12,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [22, 24]
 
     steps:
       - name: Checkout code 🛎️
@@ -23,7 +20,7 @@ jobs:
       - name: Setup Node.js 🐍
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies 📦

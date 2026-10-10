@@ -2,8 +2,7 @@
 
 ## Development Environment Setup
 
-Use Node.js 24 from `.nvmrc` and npm 10 or later. The package supports Node 22.12+ and CI
-checks Node 22/24. Electron bundles its own Node runtime; the build-time Node version does
+Use Node.js 26.11.1 from `.nvmrc` and npm 11.20 or later. CI uses the same pinned Node version. Electron bundles its own Node runtime; the build-time Node version does
 not change it. Keep application code compatible with the bundled runtime.
 
 ```bash
