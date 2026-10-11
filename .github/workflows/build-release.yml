@@ -1,421 +1,280 @@
-# Build and Deploy Workflow: Builds the app and deploys artifacts when a tag is pushed
-# This workflow performs the following tasks:
-# 1. Verifies that the tag version matches the version in package.json
-# 2. Builds the app on macOS and Windows
-# 3. Attaches built artifacts to the GitHub release
-# 4. Creates a release in the opspresso/toast repository
-# 5. Triggers an update to the Homebrew tap
-# This workflow is triggered by tags created in the push.yml workflow
-
 name: Build and Release
 
 on:
   push:
     tags:
-      - 'v*' # Any tag starting with 'v'
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
         description: 'Version to build'
         required: true
-        default: 'v0.0.0' # Default version for manual dispatch
+        default: 'v0.0.0'
+
+permissions:
+  contents: read
 
 jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Resolve immutable release source
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          commit=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
+          version=$(git show "$commit:package.json" | jq -r .version)
+          test "$version" = "${RELEASE_TAG#v}"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: resolve
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
         os: [macos-latest, windows-latest] # , ubuntu-latest
       fail-fast: false
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
     steps:
-      - name: Checkout code 🛎️
+      - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # Fetch complete history
+          fetch-depth: 0
+          ref: ${{ needs.resolve.outputs.commit }}
 
-      - name: Setup Node.js 🐍
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm' # Use npm cache
+          cache: npm
 
-      - name: Install dependencies 📦
-        run: npm ci # Install dependencies
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Sync version from tag 🏷️
-        shell: bash
+      - name: Validate
+        if: matrix.os == 'macos-latest'
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_VERSION="${{ inputs.version }}"
-          else
-            TAG_VERSION="${{ github.ref_name }}"
-          fi
-          VERSION="${TAG_VERSION#v}"
-          jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
-          echo "✅ package.json version updated to $VERSION"
+          npm run lint
+          npm test -- --runInBand
 
-      - name: Configure environment variables 🔑
-        shell: bash
+      - name: Configure application environment
+        env:
+          CLIENT_ID: ${{ secrets.TOAST_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.TOAST_CLIENT_SECRET }}
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          TOAST_URL: ${{ vars.TOAST_URL }}
+          TOKEN_EXPIRES_IN: ${{ vars.TOKEN_EXPIRES_IN }}
         run: |
-          # Set environment variables needed for app execution
-          echo "CLIENT_ID=${{ secrets.TOAST_CLIENT_ID }}" >> src/main/config/.env
-          echo "CLIENT_SECRET=${{ secrets.TOAST_CLIENT_SECRET }}" >> src/main/config/.env
-          echo "NODE_ENV=${{ vars.NODE_ENV }}" >> src/main/config/.env
-          echo "TOAST_URL=${{ vars.TOAST_URL }}" >> src/main/config/.env
-          echo "TOKEN_EXPIRES_IN=${{ vars.TOKEN_EXPIRES_IN }}" >> src/main/config/.env
+          node -e "const fs = require('node:fs'); const keys = ['CLIENT_ID', 'CLIENT_SECRET', 'NODE_ENV', 'TOAST_URL', 'TOKEN_EXPIRES_IN']; fs.writeFileSync('src/main/config/.env', keys.map(key => key + '=' + JSON.stringify(process.env[key] || '')).join('\n') + '\n', { mode: 0o600 });"
 
-      - name: Import macOS codesign certificate 🔐
+      - name: Import macOS codesign certificate
         if: matrix.os == 'macos-latest'
         uses: apple-actions/import-codesign-certs@v7
         with:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
-      - name: Prepare for app notarization 🔑
+      - name: Prepare for app notarization
         if: matrix.os == 'macos-latest'
         shell: bash
-        run: |
-          # Write App Store Connect API key to disk
-          mkdir -p "$HOME/private_keys/"
-          echo '${{ secrets.API_KEY_SECRET }}' > "$HOME/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8"
-
-          # Export electron-builder notarization env vars for subsequent steps
-          echo "APPLE_API_KEY=$HOME/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8" >> "$GITHUB_ENV"
-          echo "APPLE_API_KEY_ID=${{ secrets.API_KEY_ID }}" >> "$GITHUB_ENV"
-          echo "APPLE_API_ISSUER=${{ secrets.API_KEY_ISSUER_ID }}" >> "$GITHUB_ENV"
-
-      - name: Build Electron app on macOS 📦
-        if: matrix.os == 'macos-latest'
-        run: npx electron-builder --mac --publish never
         env:
-          GH_TOKEN: ${{ secrets.GHP_TOKEN }}
+          API_KEY_SECRET: ${{ secrets.API_KEY_SECRET }}
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}
+        run: |
+          umask 077
+          KEY_PATH="$RUNNER_TEMP/notarization-key.p8"
+          printf '%s' "$API_KEY_SECRET" > "$KEY_PATH"
+          echo "APPLE_API_KEY=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "APPLE_API_KEY_ID=$API_KEY_ID" >> "$GITHUB_ENV"
+          echo "APPLE_API_ISSUER=$API_KEY_ISSUER_ID" >> "$GITHUB_ENV"
 
-      - name: Build Electron app on Windows 📦
+      - name: Build Electron app on macOS
+        if: matrix.os == 'macos-latest'
+        run: npx --no-install electron-builder --mac --publish never
+
+      - name: Verify macOS signature and notarization
+        if: matrix.os == 'macos-latest'
+        run: |
+          codesign --verify --deep --strict dist/mac-arm64/Toast.app
+          xcrun stapler validate dist/mac-arm64/Toast.app
+          spctl --assess --type execute --verbose dist/mac-arm64/Toast.app
+
+      - name: Build Electron app on Windows
         if: matrix.os == 'windows-latest'
         shell: bash
-        run: npx electron-builder --win --publish never
+        run: npx --no-install electron-builder --win --publish never --config.forceCodeSigning=true
         env:
-          GH_TOKEN: ${{ secrets.GHP_TOKEN }}
           CSC_LINK: ${{ secrets.WINDOWS_CERTS }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
-      - name: List dist directory contents 📂
-        if: matrix.os == 'macos-latest'
-        run: ls -la dist
-
-      - name: List dist directory contents 📂
+      - name: Bind Windows artifacts to the configured signer
         if: matrix.os == 'windows-latest'
-        run: dir dist
+        shell: pwsh
+        run: ./scripts/export-windows-signing-certificate.ps1
+        env:
+          WINDOWS_CERTS: ${{ secrets.WINDOWS_CERTS }}
+          WINDOWS_CERTS_PASSWORD: ${{ secrets.WINDOWS_CERTS_PASSWORD }}
 
-      - name: Upload artifacts 🚚
+      - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.os }}-artifacts # Distinguish artifacts by OS
+          name: ${{ matrix.os }}-artifacts
           path: |
-            dist/*.AppImage
-            dist/*.deb
             dist/*.dmg
-            dist/*.exe
             dist/*.zip
+            dist/*.exe
             dist/*.yml
-          if-no-files-found: ignore # Don't fail if no files are found
+            dist/*.blockmap
+            dist/signing-certificate.pem
+          if-no-files-found: error
 
-  # Release job: Attach built artifacts to GitHub release
-  release:
-    needs: [build]
+  verify-windows:
+    needs: [resolve, build]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts 🚚
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.resolve.outputs.commit }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-latest-artifacts
+          path: windows
+      - name: Install Authenticode verifier
+        run: sudo apt-get update && sudo apt-get install -y osslsigncode
+      - name: Verify publisher, file integrity and trusted timestamp
+        run: bash scripts/verify-windows-release.sh windows
+      - name: Confirm modified executables are rejected
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          target = next(Path('windows').glob('*.exe'))
+          data = bytearray(target.read_bytes())
+          data[64] ^= 1
+          target.write_bytes(data)
+          PY
+          if bash scripts/verify-windows-release.sh windows > tamper-check.log 2>&1; then
+            echo 'Modified executable passed signature verification' >&2
+            exit 1
+          fi
+
+  release:
+    needs: [resolve, build, verify-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.resolve.outputs.commit }}
+
+      - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
-          path: artifacts # Download all artifacts to artifacts directory
+          path: artifacts
 
-      - name: Get Tag Message 📝
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.resolve.outputs.tag }}
+        run: echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Get tag message
         id: tag_message
+        env:
+          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
         run: |
-          echo "Fetching tag message from GitHub API..."
-
-          # Get tag ref object (works for both annotated and lightweight tags)
           TAG_REF=$(curl -s \
-            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/${{ github.ref_name }}")
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$RELEASE_TAG")
 
           OBJECT_TYPE=$(echo "$TAG_REF" | jq -r '.object.type')
           OBJECT_SHA=$(echo "$TAG_REF" | jq -r '.object.sha')
 
           TAG_MESSAGE=""
-
-          # Only annotated tags have a separate tag object with a message
           if [ "$OBJECT_TYPE" = "tag" ]; then
             TAG_MESSAGE=$(curl -s \
-              -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/git/tags/$OBJECT_SHA" | \
               jq -r '.message')
           fi
 
           if [ -z "$TAG_MESSAGE" ] || [ "$TAG_MESSAGE" = "null" ]; then
-            echo "⚠️ No tag message found, generating notes from commit log"
-
-            # Fall back to the commit subjects since the previous tag
-            PREV_TAG=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "")
+            PREV_TAG=$(git describe --tags --abbrev=0 "$RELEASE_TAG^" 2>/dev/null || echo "")
             if [ -n "$PREV_TAG" ]; then
               TAG_MESSAGE=$(printf '## Changes since %s\n\n%s\n' \
                 "$PREV_TAG" \
-                "$(git log --pretty='- %s' "$PREV_TAG..${{ github.ref_name }}" --no-merges)")
+                "$(git log --pretty='- %s' "$PREV_TAG..$RELEASE_TAG" --no-merges)")
             else
-              TAG_MESSAGE="Release ${{ github.ref_name }}"
+              TAG_MESSAGE="Release $RELEASE_TAG"
             fi
           fi
 
           echo "$TAG_MESSAGE" > release_notes.md
-          echo "✅ Saved release notes:"
-          cat release_notes.md
 
-      - name: Create Release in Releases Repo 🚀
-        uses: softprops/action-gh-release@v2
+      - name: Publish desktop download release
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GHP_TOKEN }}
           repository: opspresso/toast
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Release ${{ steps.release_tag.outputs.tag }}
           draft: false
           prerelease: false
           body_path: release_notes.md
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
+          files: |
             artifacts/**/*.dmg
-            artifacts/**/*.exe
             artifacts/**/*.zip
-            artifacts/**/latest-*.yml
-            artifacts/**/latest.yml
+            artifacts/**/*.exe
+            artifacts/**/*.blockmap
+            artifacts/**/latest*.yml
 
-      - name: Create Release in This Repo 🚀
-        uses: softprops/action-gh-release@v2
+      - name: Publish source-repository release
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GHP_TOKEN }}
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Release ${{ steps.release_tag.outputs.tag }}
           draft: false
           prerelease: false
           body_path: release_notes.md
-          files: | # List of files to attach to the release
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
+          files: |
             artifacts/**/*.dmg
-            artifacts/**/*.exe
             artifacts/**/*.zip
-            artifacts/**/latest-*.yml
-            artifacts/**/latest.yml
+            artifacts/**/*.exe
+            artifacts/**/*.blockmap
+            artifacts/**/latest*.yml
 
-      - name: Calculate DMG SHA256 🔐
+      - name: Calculate DMG SHA256
         id: sha256
         run: |
-          # Find the DMG file in the artifacts directory
           DMG_FILE=$(find ./artifacts -name "*.dmg" | head -n 1)
-
           if [ -z "$DMG_FILE" ]; then
-            echo "⚠️ DMG file not found."
+            echo "No DMG artifact found" >&2
             exit 1
           fi
+          echo "sha256=$(shasum -a 256 "$DMG_FILE" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-          echo "📦 Found DMG file: $DMG_FILE"
-
-          # Calculate the SHA256 hash of the DMG file
-          DMG_SHA256=$(shasum -a 256 "$DMG_FILE" | awk '{print $1}')
-          echo "🔑 DMG SHA256: $DMG_SHA256"
-
-          # Set the SHA256 value as output
-          echo "sha256=$DMG_SHA256" >> $GITHUB_OUTPUT
-
-      - name: Trigger for Homebrew 🚀
+      - name: Trigger Homebrew tap update
+        if: steps.sha256.outputs.sha256 != ''
+        env:
+          GH_TOKEN: ${{ secrets.GHP_TOKEN }}
         run: |
-          echo "🚀 Triggering Homebrew tap update..."
-
-          # Set variables
-          GITOPS_REPO="opspresso/homebrew-tap"
-          PROJECT="toast"
-          VERSION="${{ github.ref_name }}"
-          SHA256="${{ steps.sha256.outputs.sha256 }}"
-
-          echo "📋 Parameters:"
-          echo "  Project: $PROJECT"
-          echo "  Version: $VERSION"
-          echo "  SHA256: $SHA256"
-
-          # Build the JSON payload to trigger the repository_dispatch event
-          PAYLOAD=$(cat <<EOF
-          {
-            "event_type": "gitops",
-            "client_payload": {
-              "project": "$PROJECT",
-              "version": "$VERSION",
-              "sha256": "$SHA256"
-            }
-          }
-          EOF
-          )
-
-          # Trigger the repository_dispatch event via the GitHub API
-          curl -X POST \
+          curl --fail-with-body -sSL -X POST \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.GHP_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            --data "$PAYLOAD" \
-            "https://api.github.com/repos/$GITOPS_REPO/dispatches"
-
-          echo "✅ Homebrew tap update triggered"
-
-  # Slack notification job: Send success notification
-  slack-success:
-    needs: [build, release]
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Slack success notification 🎉
-        uses: slackapi/slack-github-action@v3
-        with:
-          webhook-type: incoming-webhook
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "✅ Toast App Build & Release Success",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Version:*\n${{ github.ref_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Workflow:*\n${{ github.workflow }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "🚀 *Release created successfully!*\n• macOS and Windows builds completed\n• Artifacts uploaded to GitHub Release\n• Homebrew tap updated"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Release"
-                      },
-                      "url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-                    },
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Workflow"
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
-
-  # Slack notification job: Send failure notification
-  slack-failure:
-    needs: [build, release]
-    if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Slack failure notification ❌
-        uses: slackapi/slack-github-action@v3
-        with:
-          webhook-type: incoming-webhook
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "❌ Toast App Build & Release Failed",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Version:*\n${{ github.ref_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Workflow:*\n${{ github.workflow }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "⚠️ *Build or release process failed!*\nPlease check the workflow logs for details."
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Logs"
-                      },
-                      "style": "danger",
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -d "{\"event_type\":\"gitops\",\"client_payload\":{\"project\":\"toast\",\"version\":\"${{ steps.release_tag.outputs.tag }}\",\"sha256\":\"${{ steps.sha256.outputs.sha256 }}\"}}" \
+            https://api.github.com/repos/opspresso/homebrew-tap/dispatches

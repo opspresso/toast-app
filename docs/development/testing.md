@@ -17,7 +17,7 @@ clover coverage to `coverage/`. Coverage excludes renderer page modules; report 
 separately rather than interpreting the coverage percentage as whole-app coverage.
 
 The repository guidance targets 80% coverage on core functionality. Jest does not configure
-a numeric coverage gate. CI `test.yml` runs lint and Jest on Ubuntu with Node 22 and 24 for
+a numeric coverage gate. CI `test.yml` runs lint and Jest on Ubuntu with the Node version pinned in `.nvmrc` for
 pushes and pull requests to `main`. No nightly performance or browser E2E workflow is configured.
 
 ## Regression cases
