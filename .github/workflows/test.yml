@@ -1,13 +1,16 @@
-# Test Workflow: Runs lint and unit tests on every push and pull request to main
+# Test Workflow: lint, unit tests and an unpacked packaging check.
 name: Test
 
+# Runs before every release (called by build-release.yml with the release commit) and on demand.
+# Pull requests and pushes do not start it.
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to verify; defaults to the triggering commit.
+        type: string
+        required: false
+  workflow_dispatch:
 
 jobs:
   test:
@@ -16,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code 🛎️
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Setup Node.js 🐍
         uses: actions/setup-node@v6
@@ -40,6 +45,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
