@@ -36,8 +36,14 @@ jobs:
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
-  build:
+  verify:
     needs: resolve
+    uses: ./.github/workflows/test.yml
+    with:
+      ref: ${{ needs.resolve.outputs.commit }}
+
+  build:
+    needs: [resolve, verify]
     runs-on: ${{ matrix.os }}
 
     strategy:
