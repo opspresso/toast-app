@@ -183,14 +183,15 @@ describe('Main Auth Module (P0)', () => {
 
     test('should exchange code for token successfully', async () => {
       const code = 'test-auth-code';
-      const state = 'test-state';
+      const codeVerifier = 'test-verifier';
 
-      const result = await auth.exchangeCodeForToken(code, state);
+      const result = await auth.exchangeCodeForToken(code, codeVerifier);
 
       expect(mockApiAuth.exchangeCodeForToken).toHaveBeenCalledWith({
         code,
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
+        codeVerifier,
       });
       expect(result.success).toBe(true);
     });

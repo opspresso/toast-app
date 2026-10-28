@@ -150,9 +150,10 @@ function initialize() {
         }
 
         if (code) {
-          // CSRF protection: only exchange the code after matching the server-returned state against the stored value
-          const receivedState = urlObj.searchParams.get('state');
-          if (!auth.validateStateParam(receivedState)) {
+          // CSRF protection: only exchange the code after matching the server-returned state against the stored value.
+          // The matching login's PKCE verifier proves this device started it.
+          const codeVerifier = auth.consumeAuthorizationState(urlObj.searchParams.get('state'));
+          if (!codeVerifier) {
             logger.error('Auth redirect rejected: state validation failed');
             authManager.notifyLoginError('Security validation failed (state mismatch).');
             return;
@@ -161,7 +162,7 @@ function initialize() {
           // Existing OAuth code handling logic
           logger.info('Starting authentication code exchange');
           authManager
-            .exchangeCodeForTokenAndUpdateSubscription(code)
+            .exchangeCodeForTokenAndUpdateSubscription(code, codeVerifier)
             .then(result => {
               logger.info('Authentication code exchange result:', result.success ? 'Success' : 'Failed');
             })

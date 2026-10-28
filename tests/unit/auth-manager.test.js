@@ -282,7 +282,8 @@ describe('Authentication Manager', () => {
     test('login fetches one profile, persists full entitlement, and updates editor context without a sync manager', async () => {
       authManager.setSyncManager(null);
       login({ active: true, plan: 'Premium', features: { cloud_sync: true, page_groups: 9 } });
-      expect(await authManager.exchangeCodeForTokenAndUpdateSubscription('code')).toMatchObject({ success: true });
+      expect(await authManager.exchangeCodeForTokenAndUpdateSubscription('code', 'verifier')).toMatchObject({ success: true });
+      expect(mockAuth.exchangeCodeForToken).toHaveBeenCalledWith('code', 'verifier');
       expect(mockUserDataManager.getUserProfile).toHaveBeenCalledTimes(1);
       expect(mockConfigStore.set).toHaveBeenCalledWith('subscription', expect.objectContaining({ pageGroups: 9, isAuthenticated: true }));
       expect(mockWindows.toast.webContents.send).toHaveBeenCalledWith('config-updated', expect.objectContaining({ authSessionVersion: 0 }));

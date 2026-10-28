@@ -85,13 +85,14 @@ async function initiateLogin() {
 /**
  * Exchange authentication code for token and update profile/settings/subscription information
  * @param {string} code - OAuth authentication code
+ * @param {string} codeVerifier - PKCE verifier of the pending login
  * @returns {Promise<Object>} Processing result
  */
-async function exchangeCodeForTokenAndUpdateSubscription(code) {
+async function exchangeCodeForTokenAndUpdateSubscription(code, codeVerifier) {
   const sequence = ++authSequence;
   syncManager?.stopPeriodicSync?.();
   try {
-    const result = await auth.exchangeCodeForToken(code);
+    const result = await auth.exchangeCodeForToken(code, codeVerifier);
     if (sequence !== authSequence) {
       return { success: false, error: 'The account changed during login' };
     }
