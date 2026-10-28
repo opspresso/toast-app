@@ -563,7 +563,7 @@ The auth manager module is the entry point for runtime authentication handling. 
 
 ```javascript
 initiateLogin()                 // Start the login process
-exchangeCodeForTokenAndUpdateSubscription(code) // Internal: called only after protocol state validation
+exchangeCodeForTokenAndUpdateSubscription(code, codeVerifier) // Internal: called only after protocol state validation
 restoreSession()                 // Restore credentials/profile and start initial sync
 reloadAccount()                  // Refresh an existing session or start browser login
 logout()                        // Log out
@@ -595,14 +595,14 @@ for login, profile, subscription, and logout notifications.
 
 ```javascript
 initiateLogin()                     // Open the OAuth page; resolves to boolean
-exchangeCodeForToken(code)          // Exchange code and durably save credentials
+exchangeCodeForToken(code, codeVerifier) // Exchange code with PKCE and durably save credentials
 fetchUserProfile()                 // Raw profile request; no local profile fallback
 hasValidToken()                     // Load credentials and refresh near expiry
 getAccessToken()                    // Return the memory/stored access token
 refreshAccessToken({ force: true }) // Force refresh after a server 401; returns { success, ... }
 logout()                           // Revoke and delete credentials; resolves to boolean
 registerProtocolHandler()          // Register toast-app only in packaged builds
-validateStateParam(state)          // Consume the matching unexpired OAuth callback state
+consumeAuthorizationState(state)   // Consume the matching unexpired state; returns its PKCE verifier or null
 ```
 
 `src/index.js` receives the protocol callback, validates its state, and delegates the complete

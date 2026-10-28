@@ -386,9 +386,10 @@ async function initiateLogin() {
 /**
  * Exchange authentication code for token
  * @param {string} code - OAuth authentication code
+ * @param {string} codeVerifier - PKCE verifier of the pending login
  * @returns {Promise<Object>} Token exchange result
  */
-async function exchangeCodeForToken(code) {
+async function exchangeCodeForToken(code, codeVerifier) {
   try {
     if (isLoggingOut) {
       logger.info('Logout in progress; aborting code exchange');
@@ -413,6 +414,7 @@ async function exchangeCodeForToken(code) {
       code,
       clientId: CLIENT_ID,
       clientSecret: CLIENT_SECRET,
+      codeVerifier,
     });
 
     if (!tokenResult.success) {
@@ -681,7 +683,7 @@ module.exports = {
   logout,
   fetchUserProfile,
   registerProtocolHandler,
-  validateStateParam: apiAuth.validateStateParam,
+  consumeAuthorizationState: apiAuth.consumeAuthorizationState,
   hasValidToken,
   getAccessToken,
   refreshAccessToken,

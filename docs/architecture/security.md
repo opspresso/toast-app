@@ -8,9 +8,14 @@ does not sandbox commands or scripts that the user chooses to execute.
 ## Authentication and tokens
 
 Toast uses OAuth Authorization Code Flow through the browser and `toast-app://auth`.
-The protocol dispatcher validates a matching, unexpired, one-use state before exchanging
-the code. PKCE is not implemented. A bundled desktop client secret is not a private secret
-that can be concealed from someone who can inspect the installed application.
+Each login uses a new state and a PKCE (RFC 7636) verifier. The app sends only the S256
+challenge to the authorize endpoint and keeps the verifier in the `auth-state` store. The
+protocol dispatcher consumes a matching state younger than 5 minutes, then sends that state's
+verifier with the code. A missing, expired, or mismatched state stops the login before the code
+exchange. Toast Web rejects a code with a challenge unless the verifier matches. Another program
+that receives the `toast-app://auth` redirect therefore cannot redeem the code. A bundled
+desktop client secret is not a private secret that can be concealed from someone who can
+inspect the installed application.
 
 Tokens are plaintext JSON in the user data directory, written atomically with owner-only
 permissions (`0600`). The access and rotated refresh token are persisted together. OS secure

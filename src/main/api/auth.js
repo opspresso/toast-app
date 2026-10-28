@@ -6,7 +6,7 @@
  */
 
 const { URL } = require('url');
-const { randomUUID } = require('crypto');
+const { randomUUID, randomBytes, createHash } = require('crypto');
 const Store = require('electron-store');
 const { createLogger, maskAuthUrl } = require('../logger');
 const { ENDPOINTS, createApiClient, getAuthHeaders, authenticatedRequest, clearTokens } = require('./client');
@@ -35,73 +35,57 @@ const stateStore = new Store({
   clearInvalidConfig: true,
 });
 
+const STATE_KEYS = ['oauth-state', 'oauth-code-verifier', 'state-created-at'];
+const STATE_TTL_MS = 5 * 60 * 1000;
+
 /**
- * Store authentication state value for CSRF prevention
- * @param {string} state - State value to store
+ * Store the CSRF state and PKCE verifier for one pending login.
+ * @param {string} state - State value sent to the authorize endpoint
+ * @param {string} codeVerifier - PKCE verifier kept only on this device
  */
-function storeStateParam(state) {
-  try {
-    stateStore.set({ 'oauth-state': state, 'state-created-at': Date.now() });
-    logger.info('Auth state stored');
-    return true;
-  }
-  catch (error) {
-    logger.error('Failed to store state parameter:', error);
-    throw error;
-  }
+function storeAuthorizationState(state, codeVerifier) {
+  stateStore.set({ 'oauth-state': state, 'oauth-code-verifier': codeVerifier, 'state-created-at': Date.now() });
+  logger.info('Auth state stored');
 }
 
 /**
- * Retrieve stored authentication state value
- * @returns {string|null} Stored state value or null
- */
-function retrieveStoredState() {
-  try {
-    const state = stateStore.get('oauth-state');
-    const createdAt = stateStore.get('state-created-at') || 0;
-
-    // Consider state expired if more than 5 minutes have passed
-    const isExpired = Date.now() - createdAt > 5 * 60 * 1000;
-
-    if (isExpired) {
-      logger.info('Auth state expired, clearing');
-      stateStore.delete('oauth-state');
-      stateStore.delete('state-created-at');
-      return null;
-    }
-
-    return state;
-  }
-  catch (error) {
-    logger.error('Failed to retrieve stored state:', error);
-    return null;
-  }
-}
-
-/**
- * Validate a state value received on the OAuth redirect against the stored one
- * (CSRF prevention) and consume it so a state cannot be replayed.
+ * Validate the state received on the OAuth redirect (CSRF prevention) and
+ * consume the pending login so a state cannot be replayed.
  * @param {string} receivedState - state parameter from the redirect URL
- * @returns {boolean} True when the state matches the stored, unexpired value
+ * @returns {string|null} The PKCE code verifier when the state matches the stored, unexpired value; otherwise null
  */
-function validateStateParam(receivedState) {
-  const storedState = retrieveStoredState();
-  const valid = Boolean(storedState) && receivedState === storedState;
+function consumeAuthorizationState(receivedState) {
+  let codeVerifier = null;
+  try {
+    const storedState = stateStore.get('oauth-state');
+    const createdAt = stateStore.get('state-created-at') || 0;
+    const verifier = stateStore.get('oauth-code-verifier');
+    if (Date.now() - createdAt > STATE_TTL_MS) {
+      logger.info('Auth state expired');
+    }
+    else if (storedState && receivedState === storedState && typeof verifier === 'string' && verifier) {
+      codeVerifier = verifier;
+    }
+  }
+  catch (error) {
+    logger.error('Failed to read auth state:', error);
+  }
 
   // One-time use: clear regardless of outcome so a leaked/guessed state
   // cannot be replayed on a subsequent redirect.
   try {
-    stateStore.delete('oauth-state');
-    stateStore.delete('state-created-at');
+    for (const key of STATE_KEYS) {
+      stateStore.delete(key);
+    }
   }
   catch (error) {
     logger.error('Failed to clear auth state after validation:', error);
   }
 
-  if (!valid) {
-    logger.error('State mismatch on auth redirect. Possible CSRF attack');
+  if (!codeVerifier) {
+    logger.error('Auth redirect state is missing, expired, or mismatched. Possible CSRF attack');
   }
-  return valid;
+  return codeVerifier;
 }
 
 /**
@@ -148,17 +132,13 @@ function setLoginInProgress(status) {
  */
 function initiateLogin(clientId) {
   try {
-    // State value is used to prevent CSRF attacks
+    // State prevents CSRF. PKCE (RFC 7636, S256) binds the code to this device:
+    // the bundled client secret is not confidential, so an app that intercepts
+    // the toast-app:// redirect must not be able to redeem the code.
     const state = randomUUID();
-
-    // Store state value
-    const stored = storeStateParam(state);
-    if (!stored) {
-      return {
-        success: false,
-        error: 'Failed to store state value. Please try again.',
-      };
-    }
+    const codeVerifier = randomBytes(32).toString('base64url');
+    const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
+    storeAuthorizationState(state, codeVerifier);
 
     // Build authentication URL
     const authUrl = new URL(ENDPOINTS.OAUTH_AUTHORIZE);
@@ -167,6 +147,8 @@ function initiateLogin(clientId) {
     authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
     authUrl.searchParams.append('scope', 'profile'); // subscription is integrated into profile
     authUrl.searchParams.append('state', state);
+    authUrl.searchParams.append('code_challenge', codeChallenge);
+    authUrl.searchParams.append('code_challenge_method', 'S256');
 
     // Log authentication URL
     logger.info('====== Authentication Request Info ======');
@@ -201,9 +183,10 @@ function initiateLogin(clientId) {
  * @param {string} params.code - OAuth authorization code
  * @param {string} params.clientId - OAuth client ID
  * @param {string} params.clientSecret - OAuth client secret
+ * @param {string} params.codeVerifier - PKCE verifier returned by consumeAuthorizationState
  * @returns {Promise<Object>} Token exchange result
  */
-async function exchangeCodeForToken({ code, clientId, clientSecret }) {
+async function exchangeCodeForToken({ code, clientId, clientSecret, codeVerifier }) {
   try {
     logger.info('Starting exchange of authorization code for token');
 
@@ -216,6 +199,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret }) {
     data.append('client_id', clientId);
     data.append('client_secret', clientSecret);
     data.append('redirect_uri', REDIRECT_URI);
+    data.append('code_verifier', codeVerifier);
 
     logger.info('Token request URL:', ENDPOINTS.OAUTH_TOKEN);
     logger.info('Request data:', {
@@ -470,7 +454,7 @@ module.exports = {
   exchangeCodeForToken,
   refreshAccessToken,
   revokeToken,
-  validateStateParam,
+  consumeAuthorizationState,
   fetchUserProfile,
   logout,
   isLoginProcessActive, // Export function to check if login is in progress

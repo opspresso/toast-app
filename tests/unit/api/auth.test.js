@@ -312,47 +312,66 @@ describe('API Auth Module (P0)', () => {
     });
   });
 
-  describe('validateStateParam (CSRF)', () => {
+  describe('consumeAuthorizationState (CSRF + PKCE)', () => {
+    const stored = (values) => mockStore.get.mockImplementation(key => values[key]);
+
     beforeEach(() => {
       mockStore.get.mockReset();
       mockStore.delete.mockClear();
     });
 
-    test('should accept a matching, unexpired state and consume it', () => {
-      mockStore.get
-        .mockReturnValueOnce('mock-uuid-12345')      // oauth-state
-        .mockReturnValueOnce(Date.now() - 10000);    // state-created-at
+    test('returns the verifier for a matching, unexpired state and consumes it', () => {
+      stored({ 'oauth-state': 'mock-uuid-12345', 'oauth-code-verifier': 'verifier-1', 'state-created-at': Date.now() - 10000 });
 
-      const valid = authApi.validateStateParam('mock-uuid-12345');
-
-      expect(valid).toBe(true);
-      // one-time use: state is cleared after validation
-      expect(mockStore.delete).toHaveBeenCalledWith('oauth-state');
-      expect(mockStore.delete).toHaveBeenCalledWith('state-created-at');
+      expect(authApi.consumeAuthorizationState('mock-uuid-12345')).toBe('verifier-1');
+      // one-time use: the pending login is cleared after validation
+      for (const key of ['oauth-state', 'oauth-code-verifier', 'state-created-at']) {
+        expect(mockStore.delete).toHaveBeenCalledWith(key);
+      }
     });
 
-    test('should reject a mismatched state', () => {
-      mockStore.get
-        .mockReturnValueOnce('stored-state')
-        .mockReturnValueOnce(Date.now() - 10000);
+    test('rejects a mismatched state and still clears it', () => {
+      stored({ 'oauth-state': 'stored-state', 'oauth-code-verifier': 'verifier-1', 'state-created-at': Date.now() - 10000 });
 
-      expect(authApi.validateStateParam('attacker-state')).toBe(false);
-      // cleared even on rejection so it cannot be replayed
-      expect(mockStore.delete).toHaveBeenCalledWith('oauth-state');
+      expect(authApi.consumeAuthorizationState('attacker-state')).toBeNull();
+      expect(mockStore.delete).toHaveBeenCalledWith('oauth-code-verifier');
     });
 
-    test('should reject when no state was stored', () => {
-      mockStore.get.mockReturnValueOnce(undefined).mockReturnValueOnce(0);
+    test('rejects when no state was stored', () => {
+      stored({});
 
-      expect(authApi.validateStateParam('anything')).toBe(false);
+      expect(authApi.consumeAuthorizationState('anything')).toBeNull();
     });
 
-    test('should reject an expired state', () => {
-      mockStore.get
-        .mockReturnValueOnce('mock-uuid-12345')
-        .mockReturnValueOnce(Date.now() - 6 * 60 * 1000); // older than 5 min
+    test('rejects an expired state', () => {
+      stored({ 'oauth-state': 'mock-uuid-12345', 'oauth-code-verifier': 'verifier-1', 'state-created-at': Date.now() - 6 * 60 * 1000 });
 
-      expect(authApi.validateStateParam('mock-uuid-12345')).toBe(false);
+      expect(authApi.consumeAuthorizationState('mock-uuid-12345')).toBeNull();
+    });
+
+    test('rejects a state stored without a verifier', () => {
+      stored({ 'oauth-state': 'mock-uuid-12345', 'state-created-at': Date.now() - 10000 });
+
+      expect(authApi.consumeAuthorizationState('mock-uuid-12345')).toBeNull();
+    });
+  });
+
+  describe('PKCE', () => {
+    test('sends the S256 challenge of the stored verifier and redeems the code with that verifier', async () => {
+      const { createHash } = jest.requireActual('crypto');
+      mockStore.set.mockClear();
+      const login = authApi.initiateLogin('test-client');
+      const { 'oauth-code-verifier': verifier } = mockStore.set.mock.calls[0][0];
+      const url = new URL(login.url);
+
+      expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(url.searchParams.get('code_challenge')).toBe(createHash('sha256').update(verifier).digest('base64url'));
+      expect(url.searchParams.get('code_challenge')).not.toBe(verifier);
+
+      mockClient.post.mockResolvedValue({ data: { access_token: 'a', refresh_token: 'r', expires_in: 60 } });
+      await authApi.exchangeCodeForToken({ code: 'c', clientId: 'test-client', clientSecret: 's', codeVerifier: verifier });
+      expect(mockClient.post.mock.calls.at(-1)[1].get('code_verifier')).toBe(verifier);
     });
   });
 
