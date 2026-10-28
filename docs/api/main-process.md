@@ -563,7 +563,7 @@ The auth manager module is the entry point for runtime authentication handling. 
 
 ```javascript
 initiateLogin()                 // Start the login process
-exchangeCodeForTokenAndUpdateSubscription(code) // Internal: called only after protocol state validation
+exchangeCodeForTokenAndUpdateSubscription(code, codeVerifier) // Internal: called only after protocol state validation
 restoreSession()                 // Restore credentials/profile and start initial sync
 reloadAccount()                  // Refresh an existing session or start browser login
 logout()                        // Log out
