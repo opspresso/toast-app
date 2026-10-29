@@ -153,6 +153,13 @@ The selected keys are placed in positions that are easily reachable with the lef
 - **Enter key**: Run the selected button
 - **Shortcuts**: Run a button directly
 
+### Screen Readers
+
+- Each popup button has `role="button"` and an `aria-label` with the button name.
+- A button with a shortcut also has `aria-keyshortcuts` (for example, `C`).
+- The icon and the shortcut badge are hidden from screen readers because they repeat this information.
+- The status bar is a polite live region (`role="status"`), so action results such as "Command executed successfully" are announced.
+
 ### Visual Indication
 
 - The shortcut is clearly displayed on each button

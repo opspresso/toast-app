@@ -247,6 +247,12 @@ export function createButtonElement(button) {
   // Set button name
   const nameElement = buttonElement.querySelector('.button-name');
   nameElement.textContent = button.name;
+  // Screen readers announce the name and the single-key shortcut; the icon and
+  // shortcut badge are hidden from them because they repeat this information.
+  buttonElement.setAttribute('aria-label', button.name || button.action || 'Button');
+  if (button.shortcut) {
+    buttonElement.setAttribute('aria-keyshortcuts', button.shortcut);
+  }
 
   // Set button icon
   const iconElement = buttonElement.querySelector('.button-icon');
