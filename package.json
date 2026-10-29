@@ -1,7 +1,7 @@
 {
   "name": "toast-app",
   "private": true,
-  "version": "0.20.1",
+  "version": "0.20.2",
   "description": "A customizable shortcut launcher for macOS and Windows",
   "author": "nalbam <me@nalbam.com>",
   "homepage": "https://toastapp.dev",
