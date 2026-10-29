@@ -24,8 +24,9 @@ interpreters; do not copy timestamp-based temporary-file or shell-interpolation 
 
 ## Shortcuts and windows
 
-Global shortcuts use Electron accelerators. `Ctrl`/`Control` maps to `CommandOrControl`;
-`Command`/`Meta`/`Super` maps to `Super`; `Alt` and `Shift` keep their meaning. Registration
+Global shortcuts use Electron accelerators. `Ctrl`/`Control` maps to `Control`;
+`Command`/`Meta`/`Super` maps to `Super` (Command on macOS, Windows key on Windows). The two never
+merge, so Control+Space is not registered as Command+Space; `Alt` and `Shift` keep their meaning. Registration
 failure is reported to the user. Check OS-reserved shortcuts on the actual target machine.
 
 The launcher is frameless, transparent, fixed-size, and always on top. Positioning uses the
