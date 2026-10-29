@@ -43,7 +43,10 @@ Legacy cache files remain in place because buttons may still reference them.
 
 ## Cloud Sharing
 
-The `extract-app-icon` IPC handler returns a local icon and, when upload succeeds, a `remoteUrl`.
+The `extract-app-icon` IPC handler returns a local icon. With `{ upload: true }`, it also uploads the
+icon and returns a `remoteUrl` when the upload succeeds. Only the button editor passes this option,
+because it saves the URL. The popup renders icons on every show, so it reads only the local cache and
+does not check tokens or upload.
 The renderer prefers the remote URL. Authentication changes during extraction/upload discard the
 old request's result instead of applying it to a different account.
 

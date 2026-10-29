@@ -145,6 +145,7 @@ jest.mock('electron', () => ({
 jest.mock('../../src/main/executor', () => mockExecutor);
 jest.mock('../../src/main/config', () => mockConfigStore);
 jest.mock('../../src/main/auth-manager', () => mockAuthManager);
+jest.mock('../../src/main/api/icons', () => ({ uploadIcon: jest.fn() }));
 jest.mock('../../src/main/user-data-manager', () => mockUserDataManager);
 jest.mock('../../src/main/updater', () => mockUpdater);
 jest.mock('../../src/main/auth', () => mockAuth);
@@ -781,6 +782,38 @@ describe('IPC Handlers', () => {
         iconPath: '/path/to/icon.png',
         appName: 'TestApp',
       });
+    });
+
+    test('extracts popup icons without reading tokens or uploading', async () => {
+      const { uploadIcon } = require('../../src/main/api/icons');
+      setupIpcHandlers(mockWindows);
+      mockAuthManager.hasValidToken.mockClear();
+      mockAppIconExtractor.extractAppNameFromPath.mockReturnValue('TestApp');
+      mockAppIconExtractor.extractAppIcon.mockResolvedValue('/path/to/icon.png');
+      mockAppIconExtractor.convertToTildePath.mockReturnValue('/path/to/icon.png');
+      const handler = mockIpcMain.handle.mock.calls.find(([event]) => event === 'extract-app-icon')[1];
+
+      const result = await handler({}, '/Applications/TestApp.app', false);
+
+      expect(result).not.toHaveProperty('remoteUrl');
+      expect(mockAuthManager.hasValidToken).not.toHaveBeenCalled();
+      expect(uploadIcon).not.toHaveBeenCalled();
+    });
+
+    test('uploads the icon when a button save asks for a shareable URL', async () => {
+      const { uploadIcon } = require('../../src/main/api/icons');
+      setupIpcHandlers(mockWindows);
+      mockAuthManager.hasValidToken.mockResolvedValue(true);
+      uploadIcon.mockResolvedValue({ success: true, url: 'https://cdn.example/icon.png' });
+      mockAppIconExtractor.extractAppNameFromPath.mockReturnValue('TestApp');
+      mockAppIconExtractor.extractAppIcon.mockResolvedValue('/path/to/icon.png');
+      mockAppIconExtractor.convertToTildePath.mockReturnValue('/path/to/icon.png');
+      const handler = mockIpcMain.handle.mock.calls.find(([event]) => event === 'extract-app-icon')[1];
+
+      const result = await handler({}, '/Applications/TestApp.app', false, { upload: true });
+
+      expect(uploadIcon).toHaveBeenCalledWith(expect.objectContaining({ filePath: '/path/to/icon.png' }));
+      expect(result).toMatchObject({ success: true, remoteUrl: 'https://cdn.example/icon.png' });
     });
 
     test('should handle extract-app-icon with no app name', async () => {

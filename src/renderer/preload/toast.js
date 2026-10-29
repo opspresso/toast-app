@@ -70,7 +70,8 @@ contextBridge.exposeInMainWorld('toast', {
   showOpenDialog: options => ipcRenderer.invoke('show-open-dialog', options),
 
   // App icon extraction
-  extractAppIcon: (applicationPath, forceRefresh = false) => ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh),
+  extractAppIcon: (applicationPath, forceRefresh = false, options = {}) =>
+    ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh, { upload: options?.upload === true }),
   
   // Path utilities
   resolveTildePath: tildePath => ipcRenderer.invoke('resolve-tilde-path', tildePath),
@@ -81,26 +82,6 @@ contextBridge.exposeInMainWorld('toast', {
   onLogoutSuccess: callback => subscribe('logout-success', callback),
   onAuthStateChanged: callback => subscribe('auth-state-changed', callback),
   onAuthReloadSuccess: callback => subscribe('auth-reload-success', callback),
-});
-
-// Handle keyboard shortcuts
-window.addEventListener('keydown', event => {
-  // Close window on Escape key if hideOnEscape is enabled
-  if (event.key === 'Escape') {
-    // First check modal state
-    ipcRenderer.invoke('is-modal-open').then(isModalOpen => {
-      // Only check hideOnEscape setting and hide window if no modal is open
-      if (!isModalOpen) {
-        ipcRenderer.invoke('get-config', 'advanced.hideOnEscape').then(hideOnEscape => {
-          if (hideOnEscape !== false) {
-            // Trigger event to exit edit mode before hiding window
-            window.dispatchEvent(new Event('before-window-hide'));
-            ipcRenderer.send('hide-toast');
-          }
-        });
-      }
-    });
-  }
 });
 
 // Receive before-hide event from main process

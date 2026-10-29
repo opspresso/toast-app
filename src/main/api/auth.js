@@ -43,6 +43,20 @@ const STATE_TTL_MS = 5 * 60 * 1000;
  * @param {string} state - State value sent to the authorize endpoint
  * @param {string} codeVerifier - PKCE verifier kept only on this device
  */
+/**
+ * Readable message from a Toast Web error response.
+ * The server returns `{ error: { code, message } }`; older responses return `{ error: string }`.
+ * @param {Error} error - Request error
+ * @returns {string} Error message
+ */
+function serverErrorMessage(error) {
+  const serverError = error.response?.data?.error;
+  if (typeof serverError === 'string') {
+    return serverError || error.message;
+  }
+  return serverError?.message || serverError?.code || error.message;
+}
+
 function storeAuthorizationState(state, codeVerifier) {
   stateStore.set({ 'oauth-state': state, 'oauth-code-verifier': codeVerifier, 'state-created-at': Date.now() });
   logger.info('Auth state stored');
@@ -245,7 +259,7 @@ async function exchangeCodeForToken({ code, clientId, clientSecret, codeVerifier
 
     return {
       success: false,
-      error: error.response?.data?.error || error.message,
+      error: serverErrorMessage(error),
       error_details: error.response?.data,
     };
   }
@@ -336,7 +350,7 @@ async function refreshAccessToken({ refreshToken, clientId, clientSecret }) {
         };
       }
 
-      const errorMessage = tokenRequestError.response?.data?.error || tokenRequestError.message || 'Unknown error during token refresh';
+      const errorMessage = serverErrorMessage(tokenRequestError) || 'Unknown error during token refresh';
 
       logger.info('Error message:', errorMessage);
       return {

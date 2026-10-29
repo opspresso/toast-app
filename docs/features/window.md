@@ -16,9 +16,15 @@ Blur and renderer hide requests check active modal state. Main also guards login
 when hiding through its window manager. Global shortcut handling has its own toggle path;
 do not assume all native hide calls pass through the renderer guard.
 
-Escape closes the active modal. Outside a modal, the renderer exits button edit mode and the
-preload hide handler applies the Escape preference. Turning off one hide preference does not
-disable other triggers. Failed actions do not trigger hide-after-action.
+Escape closes the active modal. Outside a modal, Escape exits button edit mode and keeps the
+launcher open. In normal mode, the renderer hides the launcher when `advanced.hideOnEscape` is
+on. Turning off one hide preference does not disable other triggers. Failed actions do not
+trigger hide-after-action.
+
+Popup keys are single keys. Command, Control and Alt combinations, such as copy or zoom, do not
+run buttons or add, remove or switch pages. Cmd+, (Windows: Ctrl+,) opens Settings.
+
+Quitting the app or installing an update closes both windows, also while a login is pending.
 
 ## Dialogs and focus
 

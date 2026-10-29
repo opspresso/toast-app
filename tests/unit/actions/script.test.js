@@ -186,7 +186,7 @@ describe('Script Action', () => {
             arch: process.arch,
           }),
           params: { input: 'value' },
-          result: null,
+          result: undefined,
         })
       );
     });

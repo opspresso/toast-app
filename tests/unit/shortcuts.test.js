@@ -491,6 +491,20 @@ describe('Global Shortcuts', () => {
     });
   });
 
+  describe('Modifier mapping', () => {
+    test.each([
+      ['Ctrl+Space', 'Control+space'],
+      ['Control+Shift+T', 'Control+Shift+t'],
+      ['Meta+Space', 'Super+space'],
+      ['Ctrl+Meta+K', 'Control+Super+k'],
+      ['Alt+Space', 'Alt+space'],
+    ])('registers %s as %s so Control and Command stay distinct on macOS', (hotkey, expected) => {
+      const config = { get: jest.fn(key => (key === 'globalHotkey' ? hotkey : undefined)) };
+      shortcuts.registerGlobalShortcuts(config, mockWindows);
+      expect(mockGlobalShortcut.register).toHaveBeenCalledWith(expected, expect.any(Function));
+    });
+  });
+
   describe('Registration Failure Notification', () => {
     test('should show a native error dialog naming the conflicting hotkey', () => {
       shortcuts.notifyRegistrationFailure('Ctrl+Shift+T');

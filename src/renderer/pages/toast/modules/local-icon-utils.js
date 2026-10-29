@@ -28,7 +28,8 @@ async function updateButtonIconFromLocalApp(applicationPath, iconInput, nameInpu
     return null;
   }
   try {
-    const result = await window.toast.extractAppIcon(applicationPath, forceRefresh);
+    // This value is saved to the button, so request the shareable uploaded URL.
+    const result = await window.toast.extractAppIcon(applicationPath, forceRefresh, { upload: true });
 
     if (!isCurrent() || result?.canceled) {
       return null;

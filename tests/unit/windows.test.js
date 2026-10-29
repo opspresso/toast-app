@@ -717,6 +717,24 @@ describe('Windows Management', () => {
     });
   });
 
+  describe('quitting during login', () => {
+    test('closes both windows when the app quits while a login is pending', () => {
+      isLoginProcessActive.mockReturnValue(true);
+      app.isQuitting = true;
+      createToastWindow(mockConfig);
+      createSettingsWindow(mockConfig);
+
+      const closeHandlers = mockWindow.on.mock.calls.filter(([event]) => event === 'close').map(([, handler]) => handler);
+      expect(closeHandlers).toHaveLength(2);
+      for (const handler of closeHandlers) {
+        const event = { preventDefault: jest.fn() };
+        handler(event);
+        expect(event.preventDefault).not.toHaveBeenCalled();
+      }
+      expect(mockWindow.hide).not.toHaveBeenCalled();
+    });
+  });
+
   describe('edge cases', () => {
     test('should handle config with missing opacity value', () => {
       mockConfig.get.mockImplementation((key) => {

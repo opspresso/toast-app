@@ -69,8 +69,10 @@ function convertHotkeyToElectronFormat(hotkey) {
     } // Skip empty parts
 
     // Handle modifier keys
+    // Recorded hotkeys store Control as Ctrl and Command as Meta. Keep them distinct:
+    // CommandOrControl would register Control+Space as Command+Space on macOS.
     if (part === 'Ctrl' || part === 'Control') {
-      modifiers.push('CommandOrControl');
+      modifiers.push('Control');
     }
     else if (part === 'Alt') {
       modifiers.push('Alt');

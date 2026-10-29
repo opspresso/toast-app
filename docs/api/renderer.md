@@ -92,7 +92,7 @@ See [Cloud Sync](../features/cloud-sync.md) before adding synchronization caller
 | Toast actions | `executeAction(action)` |
 | Toast window | `hideWindow()`, `showWindow()`, `showSettings()`, `setModalOpen(isOpen)` |
 | Toast dialog positioning | `setAlwaysOnTop(value)`, `getWindowPosition()`, `hideWindowTemporarily()`, `showWindowAfterDialog(position)` |
-| Both | `showOpenDialog(options)`, `extractAppIcon(path, forceRefresh = false)`, `resolveTildePath(path)` |
+| Both | `showOpenDialog(options)`, `extractAppIcon(path, forceRefresh = false, { upload = false })`, `resolveTildePath(path)` |
 | Settings dialogs | `showSaveDialog(options)`, `showMessageBox(options)` |
 | Settings window/app | `showToast()`, `closeWindow()`, `restartApp()`, `quitApp()` |
 | Platform/version | Toast has `platform`; Settings has `getPlatform()` and `getVersion()` |

@@ -29,7 +29,7 @@ it('forwards the selected full path instead of reconstructing an Applications pa
 it('does not upload under a different account after slow extraction', async () => {
   let finish;
   mockExtract.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
-  const result = handlers['extract-app-icon']({}, '/System/Applications/Calculator.app');
+  const result = handlers['extract-app-icon']({}, '/System/Applications/Calculator.app', false, { upload: true });
   mockSession++;
   finish('/tmp/icons/App.png');
   expect(await result).toMatchObject({ success: false, canceled: true });
@@ -37,5 +37,5 @@ it('does not upload under a different account after slow extraction', async () =
 });
 it('does not publish a late upload URL into a new login session', async () => {
   mockUpload.mockImplementationOnce(async () => { mockSession++; return { success: true, url: 'https://icons.example.test/old.png' }; });
-  expect(await handlers['extract-app-icon']({}, 'Calculator')).toMatchObject({ success: false, canceled: true });
+  expect(await handlers['extract-app-icon']({}, 'Calculator', false, { upload: true })).toMatchObject({ success: false, canceled: true });
 });

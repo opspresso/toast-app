@@ -154,6 +154,7 @@ const paramResult = await executeScript({
   script: 'result = `Hello ${params.name}!`;',
   scriptParams: { name: 'World' }
 });
+// { success: true, message: 'Hello World!', result: 'Hello World!' }
 ```
 
 ## Chain Action (`src/main/actions/chain.js`)

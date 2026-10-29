@@ -44,7 +44,8 @@ contextBridge.exposeInMainWorld('settings', {
   showMessageBox: options => ipcRenderer.invoke('show-message-box', options),
 
   // App icon extraction
-  extractAppIcon: (applicationPath, forceRefresh = false) => ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh),
+  extractAppIcon: (applicationPath, forceRefresh = false, options = {}) =>
+    ipcRenderer.invoke('extract-app-icon', applicationPath, forceRefresh, { upload: options?.upload === true }),
   
   // Path utilities
   resolveTildePath: tildePath => ipcRenderer.invoke('resolve-tilde-path', tildePath),

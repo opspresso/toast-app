@@ -317,7 +317,7 @@ describe('Toast Preload Script', () => {
       
       toastAPI.extractAppIcon(appPath, forceRefresh);
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, forceRefresh);
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, forceRefresh, { upload: false });
     });
 
     test('should call extract-app-icon with default forceRefresh false', () => {
@@ -325,7 +325,7 @@ describe('Toast Preload Script', () => {
       
       toastAPI.extractAppIcon(appPath);
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, false);
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, false, { upload: false });
     });
 
     test('should call resolve-tilde-path with path parameter', () => {
@@ -401,9 +401,8 @@ describe('Toast Preload Script', () => {
   });
 
   describe('Keyboard Event Handling', () => {
-    test('should register keydown event listener for keyboard handling', () => {
-      // Check that addEventListener was called with keydown
-      expect(mockWindow.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+    test('leaves Escape handling to the renderer so edit mode exits without hiding the popup', () => {
+      expect(mockWindow.addEventListener).not.toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
     test('should register DOMContentLoaded event listener', () => {

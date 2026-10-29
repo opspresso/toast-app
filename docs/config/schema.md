@@ -44,7 +44,7 @@ The configuration file is JSON. Prefer the app UI. Quit Toast before editing it 
 ```
 
 **Supported format**:
-- Modifier keys: `Ctrl`, `Alt`, `Shift`, `Meta` (`Command` on macOS)
+- Modifier keys: `Ctrl` (the Control key on every platform), `Alt`, `Shift`, `Meta` (`Command` on macOS, Windows key on Windows)
 - Regular keys: `A-Z`, `0-9`, `F1-F12`, arrow keys, etc.
 - Combine modifiers and regular keys with `+` (e.g., `Ctrl+Alt+T`)
 
