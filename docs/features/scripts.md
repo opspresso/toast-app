@@ -72,7 +72,13 @@ External scripts use unique temporary directories and files with owner-only perm
 Main invokes the interpreter through `execFile` and attempts cleanup on success and failure.
 Cleanup failure is reported separately in the result. Concurrent scripts do not share filenames.
 
-JavaScript success returns the assigned result; an unset result produces a success message.
+JavaScript `result` handling:
+
+- An object with a boolean `success` is the action result and is returned unchanged.
+- Any other value is the output. The action succeeds, and `message` is the string or its JSON form.
+- A Promise is awaited first. A rejected Promise or thrown error reports failure.
+- An unset result produces a success message.
+
 External script results include stdout/stderr. A nonzero exit or execution exception reports
 failure. Stderr alone does not necessarily mean the process failed. The launcher shows its
 status message; disable **Hide after action** while diagnosing a button.

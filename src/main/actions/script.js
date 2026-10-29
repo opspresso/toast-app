@@ -74,6 +74,35 @@ async function executeScript(action) {
 }
 
 /**
+ * Convert the value a script assigned to `result` into an action result.
+ * An object with a boolean `success` is already an action result. Any other
+ * value is the script's output, so it reports success with that value.
+ * @param {*} value - Resolved value of `result`
+ * @returns {Object} Action result
+ */
+function toActionResult(value) {
+  if (value === null || value === undefined) {
+    return { success: true, message: 'JavaScript executed successfully' };
+  }
+  if (typeof value === 'object' && typeof value.success === 'boolean') {
+    return value;
+  }
+  let message;
+  if (typeof value === 'string') {
+    message = value;
+  }
+  else {
+    try {
+      message = JSON.stringify(value) ?? String(value);
+    }
+    catch {
+      message = String(value);
+    }
+  }
+  return { success: true, message, result: value };
+}
+
+/**
  * Execute JavaScript code
  * @param {string} script - JavaScript code
  * @param {Object} [params] - Parameters to pass to the script
@@ -125,15 +154,7 @@ async function executeJavaScript(script, params = {}) {
     // Run the script in the sandbox
     vm.runInContext(scriptWithReturn, context);
 
-    // Get the result
-    if (sandbox.result) {
-      return sandbox.result;
-    }
-
-    return {
-      success: true,
-      message: 'JavaScript executed successfully',
-    };
+    return toActionResult(await sandbox.result);
   }
   catch (error) {
     return {
