@@ -75,7 +75,7 @@ Cleanup failure is reported separately in the result. Concurrent scripts do not 
 JavaScript `result` handling:
 
 - An object with a boolean `success` is the action result and is returned unchanged.
-- Any other value is the output. The action succeeds, and `message` is the string or its JSON form.
+- Any other value, including `null`, is the output. The action succeeds, and `message` is the string or its JSON form.
 - A Promise is awaited first. A rejected Promise or thrown error reports failure.
 - An unset result produces a success message.
 

@@ -45,6 +45,10 @@ describe('JavaScript action result', () => {
     await expect(run('result = 0;')).resolves.toEqual({ success: true, message: '0', result: 0 });
   });
 
+  test('reports an explicit null result as output', async () => {
+    await expect(run('result = null;')).resolves.toEqual({ success: true, message: 'null', result: null });
+  });
+
   test('keeps the default message when no result is assigned', async () => {
     await expect(run('const unused = 1;')).resolves.toEqual({ success: true, message: 'JavaScript executed successfully' });
   });

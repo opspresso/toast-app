@@ -52,7 +52,7 @@ const STATE_TTL_MS = 5 * 60 * 1000;
 function serverErrorMessage(error) {
   const serverError = error.response?.data?.error;
   if (typeof serverError === 'string') {
-    return serverError;
+    return serverError || error.message;
   }
   return serverError?.message || serverError?.code || error.message;
 }

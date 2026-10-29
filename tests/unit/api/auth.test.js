@@ -437,6 +437,8 @@ describe('API Auth Module (P0)', () => {
       [{ error: { code: 'INVALID_GRANT', message: 'Authorization code has expired' } }, 'Authorization code has expired'],
       [{ error: { code: 'INVALID_GRANT' } }, 'INVALID_GRANT'],
       [{ error: 'invalid_request' }, 'invalid_request'],
+      [{ error: '' }, 'Bad Request'],
+      [{ error: { code: '', message: '' } }, 'Bad Request'],
       [undefined, 'Bad Request'],
     ])('reports the server error %j as readable text', async (data, expected) => {
       const apiError = new Error('Bad Request');

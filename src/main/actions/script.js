@@ -76,15 +76,16 @@ async function executeScript(action) {
 /**
  * Convert the value a script assigned to `result` into an action result.
  * An object with a boolean `success` is already an action result. Any other
- * value is the script's output, so it reports success with that value.
+ * value, including null, is the script's output, so it reports success with that
+ * value. Only an unset result uses the default message.
  * @param {*} value - Resolved value of `result`
  * @returns {Object} Action result
  */
 function toActionResult(value) {
-  if (value === null || value === undefined) {
+  if (value === undefined) {
     return { success: true, message: 'JavaScript executed successfully' };
   }
-  if (typeof value === 'object' && typeof value.success === 'boolean') {
+  if (value !== null && typeof value === 'object' && typeof value.success === 'boolean') {
     return value;
   }
   let message;
@@ -129,7 +130,7 @@ async function executeJavaScript(script, params = {}) {
         env: safeEnv,
       },
       params,
-      result: null,
+      result: undefined,
       setTimeout,
       clearTimeout,
       setInterval,

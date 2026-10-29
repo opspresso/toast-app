@@ -58,6 +58,13 @@ describe('popup keyboard shortcuts', () => {
     expect(context.removePage).not.toHaveBeenCalled();
   });
 
+  it.each([[{ altKey: true }], [{ metaKey: true, altKey: true }]])('ignores Alt+, combinations %j', modifiers => {
+    const context = load();
+    keydown(context, ',', 'Comma', modifiers);
+    expect(context.toggleSettingsMode).not.toHaveBeenCalled();
+    expect(context.window.toast.showSettings).not.toHaveBeenCalled();
+  });
+
   it('still opens Settings with Cmd+,', () => {
     const context = load();
     keydown(context, ',', 'Comma', { metaKey: true });
