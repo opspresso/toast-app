@@ -116,7 +116,8 @@ function validateUpdateConfig() {
   try {
     // In release mode, check the app-update.yml file
     if (app.isPackaged) {
-      const updateConfigPath = path.join(app.getAppPath(), 'app-update.yml');
+      // electron-builder writes app-update.yml to Resources, outside app.asar.
+      const updateConfigPath = path.join(process.resourcesPath, 'app-update.yml');
       logger.info(`updateConfigPath: ${updateConfigPath}`);
       if (fs.existsSync(updateConfigPath)) {
         updateConfig = require('yaml').parse(fs.readFileSync(updateConfigPath, 'utf8'));
