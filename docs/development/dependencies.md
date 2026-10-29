@@ -53,7 +53,7 @@ When considering a new dependency, the following criteria are evaluated:
 
 | Dependency | Version | Purpose |
 |--------|------|------|
-| electron | ^39.8.5 | Electron framework |
+| electron | ^42.11.18 | Electron framework |
 | electron-builder | ^26.6.0 | Application packaging and distribution |
 | eslint | ^8.57.0 | JavaScript linting |
 | eslint-config-prettier | ^9.1.0 | ESLint configuration for Prettier |

@@ -1,7 +1,7 @@
 # Application Icons
 
 Toast extracts macOS application icons for button previews and cloud sharing. The current
-Electron 39 builds require macOS 12 or later. See [Electron's platform change](https://www.electronjs.org/blog/electron-38-0#removed-macos-11-support).
+Electron 38 and later (this app uses Electron 42) require macOS 12 or later. See [Electron's platform change](https://www.electronjs.org/blog/electron-38-0#removed-macos-11-support).
 Windows and Linux display shared image URLs and built-in icons but do not run this extraction feature.
 
 ## Choose or Refresh an Icon
