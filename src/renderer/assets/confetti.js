@@ -59,16 +59,6 @@ function random(min, max) {
 }
 
 /**
- * Generate a random integer (between min and max)
- * @param {number} min Minimum value
- * @param {number} max Maximum value
- * @returns {number} Random integer
- */
-function randomInt(min, max) {
-  return Math.floor(random(min, max));
-}
-
-/**
  * Get a random item
  * @param {Array} array Array
  * @returns {*} Randomly selected item from the array

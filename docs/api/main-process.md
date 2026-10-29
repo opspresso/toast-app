@@ -341,10 +341,9 @@ function createToastWindow(config)
 
 /**
  * Create the settings window
- * @param {Object} config - Configuration store
  * @returns {BrowserWindow} Settings window
  */
-function createSettingsWindow(config)
+function createSettingsWindow()
 
 /**
  * Show the Toast window

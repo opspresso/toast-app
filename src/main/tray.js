@@ -39,9 +39,6 @@ function createTray(windows) {
   // Create context menu
   updateTrayMenu(trayInstance, windows);
 
-  // Set up click behavior (platform-specific)
-  setupTrayClickBehavior(trayInstance, windows);
-
   return trayInstance;
 }
 
@@ -210,18 +207,6 @@ function setUpdateState(status, version) {
     trayInstance.setImage(getTrayIconPath(hasUpdateAvailable()));
     updateTrayMenu(trayInstance, windowsRef);
   }
-}
-
-/**
- * Set up platform-specific click behavior for the tray icon
- * @param {Tray} tray - Tray instance
- * @param {Object} windows - Object containing application windows
- */
-function setupTrayClickBehavior(tray, windows) {
-  // On macOS, clicking the tray icon will show the context menu instead of toggling the window
-  // This is consistent with the default behavior on Windows
-  // No need to set up custom behavior, as we want to use the default behavior
-  // (right-click on macOS and left-click on Windows shows the context menu)
 }
 
 /**
