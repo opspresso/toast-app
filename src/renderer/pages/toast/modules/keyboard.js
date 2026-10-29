@@ -17,6 +17,12 @@ export function handleKeyDown(event) {
     return;
   }
 
+  // Popup keys are single keys. Command, Control and Alt combinations (copy, zoom and
+  // similar) must not run a button or change pages; only Cmd/Ctrl+, opens Settings.
+  if ((event.metaKey || event.ctrlKey || event.altKey) && event.key !== ',') {
+    return;
+  }
+
   switch (event.key) {
     case 'ArrowUp':
       event.preventDefault();

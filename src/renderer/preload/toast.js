@@ -83,26 +83,6 @@ contextBridge.exposeInMainWorld('toast', {
   onAuthReloadSuccess: callback => subscribe('auth-reload-success', callback),
 });
 
-// Handle keyboard shortcuts
-window.addEventListener('keydown', event => {
-  // Close window on Escape key if hideOnEscape is enabled
-  if (event.key === 'Escape') {
-    // First check modal state
-    ipcRenderer.invoke('is-modal-open').then(isModalOpen => {
-      // Only check hideOnEscape setting and hide window if no modal is open
-      if (!isModalOpen) {
-        ipcRenderer.invoke('get-config', 'advanced.hideOnEscape').then(hideOnEscape => {
-          if (hideOnEscape !== false) {
-            // Trigger event to exit edit mode before hiding window
-            window.dispatchEvent(new Event('before-window-hide'));
-            ipcRenderer.send('hide-toast');
-          }
-        });
-      }
-    });
-  }
-});
-
 // Receive before-hide event from main process
 ipcRenderer.on('before-hide', () => {
   window.dispatchEvent(new Event('before-window-hide'));

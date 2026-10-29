@@ -401,9 +401,8 @@ describe('Toast Preload Script', () => {
   });
 
   describe('Keyboard Event Handling', () => {
-    test('should register keydown event listener for keyboard handling', () => {
-      // Check that addEventListener was called with keydown
-      expect(mockWindow.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
+    test('leaves Escape handling to the renderer so edit mode exits without hiding the popup', () => {
+      expect(mockWindow.addEventListener).not.toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
     test('should register DOMContentLoaded event listener', () => {
