@@ -146,17 +146,14 @@ function setupToastWindowEvents(toastWindow, config) {
   });
 
   // Prevent window from being destroyed, just hide it
+  // Quitting (including update installation) always closes the window, even during login.
   toastWindow.on('close', event => {
-    // Check if login is in progress
-    const loginInProgress = isLoginProcessActive();
-
-    if (loginInProgress) {
-      event.preventDefault();
+    if (app.isQuitting) {
       return;
     }
 
-    if (!app.isQuitting) {
-      event.preventDefault();
+    event.preventDefault();
+    if (!isLoginProcessActive()) {
       toastWindow.hide();
     }
   });
@@ -247,13 +244,10 @@ function createSettingsWindow(config) {
  */
 function setupSettingsWindowEvents(settingsWindow) {
   // Check if login is in progress when attempting to close window
+  // Keep Settings open while a login is pending, except when the app quits.
   settingsWindow.on('close', event => {
-    // Check if login is in progress
-    const loginInProgress = isLoginProcessActive();
-
-    if (loginInProgress) {
+    if (!app.isQuitting && isLoginProcessActive()) {
       event.preventDefault();
-      return;
     }
   });
 
