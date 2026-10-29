@@ -96,7 +96,7 @@
       </div>
 
       <div class="toast-footer">
-        <div class="toast-status" id="status-container">
+        <div class="toast-status" id="status-container" role="status" aria-live="polite">
           <!-- Status messages will be displayed here -->
         </div>
         <div class="toast-settings">
@@ -315,10 +315,10 @@
 
     <!-- Button template -->
     <template id="button-template">
-      <div class="toast-button" data-action="">
-        <div class="button-icon"></div>
+      <div class="toast-button" role="button" data-action="">
+        <div class="button-icon" aria-hidden="true"></div>
         <div class="button-name"></div>
-        <div class="button-shortcut"></div>
+        <div class="button-shortcut" aria-hidden="true"></div>
       </div>
     </template>
 

@@ -139,6 +139,19 @@ describe('Auto Updater', () => {
       expect(result.checkForUpdates.length).toBe(0); // No parameters expected
     });
 
+    test('reads the packaged update feed from Resources, outside app.asar', () => {
+      const originalResourcesPath = process.resourcesPath;
+      process.resourcesPath = '/Applications/Toast.app/Contents/Resources';
+      try {
+        updater.initAutoUpdater(mockWindows);
+        // resetModules gives the updater a fresh fs mock; read the same instance.
+        expect(require('fs').existsSync).toHaveBeenCalledWith('/Applications/Toast.app/Contents/Resources/app-update.yml');
+      }
+      finally {
+        process.resourcesPath = originalResourcesPath;
+      }
+    });
+
     test('should register event handlers', () => {
       updater.initAutoUpdater(mockWindows);
 

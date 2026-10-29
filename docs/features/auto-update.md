@@ -37,7 +37,10 @@ actual release assets. Current CI builds macOS and Windows; Linux targets are ex
 - `src/main/tray.js`: availability, downloading, and restart menu states.
 - `src/main/ipc/updater.js`: named renderer operations.
 - `src/renderer/pages/settings/modules/about-settings.js`: About tab flow and progress.
-- `package.json`: publish provider and package targets.
+- `package.json`: package targets and `repository`. No `publish` block is set, so Electron Builder
+  derives the GitHub feed (`opspresso/toast-app`) from `repository` and writes it to
+  `Contents/Resources/app-update.yml` (outside `app.asar`). `validateUpdateConfig()` reads that file
+  from `process.resourcesPath` and logs missing `provider`, `owner`, or `repo` fields.
 
 `autoDownload` is false, `autoInstallOnAppQuit` is true, and the channel is `latest`.
 Downgrades and prereleases are permitted only in development. Electron Builder produces
