@@ -52,7 +52,7 @@ function setupWindowHandlers(windows) {
   });
 
   // Return current window position
-  ipcMain.handle('get-window-position', event => {
+  ipcMain.handle('get-window-position', () => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
         return windows.toast.getPosition();
@@ -66,7 +66,7 @@ function setupWindowHandlers(windows) {
   });
 
   // Temporarily disable alwaysOnTop (to display file selection dialog on top)
-  ipcMain.handle('hide-window-temporarily', async event => {
+  ipcMain.handle('hide-window-temporarily', async () => {
     try {
       if (windows.toast && !windows.toast.isDestroyed()) {
         // Turn off alwaysOnTop property so dialog can appear on top

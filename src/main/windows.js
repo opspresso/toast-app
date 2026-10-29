@@ -170,10 +170,9 @@ function setupToastWindowEvents(toastWindow, config) {
 
 /**
  * Create the Settings window
- * @param {Object} config - Configuration store
  * @returns {BrowserWindow} Settings window
  */
-function createSettingsWindow(config) {
+function createSettingsWindow() {
   // If window already exists, return it
   if (windows.settings && !windows.settings.isDestroyed()) {
     return windows.settings;
@@ -388,7 +387,7 @@ function showSettingsWindow(config, tabName) {
 
   // Create the window if it doesn't exist
   if (!windows.settings || windows.settings.isDestroyed()) {
-    settingsWindow = createSettingsWindow(config);
+    settingsWindow = createSettingsWindow();
 
     // Send tab selection message when window is ready
     if (tabName) {

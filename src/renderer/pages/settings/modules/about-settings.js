@@ -361,9 +361,6 @@ export function handleInstallError(error) {
 
   // Show error message
   if (updateMessage) {
-    // Save existing message content
-    const originalContent = updateMessage.textContent;
-
     // Set error message
     updateMessage.textContent = '';
     const errorLabel = document.createElement('span');

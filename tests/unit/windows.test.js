@@ -294,7 +294,7 @@ describe('Windows Management', () => {
 
   describe('createSettingsWindow', () => {
     test('should create new settings window', () => {
-      const result = createSettingsWindow(mockConfig);
+      const result = createSettingsWindow();
 
       expect(mockBrowserWindow).toHaveBeenCalledWith({
         width: 905,
@@ -330,7 +330,7 @@ describe('Windows Management', () => {
     test('should return existing settings window if not destroyed', () => {
       windows.settings = mockWindow;
 
-      const result = createSettingsWindow(mockConfig);
+      const result = createSettingsWindow();
 
       expect(mockBrowserWindow).not.toHaveBeenCalled();
       expect(result).toBe(mockWindow);
@@ -339,14 +339,14 @@ describe('Windows Management', () => {
     test('should open dev tools in development mode', () => {
       process.env.NODE_ENV = 'development';
 
-      createSettingsWindow(mockConfig);
+      createSettingsWindow();
 
       // Dev tools are opened asynchronously after dom-ready event
       expect(mockWindow.webContents.once).toHaveBeenCalledWith('dom-ready', expect.any(Function));
     });
 
     test('should set up window event handlers', () => {
-      createSettingsWindow(mockConfig);
+      createSettingsWindow();
 
       expect(mockWindow.on).toHaveBeenCalledWith('close', expect.any(Function));
       expect(mockWindow.on).toHaveBeenCalledWith('closed', expect.any(Function));
@@ -679,7 +679,7 @@ describe('Windows Management', () => {
     });
 
     test('should handle settings window closed event', () => {
-      createSettingsWindow(mockConfig);
+      createSettingsWindow();
 
       const closedHandler = mockWindow.on.mock.calls
         .find(([event]) => event === 'closed')?.[1];
@@ -693,7 +693,7 @@ describe('Windows Management', () => {
       isLoginProcessActive.mockReturnValue(true);
 
       createToastWindow(mockConfig);
-      createSettingsWindow(mockConfig);
+      createSettingsWindow();
 
       // Test toast window close prevention
       const toastCloseHandler = mockWindow.on.mock.calls
@@ -722,7 +722,7 @@ describe('Windows Management', () => {
       isLoginProcessActive.mockReturnValue(true);
       app.isQuitting = true;
       createToastWindow(mockConfig);
-      createSettingsWindow(mockConfig);
+      createSettingsWindow();
 
       const closeHandlers = mockWindow.on.mock.calls.filter(([event]) => event === 'close').map(([, handler]) => handler);
       expect(closeHandlers).toHaveLength(2);
