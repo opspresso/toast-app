@@ -143,8 +143,9 @@ function setupSystemHandlers(windows, config) {
 
   ipcMain.handle('log-debug', (event, message, ...args) => handleIpcLogging('debug', message, ...args));
 
-  // Extract app icon from application path
-  ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false) => {
+  // Extract app icon from application path. Only button saves pass { upload: true }:
+  // the popup renders icons on every show, so it must not read tokens or upload.
+  ipcMain.handle('extract-app-icon', async (event, applicationPath, forceRefresh = false, options = {}) => {
     const session = getSessionVersion();
     try {
       const appName = extractAppNameFromPath(applicationPath);
@@ -165,23 +166,25 @@ function setupSystemHandlers(windows, config) {
       // For authenticated users, upload the icon to the server (S3) to obtain a cross-device shareable URL.
       // Failure does not affect local icon behavior (only the remoteUrl field is omitted).
       let remoteUrl = null;
-      try {
-        const hasToken = await authManager.hasValidToken();
-        if (session !== getSessionVersion()) {
-          return { success: false, canceled: true, error: 'The account changed during icon extraction' };
-        }
-        if (hasToken) {
-          const uploadResult = await apiIcons.uploadIcon({
-            filePath: iconPath,
-            onUnauthorized: authManager.refreshAccessToken,
-          });
-          if (uploadResult.success) {
-            remoteUrl = uploadResult.url;
+      if (options?.upload === true) {
+        try {
+          const hasToken = await authManager.hasValidToken();
+          if (session !== getSessionVersion()) {
+            return { success: false, canceled: true, error: 'The account changed during icon extraction' };
+          }
+          if (hasToken) {
+            const uploadResult = await apiIcons.uploadIcon({
+              filePath: iconPath,
+              onUnauthorized: authManager.refreshAccessToken,
+            });
+            if (uploadResult.success) {
+              remoteUrl = uploadResult.url;
+            }
           }
         }
-      }
-      catch (uploadError) {
-        logger.debug(`Icon upload skipped: ${uploadError.message}`);
+        catch (uploadError) {
+          logger.debug(`Icon upload skipped: ${uploadError.message}`);
+        }
       }
 
       if (session !== getSessionVersion()) {

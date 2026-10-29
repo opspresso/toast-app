@@ -260,7 +260,7 @@ describe('Settings Preload Script', () => {
       
       settingsAPI.extractAppIcon(appPath, forceRefresh);
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, forceRefresh);
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, forceRefresh, { upload: false });
     });
 
     test('should call extract-app-icon with default forceRefresh false', () => {
@@ -268,7 +268,7 @@ describe('Settings Preload Script', () => {
       
       settingsAPI.extractAppIcon(appPath);
       
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, false);
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('extract-app-icon', appPath, false, { upload: false });
     });
 
     test('should call resolve-tilde-path with path parameter', () => {
