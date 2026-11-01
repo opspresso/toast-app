@@ -25,12 +25,12 @@ Please collaborate with a respectful attitude toward one another. If you encount
 
 ### Prerequisites
 
-- Node.js 24 for development and builds (see `.nvmrc`); minimum supported version is 22.12, per `engines.node` in `package.json`
-- npm (v10 or higher)
+- Node.js 26.11.1 or later in the 26.x line (`.nvmrc` pins 26.11.1, and `engines.node` in `package.json` requires `>=26.11.1 <27`)
+- npm 11.20 or later
 - Git
 - Basic knowledge of Electron, JavaScript, and desktop application development
 
-Run `nvm install` and `nvm use` from the repository directory before installing dependencies, or select Node.js 24 with your preferred version manager. CI tests Node.js 22 and 24. Application code must remain compatible with Electron's bundled Node.js 22; the build tool's Node.js version does not change the app runtime.
+Run `nvm install` and `nvm use` from the repository directory before installing dependencies, or select Node.js 26.11.1 with your preferred version manager. CI uses the Node.js version in `.nvmrc`. Electron bundles its own Node.js runtime, so the build-time Node.js version does not change the app runtime. Keep application code compatible with the bundled runtime.
 
 ### Fork and Clone
 
